@@ -67,14 +67,31 @@ public sealed class WindowsIsoInspectionService : IIsoInspectionService
 
         // Passed preconditions: mount read-only and inspect the layout.
         _logger.Info($"ISO inspection started: {isoPath}");
+
+        // mountAttempted tracks whether a mount call was ever made. Once we
+        // attempt a mount, a dismount MUST always be attempted in the finally
+        // block — even if cancellation or failure occurred before we learned the
+        // mounted root. This is the core safety property: an ISO can never be
+        // left mounted because cleanup was itself cancelled or skipped.
+        bool mountAttempted = false;
         string? mountedRoot = null;
+        Exception? originalError = null;
         try
         {
+            mountAttempted = true;
             _logger.Info("Mounting ISO read-only...");
             mountedRoot = await _mountService.MountReadOnlyAsync(isoPath, cancellationToken);
             _logger.Info($"ISO mounted at {mountedRoot}");
 
-            InspectLayout(mountedRoot!, result);
+            if (string.IsNullOrEmpty(mountedRoot))
+            {
+                // The OS mount may have completed but no drive root was obtained.
+                // Treat this as an inspection failure so cleanup still runs.
+                throw new InvalidOperationException(
+                    "The ISO was mounted but no drive root was returned.");
+            }
+
+            InspectLayout(mountedRoot, result);
             _logger.Info("ISO structure inspected.");
 
             result.Status = IsoInspectionStatus.Completed;
@@ -84,18 +101,27 @@ public sealed class WindowsIsoInspectionService : IIsoInspectionService
         }
         catch (Exception ex)
         {
+            originalError = ex;
             result.Status = IsoInspectionStatus.Failed;
             result.DetectedType = IsoDetectedType.Unknown;
-            result.ErrorMessage = Sanitize(ex.Message);
-            _logger.Error($"ISO inspection failed: {Sanitize(ex.Message)}");
+            // User-facing message: never leak raw PowerShell/HRESULT/command
+            // internals. A concise, non-technical message is shown in the UI; the
+            // full technical detail is retained only in the log (below).
+            result.ErrorMessage = FriendlyErrorMessage(ex);
+            _logger.Error($"ISO inspection failed: {ex}");
         }
         finally
         {
-            if (mountedRoot != null)
+            if (mountAttempted)
             {
+                // Cleanup MUST complete even if the operation was cancelled. Use a
+                // non-cancellable token so the dismount itself cannot be aborted,
+                // which would otherwise leave the ISO mounted. A dismount on an
+                // unmounted image is handled safely by WindowsIsoMountService;
+                // failures here are logged, never propagated.
                 try
                 {
-                    await _mountService.DismountAsync(isoPath, cancellationToken);
+                    await _mountService.DismountAsync(isoPath, CancellationToken.None);
                     _logger.Info("ISO dismounted.");
                 }
                 catch (Exception ex)
@@ -103,6 +129,15 @@ public sealed class WindowsIsoInspectionService : IIsoInspectionService
                     _logger.Warning($"ISO dismount failed (manual cleanup may be required): {Sanitize(ex.Message)}");
                 }
             }
+        }
+
+        // Preserve cancellation: never swallow an OperationCanceledException just
+        // because cleanup succeeded. Other unexpected failures surface as a
+        // Failed result with a friendly message (set above). Cleanup failures do
+        // not replace the original failure/cancellation.
+        if (originalError is OperationCanceledException operationCanceled)
+        {
+            throw operationCanceled;
         }
 
         return result;
@@ -151,4 +186,15 @@ public sealed class WindowsIsoInspectionService : IIsoInspectionService
 
     private static string Sanitize(string message)
         => string.IsNullOrWhiteSpace(message) ? "Unspecified inspection error." : message.Trim();
+
+    /// <summary>
+    /// Produces the message shown to the user when inspection fails. It is
+    /// deliberately generic so it can never expose raw PowerShell errors, HRESULT
+    /// codes, command text, or internal exception details. The full technical
+    /// detail is recorded via <see cref="ILoggerService"/>, not the UI.
+    /// </summary>
+    private static string FriendlyErrorMessage(Exception ex)
+        => ex is OperationCanceledException
+            ? "The ISO inspection was cancelled."
+            : "The ISO could not be inspected. See the application log for technical details.";
 }

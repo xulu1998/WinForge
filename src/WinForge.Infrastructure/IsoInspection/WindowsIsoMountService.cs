@@ -37,7 +37,10 @@ public sealed class WindowsIsoMountService : IIsoMountService
     private static string BuildDismountScript(string isoPath)
     {
         var safe = EscapeSingleQuoted(isoPath);
-        return "Dismount-DiskImage -ImagePath '" + safe + "' | Out-Null; 'ok'";
+        // -ErrorAction SilentlyContinue makes a dismount on an image that is not
+        // currently mounted a safe no-op instead of a thrown error, so best-effort
+        // cleanup (e.g. after a cancelled mount) never surfaces a spurious failure.
+        return "Dismount-DiskImage -ImagePath '" + safe + "' -ErrorAction SilentlyContinue | Out-Null; 'ok'";
     }
 
     private static string EscapeSingleQuoted(string value)

@@ -51,6 +51,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   control bound to a read-only property. Added `ImageBindingRegressionTests`
   (read-only property + `Mode=OneWay` XAML assertion, no display device needed).
 
+### Fixed (merge-readiness, Phase 2 Step 2.1)
+- Cancellation-safe ISO cleanup: `WindowsIsoInspectionService` now tracks whether
+  a mount was attempted and always runs a best-effort `Dismount-DiskImage` in its
+  `finally` block using `CancellationToken.None`. An ISO can no longer be left
+  mounted when inspection is cancelled or fails before the mounted root is
+  obtained (ADR-015). `OperationCanceledException` is re-thrown so cancellation
+  is never swallowed by successful cleanup.
+- `WindowsIsoMountService.DismountAsync` is safe when the image is not mounted
+  (`-ErrorAction SilentlyContinue`), so best-effort cleanup after a cancelled
+  mount never surfaces a spurious error.
+- User-facing error sanitization: `IsoInspectionResult.ErrorMessage` shown by the
+  UI is now a generic, friendly string; raw PowerShell errors, HRESULT codes,
+  command text, and internal exception detail are retained only in `ILoggerService`.
+- Added 4 cancellation/cleanup tests (`IsoInspectionTests`) for: cancellation
+  after mount still attempts dismount, cleanup uses a non-cancellable token,
+  inspection failure after mount still dismounts, and successful inspection
+  dismounts exactly once.
+- Fixed `ImageBindingRegressionTests` XAML path resolution to use the compile-time
+  source path (`[CallerFilePath]`), so it executes correctly regardless of build
+  output redirection.
+
 ### Accepted (Phase 1 formal acceptance)
 - Phase 1 accepted and merged to `main` on 2026-08-08 (annotated tag
   `v0.1.0-alpha`).

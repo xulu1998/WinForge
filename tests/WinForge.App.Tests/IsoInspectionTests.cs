@@ -173,16 +173,91 @@ public class IsoInspectionTests : IDisposable
         Assert.Equal(InstallImageType.Esd, result.InstallImageType);
     }
 
+    [Fact]
+    public async Task Cancellation_After_Mount_Still_Attempts_Dismount()
+    {
+        var iso = MakeIsoFile();
+        // Token already cancelled: the mount is cancelled (it may have partially
+        // mounted). Cleanup must still be attempted and must use a non-cancelled
+        // token; the cancellation must not be swallowed by successful cleanup.
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var mount = new FakeIsoMountService
+        {
+            MountRoot = MakeStructure(true, true, true, false, false),
+            ThrowIfCancelled = true
+        };
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => CreateService(mount).InspectAsync(iso, cts.Token));
+
+        Assert.True(mount.MountCalled);
+        Assert.True(mount.DismountCalled);
+        Assert.Equal(CancellationToken.None, mount.DismountToken);
+    }
+
+    [Fact]
+    public async Task Cleanup_Dismount_Uses_NonCancellable_Token()
+    {
+        var iso = MakeIsoFile();
+        var mount = new FakeIsoMountService { MountRoot = MakeStructure(true, true, true, false, false) };
+        var result = await CreateService(mount).InspectAsync(iso);
+
+        Assert.Equal(IsoInspectionStatus.Completed, result.Status);
+        Assert.True(mount.DismountCalled);
+        // The dismount must run on a token that cleanup itself cannot cancel.
+        Assert.Equal(CancellationToken.None, mount.DismountToken);
+    }
+
+    [Fact]
+    public async Task Inspection_Failure_After_Mount_Still_Dismounts()
+    {
+        var iso = MakeIsoFile();
+        // Mount returns (possibly empty) root but inspection cannot proceed — a
+        // post-mount failure. The mount was still attempted, so cleanup runs.
+        var mount = new FakeIsoMountService { MountRoot = string.Empty };
+        var result = await CreateService(mount).InspectAsync(iso);
+
+        Assert.Equal(IsoInspectionStatus.Failed, result.Status);
+        Assert.False(string.IsNullOrEmpty(result.ErrorMessage));
+        Assert.True(mount.MountCalled);
+        Assert.True(mount.DismountCalled);
+        Assert.Equal(CancellationToken.None, mount.DismountToken);
+    }
+
+    [Fact]
+    public async Task Successful_Inspection_Dismounts_Exactly_Once()
+    {
+        var iso = MakeIsoFile();
+        var mount = new FakeIsoMountService { MountRoot = MakeStructure(true, true, true, false, false) };
+        var result = await CreateService(mount).InspectAsync(iso);
+
+        Assert.Equal(IsoInspectionStatus.Completed, result.Status);
+        Assert.Equal(IsoDetectedType.WindowsIsoCandidate, result.DetectedType);
+        Assert.Equal(1, mount.DismountCount);
+        Assert.Equal(CancellationToken.None, mount.DismountToken);
+    }
+
     private sealed class FakeIsoMountService : IIsoMountService
     {
         public string? MountRoot { get; set; }
         public Exception? MountException { get; set; }
+        public bool ThrowIfCancelled { get; set; }
         public bool MountCalled { get; private set; }
-        public bool DismountCalled { get; private set; }
+        public int DismountCount { get; private set; }
+        public bool DismountCalled => DismountCount > 0;
+        public CancellationToken MountToken { get; private set; }
+        public CancellationToken DismountToken { get; private set; }
 
         public Task<string> MountReadOnlyAsync(string isoPath, CancellationToken cancellationToken = default)
         {
             MountCalled = true;
+            MountToken = cancellationToken;
+            if (ThrowIfCancelled && cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException();
+            }
+
             return MountException is null
                 ? Task.FromResult(MountRoot ?? string.Empty)
                 : Task.FromException<string>(MountException);
@@ -190,7 +265,8 @@ public class IsoInspectionTests : IDisposable
 
         public Task DismountAsync(string isoPath, CancellationToken cancellationToken = default)
         {
-            DismountCalled = true;
+            DismountCount++;
+            DismountToken = cancellationToken;
             return Task.CompletedTask;
         }
     }

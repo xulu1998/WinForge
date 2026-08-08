@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 using WinForge.App.ViewModels;
 using Xunit;
@@ -52,21 +53,44 @@ public sealed class ImageBindingRegressionTests
             "Image page TextBox must bind FileDisplay with Mode=OneWay; the default TwoWay mode crashes on a read-only property.");
     }
 
-    private static string FindImageViewXaml()
+    private static string FindImageViewXaml([CallerFilePath] string? sourceFile = null)
     {
-        var directory = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!);
-        while (directory is not null)
+        // Prefer the compile-time path of this source file. It is baked in as a
+        // literal at compile time (e.g. F:/Projects/WinForge/tests/WinForge.App.Tests/
+        // ImageBindingRegressionTests.cs) regardless of where the test assembly is
+        // emitted, so the XAML is always located even when the build output is
+        // redirected to an off-repo tree. Falls back to walking up from the test
+        // assembly location for normal in-repo builds.
+        foreach (var root in SearchRoots(sourceFile))
         {
             var candidate = Path.Combine(
-                directory.FullName, "src", "WinForge.App", "Views", "ImageView.xaml");
+                root, "src", "WinForge.App", "Views", "ImageView.xaml");
             if (File.Exists(candidate))
             {
                 return candidate;
             }
-
-            directory = directory.Parent;
         }
 
         return string.Empty;
+    }
+
+    private static IEnumerable<string> SearchRoots(string? sourceFile)
+    {
+        if (!string.IsNullOrEmpty(sourceFile))
+        {
+            var dir = new DirectoryInfo(Path.GetDirectoryName(sourceFile)!);
+            while (dir is not null)
+            {
+                yield return dir.FullName;
+                dir = dir.Parent;
+            }
+        }
+
+        var asmDir = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!);
+        while (asmDir is not null)
+        {
+            yield return asmDir.FullName;
+            asmDir = asmDir.Parent;
+        }
     }
 }
