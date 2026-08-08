@@ -1,0 +1,70 @@
+# ============================================================
+# WinForge .gitignore
+# C# / .NET / Visual Studio / VS Code / Rider
+# ============================================================
+
+# ---------- Build output ----------
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# ---------- Visual Studio ----------
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.rsuser
+.vscode/*.user
+
+# ---------- JetBrains Rider / ReSharper ----------
+.idea/
+_ReSharper*/
+*.ReSharper
+*.DotSettings.user
+
+# ---------- VS Code ----------
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ---------- Test results ----------
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# ---------- Logs ----------
+*.log
+*.logs/
+
+# ---------- NuGet ----------
+*.nupkg
+.nuget/
+packages/
+project.lock.json
+project.assets.json
+
+# ---------- .NET tooling ----------
+global.json.lock
+.dotnet/
+
+# ---------- Publish / distribution ----------
+/publish/
+/dist/
+
+# ---------- Mono ----------
+mono_crash.*
+
+# ---------- OS / editor cruft ----------
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ---------- Local AI tooling data (WorkBuddy) ----------
+.workbuddy/
