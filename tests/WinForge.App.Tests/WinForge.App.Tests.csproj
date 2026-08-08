@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\WinForge.App\WinForge.App.csproj" />
     <ProjectReference Include="..\..\src\WinForge.Core\WinForge.Core.csproj" />
+    <ProjectReference Include="..\..\src\WinForge.Infrastructure\WinForge.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

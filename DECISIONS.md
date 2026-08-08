@@ -142,3 +142,24 @@ All decisions are `ACCEPTED` unless noted.
 - **Consequences:** Repeatable proof that startup wiring is correct in
   headless environments; the actual WPF window is confirmed by a developer on a
   Windows desktop.
+
+## ADR-014: Logging is thread-safe and WPF-agnostic in Infrastructure
+
+- **Status:** ACCEPTED
+- **Context:** `ILoggerService` is called from background work (future DISM /
+  Process workers, async Tasks). The original `InMemoryLoggerService` stored
+  entries in an `ObservableCollection<T>` and the `LogsViewModel` bound to it
+  from the UI thread. A background thread mutating a WPF-bound
+  `ObservableCollection` throws a cross-thread exception, and Infrastructure
+  should not carry a WPF collection dependency just for logging.
+- **Decision:** Keep the logging store in Infrastructure as a lock-guarded plain
+  `List<LogEntry>`. `Entries` returns a point-in-time snapshot (`ToArray()`);
+  `Log()` is safe from any thread; `EntryAdded` is raised on the calling thread
+  (outside the lock, to avoid re-entrancy). The WPF `ObservableCollection<T>`
+  lives only in `LogsViewModel`, which seeds from the snapshot and marshals
+  `EntryAdded` to the UI thread via the captured `SynchronizationContext`. Core
+  and Infrastructure contain no WPF Dispatcher / `Application.Current` reference.
+- **Consequences:** Background logging can never corrupt or directly mutate the
+  UI-bound collection; no UI-thread assumption leaks into Infrastructure. The
+  cost is a snapshot copy per `Entries` read, which is negligible for a log view
+  and keeps the boundary clean.

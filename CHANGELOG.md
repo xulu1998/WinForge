@@ -35,3 +35,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   privacy, or build behavior is implemented (those are future phases).
 - The WPF window must be rendered on a Windows desktop; headless environments
   verify startup wiring via `WinForge.App.Tests`.
+
+### Fixed (merge-readiness)
+- Logging thread-safety: `InMemoryLoggerService` (Infrastructure) now stores
+  entries in a lock-guarded `List<LogEntry>` and returns a snapshot from
+  `Entries`; it no longer uses a WPF `ObservableCollection` and has no Dispatcher
+  dependency, so it is safe to call from background threads/Tasks. `LogsViewModel`
+  keeps the WPF `ObservableCollection` and marshals `EntryAdded` to the UI thread
+  via `SynchronizationContext` (ADR-014). Added `LoggerThreadSafetyTests`
+  (concurrent logging, event delivery, capacity under load).
