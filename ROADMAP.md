@@ -67,7 +67,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 2 — ISO Inspection
 
-- **Status:** NOT STARTED
+- **Status:** IN PROGRESS (Step 2.1 COMPLETED and merged to `main` on 2026-08-08; Step 2.2 NOT STARTED)
 - **Goal:** Inspect an official Microsoft Windows 11 ISO non-destructively.
 - **Scope:** ISO metadata reading, edition enumeration, architecture/language
   detection, install.wim / install.esd detection.
@@ -77,6 +77,21 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - **Acceptance Criteria:**
   - Opening an official ISO lists editions, architecture, languages, and image
     type without modifying the source.
+
+### Step 2.1 — Read-only layout inspection (2026-08-08)
+- **Status:** COMPLETED (merged to `main` on 2026-08-08)
+- Implemented: `IIsoInspectionService` + `WindowsIsoInspectionService` (Core + Infrastructure), `IIsoMountService` + `WindowsIsoMountService` (read-only `Mount-DiskImage`/`Dismount-DiskImage` via PowerShell, always dismounted), `IFilePicker`/`WindowsFilePicker`, and `ImageViewModel` `SelectIsoCommand`/`InspectIsoCommand` (async, busy/error states).
+- Detection: a Windows ISO **candidate** is `\sources` + `\boot` + `install.wim`/`install.esd`. No WIM/ESD content parsing, no edition/version recognition yet.
+- 15 automated tests added (9 inspection-logic via fake mount, 6 ViewModel). No DISM servicing, no registry, no ISO modification. Real Windows 11 25H2 (zh-CN, x64, Consumer ISO, install.wim) desktop mount/inspect/dismount validation completed (user-confirmed via application logs).
+
+### Step 2.2 — Windows image metadata and edition inspection (NOT STARTED)
+- **Status:** NOT STARTED
+- Scope: read `install.wim` / `install.esd` metadata (WIM index, edition,
+  Windows version, build, architecture, language) **without modifying the
+  source**.
+- Not part of Step 2.1. Step 2.1 inspects only the on-disk ISO directory
+  layout (`\boot`, `\sources`, `install.wim`/`install.esd`); it does not open
+  or parse the WIM/ESD content.
 
 ---
 

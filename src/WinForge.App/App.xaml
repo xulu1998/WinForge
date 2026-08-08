@@ -7,6 +7,8 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary>
+                    <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
                     <Style x:Key="StatusTile" TargetType="Border">
                         <Setter Property="Background" Value="#F5F7FA"/>
                         <Setter Property="BorderBrush" Value="#E4E7EB"/>

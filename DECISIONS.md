@@ -163,3 +163,31 @@ All decisions are `ACCEPTED` unless noted.
   UI-bound collection; no UI-thread assumption leaks into Infrastructure. The
   cost is a snapshot copy per `Entries` read, which is negligible for a log view
   and keeps the boundary clean.
+
+## ADR-015: Cancellation-safe ISO cleanup (Step 2.1)
+
+- **Status:** ACCEPTED
+- **Context:** `WindowsIsoInspectionService` mounts a Windows ISO read-only via
+  `WindowsIsoMountService` and must always dismount it. Two cleanup hazards were
+  identified: (1) the `finally` dismount used the *original* `CancellationToken`,
+  so a cancellation that had already fired could cancel cleanup and leave the ISO
+  mounted; (2) `MountReadOnlyAsync` could be cancelled/killed after
+  `Mount-DiskImage` succeeded but before it returned the mounted root, leaving
+  `mountedRoot == null` and the `finally` dismount (guarded by `mountedRoot !=
+  null`) would never run.
+- **Decision:** A mount is tracked with a `mountAttempted` flag set before the
+  mount call; once set, the `finally` block always attempts a best-effort
+  `Dismount-DiskImage` using `CancellationToken.None` (never the caller's token),
+  so cleanup can never be cancelled. `WindowsIsoMountService.DismountAsync` uses
+  `-ErrorAction SilentlyContinue`, so dismounting an image that is not mounted is
+  a safe no-op. If the mount returns without a usable root, inspection fails
+  (post-mount failure) and still triggers cleanup. `OperationCanceledException`
+  is re-thrown after cleanup so cancellation is never swallowed by a successful
+  dismount; other failures surface as a `Failed` result. User-facing
+  `ErrorMessage` is a generic, friendly string; raw PowerShell/HRESULT/command
+  detail is logged only via `ILoggerService`.
+- **Consequences:** An ISO can never be left mounted due to cancellation or a
+  mid-mount failure, regardless of whether the caller's token is signalled.
+  Cleanup is observable and unit-testable with a fake `IIsoMountService` that
+  records the token used. The fix adds no new dependencies and keeps
+  Infrastructure free of WPF.

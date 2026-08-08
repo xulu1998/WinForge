@@ -51,6 +51,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   control bound to a read-only property. Added `ImageBindingRegressionTests`
   (read-only property + `Mode=OneWay` XAML assertion, no display device needed).
 
+### Fixed (merge-readiness, Phase 2 Step 2.1)
+- Cancellation-safe ISO cleanup: `WindowsIsoInspectionService` now tracks whether
+  a mount was attempted and always runs a best-effort `Dismount-DiskImage` in its
+  `finally` block using `CancellationToken.None`. An ISO can no longer be left
+  mounted when inspection is cancelled or fails before the mounted root is
+  obtained (ADR-015). `OperationCanceledException` is re-thrown so cancellation
+  is never swallowed by successful cleanup.
+- `WindowsIsoMountService.DismountAsync` is safe when the image is not mounted
+  (`-ErrorAction SilentlyContinue`), so best-effort cleanup after a cancelled
+  mount never surfaces a spurious error.
+- User-facing error sanitization: `IsoInspectionResult.ErrorMessage` shown by the
+  UI is now a generic, friendly string; raw PowerShell errors, HRESULT codes,
+  command text, and internal exception detail are retained only in `ILoggerService`.
+- Added 4 cancellation/cleanup tests (`IsoInspectionTests`) for: cancellation
+  after mount still attempts dismount, cleanup uses a non-cancellable token,
+  inspection failure after mount still dismounts, and successful inspection
+  dismounts exactly once.
+- Fixed `ImageBindingRegressionTests` XAML path resolution to use the compile-time
+  source path (`[CallerFilePath]`), so it executes correctly regardless of build
+  output redirection.
+
 ### Accepted (Phase 1 formal acceptance)
 - Phase 1 accepted and merged to `main` on 2026-08-08 (annotated tag
   `v0.1.0-alpha`).
@@ -63,3 +84,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   addition to the existing headless automated test suite (`WinForge.App.Tests`).
 - `dotnet build` / `dotnet test` verified clean: 0 errors, 0 warnings, 10/10
   tests passing. Phase 2 (ISO Inspection) remains NOT STARTED.
+
+### Accepted (Phase 2 Step 2.1 — read-only ISO layout inspection)
+- Phase 2 Step 2.1 accepted and merged to `main` on 2026-08-08 via a `--no-ff`
+  merge commit (Step 2.1 commits `57c975e`, `66978df` from
+  `feature/iso-inspection`). Pre-merge and post-merge `dotnet build` /
+  `dotnet test` verified clean: 0 errors, 0 warnings, 29/29 tests passing.
+- Delivered capabilities (Step 2.1): ISO native file picker; file basic
+  validation; read-only ISO mount; Windows ISO candidate detection
+  (`\boot` + `\sources` + `install.wim`/`install.esd`); WIM/ESD type
+  recognition; async inspection; UI busy/error state; logging; guaranteed
+  dismount; cancellation-safe cleanup (ADR-015); friendly UI error messages
+  with raw technical detail retained only in `ILoggerService`; fake-mount
+  unit tests; no DISM servicing, no registry, no ISO modification.
+- Real Windows 11 25H2 (Chinese Simplified, x64, Consumer ISO, `install.wim`)
+  desktop validation completed: the user confirmed the full mount → inspect →
+  dismount cycle via application logs. Headless automated tests also pass,
+  including cancellation-safe cleanup.
+- Step 2.1 does **not** read WIM index, edition, Windows version, build,
+  architecture, or language — those belong to Step 2.2. `v0.1.0-alpha` is
+  unchanged; the next tag (`v0.2.0-alpha`) is deferred until Phase 2 completes.
