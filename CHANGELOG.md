@@ -44,3 +44,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   keeps the WPF `ObservableCollection` and marshals `EntryAdded` to the UI thread
   via `SynchronizationContext` (ADR-014). Added `LoggerThreadSafetyTests`
   (concurrent logging, event delivery, capacity under load).
+- Read-only binding crash on the Image page: the `TextBox` showing
+  `ImageViewModel.FileDisplay` used the default `TwoWay` mode; because
+  `FileDisplay` is getter-only, WPF threw at runtime. The binding is now
+  `Mode=OneWay`. Audited all Phase 1 XAML — this was the only default-TwoWay
+  control bound to a read-only property. Added `ImageBindingRegressionTests`
+  (read-only property + `Mode=OneWay` XAML assertion, no display device needed).

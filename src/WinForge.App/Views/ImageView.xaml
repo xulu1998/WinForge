@@ -10,7 +10,7 @@
         <StackPanel MaxWidth="820">
             <TextBlock Text="Source Image" FontSize="24" FontWeight="Bold" Foreground="#1F2933"/>
             <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                <TextBox Text="{Binding FileDisplay}" IsReadOnly="True" Width="440" Padding="8"
+                <TextBox Text="{Binding FileDisplay, Mode=OneWay}" IsReadOnly="True" Width="440" Padding="8"
                          VerticalContentAlignment="Center" BorderBrush="#CBD2D9"/>
                 <Button Style="{StaticResource PrimaryButton}" Content="Browse"
                         Command="{Binding BrowseCommand}" Margin="8,0,0,0"/>
