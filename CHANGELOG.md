@@ -50,3 +50,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   `Mode=OneWay`. Audited all Phase 1 XAML — this was the only default-TwoWay
   control bound to a read-only property. Added `ImageBindingRegressionTests`
   (read-only property + `Mode=OneWay` XAML assertion, no display device needed).
+
+### Accepted (Phase 1 formal acceptance)
+- Phase 1 accepted and merged to `main` on 2026-08-08 (annotated tag
+  `v0.1.0-alpha`).
+- Validated scope: WPF application shell, MVVM infrastructure, dependency
+  injection, navigation service, logging foundation, `AppState`, and ISO file
+  selection.
+- Merge-readiness fixes included in the accepted baseline: thread-safe logging
+  (ADR-014) and read-only WPF binding fix on the Image page.
+- Verification: real Windows desktop GUI validation confirmed by the user, in
+  addition to the existing headless automated test suite (`WinForge.App.Tests`).
+- `dotnet build` / `dotnet test` verified clean: 0 errors, 0 warnings, 10/10
+  tests passing. Phase 2 (ISO Inspection) remains NOT STARTED.

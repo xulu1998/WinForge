@@ -58,6 +58,11 @@ Phased development plan for WinForge. Each phase records its **Status**,
   - `WinForge.Core` has no reference to App or Infrastructure.
   - `WinForge.Core.Tests` runs and is green (at least smoke tests).
 
+- **Status:** COMPLETED (formally accepted and merged to `main`; tagged
+  `v0.1.0-alpha` on 2026-08-08). Validation covered both headless automated
+  tests (`WinForge.App.Tests`) and real Windows desktop GUI verification
+  (user-confirmed).
+
 ---
 
 ## Phase 2 — ISO Inspection
