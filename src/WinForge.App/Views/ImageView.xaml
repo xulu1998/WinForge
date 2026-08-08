@@ -12,20 +12,46 @@
             <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                 <TextBox Text="{Binding FileDisplay, Mode=OneWay}" IsReadOnly="True" Width="440" Padding="8"
                          VerticalContentAlignment="Center" BorderBrush="#CBD2D9"/>
-                <Button Style="{StaticResource PrimaryButton}" Content="Browse"
-                        Command="{Binding BrowseCommand}" Margin="8,0,0,0"/>
+                <Button Style="{StaticResource PrimaryButton}" Content="Select ISO"
+                        Command="{Binding SelectIsoCommand}" Margin="8,0,0,0"/>
+                <Button Style="{StaticResource PrimaryButton}" Content="Inspect"
+                        Command="{Binding InspectIsoCommand}" Margin="8,0,0,0"
+                        Background="#487EB0"/>
             </StackPanel>
 
-            <TextBlock Text="Image information" FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,24,0,0"/>
+            <TextBlock Text="Inspection" FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,24,0,0"/>
+
+            <TextBlock Text="Inspecting ISO..." FontSize="13" Foreground="#3B82F6"
+                       Margin="0,8,0,0" Visibility="{Binding IsInspecting, Converter={StaticResource BoolToVis}}"/>
+            <TextBlock Text="{Binding StatusMessage}" FontSize="13" Foreground="#9B1C1C"
+                       Margin="0,8,0,0" TextWrapping="Wrap"
+                       Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}"/>
+
             <StackPanel Margin="0,8,0,0">
                 <StackPanel Orientation="Horizontal" Margin="0,4">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="File"/>
                     <TextBlock Text="{Binding FileDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="File name"/>
+                    <TextBlock Text="{Binding FileNameDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="Size"/>
                     <TextBlock Text="{Binding SizeDisplay}" FontSize="13" VerticalAlignment="Center"/>
                 </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Detection"/>
+                    <TextBlock Text="{Binding DetectedTypeDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Install image"/>
+                    <TextBlock Text="{Binding InstallImageDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+
+            <TextBlock Text="Image information (future phases)" FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,24,0,0"/>
+            <StackPanel Margin="0,8,0,0">
                 <StackPanel Orientation="Horizontal" Margin="0,4">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="Architecture"/>
                     <TextBlock Text="{Binding ArchitectureDisplay}" FontSize="13" VerticalAlignment="Center"/>

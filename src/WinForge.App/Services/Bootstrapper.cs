@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
+using WinForge.App.Services;
 using WinForge.App.ViewModels;
 using WinForge.Core.Services;
+using WinForge.Infrastructure.IsoInspection;
 using WinForge.Infrastructure.Logging;
 
 namespace WinForge.App.Services;
@@ -21,6 +23,11 @@ public static class Bootstrapper
         services.AddSingleton<ILoggerService, InMemoryLoggerService>();
         services.AddSingleton<IAppState, AppState>();
         services.AddSingleton<INavigationService, NavigationService>();
+
+        // Phase 2 — ISO Inspection (read-only)
+        services.AddSingleton<IIsoMountService, WindowsIsoMountService>();
+        services.AddSingleton<IIsoInspectionService, WindowsIsoInspectionService>();
+        services.AddSingleton<IFilePicker, WindowsFilePicker>();
 
         // View models (singletons, shared across navigation)
         services.AddSingleton<MainViewModel>();

@@ -9,8 +9,8 @@
 |-------|-------|
 | Project | WinForge |
 | Version | 0.1.0-alpha |
-| Current Phase | Phase 1 — Application Foundation (COMPLETED) |
-| Current Milestone | Phase 1 accepted and merged. Next: Phase 2 — ISO Inspection |
+| Current Phase | Phase 2 — ISO Inspection (IN PROGRESS) |
+| Current Milestone | Phase 2 — ISO Inspection / Step 2.1 |
 | Repository | https://github.com/xulu1998/WinForge |
 | Platform | Windows 11 |
 | Framework | .NET 8 (WPF, MVVM) |
@@ -24,19 +24,20 @@
 - Phase 1 real Windows desktop GUI validation completed (user-confirmed on a real Windows desktop)
 
 ### In Progress
-- _(none)_
+- Phase 2 — ISO Inspection / **Step 2.1** (read-only, non-destructive): user selects a `.iso` via the native picker; the app validates the file and inspects the on-disk layout through a read-only mount (`WindowsIsoMountService` → `Mount-DiskImage`, always dismounted) to detect a Windows ISO candidate (`\sources` + `\boot` + `install.wim`/`install.esd`). No DISM servicing, WIM parsing, edition/version recognition, mount/extraction pipeline, or registry access. Step 2.1 is implemented on `feature/iso-inspection`; not yet merged to `main`, not tagged.
 
 ### Next
-- Phase 2 — ISO Inspection
+- Phase 2 — ISO Inspection: remaining steps (WIM index / edition / version inspection) follow after Step 2.1 is accepted.
 
 ### Maintenance
 - 2026-08-08 — **Phase 1 merge-readiness fix (logging thread-safety).** `InMemoryLoggerService` now uses a lock-guarded `List<LogEntry>` with a thread-safe snapshot `Entries` and no WPF dependency; `LogsViewModel` marshals background-thread log events to the UI thread via `SynchronizationContext` (ADR-014). Phase 1 remains **COMPLETED**; Phase 2 is **NOT STARTED**. This was a fix only — no Phase 2 functionality was added.
 - 2026-08-08 — **Phase 1 merge-readiness fix (read-only WPF binding).** The Image page `TextBox` for `ImageViewModel.FileDisplay` used the default `TwoWay` mode against a getter-only property, throwing at runtime on real Windows desktops. Changed to `Mode=OneWay` (no setter added to `FileDisplay`). Audited all Phase 1 XAML; this was the only default-TwoWay control bound to a read-only property. Added `ImageBindingRegressionTests`. Phase 1 remains **COMPLETED**; Phase 2 is **NOT STARTED**.
 - 2026-08-08 — **Phase 1 formally accepted and merged to `main`.** All Phase 1 commits from `feature/application-foundation` (`ac18789`, `89009bb`, `f2f919d`) merged into `main` via a `--no-ff` merge commit; pre-merge and post-merge `dotnet build`/`dotnet test` verified clean (0 errors, 0 warnings, 10/10 tests passing). Annotated tag `v0.1.0-alpha` created and pushed. `feature/application-foundation` retained for history. Phase 1 remains **COMPLETED**; Phase 2 is **NOT STARTED**.
+- 2026-08-08 — **Phase 2 — ISO Inspection / Step 2.1 (read-only inspection).** On `feature/iso-inspection`: added Core model/enums (`IsoInspectionResult`, `IsoDetectedType`, `InstallImageType`, `IsoInspectionStatus`) and contracts (`IIsoInspectionService`, `IIsoMountService`); Infrastructure `WindowsIsoInspectionService` (file validation + read-only mount + layout detection, always dismounts) and `WindowsIsoMountService` (`Mount-DiskImage`/`Dismount-DiskImage` via PowerShell, base64-encoded script, safe cleanup). App `IFilePicker`/`WindowsFilePicker`, `ImageViewModel` refactored to `SelectIsoCommand`/`InspectIsoCommand` (async, busy/error states, no UI-thread mount). Added 15 automated tests (9 inspection-logic + 6 ViewModel). Phase 2 is **IN PROGRESS**; not merged, no new tag (v0.1.0-alpha unchanged).
 
 ### Known Issues
-- No application code exists yet; all Windows image operations are untested.
-- Windows version compatibility is not yet claimed (see docs/WINDOWS-COMPATIBILITY.md).
+- ISO inspection (Step 2.1) detects Windows ISO *candidates* by on-disk directory layout only. WIM index / edition / version / architecture parsing is **not** implemented yet — it is a later Phase 2 step.
+- Real Windows desktop GUI validation of the read-only mount/dismount cycle requires a physical Windows ISO and was **not** performed in this automated (headless) environment; headless automated validation passed. Windows version compatibility is still not claimed (see docs/WINDOWS-COMPATIBILITY.md).
 
 ### Blocked
 - _(none)_

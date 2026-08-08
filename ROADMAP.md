@@ -67,7 +67,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 2 — ISO Inspection
 
-- **Status:** NOT STARTED
+- **Status:** IN PROGRESS (Step 2.1 complete on `feature/iso-inspection`; not yet merged to `main`)
 - **Goal:** Inspect an official Microsoft Windows 11 ISO non-destructively.
 - **Scope:** ISO metadata reading, edition enumeration, architecture/language
   detection, install.wim / install.esd detection.
@@ -77,6 +77,12 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - **Acceptance Criteria:**
   - Opening an official ISO lists editions, architecture, languages, and image
     type without modifying the source.
+
+### Step 2.1 — Read-only layout inspection (2026-08-08)
+- **Status:** DONE (pending merge to `main`)
+- Implemented: `IIsoInspectionService` + `WindowsIsoInspectionService` (Core + Infrastructure), `IIsoMountService` + `WindowsIsoMountService` (read-only `Mount-DiskImage`/`Dismount-DiskImage` via PowerShell, always dismounted), `IFilePicker`/`WindowsFilePicker`, and `ImageViewModel` `SelectIsoCommand`/`InspectIsoCommand` (async, busy/error states).
+- Detection: a Windows ISO **candidate** is `\sources` + `\boot` + `install.wim`/`install.esd`. No WIM/ESD content parsing, no edition/version recognition yet.
+- 15 automated tests added (9 inspection-logic via fake mount, 6 ViewModel). No DISM servicing, no registry, no ISO modification.
 
 ---
 
