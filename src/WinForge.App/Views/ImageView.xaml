@@ -1,0 +1,48 @@
+<UserControl x:Class="WinForge.App.Views.ImageView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:ImageViewModel}">
+    <ScrollViewer Padding="32">
+        <StackPanel MaxWidth="820">
+            <TextBlock Text="Source Image" FontSize="24" FontWeight="Bold" Foreground="#1F2933"/>
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                <TextBox Text="{Binding FileDisplay, Mode=OneWay}" IsReadOnly="True" Width="440" Padding="8"
+                         VerticalContentAlignment="Center" BorderBrush="#CBD2D9"/>
+                <Button Style="{StaticResource PrimaryButton}" Content="Browse"
+                        Command="{Binding BrowseCommand}" Margin="8,0,0,0"/>
+            </StackPanel>
+
+            <TextBlock Text="Image information" FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,24,0,0"/>
+            <StackPanel Margin="0,8,0,0">
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="File"/>
+                    <TextBlock Text="{Binding FileDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Size"/>
+                    <TextBlock Text="{Binding SizeDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Architecture"/>
+                    <TextBlock Text="{Binding ArchitectureDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Windows Version"/>
+                    <TextBlock Text="{Binding VersionDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Build"/>
+                    <TextBlock Text="{Binding BuildDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Editions"/>
+                    <TextBlock Text="{Binding EditionsDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

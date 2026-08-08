@@ -93,3 +93,73 @@ All decisions are `ACCEPTED` unless noted.
   software.
 - **Consequences:** Safer, more supportable result; stays within documented
   Windows behavior.
+
+## ADR-010: Composition root uses Microsoft.Extensions.DependencyInjection
+
+- **Status:** ACCEPTED
+- **Context:** The App needs a small, clear way to wire view models and services
+  without a service-locator anti-pattern.
+- **Decision:** Use `Microsoft.Extensions.DependencyInjection` for the composition
+  root (`Bootstrapper`). View models are injected directly into `MainViewModel`;
+  Core interfaces are bound to Infrastructure implementations here. Core itself
+  never references the DI container.
+- **Consequences:** A tiny, official Microsoft dependency; explicit and
+  testable wiring. No service-locator calls scattered through the UI.
+
+## ADR-011: MVVM base lives in the App (WPF) project, not Core
+
+- **Status:** ACCEPTED
+- **Context:** `RelayCommand` / `AsyncRelayCommand` implement
+  `System.Windows.Input.ICommand`, which is only available in a WPF-aware
+  project. Core must stay platform-agnostic (net8.0, no WPF reference).
+- **Decision:** `ViewModelBase`, `RelayCommand`, and `AsyncRelayCommand` are
+  implemented in `WinForge.App` (net8.0-windows). Core remains free of any WPF
+  dependency and exposes only `INotifyPropertyChanged`-based state.
+- **Consequences:** Core stays unit-testable without WPF; command types bind
+  natively to WPF controls. View models remain in the App project.
+
+## ADR-012: Default logging is an in-memory ring buffer
+
+- **Status:** ACCEPTED
+- **Context:** The app needs logs visible live in the UI without a heavy
+  third-party logging framework.
+- **Decision:** Provide `ILoggerService` in Core and implement an in-memory,
+  bounded (`ObservableCollection`-backed) logger in Infrastructure
+  (`InMemoryLoggerService`). File/ETW sinks can replace it later without
+  touching Core or the UI.
+- **Consequences:** No external logging dependency; live Logs page works
+  out of the box. Entries are capped to avoid unbounded memory use.
+
+## ADR-013: Headless boot test verifies startup wiring
+
+- **Status:** ACCEPTED
+- **Context:** WinForge is a WPF app; CI/sandboxes have no display, so the
+  window cannot be rendered there. "The app starts" must still be verifiable.
+- **Decision:** Add `WinForge.App.Tests` with a headless integration test that
+  builds the real DI container, resolves the navigation shell, navigates between
+  pages, mutates `AppState`, and asserts logging works — without creating a
+  window.
+- **Consequences:** Repeatable proof that startup wiring is correct in
+  headless environments; the actual WPF window is confirmed by a developer on a
+  Windows desktop.
+
+## ADR-014: Logging is thread-safe and WPF-agnostic in Infrastructure
+
+- **Status:** ACCEPTED
+- **Context:** `ILoggerService` is called from background work (future DISM /
+  Process workers, async Tasks). The original `InMemoryLoggerService` stored
+  entries in an `ObservableCollection<T>` and the `LogsViewModel` bound to it
+  from the UI thread. A background thread mutating a WPF-bound
+  `ObservableCollection` throws a cross-thread exception, and Infrastructure
+  should not carry a WPF collection dependency just for logging.
+- **Decision:** Keep the logging store in Infrastructure as a lock-guarded plain
+  `List<LogEntry>`. `Entries` returns a point-in-time snapshot (`ToArray()`);
+  `Log()` is safe from any thread; `EntryAdded` is raised on the calling thread
+  (outside the lock, to avoid re-entrancy). The WPF `ObservableCollection<T>`
+  lives only in `LogsViewModel`, which seeds from the snapshot and marshals
+  `EntryAdded` to the UI thread via the captured `SynchronizationContext`. Core
+  and Infrastructure contain no WPF Dispatcher / `Application.Current` reference.
+- **Consequences:** Background logging can never corrupt or directly mutate the
+  UI-bound collection; no UI-thread assumption leaks into Infrastructure. The
+  cost is a snapshot copy per `Entries` read, which is negligible for a log view
+  and keeps the boundary clean.
