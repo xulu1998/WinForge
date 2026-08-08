@@ -1,0 +1,48 @@
+﻿<Window x:Class="WinForge.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+        Title="WinForge"
+        Width="1180" Height="760" MinWidth="1000" MinHeight="650"
+        WindowStartupLocation="CenterScreen"
+        Background="#FFFFFF">
+    <DockPanel>
+        <Border DockPanel.Dock="Left" Width="210" Background="#1F2933">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="18,20,18,6">
+                    <TextBlock Text="WinForge" Foreground="White" FontSize="20" FontWeight="SemiBold"/>
+                    <TextBlock Text="Build Windows your way." Foreground="#9AA5B1" FontSize="11"
+                               Margin="0,2,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding NavigationItems}" Margin="8,8,8,8">
+                    <ItemsControl.Resources>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#1F2933"/>
+                            <Setter Property="Foreground" Value="#CBD2D9"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="12,8"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="Margin" Value="0,3"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                    <Setter Property="Background" Value="#3B82F6"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                    <Setter Property="Background" Value="#1F2933"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ItemsControl.Resources>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:NavItem}">
+                            <Button Command="{Binding Command}" Content="{Binding Title}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+        <ContentControl Content="{Binding CurrentView}"/>
+    </DockPanel>
+</Window>

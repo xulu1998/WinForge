@@ -9,8 +9,8 @@
 |-------|-------|
 | Project | WinForge |
 | Version | 0.1.0-alpha |
-| Current Phase | Phase 0 — Project Governance (COMPLETED) |
-| Current Milestone | Phase 0 completed. Next: Phase 1 — Application Foundation |
+| Current Phase | Phase 1 — Application Foundation (COMPLETED) |
+| Current Milestone | Phase 1 completed. Next: Phase 2 — ISO Inspection |
 | Repository | https://github.com/xulu1998/WinForge |
 | Platform | Windows 11 |
 | Framework | .NET 8 (WPF, MVVM) |
@@ -19,12 +19,13 @@
 
 ### Completed
 - Phase 0 — Project Governance (governance docs, roadmap, agent memory system)
+- Phase 1 — Application Foundation (solution, WPF shell, MVVM infra, DI, logging, error handling, Core smoke tests)
 
 ### In Progress
 - _(none)_
 
 ### Next
-- Phase 1 — Application Foundation
+- Phase 2 — ISO Inspection
 
 ### Known Issues
 - No application code exists yet; all Windows image operations are untested.
@@ -37,5 +38,10 @@
 
 | Field | Value |
 |-------|-------|
-| Last Verified Commit | 403c698480db28bf8461a476b76b3f9b3c9af080 |
+| Last Verified Baseline Commit | 2bcae63e9217714e9d55ad0265ed99569423ed20 |
 | Last Updated | 2026-08-08 |
+
+> **Baseline commit policy:** `Last Verified Baseline Commit` is the most recent
+> confirmed-stable commit *before* the current phase's work, not necessarily the
+> current HEAD. It is updated when a phase is accepted, pointing at the stable
+> point the phase started from. Do not record a commit's own SHA here.
