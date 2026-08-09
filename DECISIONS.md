@@ -191,3 +191,39 @@ All decisions are `ACCEPTED` unless noted.
   Cleanup is observable and unit-testable with a fake `IIsoMountService` that
   records the token used. The fix adds no new dependencies and keeps
   Infrastructure free of WPF.
+
+## ADR-016: Read-only Windows image metadata via DISM (Step 2.2)
+
+- **Status:** ACCEPTED
+- **Context:** Step 2.2 must read WIM/ESD image indexes, editions, architecture,
+  Windows version, build, edition ID, installation type, and languages — but the
+  operation must remain strictly read-only. The image must NOT be mounted,
+  modified, exported, or serviced, and the inspection must occur while the ISO is
+  still mounted (Step 2.1's dismount would otherwise make the install image
+  unreachable). The platform call must stay behind a Core abstraction so it is
+  unit-testable without Windows/DISM and the UI never coordinates mount lifecycle.
+- **Decision:** Read metadata with `dism.exe /English /Get-WimInfo`, the
+  documented read-only image query (no `Mount-Image`, no servicing). Because the
+  host UI language may not be English, `/English` is mandatory so the parsed
+  fields are stable. Parsing (`DismWimInfoParser`, a pure function of the captured
+  text) is key-based and tolerant of unknown / future / reordered fields and never
+  slices fixed columns; empty or index-less output yields a `Failed` result, not
+  an exception. Process execution is abstracted behind `IProcessRunner` (Core)
+  with `ProcessRequest` / `ProcessResult` DTOs; Infrastructure's
+  `WindowsProcessRunner` uses `System.Diagnostics.Process` (no window, captured
+  stdout/stderr, cancellation by killing the child). `IWindowsImageMetadataService`
+  returns a `WindowsImageMetadataResult` — environmental failures (missing tooling,
+  non-zero exit, corrupt image) are surfaced as `Failed` with a friendly message,
+  while only cancellation propagates as `OperationCanceledException`. The original
+  Step 2.1 orchestrator (`WindowsIsoInspectionService`) is extended into a single
+  high-level session: mount → layout inspection → install-image metadata
+  inspection (while still mounted) → guaranteed dismount (ADR-015 preserved). The
+  ViewModel consumes the combined `IsoInspectionResult.ImageMetadata` and never
+  touches mounting, DISM, or `Process`.
+- **Consequences:** ESD and WIM are handled identically by DISM (no ESD→WIM
+  conversion, no image modification). Core stays platform-agnostic and fully
+  testable via fakes; parsing and invocation are independently unit-tested. Top-
+  level version/build/architecture/languages are reported only when every edition
+  agrees — otherwise the fields stay `null` and the UI shows "Mixed" rather than
+  guessing from the first index. Raw DISM stderr / HRESULT is never shown to the
+  user, only logged.

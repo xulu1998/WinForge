@@ -55,6 +55,13 @@ public sealed class IsoInspectionResult
     /// <summary>Type of install image detected (WIM / ESD / Unknown).</summary>
     public InstallImageType InstallImageType { get; set; } = InstallImageType.Unknown;
 
+    /// <summary>
+    /// Read-only metadata read from the install image (Step 2.2). Populated only
+    /// when the layout inspection found an install.wim/install.esd and the
+    /// metadata query succeeded or failed. Null when no install image exists.
+    /// </summary>
+    public WindowsImageMetadataResult? ImageMetadata { get; set; }
+
     public static IsoInspectionResult NotInspected(string? isoPath) => new()
     {
         IsoPath = isoPath,

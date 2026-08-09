@@ -67,7 +67,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 2 — ISO Inspection
 
-- **Status:** IN PROGRESS (Step 2.1 COMPLETED and merged to `main` on 2026-08-08; Step 2.2 NOT STARTED)
+- **Status:** IN PROGRESS (Step 2.1 COMPLETED and merged to `main` on 2026-08-08; Step 2.2 IMPLEMENTED on `feature/iso-inspection`, PENDING real Windows ISO desktop validation)
 - **Goal:** Inspect an official Microsoft Windows 11 ISO non-destructively.
 - **Scope:** ISO metadata reading, edition enumeration, architecture/language
   detection, install.wim / install.esd detection.
@@ -84,11 +84,23 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - Detection: a Windows ISO **candidate** is `\sources` + `\boot` + `install.wim`/`install.esd`. No WIM/ESD content parsing, no edition/version recognition yet.
 - 15 automated tests added (9 inspection-logic via fake mount, 6 ViewModel). No DISM servicing, no registry, no ISO modification. Real Windows 11 25H2 (zh-CN, x64, Consumer ISO, install.wim) desktop mount/inspect/dismount validation completed (user-confirmed via application logs).
 
-### Step 2.2 — Windows image metadata and edition inspection (NOT STARTED)
-- **Status:** NOT STARTED
-- Scope: read `install.wim` / `install.esd` metadata (WIM index, edition,
-  Windows version, build, architecture, language) **without modifying the
-  source**.
+### Step 2.2 — Windows image metadata and edition inspection (IMPLEMENTED, pending desktop validation)
+- **Status:** IMPLEMENTED on `feature/iso-inspection` (2026-08-08); **PENDING real
+  Windows ISO desktop validation** — do not mark COMPLETED until the user confirms
+  the Windows 11 25H2 zh-CN x64 Consumer `install.wim` metadata read on a Windows
+  desktop.
+- Implemented: `IWindowsImageMetadataService` + `WindowsImageMetadataResult` (Core);
+  `WindowsImageMetadataService` (`dism.exe /English /Get-WimInfo`, read-only, no
+  WIM mount) + pure `DismWimInfoParser` + `IProcessRunner`/`WindowsProcessRunner`
+  (Infrastructure); `WindowsIsoInspectionService` extended into a single
+  mount → layout → metadata → dismount session (ADR-015 preserved, ADR-016 added);
+  Image page "Windows information" + editions `ListView`; edition selection →
+  `IAppState.SelectedEdition` (status only, no extraction/mount/modify).
+- Reads WIM/ESD index, edition name/description, architecture, Windows version,
+  build, edition ID, installation type, and languages; top-level version/build/
+  architecture/languages reported only when every edition agrees (otherwise the
+  UI shows "Mixed"). 16 new automated tests; `dotnet build`/`dotnet test -c Release`
+  clean (0 errors, 0 warnings, 100% passing) using fakes — no real ISO/DISM.
 - Not part of Step 2.1. Step 2.1 inspects only the on-disk ISO directory
   layout (`\boot`, `\sources`, `install.wim`/`install.esd`); it does not open
   or parse the WIM/ESD content.

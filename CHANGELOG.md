@@ -3,6 +3,52 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added (Phase 2 Step 2.2 — Windows image metadata & editions)
+- Step 2.2 reads read-only metadata from the install image (`install.wim` /
+  `install.esd`) found under the mounted ISO: WIM/ESD indexes, edition name,
+  edition description, architecture, Windows version, Windows build, edition ID,
+  installation type, and languages — without mounting, modifying, or servicing
+  the image.
+- Core contract `IWindowsImageMetadataService` returning a structured
+  `WindowsImageMetadataResult` (top-level version/build/architecture/languages
+  plus a per-index `WindowsEditionInfo` list). All fields are nullable so data
+  WinForge cannot reliably read stays `null` rather than being guessed; the UI
+  decides between "Not detected" and "Mixed".
+- Infrastructure `WindowsImageMetadataService` queries the image via
+  `dism.exe /English /Get-WimInfo` (read-only, no image mount) and parses the
+  stable English output with `DismWimInfoParser` (key-based, tolerant of unknown
+  / future / reordered fields, never parsing by fixed column position).
+- `IProcessRunner` abstraction (Core) with `ProcessRequest` / `ProcessResult`
+  DTOs and an Infrastructure `WindowsProcessRunner` (`System.Diagnostics.Process`)
+  implementation; keeps Core free of any `Process` dependency and makes DISM
+  invocation fully testable with a fake.
+- High-level inspection session in `WindowsIsoInspectionService` now mounts the
+  ISO, inspects the layout (Step 2.1), reads the install-image metadata (Step
+  2.2) **while the ISO is still mounted**, then always dismounts — preserving the
+  ADR-015 cancellation-safe cleanup. The ViewModel never coordinates mount
+  lifecycle.
+- Image page shows a "Windows information" section (Windows Version, Build,
+  Architecture, Language) and an editions `ListView`; selecting an edition writes
+  `IAppState.SelectedEdition` (status only — no extraction/mount/modify), and the
+  Home page "Windows Edition" tile reflects the selection.
+- 16 new automated tests (parser, service via fake process runner, orchestrator
+  lifecycle, ViewModel/Home selection) covering single/multi-index WIM, ESD,
+  Home+Pro enumeration, architecture/version/build/language parsing, malformed
+  and empty output, non-zero DISM exit, cancellation, unknown/reordered fields,
+  edition selection, and guaranteed dismount after metadata failure. All Step
+  2.1 tests are retained.
+
+### Status (Phase 2 Step 2.2)
+- Step 2.2 is implemented on `feature/iso-inspection` and passes the automated
+  test suite (0 errors, 0 warnings, 100% tests executed and passing). It is
+  **pending real Windows ISO desktop validation** (the Windows 11 25H2 zh-CN x64
+  Consumer `install.wim` target) and therefore is NOT yet marked COMPLETED.
+- `WindowsImageType` / architecture / version / build / language parsing is now
+  implemented; the real-desktop mount→inspect→dismount→metadata cycle still
+  requires user confirmation on a Windows machine.
+
 ## [0.1.0-alpha] — 2026-08-08
 
 ### Added
