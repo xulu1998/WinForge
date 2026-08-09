@@ -5,6 +5,198 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added (Phase 3 Step 3.3 — offline customization plan & execution engine)
+- Declarative, platform-agnostic customization model in Core (no DISM/Win32):
+  `CustomizationPlan` with a strict lifecycle (`Draft` → `Validated` → `Executing` →
+  `Completed`/`CompletedWithErrors`/`Failed`/`Cancelled`); `CustomizationOperation`
+  (OperationType, exact TargetIdentifier, registry/service targets, `RiskClass`,
+  `ExecutionOrder`, `ValidationResult`); `CustomizationResult` (computed
+  `Success = FailedOperations == 0`, plus `TotalOperations`/`Succeeded`/`FailedOperations`/
+  `CriticalFailure`/`Summary`); `DiscoveryInventory` (Appx, packages, offline services,
+  trusted privacy/system definitions); and typed enums (`CustomizationCategory`,
+  `CustomizationOperationType`, `RiskClass`, `ServiceStartType`, `OperationValidationResult`).
+  `Validate()` recomputes issues (Duplicate/Conflict/Unsupported/MissingTarget) and only
+  marks `Validated` with no blocking issues and ≥1 selected op; `FreezeForExecution()`
+  snapshots selected ops and locks the live plan (ADR-020).
+- Discovery services (Infrastructure, behind Core interfaces): `DismAppxParser` enumerates
+  provisioned Appx by exact DISM "Deployment package name"; `DismPackageParser` enumerates
+  packages and classifies `Removable` only for an explicit allowlist
+  (`InternetExplorer-Optional`, `Printing-XPSServices`, `Xps-Document-Writer`) — everything
+  else is `Protected`; `OfflineRegistryService` loads/unloads offline hives via Win32
+  `RegLoadKey`/`RegUnLoadKey` under a WinForge-owned `HKLM\WinForge_<BASE>` name (always
+  unloaded in `finally`); `MountIdentityValidator` confines paths to the mount and binds the
+  session; `WindowsCustomizationDiscoveryService` enumerates services from the mounted
+  image's `SYSTEM` hive and merges a trusted `CustomizationDefinitionProvider` (5 Privacy + 3
+  System registry settings, 3 recommended service-start changes: DiagTrack/WerSvc/PcaSvc →
+  Disabled); discovery refuses to run on a session mismatch (ADR-021–ADR-024).
+- Execution orchestrator (`WindowsCustomizationExecutionService`): a pre-run critical-stop
+  guard fails the whole result as `CriticalFailure` unless the workspace is `Mounted`, the
+  mount session matches, DISM registered the mount, and the plan is `Validated`; execution
+  runs a frozen snapshot in defined order (registry 0 → services 1 → appx 2 → packages 3 →
+  files 4 → scheduled tasks 5); per-operation status; non-allowlisted `Removable` packages
+  are `Skipped` (never removed); a missing service is `Skipped`; and the image is **left
+  mounted** (no commit/unmount — owned by Step 3.2). `IAppState` carries a "dirty" flag so
+  the UI can warn before discarding a customized working image (ADR-022, ADR-025).
+- UI: Components / Privacy / System / Plan pages backed by discovery; selection toggles
+  declarative plan operations (`PlanSync`); an explicit `Validate` then `Apply` flow;
+  `PlanReviewViewModel` shows operation totals, warnings, progress, and a result summary.
+  A new `Plan` `PageKey` and four `DataTemplate`s (`App.xaml`) wire navigation; the new
+  `BooleanToVisibilityInverseConverter` supports conditional UI. Every operation is confined
+  to the mounted working image — no host path, source-ISO root, or arbitrary command/
+  registry/filesystem delete is ever issued; `AsyncRelayCommand.CanExecuteChanged` is raised
+  after state changes (the Step 3.2 real-desktop defect pattern is avoided).
+- 206 automated tests pass (Core 37, App 169), 0 errors, 0 warnings (Release), and are
+  CI-safe: no ISO, no administrator, no internet. Coverage: DismAppxParser (11), discovery
+  service (6), execution service (13 — guard/allowlist/skip/hive-never-touched), safety
+  (16 — registry safety, mount validator, definition provider), view models (11),
+  Core model lifecycle/validation (16), and the updated headless boot test. xUnit 2.5.3 with
+  fakes for `IProcessRunner`/registry/definition/mount-identity/discovery/execution.
+
+### Fixed (Phase 3 Step 3.3 — real-desktop validation defect fixes, ADR-026/ADR-027)
+- **DEFECT 1 — provisioned-Appx discovery returned 0:** `DismAppxParser` only matched the
+  invented multi-word key "Deployment package name"; real `dism /Get-ProvisionedAppxPackages
+  /English` emits single-word `PackageName`/`DisplayName` headers. The parser now matches the
+  real headers (and tolerates the legacy spaced forms). Separately, `RunDismAsync` discarded
+  the DISM exit code and stderr, so a DISM failure or unexpected/localized output was
+  indistinguishable from a genuine zero; it now checks the exit code and stderr and rejects
+  unrecognized output, and `DiscoveryInventory` reports per-source `Success`/`Failed` status.
+- **DEFECT 2 — offline service discovery returned 0:** `RegLoadKey`/`RegUnLoadKey` require
+  `SeRestorePrivilege`/`SeBackupPrivilege`, which are present in an elevated token but disabled
+  by default; `OfflineRegistryService` now enables them before each call. A failed hive load /
+  enumeration is now surfaced as `ServiceStatus = Failed` instead of a silent "0 services".
+- **DEFECT 3 — unsafe package selection:** the removal allowlist is now the single
+  `PackageRemovalPolicy` source of truth, enforced at discovery classification (non-allowlisted
+  packages become `Protected` → not selectable in the UI), plan validation (`RecomputeValidation`
+  flags `Protected` selected ops as `Unsupported`; `PlanSync` also refuses to add them directly),
+  and execution (final `Skipped` guard). A non-allowlisted package (e.g.
+  `Microsoft-OneCore-ApplicationModel-Sync-Desktop-…`) can no longer be selected or removed.
+- 220 automated tests pass (Core 37, App 183), 0 errors, 0 warnings (Release), all CI-safe.
+  Step 3.3 remains **PENDING real-desktop validation — re-run required**; not merged to `main`.
+
+### Fixed (Phase 3 Step 3.3 — offline-services silent-zero re-investigation, ADR-028)
+- **DEFECT 2 re-investigation (silent "0 services"):** real-desktop evidence confirmed the
+  SYSTEM hive file exists and is readable (`<mount>\Windows\System32\Config\SYSTEM`, 9,175,040
+  bytes), so the cause was **not** a missing/wrong hive path. The residual silent-zero path was
+  a *successfully loaded* hive whose resolved `ControlSet00x\Services` enumeration returned
+  empty, which previously returned `Success` with 0 items. `DiscoverServices` now treats an
+  empty Services enumeration as `ServiceStatus = Failed` (never a misleading "0 services").
+- **Diagnostics:** `OfflineRegistryService` now depends on `ILoggerService` and logs the full
+  load/unload lifecycle — redacted hive file path, the WinForge-owned temporary HKLM name,
+  `SeRestorePrivilege`/`SeBackupPrivilege` enablement outcome (incl. `ERROR_NOT_ALL_ASSIGNED`),
+  `RegLoadKey`/`RegUnLoadKey` return codes, the resolved ControlSet, and the service count. The
+  mount-root prefix is redacted (`<mount>`) and no host-registry data is logged, preserving the
+  host-system safety boundary.
+- 221 automated tests pass (Core 37, App 184), 0 errors, 0 warnings (Release), all CI-safe
+  (added `Discover_SurfacesEmptyServicesEnumeration_AsError_NotSilentZero`). Step 3.3 remains
+  **PENDING real-desktop validation — re-run required**; not merged to `main`.
+
+### Fixed (Phase 3 Step 3.3 — Appx removal-identity / fixture fidelity, ADR-029)
+- **DEFECT 1 confirmation (reproduced independently on a real mounted image):** `dism /English
+  /Image:<mount> /Get-ProvisionedAppxPackages` **succeeds** and returns many packages, yet
+  WinForge reported "Discovered 0 app(s)". The remaining mismatch: the Step 3.3 report described
+  the parser as keying on the invented multi-word "Deployment package name", while the real
+  `/English` output uses the single-word `PackageName` header (`DisplayName` listed first).
+  The live parser already accepted `PackageName`, but the doc comment, fixtures, and historical
+  ADR text still referenced the synthetic key.
+- **Fix:** parser **doc comment** corrected to state the real single-word `PackageName`/
+  `DisplayName` headers; `DismAppxParserTests.Sample` and
+  `WindowsCustomizationDiscoveryServiceTests.AppxOut` now contain REAL DISM output copied from the
+  desktop test (Clipchamp, BingWeather, Windows.Photos). Removal identity is the exact
+  `PackageName` (full `name_version_arch_~_publisher-hash`) end-to-end
+  (`DismAppxParser` → `ComponentsViewModel.SyncAppx.TargetIdentifier` →
+  `/Remove-ProvisionedAppxPackage /PackageName:"…"`); `DisplayName` is display-only and a block
+  without `PackageName` is dropped (never keyed by `DisplayName`). The four-way outcome contract
+  is explicit: valid+found → `Success(N)`; valid+genuine-zero → `Success(0)` (legitimate); command
+  failure → `Failed`; unrecognized output → `Failed`.
+- **Tests added:** `RemovalIdentity_IsExactPackageName_NotDisplayName`,
+  `IsRecognizedOutput_True_ForGenuineZeroWithBanner`,
+  `Discover_GenuineZeroAppx_IsSuccess_NotFailed` (and the Appx `Sample`/`AppxOut` fixtures
+  replaced with real output). 224 automated tests pass (Core 37, App 187), 0 errors, 0 warnings
+  (Release), all CI-safe. Step 3.3 remains **PENDING real-desktop validation — re-run required**;
+  not merged to `main`.
+
+### Fixed (Phase 3 Step 3.3 — service-inventory safety boundary, ADR-030)
+- **NEW safety defect (real-desktop re-validation):** the Components page exposed a disableable
+  checkbox for **every one of the 699 discovered service records** — including kernel / file-system
+  drivers, performance and provider entries (`.NET CLR Data`, `.NET Data Provider for Oracle`,
+  `.NET Memory Cache 4.0`, …) and other low-level `SYSTEM\ControlSet00x\Services` sub-keys. The
+  prior code classified every discovered service as `RiskClass.Removable` unconditionally, so
+  discovery success was wrongly treated as "safe to disable". The fix separates **DISCOVERED**
+  from **USER-CONFIGURABLE**.
+- **New `ServiceClass` enum** (`Unknown`/`Driver`/`Protected`/`Configurable`/`RecommendedConfigurable`)
+  and new `ServiceConfigPolicy` (single source of truth, in Core) — only the trusted allowlist
+  `DiagTrack` / `WerSvc` / `PcaSvc` may be reconfigured; a unit test pins it to
+  `CustomizationDefinitionProvider`'s recommended service changes. `DiscoverServices` now reads each
+  service `Type`: driver types → `Driver` (protected); allowlisted Win32 services →
+  `RecommendedConfigurable`; everything else → `Protected`.
+- **UI:** `ServiceSelectionItem.CanSelect` is driven by `ServiceClass`; non-selectable entries show
+  a short reason ("Kernel / file-system driver…", "Not an approved service…", "Unknown service
+  type…"). `ComponentsViewModel` shows **only configurable services by default**; a
+  `ShowProtectedEntries` toggle reveals the protected/system entries read-only. Status message
+  reports the true discovered total and hidden count.
+- **Three-layer guard:** `PlanSync.Toggle` refuses unapproved service ids; `CustomizationPlan
+  .ClassifyBase` flags unapproved service ops `Unsupported` (rejected by validation);
+  `WindowsCustomizationExecutionService.ApplyService` retains a final `Skipped` guard; host SYSTEM
+  hive boundary (`IsWithinMount` + `OfflineHivePaths`) intact.
+- **Tests added (12):** driver/fs-driver/Win32-non-allowlisted/unknown classification, DiagTrack/
+  WerSvc/PcaSvc configurable, UI hides protected entries, PlanSync refusal, plan-validation
+  rejection, execution backstop, host-hive safety, and policy↔provider sync. 242 automated tests
+  pass (Core 37, App 205), 0 errors, 0 warnings (Release), all CI-safe. Step 3.3 remains **PENDING
+  real-desktop validation — re-run required**; not merged to `main`.
+
+### Fixed (Phase 3 Step 3.3 — offline registry write success contract, ADR-031)
+- **Real-desktop defect:** a 3-operation plan (remove BingWeather, disable DiagTrack, turn off
+  advertising ID) reported "3 succeeded, 0 failed", yet independent `reg.exe` verification found
+  the advertising-ID value **absent** from the offline `SOFTWARE` hive. Investigation showed two
+  distinct root causes:
+  1. **Wrong key path in the trusted definition** — `privacy.advertising-id` used
+     `Microsoft\Windows\CurrentVersion\Advertising\Id` but the real Windows key is
+     `Microsoft\Windows\CurrentVersion\AdvertisingInfo` (value `Enabled` directly under it). The
+     write *succeeded at the wrong location*, so the expected path was empty.
+  2. **Weak success contract** — `ApplyRegistry` returned `Succeeded` merely because `SetValue` /
+     `DeleteValue` did not throw. There was **no post-write read-back verification** of existence,
+     type, or value, so a write to the wrong location (or any silent non-persistence) was reported
+     as success.
+  - The hypothesized "duplicated `SOFTWARE\SOFTWARE` prefix" was **investigated and ruled out**: the
+    write chain passes `op.RegistryKeyPath` **relative to the loaded hive root** (`HKLM\WinForge_SOFTWARE`),
+    so no `WinForge_SOFTWARE\SOFTWARE\…` was ever produced. A guard was still added so the class of
+    bug can never occur (see below).
+- **Fixed definition path:** `privacy.advertising-id` → `Microsoft\Windows\CurrentVersion\AdvertisingInfo`
+  (value `Enabled`, `DWord` `0`). All other 5 Privacy + 3 System definitions were audited and are
+  correctly relative to the `SOFTWARE` hive root with no `SOFTWARE\` prefix (hive-prefix consistent).
+- **Strengthened success contract:** after every `SetOfflineRegistryValue`, the engine now performs an
+  independent read-back and confirms the value **exists**, has the **requested registry type**, and
+  **equals the requested data** — otherwise the operation is reported `FailedRecoverable`. The same
+  applies to `DeleteOfflineRegistryValue` (the value must be **absent** afterward). The production
+  `OfflineRegistryService` also self-verifies on write/delete (throws on mismatch) as defense-in-depth.
+- **Path-prefix guard:** new `OfflineHivePaths.NormalizeKeyPath` strips a leading `HKLM\` designator and
+  any leading hive-base segment (`SOFTWARE\`, `SYSTEM\`) so a key path is always strictly relative to the
+  loaded hive root — a stray `SOFTWARE\`/`HKLM\SOFTWARE\` prefix can no longer duplicate the hive base.
+  Applied in both the execution engine and the production registry service.
+- **Host isolation preserved:** write targets are still confined to the mounted workspace via
+  `OfflineHivePaths` + `IMountIdentityValidator`; an unknown/absolute hive base (e.g. `HKLM`) is rejected
+  before any write; the `SafeHiveNameRegex` / `Validate` ".." checks remain.
+- **Tests added (17):** `OfflineRegistryContractTests` — SOFTWARE/SYSTEM root-relative mapping; no
+  duplicated `SOFTWARE\SOFTWARE` prefix; DWORD & String write verified by read-back; create-missing-subkey;
+  write-failure / write-persists-but-read-back-missing / wrong-value / wrong-type all → Failed; delete
+  then verify absent (and delete-no-op → Failed); host-style hive base rejected; path-outside-mount
+  rejected; the real `privacy.advertising-id` definition maps to the correct offline location; an
+  operation is never reported success when the read-back would fail. 259 automated tests pass
+  (Core 37, App 222), 0 errors, 0 warnings (Release), all CI-safe. Step 3.3 remains **PENDING
+  real-desktop validation — re-run required**; not merged to `main`.
+
+### Status (Phase 3 Step 3.3 — implemented, pending real-desktop validation)
+- Step 3.3 is **IMPLEMENTED** on `feature/offline-customization` (2026-08-09). The full
+  declarative plan, discovery, offline-registry, execution, and UI layers are complete and
+  the automated suite is green (259/259, 0 errors, 0 warnings). **Real-desktop validation is
+  still PENDING**: no real Windows mount / offline-hive edit / package removal was exercised
+  in this session. The next validation step is a real Windows run that discovers a mounted
+  working image, selects a few safe customizations (Privacy registry settings, disable
+  DiagTrack/WerSvc/PcaSvc, remove an allowlisted package), Validates, Applies, and confirms
+  the offline `SOFTWARE`/`SYSTEM` changes landed in the mounted image while the host OS and
+  the source ISO were untouched. Not merged to `main`; no new tag. No Step 3.4 / Phase 4
+  mount-engine work was started.
+
 ### Added (Phase 3 Step 3.1 — WIM workspace & image selection foundation)
 - Introduces the durable selected-image foundation for Phase 3. Converts a Phase 2
   `IsoInspectionResult` + selected `WindowsEditionInfo` into a durable

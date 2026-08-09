@@ -1,0 +1,74 @@
+<UserControl x:Class="WinForge.App.Views.ComponentsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:ComponentsViewModel}">
+    <ScrollViewer Padding="32">
+        <StackPanel MaxWidth="900">
+            <TextBlock Text="Components" FontSize="24" FontWeight="Bold" Foreground="#1F2933"/>
+            <TextBlock Text="Discover removable items from the mounted working image. Selections build a declarative plan — nothing is changed until you apply it from the Plan page."
+                       FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                <Button Style="{StaticResource PrimaryButton}" Content="Discover components"
+                        Command="{Binding DiscoverCommand}" Background="#2F855A"/>
+                <TextBlock Text="Discovering…" Foreground="#3B82F6" VerticalAlignment="Center" Margin="12,0,0,0"
+                           Visibility="{Binding IsDiscovering, Converter={StaticResource BoolToVis}}"/>
+            </StackPanel>
+            <TextBlock Text="{Binding StatusMessage}" FontSize="13" Foreground="#52606D" Margin="0,8,0,0" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding SelectedTotal, StringFormat='Selected: {0}'}" FontSize="13" FontWeight="SemiBold"
+                       Foreground="#1F2933" Margin="0,4,0,0"
+                       Visibility="{Binding HasInventory, Converter={StaticResource BoolToVis}}"/>
+
+            <StackPanel Visibility="{Binding HasInventory, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="Provisioned apps" FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,20,0,0"/>
+                <ListView ItemsSource="{Binding AppxPackages}" BorderBrush="#CBD2D9" BorderThickness="1" MaxHeight="260" Margin="0,8,0,0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:AppxSelectionItem}">
+                            <StackPanel Orientation="Horizontal" Margin="4">
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanSelect}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding Package.DisplayName}" Width="300" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Package.PackageName}" Foreground="#9AA5B1" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Reason}" Foreground="#9B1C1C" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <TextBlock Text="Windows packages" FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,20,0,0"/>
+                <TextBlock Text="Only optional feature/capability packages are offered for removal. Language, core, driver, and servicing packages are protected."
+                           FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                <ListView ItemsSource="{Binding WindowsPackages}" BorderBrush="#CBD2D9" BorderThickness="1" MaxHeight="200" Margin="0,8,0,0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:PackageSelectionItem}">
+                            <StackPanel Orientation="Horizontal" Margin="4">
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanSelect}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding Package.DisplayName}" Width="320" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Reason}" Foreground="#9B1C1C" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <TextBlock Text="System components (services)" FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,20,0,0"/>
+                <TextBlock Text="Selecting a service disables it in the offline image. Protected services cannot be changed here."
+                           FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                <ListView ItemsSource="{Binding Services}" BorderBrush="#CBD2D9" BorderThickness="1" MaxHeight="220" Margin="0,8,0,0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ServiceSelectionItem}">
+                            <StackPanel Orientation="Horizontal" Margin="4">
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanSelect}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding Service.DisplayName}" Width="320" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Service.CurrentStartType, StringFormat='Current: {0}'}" Foreground="#9AA5B1" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Reason}" Foreground="#9B1C1C" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

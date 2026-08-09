@@ -10,6 +10,7 @@
                 <ResourceDictionary>
                     <BooleanToVisibilityConverter x:Key="BoolToVis"/>
                     <conv:NullToVisibilityConverter x:Key="NullToVis"/>
+                    <conv:BooleanToVisibilityInverseConverter x:Key="BoolToVisInv"/>
                     <conv:BooleanToFontWeightConverter x:Key="BoolToBold"/>
 
                     <Style x:Key="StatusTile" TargetType="Border">
@@ -47,6 +48,18 @@
             </DataTemplate>
             <DataTemplate DataType="{x:Type vm:LogsViewModel}">
                 <views:LogsView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ComponentsViewModel}">
+                <views:ComponentsView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:PrivacyViewModel}">
+                <views:PrivacyView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SystemViewModel}">
+                <views:SystemView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:PlanReviewViewModel}">
+                <views:PlanReviewView/>
             </DataTemplate>
             <DataTemplate DataType="{x:Type vm:ComingSoonViewModel}">
                 <views:ComingSoonView/>

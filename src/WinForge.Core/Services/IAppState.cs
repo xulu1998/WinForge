@@ -36,6 +36,27 @@ public interface IAppState : INotifyPropertyChanged
     ImageServicingWorkspace? CurrentServicingWorkspace { get; set; }
 
     /// <summary>
+    /// The active declarative customization plan (Phase 3 Step 3.3), or null
+    /// when none has been assembled. It is built from discoveries against the
+    /// mounted working image and executed only while the servicing workspace is
+    /// Mounted. All operations target the isolated working image only.
+    /// </summary>
+    CustomizationPlan? CurrentCustomizationPlan { get; set; }
+
+    /// <summary>
+    /// Runtime state of the customization engine, surfaced so the UI can show a
+    /// busy / ready / result state and disable controls during discovery/execution.
+    /// </summary>
+    CustomizationExecutionState CustomizationExecutionState { get; set; }
+
+    /// <summary>
+    /// The most recent discovery inventory against the mounted working image, or
+    /// null before any discovery pass. Avoids dumping huge raw DISM text into
+    /// AppState — only structured, categorized items are stored.
+    /// </summary>
+    DiscoveryInventory? DiscoveredInventory { get; set; }
+
+    /// <summary>
     /// The active build configuration (skeleton in Phase 1). Presets are loaded
     /// into this model later; they are data, not separate code paths.
     /// </summary>

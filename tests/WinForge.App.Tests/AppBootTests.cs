@@ -36,8 +36,21 @@ public class AppBootTests
         Assert.IsType<ImageViewModel>(main.CurrentView);
         Assert.Contains(logger.Entries, e => e.Message.Contains("Navigation changed"));
 
-        // Navigate to a future-phase page -> shared ComingSoon view model.
+        // Step 3.3 pages now resolve to real, dedicated view models.
+        main.Navigate(PageKey.Components);
+        Assert.IsType<ComponentsViewModel>(main.CurrentView);
+
         main.Navigate(PageKey.Privacy);
+        Assert.IsType<PrivacyViewModel>(main.CurrentView);
+
+        main.Navigate(PageKey.System);
+        Assert.IsType<SystemViewModel>(main.CurrentView);
+
+        main.Navigate(PageKey.Plan);
+        Assert.IsType<PlanReviewViewModel>(main.CurrentView);
+
+        // A genuine future-phase page still uses the shared ComingSoon shell.
+        main.Navigate(PageKey.Build);
         Assert.IsType<ComingSoonViewModel>(main.CurrentView);
 
         // Simulate the source-image selection that the Browse dialog performs.

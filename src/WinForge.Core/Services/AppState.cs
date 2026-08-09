@@ -13,6 +13,9 @@ public sealed class AppState : IAppState
     private WindowsEditionInfo? _selectedEdition;
     private ImageWorkspace? _currentImageWorkspace;
     private ImageServicingWorkspace? _currentServicingWorkspace;
+    private CustomizationPlan? _currentCustomizationPlan;
+    private CustomizationExecutionState _customizationExecutionState = CustomizationExecutionState.Idle;
+    private DiscoveryInventory? _discoveredInventory;
     private BuildStatus _buildStatus = BuildStatus.NotStarted;
     private readonly BuildPlan _configuration = new();
 
@@ -38,6 +41,24 @@ public sealed class AppState : IAppState
     {
         get => _currentServicingWorkspace;
         set => SetField(ref _currentServicingWorkspace, value);
+    }
+
+    public CustomizationPlan? CurrentCustomizationPlan
+    {
+        get => _currentCustomizationPlan;
+        set => SetField(ref _currentCustomizationPlan, value);
+    }
+
+    public CustomizationExecutionState CustomizationExecutionState
+    {
+        get => _customizationExecutionState;
+        set => SetField(ref _customizationExecutionState, value);
+    }
+
+    public DiscoveryInventory? DiscoveredInventory
+    {
+        get => _discoveredInventory;
+        set => SetField(ref _discoveredInventory, value);
     }
 
     public BuildPlan Configuration => _configuration;
