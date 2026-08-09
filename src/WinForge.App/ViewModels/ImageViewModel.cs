@@ -278,8 +278,7 @@ public sealed class ImageViewModel : ViewModelBase
         && _appState.CurrentImageWorkspace is { } ws
         && _wimService.ValidateWorkspace(ws) == ImageWorkspaceStatus.Ready
         && (_appState.CurrentServicingWorkspace is null
-            || _appState.CurrentServicingWorkspace!.State is ServicingWorkspaceState.Prepared
-                or ServicingWorkspaceState.Failed
+            || _appState.CurrentServicingWorkspace!.State is ServicingWorkspaceState.Failed
                 or ServicingWorkspaceState.NotPrepared);
 
     public bool CanMountWorkingImage =>
@@ -552,6 +551,28 @@ public sealed class ImageViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanPrepareWorkingImage));
         OnPropertyChanged(nameof(CanMountWorkingImage));
         OnPropertyChanged(nameof(CanUnmountDiscard));
+
+        // CRITICAL: a WPF ICommand bound to a Button only re-queries CanExecute
+        // when the COMMAND raises CanExecuteChanged. Raising PropertyChanged on the
+        // Can* properties above is NOT enough — without this, the buttons stay
+        // disabled even after the underlying state flips to ready. This was the
+        // Step 3.2 real-desktop defect: after ISO inspection + edition selection
+        // the Prepare command's CanExecute became true, but the binding never
+        // re-evaluated it because CanExecuteChanged was never raised.
+        if (PrepareWorkingImageCommand is AsyncRelayCommand prepare)
+        {
+            prepare.RaiseCanExecuteChanged();
+        }
+
+        if (MountWorkingImageCommand is AsyncRelayCommand mount)
+        {
+            mount.RaiseCanExecuteChanged();
+        }
+
+        if (UnmountDiscardCommand is AsyncRelayCommand unmount)
+        {
+            unmount.RaiseCanExecuteChanged();
+        }
     }
 
     private static string FormatSize(long bytes)

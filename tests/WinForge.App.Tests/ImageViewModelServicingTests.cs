@@ -83,9 +83,10 @@ public class ImageViewModelServicingTests
         state.CurrentServicingWorkspace = new ImageServicingWorkspace { State = ServicingWorkspaceState.Prepared };
         var vm = BuildVm(state);
 
-        // A prepared session can be re-prepared (overwrite) or mounted, but not
-        // unmounted (nothing is mounted yet).
-        Assert.True(vm.CanPrepareWorkingImage);
+        // Once prepared, the working image is ready to mount but must NOT be
+        // re-prepared (a prepared session is a terminal-ish state until mounted or
+        // invalidated). It cannot be unmounted because nothing is mounted yet.
+        Assert.False(vm.CanPrepareWorkingImage);
         Assert.True(vm.CanMountWorkingImage);
         Assert.False(vm.CanUnmountDiscard);
     }

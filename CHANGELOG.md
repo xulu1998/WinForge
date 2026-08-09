@@ -66,6 +66,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   (discard, no-op when not mounted, DISM failure), stale/missing/invalid recovery,
   and ViewModel guards. Total **127/127 pass (Core 21, App 106), 0 errors, 0 warnings**.
 
+### Fixed (Phase 3 Step 3.2 — prepare-command enablement)
+- Real-desktop defect: the "Prepare working image" command stayed greyed out even
+  when a Ready selected image existed. `AsyncRelayCommand` only re-evaluates
+  `CanExecute` when it raises `CanExecuteChanged`; it does **not** hook
+  `CommandManager.RequerySuggested`. The ViewModel raised `PropertyChanged` on the
+  `Can*` properties, but a Button bound to the command only listens to the command's
+  `CanExecuteChanged` event — so the cached disabled state was never refreshed after
+  ISO inspection + edition selection flipped `CanPrepareWorkingImage` to true. The
+  `CanPrepareWorkingImage` property was already correct; the command notification
+  path was missing. Fix: `ImageViewModel.Refresh()` now raises `CanExecuteChanged`
+  on the prepare / mount / unmount commands after every state transition (inspection,
+  edition selection, `CurrentImageWorkspace` replacement, servicing state changes).
+- Aligned `CanPrepareWorkingImage` to the approved state machine: a `Prepared`
+  session now disables Prepare (re-prepare is no longer allowed; Mount is the next
+  step). `Mounted` already disabled it. `Failed`/`NotPrepared`/`null` still allow it.
+- 6 new regression tests drive the real sequence (no image → inspect → select
+  edition → Ready) and assert the command's `CanExecuteChanged` actually fires — the
+  exact mechanism WPF uses to enable the button — plus edition-change refresh,
+  new-ISO invalidation, busy-disable, and Prepared/Mounted disable. Total
+  **133/133 pass (Core 21, App 112), 0 errors, 0 warnings** (Release).
+
 ### Changed (Phase 3 Step 3.1 — application elevation)
 - `WinForge.App` now declares `requestedExecutionLevel level="requireAdministrator"`
   (uiAccess false) in its embedded application manifest (`src/WinForge.App/app.manifest`,
