@@ -5,6 +5,7 @@ using WinForge.App.ViewModels;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.Logging;
+using WinForge.Infrastructure.WimEngine;
 using Xunit;
 
 namespace WinForge.App.Tests;
@@ -54,7 +55,13 @@ public class ImageMetadataViewModelTests
         var state = new AppState();
         state.SourceImagePath = path;
         var inspection = new FakeInspection { Next = WithMetadata() };
-        var vm = new ImageViewModel(state, new InMemoryLoggerService(), inspection, new FakeFilePicker());
+        var vm = new ImageViewModel(
+            state,
+            new InMemoryLoggerService(),
+            inspection,
+            new FakeFilePicker(),
+            new ImageWorkspaceFactory(),
+            new WimService());
 
         await vm.InspectCurrentAsync();
 

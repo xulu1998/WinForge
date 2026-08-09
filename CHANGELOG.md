@@ -5,6 +5,60 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added (Phase 3 Step 3.1 — WIM workspace & image selection foundation)
+- Introduces the durable selected-image foundation for Phase 3. Converts a Phase 2
+  `IsoInspectionResult` + selected `WindowsEditionInfo` into a durable
+  `ImageWorkspace` descriptor that survives ISO dismount: it stores the original
+  ISO path (`SourceIsoPath`) and the image's **relative** path inside the ISO
+  (`ImageRelativePath`, e.g. `sources\install.wim` / `sources\install.esd`), never a
+  temporary mounted drive letter. Durable fields: `ImageType`, `SelectedIndex`,
+  `SelectedEditionName`, `Architecture`, `Version`, `Build`, `Languages`.
+- Core contracts: `IImageWorkspaceFactory` (`BuildWorkspace` → `ImageWorkspaceBuildResult`
+  with `ImageWorkspaceStatus` `NotReady`/`Ready`/`Invalid` and structured issues) and
+  `IWimService` (read-only Step 3.1 responsibilities: `ValidateWorkspace` and
+  `ResolveSelectedImage` → `SelectedImageContext`). Both implemented in Infrastructure
+  as pure, read-only logic (no DISM export/mount/apply/capture; no image modification).
+- `IAppState.CurrentImageWorkspace` holds the durable selected-image workspace. The
+  Image page builds/updates it when an edition is selected or changed, and clears it
+  when a new ISO is inspected — so a stale selected index from a previous ISO can never
+  survive. A new "Selected image" section shows Edition / Index / Image / Architecture /
+  Build / Status / Source (original `.iso`); no temporary mount drive is ever shown.
+- 30 new automated tests (Core 5 + App 25) cover valid WIM/ESD workspace creation,
+  original-ISO source, relative path, no temp-drive persistence, preserved index/
+  edition/metadata, NotReady (no selection / failed metadata / missing ISO / unknown
+  type), Invalid (selected index not in metadata), edition change, new-ISO reset,
+  failed inspection, Home consistency, and `IWimService` validation/resolve. All prior
+  Step 2.1/2.2 tests (mount/dismount, ADR-015 cleanup) are retained. Total 92/92 pass
+  (Core 12, App 80), 0 errors, 0 warnings.
+- ADR-017 records that durable descriptors store ISO path + relative install-image
+  path + selected index and never persist temporary mounted drive letters.
+
+### Changed (Phase 3 Step 3.1 — application elevation)
+- `WinForge.App` now declares `requestedExecutionLevel level="requireAdministrator"`
+  (uiAccess false) in its embedded application manifest (`src/WinForge.App/app.manifest`,
+  wired via `<ApplicationManifest>` in `WinForge.App.csproj`). A normal launch now
+  triggers the Windows UAC prompt for administrator rights. This is declarative only —
+  no self-elevation process spawn, PowerShell, or UAC suppression is used (ADR-018).
+- Reason (real desktop validation, 2026-08-09): the Phase 2 DISM image enumeration
+  (`dism.exe /Get-ImageInfo`) fails with **DISM exit code 740** (ERROR_ELEVATION_REQUIRED)
+  when `WinForge.App.exe` is launched without elevation; the same executable run as
+  Administrator succeeds. Elevation is therefore required for ISO inspection and any
+  future DISM-backed operation.
+
+### Status (Phase 3 Step 3.1 — desktop validation PASSED)
+- Step 3.1 real-desktop validation PASSED (2026-08-09) on a real Windows 11 25H2
+  (Chinese Simplified, x64, Consumer Editions, `install.wim`) ISO: `install.wim`
+  detected, 6 editions enumerated (Windows Version `10.0.26200`, Build `26200`,
+  Architecture `x64`, Language `zh-CN`), edition `Windows 11 专业版` (index 4) selected →
+  `ImageWorkspace` status **Ready**; Source remained the original `.iso`; the UI showed
+  `Image: install.wim` / `Source: <iso filename>` with **no temporary mount drive**
+  displayed or persisted (ADR-017 confirmed). The durable `ImageWorkspace.ImageRelativePath`
+  is the full normalized `sources\install.wim` (the UI intentionally presents only the
+  filename). Added 2 regression tests (Core 1, App 1): `AppManifestElevationTests` asserts
+  the source manifest requires `requireAdministrator`; a Core test asserts the model retains
+  the full relative path. Step 3.1 = **COMPLETED** (not yet merged to `main`); Step 3.2
+  NOT STARTED; no WIM mount/export/modification implemented.
+
 ### Added (Phase 2 Step 2.2 — Windows image metadata & editions)
 - Step 2.2 reads read-only metadata from the install image (`install.wim` /
   `install.esd`) found under the mounted ISO: WIM/ESD indexes, edition name,

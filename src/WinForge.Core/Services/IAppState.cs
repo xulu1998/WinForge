@@ -17,6 +17,15 @@ public interface IAppState : INotifyPropertyChanged
     WindowsEditionInfo? SelectedEdition { get; set; }
 
     /// <summary>
+    /// The durable selected-image workspace, or null when no edition has been
+    /// targeted. It references the original ISO and the image's relative path
+    /// inside it — never a temporary mounted drive. Selecting an edition (or
+    /// changing it) creates/updates this; selecting a new ISO resets it so no
+    /// stale index from a previous ISO survives.
+    /// </summary>
+    ImageWorkspace? CurrentImageWorkspace { get; set; }
+
+    /// <summary>
     /// The active build configuration (skeleton in Phase 1). Presets are loaded
     /// into this model later; they are data, not separate code paths.
     /// </summary>

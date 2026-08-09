@@ -276,3 +276,57 @@ All decisions are `ACCEPTED` unless noted.
   Step 2.1 and Step 2.2 are both merged to `main`. There is no Step 2.3 in the
   roadmap — Phase 2 comprises only Step 2.1 and Step 2.2 — and none is invented. Next
   phase: Phase 3 — WIM Engine (NOT STARTED).
+
+## ADR-017: Durable image-source descriptors never persist temporary mounted drive letters
+
+- **Status:** ACCEPTED
+- **Context:** Step 3.1 builds a durable `ImageWorkspace` from a Phase 2 ISO
+  inspection. Phase 2 mounts the ISO read-only to a temporary drive (e.g. `G:\`),
+  reads its layout and image metadata **while mounted**, then always dismounts
+  (ADR-015). The temporary mount root therefore disappears as soon as inspection
+  ends — it is not a stable, re-openable location and must never become part of
+  durable application state.
+- **Decision:** A durable descriptor stores exactly three location-identifying
+  pieces — the **original ISO path** (`SourceIsoPath`, e.g.
+  `F:\ISOs\Win11.iso`), the image's **relative path inside the ISO**
+  (`ImageRelativePath`, e.g. `sources\install.wim` / `sources\install.esd`), and the
+  **selected index**. The relative path is *derived* from the detected install-image
+  type, never copied from a temporary mount root. No temporary mounted drive letter
+  is stored, shown, or reconstructed. Future Phase 3/4 operations that need the
+  install image will acquire their own short-lived source-access session (remount
+  the ISO, resolve `SourceIsoPath` + `ImageRelativePath`, target `SelectedIndex`),
+  just as Phase 2 owns its own mount/dismount lifecycle.
+- **Consequences:** The workspace remains valid after the original ISO is dismounted
+  and even after the host machine reboots; there is no dangling `G:\…` reference. The
+  Phase 2 mount → inspect → metadata → dismount session (ADR-015) is unchanged and
+  stays strictly read-only. UI/state equality tests can assert the durable descriptor
+  contains no temporary drive letter.
+
+## ADR-018: WinForge.App requires administrator elevation
+
+- **Status:** ACCEPTED
+- **Context:** Step 3.1 real-desktop validation on a Windows 11 25H2 (zh-CN, x64,
+  Consumer `install.wim`) ISO confirmed the Phase 2 DISM inspection path
+  (`dism.exe /Get-ImageInfo`) fails with **DISM exit code 740**
+  (ERROR_ELEVATION_REQUIRED) when `WinForge.App.exe` is launched without
+  administrator rights — the application then reports "The Windows image could
+  not be read." Running the same executable as Administrator succeeds. The image
+  enumeration therefore requires an elevated token; a non-elevated launch can
+  never complete ISO inspection.
+- **Decision:** `WinForge.App.exe` declares the elevation requirement directly in
+  its embedded application manifest (`src/WinForge.App/app.manifest`) via
+  `<requestedExecutionLevel level="requireAdministrator" uiAccess="false" />`,
+  wired through `<ApplicationManifest>app.manifest</ApplicationManifest>` in
+  `WinForge.App.csproj`. A normal launch (double-click / launcher) therefore
+  triggers the standard Windows UAC prompt. No self-elevation process spawn, no
+  PowerShell, no UAC suppression, and no custom token logic is used — the EXE
+  itself states the requirement. A focused regression test
+  (`AppManifestElevationTests`) reads the SOURCE manifest and asserts
+  `level="requireAdministrator"`, so the setting cannot silently disappear in a
+  future edit.
+- **Consequences:** ISO inspection (and any future DISM-backed Phase 3/4 operation)
+  runs with the privileges it needs. The elevation policy is declarative and lives
+  in the EXE manifest, keeping it out of application code and reviewable in source
+  control. Standard-user launches are prompted for admin credentials via UAC; the
+  app does not attempt to bypass that. ADR-015 (guaranteed dismount) and ADR-016
+  (read-only DISM) are unaffected.

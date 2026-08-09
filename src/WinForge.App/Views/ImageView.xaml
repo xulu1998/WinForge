@@ -87,6 +87,40 @@
             </ListView>
             <TextBlock Text="Select an edition to target it for customization."
                        FontSize="12" Foreground="#7B8794" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+            <TextBlock Text="Selected image" FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,24,0,0"/>
+            <StackPanel Margin="0,8,0,0">
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Status"/>
+                    <TextBlock Text="{Binding WorkspaceStatusDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Edition"/>
+                    <TextBlock Text="{Binding WorkspaceEditionDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Index"/>
+                    <TextBlock Text="{Binding WorkspaceIndexDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Image"/>
+                    <TextBlock Text="{Binding WorkspaceImageDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Architecture"/>
+                    <TextBlock Text="{Binding WorkspaceArchitectureDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Build"/>
+                    <TextBlock Text="{Binding WorkspaceBuildDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Source"/>
+                    <TextBlock Text="{Binding WorkspaceSourceDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </StackPanel>
+            <TextBlock Text="The workspace references the original ISO and the image's path inside it — the temporary mount drive is never stored or shown."
+                       FontSize="12" Foreground="#7B8794" Margin="0,8,0,0" TextWrapping="Wrap"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

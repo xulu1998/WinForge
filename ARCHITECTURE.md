@@ -54,6 +54,16 @@ WinForge.App  ──▶  WinForge.Core  ◀──  WinForge.Infrastructure
 - WPF Views/ViewModels must NOT call DISM (or any platform API) directly;
   they go through Core interfaces implemented by Infrastructure.
 
+## Runtime Requirements
+
+- **Administrator elevation.** `WinForge.App.exe` embeds an application manifest that
+  declares `requestedExecutionLevel level="requireAdministrator"` (uiAccess false). A
+  normal launch triggers the Windows UAC prompt. Elevation is required because the
+  Phase 2 DISM image enumeration (`dism.exe /Get-ImageInfo`) returns exit code 740
+  (ERROR_ELEVATION_REQUIRED) when run without an elevated token. The requirement is
+  declarative (in the EXE manifest), not enforced by application code (see DECISIONS.md
+  ADR-018).
+
 ## Principles
 
 - Platform-specific code lives only in Infrastructure.

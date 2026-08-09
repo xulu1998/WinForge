@@ -3,6 +3,7 @@ using WinForge.App.Services;
 using WinForge.App.ViewModels;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.ImageMetadata;
+using WinForge.Infrastructure.WimEngine;
 using WinForge.Infrastructure.IsoInspection;
 using WinForge.Infrastructure.Execution;
 using WinForge.Infrastructure.Logging;
@@ -32,6 +33,10 @@ public static class Bootstrapper
         services.AddSingleton<IProcessRunner, WindowsProcessRunner>();
         services.AddSingleton<IIsoInspectionService, WindowsIsoInspectionService>();
         services.AddSingleton<IFilePicker, WindowsFilePicker>();
+
+        // Phase 3 — WIM Engine (Step 3.1, read-only durable workspace)
+        services.AddSingleton<IImageWorkspaceFactory, ImageWorkspaceFactory>();
+        services.AddSingleton<IWimService, WimService>();
 
         // View models (singletons, shared across navigation)
         services.AddSingleton<MainViewModel>();
