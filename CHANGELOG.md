@@ -52,6 +52,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   Core model lifecycle/validation (16), and the updated headless boot test. xUnit 2.5.3 with
   fakes for `IProcessRunner`/registry/definition/mount-identity/discovery/execution.
 
+### Fixed (Phase 3 Step 3.3 — real-desktop validation defect fixes, ADR-026/ADR-027)
+- **DEFECT 1 — provisioned-Appx discovery returned 0:** `DismAppxParser` only matched the
+  invented multi-word key "Deployment package name"; real `dism /Get-ProvisionedAppxPackages
+  /English` emits single-word `PackageName`/`DisplayName` headers. The parser now matches the
+  real headers (and tolerates the legacy spaced forms). Separately, `RunDismAsync` discarded
+  the DISM exit code and stderr, so a DISM failure or unexpected/localized output was
+  indistinguishable from a genuine zero; it now checks the exit code and stderr and rejects
+  unrecognized output, and `DiscoveryInventory` reports per-source `Success`/`Failed` status.
+- **DEFECT 2 — offline service discovery returned 0:** `RegLoadKey`/`RegUnLoadKey` require
+  `SeRestorePrivilege`/`SeBackupPrivilege`, which are present in an elevated token but disabled
+  by default; `OfflineRegistryService` now enables them before each call. A failed hive load /
+  enumeration is now surfaced as `ServiceStatus = Failed` instead of a silent "0 services".
+- **DEFECT 3 — unsafe package selection:** the removal allowlist is now the single
+  `PackageRemovalPolicy` source of truth, enforced at discovery classification (non-allowlisted
+  packages become `Protected` → not selectable in the UI), plan validation (`RecomputeValidation`
+  flags `Protected` selected ops as `Unsupported`; `PlanSync` also refuses to add them directly),
+  and execution (final `Skipped` guard). A non-allowlisted package (e.g.
+  `Microsoft-OneCore-ApplicationModel-Sync-Desktop-…`) can no longer be selected or removed.
+- 220 automated tests pass (Core 37, App 183), 0 errors, 0 warnings (Release), all CI-safe.
+  Step 3.3 remains **PENDING real-desktop validation — re-run required**; not merged to `main`.
+
 ### Status (Phase 3 Step 3.3 — implemented, pending real-desktop validation)
 - Step 3.3 is **IMPLEMENTED** on `feature/offline-customization` (2026-08-09). The full
   declarative plan, discovery, offline-registry, execution, and UI layers are complete and

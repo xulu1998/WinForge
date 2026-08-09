@@ -97,13 +97,18 @@ public class WindowsCustomizationDiscoveryServiceTests : IAsyncLifetime
     }
 
     private const string AppxOut = @"
-Deployment package name : Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe
-Display name : Weather
+Deployment Image Servicing and Management tool
+Version: 10.0.26100.1
+
+Image Version: 10.0.26100.1742
+
+DisplayName : Microsoft.BingWeather
+PackageName : Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe
 Version : 4.53.53006.0
 Architecture : neutral
 
-Deployment package name : Microsoft.Windows.Photos_2024.11020.15005.0_neutral_~_8wekyb3d8bbwe
-Display name : Photos
+DisplayName : Microsoft.Windows.Photos
+PackageName : Microsoft.Windows.Photos_2024.11020.15005.0_neutral_~_8wekyb3d8bbwe
 Version : 2024.11020.15005.0
 Architecture : neutral
 ";
@@ -163,13 +168,68 @@ Release Type : Feature Pack
     }
 
     [Fact]
-    public async Task Discover_ToleratesDismFailure()
+    public async Task Discover_SurfacesDismFailure_AsError_NotSilentZero()
     {
         Build();
-        _runner.Responder = req => new ProcessResult { ExitCode = 1, StandardOutput = string.Empty };
+        // DISM fails (non-zero exit) for every command.
+        _runner.Responder = req => new ProcessResult { ExitCode = 1, StandardOutput = string.Empty, StandardError = "Some DISM error" };
         var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
-        // DISM failures are tolerated: partial/empty inventory, still Discovered=true.
+        // The pass still ran against the mounted session, but the failures must
+        // be surfaced — NOT collapsed into a misleading "0 discovered".
         Assert.True(inv.Discovered);
+        Assert.Equal(DiscoverySourceStatus.Failed, inv.AppxStatus);
+        Assert.Equal(DiscoverySourceStatus.Failed, inv.PackageStatus);
+        Assert.False(string.IsNullOrEmpty(inv.AppxError));
         Assert.Empty(inv.AppxPackages);
+    }
+
+    [Fact]
+    public async Task Discover_SurfacesLocalizedOutput_AsError()
+    {
+        Build();
+        _runner.Responder = req =>
+        {
+            if (req.Arguments.Contains("/Get-ProvisionedAppxPackages"))
+            {
+                // German-style output: no English banner, no English key.
+                return new ProcessResult { ExitCode = 0, StandardOutput = "Paketname : Microsoft.X\nAnzeigename : X\n" };
+            }
+            if (req.Arguments.Contains("/Get-Packages"))
+            {
+                return new ProcessResult { ExitCode = 0, StandardOutput = "Paketidentität : Microsoft.Y\n" };
+            }
+            return new ProcessResult { ExitCode = 0, StandardOutput = string.Empty };
+        };
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        // Exit 0 but unrecognized/localized output is an explicit failure.
+        Assert.Equal(DiscoverySourceStatus.Failed, inv.AppxStatus);
+        Assert.False(string.IsNullOrEmpty(inv.AppxError));
+        Assert.Empty(inv.AppxPackages);
+    }
+
+    [Fact]
+    public async Task Discover_SurfacesHiveLoadFailure_AsError()
+    {
+        Build();
+        _registry.ThrowOnLoad = true;
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        // A failed SYSTEM hive load must surface as an error, not "0 services".
+        Assert.Equal(DiscoverySourceStatus.Failed, inv.ServiceStatus);
+        Assert.False(string.IsNullOrEmpty(inv.ServiceError));
+        Assert.Empty(inv.Services);
+    }
+
+    [Fact]
+    public async Task Discover_ResolvesNonDefaultControlSet()
+    {
+        Build();
+        // The active control set is ControlSet002, not the usual 001.
+        _registry.Values["WinForge_SYSTEM|Select|Current"] = "2";
+        _registry.SubKeys["WinForge_SYSTEM|ControlSet002\\Services"] = new() { "Spooler", "Winmgmt" };
+        _registry.Values["WinForge_SYSTEM|ControlSet002\\Services\\Spooler|Start"] = "2";
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        Assert.Equal(DiscoverySourceStatus.Success, inv.ServiceStatus);
+        Assert.Equal(2, inv.Services.Count);
+        Assert.Contains(inv.Services, s => s.ServiceName == "Spooler");
     }
 }

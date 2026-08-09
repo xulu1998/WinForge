@@ -104,6 +104,24 @@ public sealed class DiscoveredRegistrySetting
 }
 
 /// <summary>
+/// Per-source outcome of a discovery pass. A failed source (DISM error,
+/// unrecognized/localized output, offline hive load/enumeration failure) is
+/// reported as <see cref="Failed"/> with an error message — it must NEVER be
+/// silently collapsed into an empty (zero-item) inventory.
+/// </summary>
+public enum DiscoverySourceStatus
+{
+    /// <summary>The source was not attempted (e.g. no usable mounted session).</summary>
+    NotAttempted,
+
+    /// <summary>The source succeeded — the item list may legitimately be empty.</summary>
+    Success,
+
+    /// <summary>The source failed (command error, unexpected output, or registry error).</summary>
+    Failed
+}
+
+/// <summary>
 /// Aggregated discovery result returned by <see cref="ICustomizationDiscoveryService"/>.
 /// Structured data only — never raw DISM text reaches the UI.
 /// </summary>
@@ -116,4 +134,15 @@ public sealed class DiscoveryInventory
 
     /// <summary>True when a discovery pass actually inspected the mounted image.</summary>
     public bool Discovered { get; init; }
+
+    // --- Per-source status (distinguishes success-with-zero from failure) ---
+
+    public DiscoverySourceStatus AppxStatus { get; init; } = DiscoverySourceStatus.NotAttempted;
+    public string? AppxError { get; init; }
+
+    public DiscoverySourceStatus PackageStatus { get; init; } = DiscoverySourceStatus.NotAttempted;
+    public string? PackageError { get; init; }
+
+    public DiscoverySourceStatus ServiceStatus { get; init; } = DiscoverySourceStatus.NotAttempted;
+    public string? ServiceError { get; init; }
 }

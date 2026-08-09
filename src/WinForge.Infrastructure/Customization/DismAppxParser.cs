@@ -22,6 +22,16 @@ public static class DismAppxParser
 {
     private static readonly Regex KeyRegex = new(@"^([A-Za-z][A-Za-z0-9 ]*?)\s*:\s*(.*)$", RegexOptions.Compiled);
 
+    // Real `dism /Get-ProvisionedAppxPackages` (with /English) emits SINGLE-WORD
+    // headers — "PackageName" and "DisplayName" — NOT the multi-word "Deployment
+    // package name" / "Display name" invented by earlier parsing. Both forms are
+    // accepted so the parser is robust to either DISM edition/format.
+    private static readonly string[] RecognizedAppxKeys =
+    {
+        "package name", "packagename", "deployment package name",
+        "display name", "displayname"
+    };
+
     /// <summary>
     /// Parses provisioned Appx package blocks. Returns one
     /// <see cref="DiscoveredAppxPackage"/> per block that carries a non-empty
@@ -83,12 +93,15 @@ public static class DismAppxParser
             {
                 case "deployment package name":
                 case "package identity":
+                case "package name":
+                case "packagename":
                     if (string.IsNullOrEmpty(packageName))
                     {
                         packageName = value;
                     }
                     break;
                 case "display name":
+                case "displayname":
                     if (string.IsNullOrEmpty(displayName))
                     {
                         displayName = value;
@@ -111,5 +124,30 @@ public static class DismAppxParser
         // Flush the final block.
         Flush();
         return result;
+    }
+
+    /// <summary>
+    /// Determines whether <paramref name="output"/> looks like genuine DISM
+    /// <c>/Get-ProvisionedAppxPackages</c> output. This is used by the discovery
+    /// service to tell a legitimate "zero apps" result (DISM succeeded but the
+    /// image genuinely has none) apart from an unexpected or localized response
+    /// (e.g. <c>/English</c> not honoured) that must be treated as a discovery
+    /// failure rather than a silent empty inventory.
+    /// </summary>
+    public static bool IsRecognizedOutput(string output)
+    {
+        if (string.IsNullOrWhiteSpace(output))
+        {
+            return false;
+        }
+
+        // The English DISM banner is always present on a successful /English run.
+        if (output.Contains("Deployment Image Servicing", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var lower = output.ToLowerInvariant();
+        return Array.Exists(RecognizedAppxKeys, k => lower.Contains(k));
     }
 }

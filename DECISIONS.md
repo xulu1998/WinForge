@@ -502,3 +502,72 @@ All decisions are `ACCEPTED` unless noted.
   3.3 (apply); no silent commit; the user always decides whether to keep or discard applied
   customizations, and the conservative default (discard the working image) is always
   available.
+
+## ADR-026: Real-desktop validation defects — discovery must surface failure, not silence it
+
+- **Status:** ACCEPTED
+- **Context:** The first real-desktop validation of Step 3.3 (genuinely mounted Windows 11
+  Professional working image) exposed three defects: (1) provisioned-Appx discovery returned
+  **0 apps**; (2) offline service discovery returned **0 services**; (3) a non-allowlisted
+  package (`Microsoft-OneCore-ApplicationModel-Sync-Desktop-…`) was user-selectable. Root
+  causes found and fixed:
+  - **DEFECT 1 (Appx = 0):** `DismAppxParser` only recognised the invented multi-word key
+    "Deployment package name"; real `dism /Get-ProvisionedAppxPackages /English` emits
+    **single-word** headers `PackageName` / `DisplayName`. Mismatched keys dropped every
+    identity. Separately, `RunDismAsync` discarded the DISM exit code and stderr, so a DISM
+    failure or unexpected/localized output was indistinguishable from a genuine zero.
+  - **DEFECT 2 (Services = 0):** `RegLoadKey`/`RegUnLoadKey` require `SeRestorePrivilege` /
+    `SeBackupPrivilege`, which are present in an elevated token but **disabled by default**.
+    Without enabling them, hive load fails on a real elevated session. The prior code also
+    swallowed any registry exception and returned an empty inventory ("0 services").
+  - **DEFECT 3 (unsafe selection):** see ADR-027.
+- **Decision:**
+  1. `DismAppxParser` / `DismPackageParser` now accept both the real single-word headers
+     (`PackageName`, `DisplayName`) and the legacy spaced forms, and each exposes
+     `IsRecognizedOutput` to detect genuine DISM output (English banner or a known key).
+  2. `WindowsCustomizationDiscoveryService.RunDismAsync` **checks the DISM exit code and
+     stderr** and throws on failure; it also throws when output is not recognizable (e.g.
+     `/English` not honoured → localized text). The mount path is redacted from any logged
+     error so no sensitive filesystem location leaks.
+  3. `DiscoveryInventory` now carries per-source `AppxStatus` / `PackageStatus` /
+     `ServiceStatus` (`Success` / `Failed` / `NotAttempted`) plus an error string. A failed
+     DISM call or a failed offline hive load is reported as `Failed` — **never** collapsed
+     into a misleading "0 discovered". `ComponentsViewModel` surfaces these errors in the
+     status message.
+  4. `OfflineRegistryService` enables `SeRestorePrivilege` / `SeBackupPrivilege` on the
+     process token (best effort) before each `RegLoadKey` / `RegUnLoadKey`.
+  5. `WindowsCustomizationDiscoveryService.DiscoverServices` reports a hive-load / enumeration
+     failure as `ServiceStatus = Failed` (the SYSTEM hive path, `Select\Current` resolution,
+     and `ControlSet00x\Services` enumeration are unchanged and correct).
+- **Consequences:** "Success with zero items" is now provably distinct from "command/registry
+  failure". The UI can tell the user exactly which source failed and why, instead of showing a
+  false "0". RegLoadKey works on a real elevated session, so offline service discovery returns
+  the genuine service set. Step 3.3 real-desktop validation remains **PENDING** (these fixes
+  are code-level; they must be re-validated on a real mounted image).
+
+## ADR-027: One package-removal policy governs discovery, validation, and execution
+
+- **Status:** ACCEPTED
+- **Context:** DEFECT 3 — a non-allowlisted Windows package reached the UI as selectable
+  (classified `Removable` merely because it was a "Feature"), even though execution would have
+  `Skipped` it. The safety policy was split: the UI offered something execution would refuse,
+  which is exactly the mismatch to avoid.
+- **Decision:** The removal allowlist now lives in a single source of truth,
+  `PackageRemovalPolicy` (`AllowedPackageMarkers`: `Microsoft-Windows-InternetExplorer-Optional`,
+  `Microsoft-Windows-Printing-XPSServices`, `Microsoft-Xps-Document-Writer`). The **same**
+  policy is enforced at three layers:
+  1. **Discovery / classification** — `DismPackageParser.DeriveRisk` returns `Protected` for
+     any package not on the allowlist, so it is **not selectable** in the UI (checkbox
+     `IsEnabled = CanSelect = false`).
+  2. **Plan validation** — `CustomizationPlan.RecomputeValidation` already flags a `Protected`
+     selected operation as `Unsupported`, which blocks `Validate()`; `PlanSync.Toggle` also
+     refuses to add a `Protected`/`Unsupported` operation even if called directly.
+  3. **Execution** — `WindowsCustomizationExecutionService` retains `PackageRemovalPolicy`
+     as the final defense-in-depth guard (a non-allowlisted operation is `Skipped`).
+  Everything not on the allowlist (language, core, driver, servicing-stack, OneCore, edition
+  packages) is `Protected` at every layer. Allowlisted packages remain `Removable` and
+  selectable only because policy explicitly approves them.
+- **Consequences:** The UI can never offer — and the plan can never carry — a package removal
+  that execution would refuse. The policy is defined once and referenced thrice, eliminating
+  the classification/execution mismatch. Step 3.3 real-desktop validation remains **PENDING**.
+

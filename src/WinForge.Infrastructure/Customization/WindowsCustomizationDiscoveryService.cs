@@ -63,35 +63,13 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
         var mountDir = workspace.MountDirectory!;
 
         // --- Appx packages ---
-        var appx = new List<DiscoveredAppxPackage>();
-        try
-        {
-            var appxOut = await RunDismAsync(
-                $"/English /Image:\"{mountDir}\" /Get-ProvisionedAppxPackages", cancellationToken);
-            appx.AddRange(DismAppxParser.Parse(appxOut));
-            _logger.Info($"Customization: discovered {appx.Count} provisioned Appx package(s).");
-        }
-        catch (Exception ex)
-        {
-            _logger.Warning($"Customization: Appx discovery failed: {ex.Message}");
-        }
+        var (appx, appxStatus, appxError) = await DiscoverAppxAsync(mountDir, cancellationToken);
 
         // --- Windows packages ---
-        var packages = new List<DiscoveredWindowsPackage>();
-        try
-        {
-            var pkgOut = await RunDismAsync(
-                $"/English /Image:\"{mountDir}\" /Get-Packages", cancellationToken);
-            packages.AddRange(DismPackageParser.Parse(pkgOut));
-            _logger.Info($"Customization: discovered {packages.Count} Windows package(s).");
-        }
-        catch (Exception ex)
-        {
-            _logger.Warning($"Customization: package discovery failed: {ex.Message}");
-        }
+        var (packages, pkgStatus, pkgError) = await DiscoverPackagesAsync(mountDir, cancellationToken);
 
         // --- Offline services (SYSTEM hive) ---
-        var services = DiscoverServices(workspace);
+        var (services, svcStatus, svcError) = DiscoverServices(workspace);
 
         // --- Trusted registry definitions (Privacy + System) ---
         var settings = new List<DiscoveredRegistrySetting>();
@@ -105,17 +83,63 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
             AppxPackages = appx,
             WindowsPackages = packages,
             Services = services,
-            RegistrySettings = settings
+            RegistrySettings = settings,
+            AppxStatus = appxStatus,
+            AppxError = appxError,
+            PackageStatus = pkgStatus,
+            PackageError = pkgError,
+            ServiceStatus = svcStatus,
+            ServiceError = svcError
         };
     }
 
-    private IReadOnlyList<DiscoveredOfflineService> DiscoverServices(ImageServicingWorkspace workspace)
+    private async Task<(List<DiscoveredAppxPackage>, DiscoverySourceStatus, string?)> DiscoverAppxAsync(
+        string mountDir, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var run = await RunDismAsync(
+                $"/English /Image:\"{mountDir}\" /Get-ProvisionedAppxPackages", mountDir, cancellationToken);
+            var items = DismAppxParser.Parse(run.StandardOutput);
+            _logger.Info($"Customization: discovered {items.Count} provisioned Appx package(s).");
+            return (new List<DiscoveredAppxPackage>(items), DiscoverySourceStatus.Success, null);
+        }
+        catch (Exception ex)
+        {
+            // A DISM failure or unrecognized/localized output must surface as an
+            // error — never as a successful "0 apps discovered".
+            _logger.Error($"Customization: Appx discovery failed: {ex.Message}");
+            return (new List<DiscoveredAppxPackage>(), DiscoverySourceStatus.Failed, ex.Message);
+        }
+    }
+
+    private async Task<(List<DiscoveredWindowsPackage>, DiscoverySourceStatus, string?)> DiscoverPackagesAsync(
+        string mountDir, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var run = await RunDismAsync(
+                $"/English /Image:\"{mountDir}\" /Get-Packages", mountDir, cancellationToken);
+            var items = DismPackageParser.Parse(run.StandardOutput);
+            _logger.Info($"Customization: discovered {items.Count} Windows package(s).");
+            return (new List<DiscoveredWindowsPackage>(items), DiscoverySourceStatus.Success, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Customization: package discovery failed: {ex.Message}");
+            return (new List<DiscoveredWindowsPackage>(), DiscoverySourceStatus.Failed, ex.Message);
+        }
+    }
+
+    private (IReadOnlyList<DiscoveredOfflineService>, DiscoverySourceStatus, string?) DiscoverServices(
+        ImageServicingWorkspace workspace)
     {
         var hiveFile = OfflineHivePaths.GetHiveFilePath(workspace, "SYSTEM");
         if (hiveFile is null || !System.IO.File.Exists(hiveFile))
         {
-            _logger.Warning("Customization: SYSTEM hive not found; no offline services discovered.");
-            return Array.Empty<DiscoveredOfflineService>();
+            const string msg = "SYSTEM hive not found in the mounted image; no offline services discovered.";
+            _logger.Error($"Customization: service discovery failed: {msg}");
+            return (Array.Empty<DiscoveredOfflineService>(), DiscoverySourceStatus.Failed, msg);
         }
 
         var services = new List<DiscoveredOfflineService>();
@@ -147,10 +171,14 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
             }
 
             _logger.Info($"Customization: discovered {services.Count} offline service(s).");
+            return (services, DiscoverySourceStatus.Success, null);
         }
         catch (Exception ex)
         {
-            _logger.Warning($"Customization: service discovery failed: {ex.Message}");
+            // A failed hive load / enumeration must surface as an error, never as
+            // a silent "0 services discovered".
+            _logger.Error($"Customization: service discovery failed: {ex.Message}");
+            return (services, DiscoverySourceStatus.Failed, ex.Message);
         }
         finally
         {
@@ -159,8 +187,6 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
                 _registry.UnloadHive(handle);
             }
         }
-
-        return services;
     }
 
     private int ReadCurrentControlSet(OfflineHiveHandle handle)
@@ -175,7 +201,16 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
         return 1;
     }
 
-    private async Task<string> RunDismAsync(string arguments, CancellationToken cancellationToken)
+    /// <summary>
+    /// Runs DISM offline and enforces two invariants that the previous
+    /// implementation ignored: (1) a non-zero exit code is a hard failure, and
+    /// (2) output that is not recognizable as DISM output (e.g. a localized
+    /// response when <c>/English</c> was not honoured) is treated as a failure
+    /// rather than an empty-but-successful discovery. The mount path is redacted
+    /// from any error text so no sensitive filesystem location is logged.
+    /// </summary>
+    private async Task<ProcessResult> RunDismAsync(
+        string arguments, string mountDir, CancellationToken cancellationToken)
     {
         var run = await _processRunner.RunAsync(new ProcessRequest
         {
@@ -183,6 +218,33 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
             Arguments = arguments
         }, cancellationToken);
 
-        return run.StandardOutput ?? string.Empty;
+        if (run.ExitCode != 0)
+        {
+            var detail = RedactMountPath(run.StandardError, mountDir);
+            throw new InvalidOperationException(
+                $"DISM failed (exit {run.ExitCode}) for '{arguments}'. {detail}".Trim());
+        }
+
+        var recognized = arguments.Contains("/Get-ProvisionedAppxPackages", StringComparison.OrdinalIgnoreCase)
+            ? DismAppxParser.IsRecognizedOutput(run.StandardOutput)
+            : DismPackageParser.IsRecognizedOutput(run.StandardOutput);
+
+        if (!recognized)
+        {
+            throw new InvalidOperationException(
+                $"DISM returned output that could not be parsed as expected (localized or unexpected format) for '{arguments}'.");
+        }
+
+        return run;
+    }
+
+    private static string RedactMountPath(string text, string mountDir)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(mountDir))
+        {
+            return text;
+        }
+
+        return text.Replace(mountDir, "<mount>", StringComparison.OrdinalIgnoreCase);
     }
 }

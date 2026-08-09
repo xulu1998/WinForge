@@ -25,16 +25,9 @@ namespace WinForge.Infrastructure.Customization;
 /// </summary>
 public sealed class WindowsCustomizationExecutionService : ICustomizationExecutionService
 {
-    // Small, explicit allowlist for real Windows package removal. Everything else
-    // classified as "Feature" is offered in the UI but skipped at execution — we
-    // never remove servicing-stack, cumulative-update, component-store, WinPE/
-    // Setup, language, or core-shell packages.
-    private static readonly string[] PackageRemovalAllowlist =
-    {
-        "Microsoft-Windows-InternetExplorer-Optional",
-        "Microsoft-Windows-Printing-XPSServices",
-        "Microsoft-Xps-Document-Writer"
-    };
+    // The allowlist for real Windows package removal is owned by
+    // PackageRemovalPolicy so the SAME policy governs discovery (UI selectability),
+    // plan validation, and this execution-time defense-in-depth guard.
 
     // Deterministic execution ordering: registry first, then services, then appx,
     // then packages, then files.
@@ -324,10 +317,11 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
             return (CustomizationOperationStatus.FailedRecoverable, "Missing package identity.");
         }
 
-        // Hard safety: never remove a package outside the small allowlist.
-        var allowed = Array.Exists(PackageRemovalAllowlist,
-            p => op.TargetIdentifier!.IndexOf(p, StringComparison.OrdinalIgnoreCase) >= 0);
-        if (!allowed)
+        // Hard safety: never remove a package outside the small allowlist. This
+        // is the final defense-in-depth guard — by policy a non-allowlisted
+        // package should already be Protected (not selectable) and rejected by
+        // plan validation, but if such an operation reaches here it is skipped.
+        if (!PackageRemovalPolicy.IsRemovalAllowed(op.TargetIdentifier))
         {
             return (CustomizationOperationStatus.Skipped, "Package is not on the removal allowlist.");
         }

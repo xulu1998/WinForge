@@ -11,7 +11,7 @@ namespace WinForge.App.ViewModels;
 /// <c>OperationId</c> per target guarantees the same change is never added twice
 /// and is cleanly removed on deselect.
 /// </summary>
-internal static class PlanSync
+public static class PlanSync
 {
     /// <summary>
     /// Returns a draft plan, creating a fresh one when none exists or the existing
@@ -50,6 +50,18 @@ internal static class PlanSync
             {
                 var op = buildOp();
                 op.IsSelected = true;
+
+                // Safety gate (defense in depth): never add an operation whose
+                // underlying item is protected or unsupported. The classification
+                // layer should already prevent the UI from offering such an item,
+                // but this guarantees a non-allowlisted / protected package (or
+                // any other unsafe target) cannot be injected into the plan even
+                // if the call is made directly.
+                if (op.Risk is RiskClass.Protected or RiskClass.Unsupported)
+                {
+                    return;
+                }
+
                 plan.AddOperation(op);
             }
             else if (!existing.IsSelected)

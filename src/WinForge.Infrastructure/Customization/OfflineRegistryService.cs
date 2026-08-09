@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
 using Microsoft.Win32;
@@ -53,6 +54,13 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
             throw new System.IO.FileNotFoundException("Offline hive file not found.", hiveFilePath);
         }
 
+        // RegLoadKey requires SeRestorePrivilege (and RegUnLoadKey SeBackupPrivilege),
+        // which are present in an elevated token but usually DISABLED by default.
+        // Enable them before the call — without this, hive load fails with
+        // ERROR_PRIVILEGE_NOT_HELD on a real elevated Windows session, which is
+        // exactly why offline service discovery could silently return zero.
+        EnableRequiredPrivileges();
+
         // Load under HKLM\<hiveName>. RegLoadKey requires the target not already be
         // loaded; if it is (a leaked prior load), refuse rather than clobber it.
         var rc = RegLoadKey(
@@ -78,6 +86,7 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
         // we still mark the handle as unloaded so callers cannot double-unload.
         try
         {
+            EnableRequiredPrivileges();
             RegUnLoadKey((int)RegistryHive.LocalMachine, handle.HiveName);
         }
         finally
@@ -261,9 +270,90 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
 
     // ---- Win32 P/Invoke ----
 
-    [System.Runtime.InteropServices.DllImport("advapi32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    private const int SE_PRIVILEGE_ENABLED = 0x00000002;
+    private const int TOKEN_ADJUST_PRIVILEGES = 0x00000020;
+    private const int TOKEN_QUERY = 0x00000008;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Luid
+    {
+        public uint LowPart;
+        public int HighPart;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TokenPrivilege
+    {
+        public uint PrivilegeCount;
+        public Luid Luid;
+        public uint Attributes;
+    }
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern int RegLoadKey(int hKey, string lpSubKey, string lpFile);
 
-    [System.Runtime.InteropServices.DllImport("advapi32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern int RegUnLoadKey(int hKey, string lpSubKey);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool OpenProcessToken(IntPtr processHandle, int desiredAccess, out IntPtr tokenHandle);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool LookupPrivilegeValue(string? systemName, string privilegeName, out Luid luid);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool AdjustTokenPrivileges(
+        IntPtr tokenHandle, bool disableAllPrivileges, ref TokenPrivilege newState,
+        int bufferLength, IntPtr previousState, IntPtr returnLength);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr GetCurrentProcess();
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    /// <summary>
+    /// Enables <c>SeRestorePrivilege</c> and <c>SeBackupPrivilege</c> on the
+    /// current process token (best effort). These are required by
+    /// <see cref="RegLoadKey"/> / <see cref="RegUnLoadKey"/> and are present in an
+    /// elevated token but disabled by default. If enabling fails (e.g. not
+    /// elevated, or not Windows) the load/unload call is still attempted and will
+    /// fail with a clear Win32 error rather than silently returning zero items.
+    /// </summary>
+    private static void EnableRequiredPrivileges()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out var token))
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var privilege in new[] { "SeRestorePrivilege", "SeBackupPrivilege" })
+            {
+                if (!LookupPrivilegeValue(null, privilege, out var luid))
+                {
+                    continue;
+                }
+
+                var state = new TokenPrivilege
+                {
+                    PrivilegeCount = 1,
+                    Luid = luid,
+                    Attributes = SE_PRIVILEGE_ENABLED
+                };
+
+                AdjustTokenPrivileges(token, disableAllPrivileges: false, ref state, 0, IntPtr.Zero, IntPtr.Zero);
+            }
+        }
+        finally
+        {
+            CloseHandle(token);
+        }
+    }
 }

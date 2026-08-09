@@ -24,6 +24,13 @@ public static class DismPackageParser
 {
     private static readonly Regex KeyRegex = new(@"^([A-Za-z][A-Za-z0-9 ]*?)\s*:\s*(.*)$", RegexOptions.Compiled);
 
+    // Real `dism /Get-Packages` (with /English) emits "Package Identity". Both
+    // the single-word and spaced forms are accepted for robustness.
+    private static readonly string[] RecognizedPackageKeys =
+    {
+        "package identity", "package name", "packagename"
+    };
+
     // Substrings that indicate a package must never be removed by this step.
     private static readonly string[] ProtectedNameMarkers =
     {
@@ -61,12 +68,13 @@ public static class DismPackageParser
         {
             if (!string.IsNullOrWhiteSpace(identity))
             {
+                var classification = Classify(identity!, releaseType);
                 result.Add(new DiscoveredWindowsPackage
                 {
                     PackageIdentity = identity!,
                     DisplayName = displayName ?? identity!,
-                    Classification = Classify(identity!, releaseType),
-                    Risk = DeriveRisk(Classify(identity!, releaseType))
+                    Classification = classification,
+                    Risk = DeriveRisk(identity!, classification)
                 });
             }
 
@@ -160,9 +168,36 @@ public static class DismPackageParser
         return PackageClassification.Feature;
     }
 
-    private static RiskClass DeriveRisk(PackageClassification classification) => classification switch
+    private static RiskClass DeriveRisk(string identity, PackageClassification classification)
     {
-        PackageClassification.Feature => RiskClass.Removable,
-        _ => RiskClass.Protected
-    };
+        // Step 3.3 safety policy: removal is restricted to the explicit
+        // allowlist. The same policy is enforced at plan-validation and execution
+        // time, so a non-allowlisted package is Protected here and can never be
+        // selected in the UI or removed by execution. Classification is still
+        // computed (see Classify) purely to produce an informative reason string.
+        return PackageRemovalPolicy.IsRemovalAllowed(identity)
+            ? RiskClass.Removable
+            : RiskClass.Protected;
+    }
+
+    /// <summary>
+    /// Determines whether <paramref name="output"/> looks like genuine DISM
+    /// <c>/Get-Packages</c> output — used to distinguish a legitimate empty
+    /// result from an unexpected/localized response (see <see cref="DismAppxParser.IsRecognizedOutput"/>).
+    /// </summary>
+    public static bool IsRecognizedOutput(string output)
+    {
+        if (string.IsNullOrWhiteSpace(output))
+        {
+            return false;
+        }
+
+        if (output.Contains("Deployment Image Servicing", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var lower = output.ToLowerInvariant();
+        return Array.Exists(RecognizedPackageKeys, k => lower.Contains(k));
+    }
 }

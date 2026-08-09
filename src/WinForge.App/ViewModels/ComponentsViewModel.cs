@@ -98,9 +98,31 @@ public sealed class ComponentsViewModel : ViewModelBase
             _appState.DiscoveredInventory = inventory;
             BuildCollections(inventory);
             HasInventory = inventory.Discovered;
-            StatusMessage = inventory.Discovered
+
+            // Surface per-source failures explicitly. A failed DISM call or a
+            // failed offline hive load must be shown as an error, never collapsed
+            // into a misleading "0 discovered" line.
+            var errors = new List<string>();
+            if (inventory.AppxStatus == DiscoverySourceStatus.Failed)
+            {
+                errors.Add($"Appx discovery failed: {inventory.AppxError}");
+            }
+            if (inventory.PackageStatus == DiscoverySourceStatus.Failed)
+            {
+                errors.Add($"Package discovery failed: {inventory.PackageError}");
+            }
+            if (inventory.ServiceStatus == DiscoverySourceStatus.Failed)
+            {
+                errors.Add($"Service discovery failed: {inventory.ServiceError}");
+            }
+
+            var summary = inventory.Discovered
                 ? $"Discovered {AppxPackages.Count} app(s), {WindowsPackages.Count} package(s), {Services.Count} service(s)."
                 : "Discovery found no usable mounted session.";
+
+            StatusMessage = errors.Count > 0
+                ? string.Join(" ", errors) + " " + summary
+                : summary;
         }
         catch (System.Exception ex)
         {
