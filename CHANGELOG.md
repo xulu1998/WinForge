@@ -185,17 +185,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   (Core 37, App 222), 0 errors, 0 warnings (Release), all CI-safe. Step 3.3 remains **PENDING
   real-desktop validation — re-run required**; not merged to `main`.
 
-### Status (Phase 3 Step 3.3 — implemented, pending real-desktop validation)
-- Step 3.3 is **IMPLEMENTED** on `feature/offline-customization` (2026-08-09). The full
-  declarative plan, discovery, offline-registry, execution, and UI layers are complete and
-  the automated suite is green (259/259, 0 errors, 0 warnings). **Real-desktop validation is
-  still PENDING**: no real Windows mount / offline-hive edit / package removal was exercised
-  in this session. The next validation step is a real Windows run that discovers a mounted
-  working image, selects a few safe customizations (Privacy registry settings, disable
-  DiagTrack/WerSvc/PcaSvc, remove an allowlisted package), Validates, Applies, and confirms
-  the offline `SOFTWARE`/`SYSTEM` changes landed in the mounted image while the host OS and
-  the source ISO were untouched. Not merged to `main`; no new tag. No Step 3.4 / Phase 4
-  mount-engine work was started.
+### Status (Phase 3 Step 3.3 — desktop validation PASSED)
+- Step 3.3 real-desktop validation **PASSED** (2026-08-09) on a real Windows 11 25H2
+  (Chinese Simplified, x64, Consumer Editions, `install.wim`) ISO: a mounted working image
+  was discovered and customized. Observed successful run:
+  - Provisioned-Appx discovery returned 47 packages with exact `PackageName` identity
+    (independent `dism /Get-ProvisionedAppxPackages` inventory confirmed the same set).
+  - Offline service discovery returned 699 services; only DiagTrack/WerSvc/PcaSvc were
+    exposed as configurable (696 protected/driver entries hidden, no silent-zero).
+  - Non-allowlisted packages (e.g. `Microsoft-OneCore-ApplicationModel-Sync-Desktop-…`)
+    were non-selectable; protected packages clearly marked not permitted for removal.
+  - Selected plan: remove `Microsoft.BingWeather`, disable `DiagTrack`, turn off advertising
+    ID. Validation passed; Apply → **3 succeeded, 0 failed**.
+  - Independent DISM confirmed `Microsoft.BingWeather` removed from the mounted image.
+  - Offline `SYSTEM` hive confirmed `DiagTrack\Start = 0x4`; offline `SOFTWARE` hive confirmed
+    `AdvertisingInfo\Enabled = 0x0` (ADR-031 corrected path + read-back contract verified).
+  - Verification hives `WF_VERIFY_SYSTEM` / `WF_VERIFY_SOFTWARE` unloaded cleanly; subsequent
+    queries confirmed both absent.
+  - After validation the mounted image was cleaned up; `dism /English /Get-MountedWimInfo`
+    reported **"No mounted images found."**
+  - The original ISO / original `install.wim` were **not modified**.
+- Step 3.3 = **COMPLETED**; Desktop Validation = **PASSED**; ready to merge to `main`
+  (259/259 automated tests pass — Core 37, App 222, 0 errors, 0 warnings, Release). No Step 3.4
+  / Phase 4 mount-engine work was started.
 
 ### Added (Phase 3 Step 3.1 — WIM workspace & image selection foundation)
 - Introduces the durable selected-image foundation for Phase 3. Converts a Phase 2
