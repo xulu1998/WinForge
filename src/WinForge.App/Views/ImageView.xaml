@@ -121,6 +121,65 @@
             </StackPanel>
             <TextBlock Text="The workspace references the original ISO and the image's path inside it — the temporary mount drive is never stored or shown."
                        FontSize="12" Foreground="#7B8794" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+            <TextBlock Text="Working image" FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,24,0,0"/>
+            <TextBlock Text="WinForge works on an isolated copy of the selected Windows edition. The original ISO and install.wim/install.esd are never modified."
+                       FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap"/>
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                <Button Style="{StaticResource PrimaryButton}" Content="Prepare working image"
+                        Command="{Binding PrepareWorkingImageCommand}" Margin="0,0,8,0"
+                        Background="#2F855A"/>
+                <Button Style="{StaticResource PrimaryButton}" Content="Mount image"
+                        Command="{Binding MountWorkingImageCommand}" Margin="0,0,8,0"
+                        Background="#487EB0"
+                        Visibility="{Binding CanMountWorkingImage, Converter={StaticResource BoolToVis}}"/>
+                <Button Style="{StaticResource PrimaryButton}" Content="Unmount &amp; discard changes"
+                        Command="{Binding UnmountDiscardCommand}" Margin="0,0,8,0"
+                        Background="#9B1C1C"
+                        Visibility="{Binding CanUnmountDiscard, Converter={StaticResource BoolToVis}}"/>
+            </StackPanel>
+
+            <TextBlock Text="{Binding ServicingMessage}" FontSize="13" Foreground="#3B82F6"
+                       Margin="0,8,0,0" TextWrapping="Wrap"
+                       Visibility="{Binding IsServicing, Converter={StaticResource BoolToVis}}"/>
+            <TextBlock Text="{Binding BlockedMessage}" FontSize="13" Foreground="#9B1C1C"
+                       Margin="0,8,0,0" TextWrapping="Wrap"
+                       Visibility="{Binding BlockedMessage, Converter={StaticResource NullToVis}}"/>
+
+            <StackPanel Margin="0,12,0,0">
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Status"/>
+                    <TextBlock Text="{Binding ServicingStatusDisplay}" FontSize="13" VerticalAlignment="Center"
+                               FontWeight="{Binding IsServicingMounted, Converter={StaticResource BoolToBold}}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Source edition"/>
+                    <TextBlock Text="{Binding ServicingSourceEditionDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Source index"/>
+                    <TextBlock Text="{Binding ServicingSourceIndexDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Working image"/>
+                    <TextBlock Text="{Binding ServicingWorkingImageDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Working index"/>
+                    <TextBlock Text="{Binding ServicingWorkingIndexDisplay}" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Working directory"/>
+                    <TextBlock Text="{Binding ServicingWorkingDirectoryDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="Mount directory"/>
+                    <TextBlock Text="{Binding ServicingMountDirectoryDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <TextBlock Text="{Binding ServicingErrorDisplay}" FontSize="12" Foreground="#9B1C1C"
+                           Margin="0,4,0,0" TextWrapping="Wrap"
+                           Visibility="{Binding ServicingErrorDisplay, Converter={StaticResource NullToVis}}"/>
+            </StackPanel>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

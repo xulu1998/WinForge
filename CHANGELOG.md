@@ -33,6 +33,39 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - ADR-017 records that durable descriptors store ISO path + relative install-image
   path + selected index and never persist temporary mounted drive letters.
 
+### Added (Phase 3 Step 3.2 — offline WIM servicing lifecycle)
+- Introduces the durable offline servicing foundation for Phase 3. A new
+  `ImageServicingWorkspace` descriptor captures the selected edition's source
+  identifiers (mirroring `ImageWorkspace`) plus WinForge-owned servicing state:
+  `WorkingDirectory` (`%LOCALAPPDATA%\WinForge\Workspaces\<id>`), `WorkingImagePath`
+  (`…\image\install.wim`), `MountDirectory` (`…\mount`), `WorkingImageType` (always
+  WIM), `WorkingIndex` (always 1), and a `ServicingWorkspaceState` lifecycle
+  (`NotPrepared`/`Preparing`/`Prepared`/`Mounting`/`Mounted`/`Unmounting`/`Completed`/`Failed`)
+  with a `ServicingHealth` classification and a `ServicingResult` outcome.
+- Core contract `IImageServicingService` (`PrepareWorkingImageAsync` /
+  `MountAsync` / `UnmountDiscardAsync` / `ValidateServicingWorkspaceAsync`) and
+  Infrastructure `ImageServicingService` (DISM `/Export-Image` source index N →
+  standalone WIM index 1, `/Mount-Image` working image only, `/Unmount-Image /Discard`,
+  `/Get-MountedImageInfo` registration verification). The original ISO and its
+  `install.wim`/`install.esd` are never modified — export reads a transient
+  read-only ISO mount that is always released; the working image lives under a
+  WinForge-owned workspace.
+- `IWorkspacePathProvider` addresses workspaces by a safe id segment (no path
+  separators can escape the folder); `IWorkspaceSafeDelete` proves a target is
+  strictly inside the workspace before any deletion and refuses drive/profile/repo
+  roots. Working-image post-export validation uses the per-index
+  `/Get-ImageInfo /Index:1` detail query so edition/architecture/build are checked.
+- `IAppState.CurrentServicingWorkspace` + `ImageViewModel` prepare/mount/unmount
+  commands with state-aware `Can*` guards. An active mount REFUSES ISO re-inspection
+  and edition re-selection (explanatory `BlockedMessage`) instead of destroying the
+  session. A new Image page "Working image" section shows status, source
+  edition/index, working image, working directory, mount directory, and any error.
+- 35 new automated tests (Core 10 + App 25): model/state, WIM+ESD export, post-export
+  validation (success, non-zero exit, edition/arch mismatch, missing source), mount
+  guards (not-prepared, missing image, DISM-success-but-not-registered), unmount
+  (discard, no-op when not mounted, DISM failure), stale/missing/invalid recovery,
+  and ViewModel guards. Total **127/127 pass (Core 21, App 106), 0 errors, 0 warnings**.
+
 ### Changed (Phase 3 Step 3.1 — application elevation)
 - `WinForge.App` now declares `requestedExecutionLevel level="requireAdministrator"`
   (uiAccess false) in its embedded application manifest (`src/WinForge.App/app.manifest`,

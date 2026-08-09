@@ -27,7 +27,8 @@ public class IsoViewModelTests
             inspection,
             picker,
             new ImageWorkspaceFactory(),
-            new WimService());
+            new WimService(),
+            new FakeImageServicingService());
         return (vm, state);
     }
 

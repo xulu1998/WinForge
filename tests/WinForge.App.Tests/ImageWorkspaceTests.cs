@@ -310,7 +310,8 @@ public class ImageWorkspaceTests
     private static ImageViewModel BuildVm(AppState state, IIsoInspectionService inspection)
     {
         return new ImageViewModel(state, new InMemoryLoggerService(), inspection,
-            new FakeFilePicker(), new ImageWorkspaceFactory(), new WimService());
+            new FakeFilePicker(), new ImageWorkspaceFactory(), new WimService(),
+            new FakeImageServicingService());
     }
 
     [Fact]

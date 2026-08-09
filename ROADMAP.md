@@ -119,7 +119,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 3 — WIM Engine
 
-- **Status:** IN PROGRESS (Step 3.1 **COMPLETED** on `feature/wim-engine` 2026-08-09 after real-desktop validation PASSED; Step 3.2 NOT STARTED)
+- **Status:** IN PROGRESS (Step 3.1 **COMPLETED** on `feature/wim-engine` 2026-08-09 after real-desktop validation PASSED; Step 3.2 **IMPLEMENTED** 2026-08-09 on `feature/wim-servicing`, pending real-desktop validation)
 - **Goal:** WIM / ESD image handling via documented Microsoft mechanisms.
 - **Scope:** Enumerate images, read image info, export ESD → WIM, index selection.
 - **Deliverables:**
@@ -129,7 +129,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
   - Export an ESD image to WIM without data loss.
 
 ### Step 3.1 — WIM workspace & image selection foundation (2026-08-08)
-- **Status:** COMPLETED (real-desktop validation PASSED 2026-08-09 on Windows 11 25H2 zh-CN x64 Consumer `install.wim`; not yet merged to `main`). WinForge.App now declares `requireAdministrator` in its embedded manifest (ADR-018) because the Phase 2 DISM enumeration returns exit code 740 when launched without elevation. Step 3.2 is NOT STARTED.
+- **Status:** COMPLETED (real-desktop validation PASSED 2026-08-09 on Windows 11 25H2 zh-CN x64 Consumer `install.wim`; not yet merged to `main`). WinForge.App now declares `requireAdministrator` in its embedded manifest (ADR-018) because the Phase 2 DISM enumeration returns exit code 740 when launched without elevation. Step 3.2 is IMPLEMENTED (see below).
 - **Goal:** Convert the Phase 2 ISO selection + selected edition into a **durable** `ImageWorkspace` descriptor that survives ISO dismount and never persists a temporary mounted drive letter.
 - **Scope (this step, read-only):**
   - Core model `ImageWorkspace` (durable fields: `SourceIsoPath`, `ImageRelativePath` e.g. `sources\install.wim`, `ImageType`, `SelectedIndex`, `SelectedEditionName`, `Architecture`, `Version`, `Build`, `Languages`) plus `ImageWorkspaceStatus` (`NotReady` / `Ready` / `Invalid`).
@@ -139,6 +139,18 @@ Phased development plan for WinForge. Each phase records its **Status**,
   - Image page "Selected image / Workspace" section bound to the durable descriptor (Edition, Index, Image, Architecture, Build, Status, original ISO source). No temporary `G:\` path is ever shown; no export/mount/build buttons.
   - ADR-017 records that durable descriptors store ISO path + relative install-image path + selected index and never persist temporary mounted drive letters.
 - **Out of scope this step:** ESD → WIM export (Step 3.2), WIM mount (Phase 4), any image modification. The Phase 2 mount → inspect → metadata → dismount session (ADR-015) is unchanged and remains strictly read-only.
+
+### Step 3.2 — Offline WIM servicing lifecycle (2026-08-09)
+- **Status:** IMPLEMENTED on `feature/wim-servicing` (2026-08-09); **NOT YET real-desktop validated**. 35 new automated tests (Core 10 + App 25); total **127/127 pass, 0 errors, 0 warnings**.
+- **Goal:** Prepare an isolated, WinForge-owned working image from the selected source edition, mount it for later customization phases, discard an unmount, and validate/recover a servicing session — all without ever modifying the original ISO or its `install.wim`/`install.esd`.
+- **Scope (this step):**
+  - Core model `ImageServicingWorkspace` (durable: `SourceIsoPath`, `SourceImageRelativePath`, `SourceImageType`, `SelectedIndex`, `SelectedEditionName`, `Architecture`, `Build`, WinForge-owned `WorkingDirectory`/`WorkingImagePath`/`MountDirectory`, `WorkingImageType` — always WIM, `WorkingIndex` — always 1, `State`, `CreatedAt`, `LastError`). A selected source index N maps to a standalone working image whose own index is 1.
+  - `ServicingWorkspaceState` state machine (`NotPrepared`/`Preparing`/`Prepared`/`Mounting`/`Mounted`/`Unmounting`/`Completed`/`Failed`) + `ServicingHealth` (`Prepared`/`Mounted`/`Stale`/`Failed`/`Invalid`) + `ServicingResult`.
+  - `IImageServicingService` (Core) + `ImageServicingService` (Infrastructure) — DISM `/Export-Image` (source index N → standalone WIM index 1), `/Mount-Image` (working image only), `/Unmount-Image /Discard`, and `/Get-MountedImageInfo` registration verification. The source install image is read from a transient read-only ISO mount that is always released.
+  - `IWorkspacePathProvider` (`%LOCALAPPDATA%\WinForge\Workspaces\<id>\image` + `mount`) addressed by a safe id segment; `IWorkspaceSafeDelete` proves a target is strictly inside the workspace before any deletion (refuses drive/profile/repo roots).
+  - `IAppState.CurrentServicingWorkspace` + `ImageViewModel` prepare/mount/unmount commands with state-aware `Can*` guards; an active mount REFUSES ISO re-inspection and edition re-selection (explanatory `BlockedMessage`). New Image page "Working image" section shows status/source edition/index/working image/working dir/mount dir/error.
+  - Post-export validation uses the per-index `/Get-ImageInfo /Index:1` detail query (the index-less enumeration query does not report Architecture/Build).
+- **Out of scope this step:** Any image customization (package/component/Appx/registry tweaks), ISO build/rebuild, `boot.wim` servicing, commit-on-unmount (unmount always discards), and Phase 4 mount-engine work. The working image is prepared solely so Phase 4+ can mount and customize it. No Step 3.3.
 
 ---
 
