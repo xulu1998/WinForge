@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using WinForge.App.FriendlyMetadata;
 using WinForge.App.Mvvm;
 using WinForge.App.Services;
 using WinForge.Core.Models;
@@ -24,10 +25,12 @@ public sealed class ComponentsViewModel : ViewModelBase
     private readonly ILoggerService _logger;
     private readonly ICustomizationDiscoveryService _discovery;
     private readonly ICustomizationDefinitionProvider _definitions;
+    private readonly IFriendlyMetadataProvider? _friendly;
 
     private bool _isDiscovering;
     private bool _hasInventory;
     private bool _showProtectedEntries;
+    private bool _suppressPlanResync;
     private DiscoveryInventory? _lastInventory;
     private string _statusMessage = "Select and mount a working image, then discover components.";
 
@@ -35,12 +38,14 @@ public sealed class ComponentsViewModel : ViewModelBase
         IAppState appState,
         ILoggerService logger,
         ICustomizationDiscoveryService discovery,
-        ICustomizationDefinitionProvider definitions)
+        ICustomizationDefinitionProvider definitions,
+        IFriendlyMetadataProvider? friendly = null)
     {
         _appState = appState;
         _logger = logger;
         _discovery = discovery;
         _definitions = definitions;
+        _friendly = friendly;
 
         AppxPackages = new ObservableCollection<AppxSelectionItem>();
         WindowsPackages = new ObservableCollection<PackageSelectionItem>();
@@ -170,7 +175,10 @@ public sealed class ComponentsViewModel : ViewModelBase
 
         foreach (var appx in inventory.AppxPackages)
         {
-            var item = new AppxSelectionItem(appx) { IsSelected = IsSelectedInPlan("appx|" + appx.PackageName) };
+            var item = new AppxSelectionItem(appx, _friendly?.GetAppFriendlyName(appx.PackageName))
+            {
+                IsSelected = IsSelectedInPlan("appx|" + appx.PackageName)
+            };
             item.PropertyChanged += OnSelectionChanged;
             AppxPackages.Add(item);
         }
@@ -184,7 +192,8 @@ public sealed class ComponentsViewModel : ViewModelBase
 
         foreach (var svc in inventory.Services)
         {
-            var item = new ServiceSelectionItem(svc, svc.RecommendedStartType ?? ServiceStartType.Disabled)
+            var item = new ServiceSelectionItem(svc, svc.RecommendedStartType ?? ServiceStartType.Disabled,
+                _friendly?.GetServiceFriendlyName(svc.ServiceName))
             {
                 IsSelected = IsSelectedInPlan("svc|" + svc.ServiceName)
             };
@@ -211,17 +220,30 @@ public sealed class ComponentsViewModel : ViewModelBase
             return;
         }
 
-        switch (sender)
+        // Suppress plan-change -> ResyncSelections while we are the one mutating
+        // the plan. Otherwise the first selection (which creates the draft plan
+        // via EnsureDraftPlan) would re-enter OnAppStateChanged and reset the
+        // just-checked item back to its (still empty) plan state, leaving the
+        // UI out of sync with the plan and breaking deselect. ADR-030.
+        _suppressPlanResync = true;
+        try
         {
-            case AppxSelectionItem appx:
-                SyncAppx(appx);
-                break;
-            case PackageSelectionItem pkg:
-                SyncPackage(pkg);
-                break;
-            case ServiceSelectionItem svc:
-                SyncService(svc);
-                break;
+            switch (sender)
+            {
+                case AppxSelectionItem appx:
+                    SyncAppx(appx);
+                    break;
+                case PackageSelectionItem pkg:
+                    SyncPackage(pkg);
+                    break;
+                case ServiceSelectionItem svc:
+                    SyncService(svc);
+                    break;
+            }
+        }
+        finally
+        {
+            _suppressPlanResync = false;
         }
 
         OnPropertyChanged(nameof(SelectedTotal));
@@ -297,8 +319,24 @@ public sealed class ComponentsViewModel : ViewModelBase
     {
         if (e.PropertyName is nameof(IAppState.CurrentServicingWorkspace) or nameof(IAppState.CurrentCustomizationPlan))
         {
+            // Re-sync checkbox state when the plan is replaced/reset (e.g. a source
+            // change cleared it) so selections never disagree with the plan. We
+            // skip this while a selection toggle is mutating the plan, since the
+            // UI item is already the source of truth in that path. ADR-030.
+            if (e.PropertyName == nameof(IAppState.CurrentCustomizationPlan) && !_suppressPlanResync)
+            {
+                ResyncSelections();
+            }
+
             Refresh();
         }
+    }
+
+    private void ResyncSelections()
+    {
+        foreach (var it in AppxPackages) it.IsSelected = IsSelectedInPlan("appx|" + it.Package.PackageName);
+        foreach (var it in WindowsPackages) it.IsSelected = IsSelectedInPlan("pkg|" + it.Package.PackageIdentity);
+        foreach (var it in Services) it.IsSelected = IsSelectedInPlan("svc|" + it.Service.ServiceName);
     }
 
     private void Refresh()

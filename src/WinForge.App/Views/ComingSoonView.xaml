@@ -4,14 +4,20 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+             xmlns:conv="clr-namespace:WinForge.App.Converters"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:ComingSoonViewModel}">
     <Grid>
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" Foreground="#1F2933"
                        HorizontalAlignment="Center"/>
-            <TextBlock Text="This section is planned for a future phase." Foreground="#7B8794"
-                       Margin="0,8,0,0" HorizontalAlignment="Center"/>
+            <TextBlock Foreground="#7B8794" Margin="0,8,0,0" HorizontalAlignment="Center">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="ComingSoon.Planned"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
         </StackPanel>
     </Grid>
 </UserControl>

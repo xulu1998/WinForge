@@ -735,3 +735,145 @@ All decisions are `ACCEPTED` unless noted.
   (Core 37, App 222), 0 errors, 0 warnings (Release). Step 3.3 real-desktop validation remains
   **PENDING** — RE-RUN required after this change.
 
+## ADR-032: The Wizard (sequential Stepper) is the primary workflow surface
+
+- **Status:** ACCEPTED
+- **Context:** Through Phase 1 the shell used a left "feature list" navigation
+  (Home / Image / Components / Experience / Privacy / System / Build / Logs / Settings). With
+  Step 3.3 the offline customization engine is complete, but free navigation among feature pages
+  invites misconfiguration — e.g. applying before validating, or customizing before the working
+  image is mounted. A guided, gated path is safer and matches how users actually build an image.
+- **Decision:**
+  1. The primary surface is a 6-step **Stepper**: Source → Prepare → Customize → Review → Apply →
+     Build (zh: 选择镜像 → 准备镜像 → 自定义 → 审核计划 → 应用修改 → 构建镜像). The left feature-list
+     nav is retired as the primary control.
+  2. Each step carries a `WorkflowStepState` (NotAvailable / Available / Current / Completed /
+     RequiresAttention) computed **purely from `IAppState`** by
+     `WorkflowViewModel.RecomputeStates()` — the workflow code contains **no DISM** (ADR-020…ADR-025
+     safety boundaries stay in Infrastructure/execution).
+  3. Navigation is gated: `CanGoNext`/`CanGoBack` derive from the current step's state;
+     `CanGoToStep(step)` refuses a target that is `NotAvailable` **or** that would skip an earlier
+     `NotAvailable` step (skip-guard), so users cannot jump ahead past an unmet prerequisite.
+  4. Safety guards: a source change invalidates `CurrentCustomizationPlan` + `DiscoveredInventory`
+     unless the plan is `Executing`; an active mount blocks source/prepare back-navigation; an
+     `Executing` plan blocks source change.
+  5. Step content is plain MVVM — Views are selected by `WizardStepTemplateSelector` data templates.
+     Source and Prepare deliberately host the **same** `ImageViewModel` instance (selection vs
+     servicing), keeping one source of truth for the selected image.
+- **Consequences:** The app opens into the Workflow; Review/Apply/Build are unreachable until
+  their prerequisites are met, and Customize is unreachable until the image is mounted. ~21 test
+  facts across the WORKFLOW / COMMANDS suites pin the initial state, readiness transitions, the
+  skip-guard, source-change invalidation, and the "never auto-advances Current" invariant. Status:
+  **IMPLEMENTED** / PENDING REAL DESKTOP VALIDATION on `feature/wizard-localization` (`wf-wizard`).
+
+## ADR-033: Utility navigation is separate from the workflow
+
+- **Status:** ACCEPTED
+- **Context:** Home / Logs / Settings / About are orthogonal to the customization workflow and must
+  always be reachable without disturbing step state or gating. Promoting them to workflow steps
+  would pollute the step-state machine and the review/apply guard rails.
+- **Decision:**
+  1. `MainViewModel` hosts the `WorkflowViewModel` as the primary surface and a small **utility
+     rail** of `NavItem`s (Home / Logs / Settings / About) resolved via
+     `ResolveUtility(PageKey)`. `IsWorkflowActive` toggles between the workflow surface and the
+     utility surface; the left rail shows one "Workflow" button plus the utility items.
+  2. The legacy `INavigationService.CurrentPageChanged` event is **translated** onto the new shell
+     so old deep-links still work: utility pages (Home/Logs/Settings/About) are shown directly; the
+     old feature pages jump into the matching workflow step — `Image`→Source,
+     `Components`/`Privacy`/`System`/`Experience`→Customize, `Plan`→Review, `Build`→Build — via
+     `_workflow.GoToStep(...)`.
+  3. Workflow state is preserved across utility navigation: opening Settings/About/Logs and
+     returning leaves the current step, plan, and mount untouched.
+- **Consequences:** Step gating is never bypassed by the utility rail, and deep links from the
+  Home page continue to drive the correct step. The removed feature-list nav no longer competes
+  with the stepper as the primary control.
+
+## ADR-034: Localization architecture — neutral .resx + zh-CN satellite, ResourceManager, Loc key
+
+- **Status:** ACCEPTED
+- **Context:** The app must ship English and Simplified Chinese with a runtime switch. Hard-coded
+  English strings in XAML/code would make that impossible and would exclude zh-CN users.
+- **Decision:**
+  1. Every user-facing string lives in `Strings.resx` (neutral, en). `Strings.zh-CN.resx` is a
+     satellite that **mirrors every key** with a non-empty value (parity is deterministic and is
+     asserted by a test).
+  2. `ResourceManagerLocalizationService` (App) wraps a `ResourceManager`; the live service is
+     exposed to XAML as `Application.Current.Resources["Loc"]` (an `ILocalizationService`).
+  3. `LocKeyMultiConverter` (`locKey`, an `IMultiValueConverter`) takes a key **and** the Loc
+     service and returns the localized string, so a binding re-evaluates on BOTH a key change and a
+     culture change. All shell/workflow strings bind through it as a `MultiBinding`.
+  4. `ILocalizationService` is defined in **Core** (`WinForge.Core.Services`) so non-UI code can
+     localize without an App dependency (e.g. `ImageViewModel.L(key, fallback)`).
+  5. The indexer falls back **English → key** when a resource is missing, so an untranslated key is
+     always visible rather than blank.
+- **Consequences:** Strings are centralized; XAML never hard-codes text; adding a language means
+  adding a satellite + a store entry. A parity test asserts zh-CN has a non-empty value for every
+  en key, and a switch test asserts the live Loc returns the zh-CN value after `SetCulture`.
+
+## ADR-035: Runtime language switching + persistence + English fallback
+
+- **Status:** ACCEPTED
+- **Context:** Users must be able to switch display language at runtime (Settings page) and have the
+  choice persist across launches, defaulting to a known-safe language.
+- **Decision:**
+  1. `ILocalizationService.SetCulture(CultureInfo)` updates the current thread's
+     `CurrentCulture`/`CurrentUICulture` and the `ResourceManager`, then raises
+     `PropertyChanged("Item[]")` and `CultureChanged` so every `locKey` binding refreshes live —
+     no restart required.
+  2. `ILanguageSettingsStore` (Core) persists the choice (`SaveCulture` / `LoadCulture`); both an
+     `InMemoryLanguageSettingsStore` (tests) and a `FileLanguageSettingsStore` (app) are provided.
+  3. `LocalizationBootstrap.Initialize(service, store)` loads the saved culture (or a default),
+     resolves it against the supported set, and applies it. An unknown or unsupported saved value
+     resolves to a **shipped** language (`en` or `zh-CN`) — never a fabricated culture.
+  4. English is the ultimate fallback for any missing key (ADR-034) **and** the ultimate default
+     culture when nothing is saved.
+- **Consequences:** Switching language in Settings applies instantly app-wide; the choice survives
+  a restart. A test pins "invalid saved culture resolves to a supported language", and a bootstrap
+  test pins "Initialize uses the saved culture".
+
+## ADR-036: Friendly metadata preserves the immutable technical identifier
+
+- **Status:** ACCEPTED
+- **Context:** Users need human-readable names for services and apps, but the customization engine
+  and the logs must keep the **exact technical identifier** (e.g. `DiagTrack`,
+  `Microsoft.BingWeather`) — never the friendly name — as the operation target (see ADR-029: the
+  destructive identity must be the exact PackageName/ServiceName).
+- **Decision:**
+  1. `ISelectableItem` carries both `FriendlyName` (display) and `TechnicalId` (the immutable
+     identifier). The UI shows the friendly name **and** always shows the technical id (e.g. a
+     sub-line), and the plan operation is built from `TechnicalId`.
+  2. `FriendlyMetadataProvider` maps a trusted allowlist to `.resx` keys
+     (`Svc.DiagTrack.Name`/`Svc.DiagTrack.Desc`, `App.Microsoft.BingWeather.Name`/`…Desc`, …). An
+     unknown identifier returns the **raw name** (no fabrication, no silent translation). Lookups
+     are case-insensitive and tolerate version-suffixed identities.
+  3. `ServiceConfigPolicy` (Core, ADR-030) remains the single source of truth for *which* services
+     are configurable; friendly metadata is presentation-only and never relaxes that boundary.
+  4. Localized friendly metadata is provided for en + zh-CN through the same resx foundation
+     (ADR-034), so a zh-CN user still sees the canonical `DiagTrack` id while reading a Chinese
+     description.
+- **Consequences:** Users see e.g. "Diagnostic Tracking Service (DiagTrack)" — readable yet
+  auditable — while execution targets `DiagTrack`. Tests cover known/unknown identifiers,
+  case-insensitivity, version-suffixed ids, and zh-CN localized friendly text.
+
+## ADR-037: ComponentsViewModel selection→plan resync must be re-entrancy-safe
+
+- **Status:** ACCEPTED
+- **Context:** Toggling a selection calls `PlanSync.Toggle`, which mutates
+  `IAppState.CurrentCustomizationPlan` and raises `PropertyChanged`. `ComponentsViewModel
+  .OnAppStateChanged` then runs `ResyncSelections()`, which would reset the **just-toggled** item
+  back to the (still empty) plan state — leaving the checkbox and the plan out of sync and breaking
+  deselect.
+- **Decision:**
+  1. A `_suppressPlanResync` flag guards `OnSelectionChanged`: while a selection toggle is applying
+     its plan change, `ResyncSelections()` is skipped, because the UI item is already the source of
+     truth in that path.
+  2. `OnAppStateChanged` only calls `ResyncSelections()` when the plan change did **not** originate
+     from a local toggle, so external plan resets (e.g. a source change clearing the plan) still
+     re-sync the checkboxes.
+  3. `Refresh()` raises `CanExecuteChanged` on `DiscoverCommand` after every state transition,
+     continuing the ADR-025 / Step 3.2 pattern of **explicit** command notification (no
+     `CommandManager.RequerySuggested`).
+- **Consequences:** Selection state and the plan stay consistent; the first selection no longer
+  self-cancels; source-change resets still reflect in the UI; the Discover button enables/disables
+  on the live `CanDiscover` predicate via an explicit raise.
+

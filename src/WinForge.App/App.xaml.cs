@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using WinForge.App.Localization;
 using WinForge.App.Services;
 using WinForge.App.ViewModels;
 using WinForge.Core.Services;
@@ -22,6 +23,14 @@ public partial class App : Application
         base.OnStartup(e);
 
         _provider = Bootstrapper.Build();
+
+        // Apply the persisted (or OS-default, falling back to English) language
+        // and expose the localization service to XAML as the "Loc" resource so
+        // every view binds localized strings through it (no scattered language branches).
+        var localization = _provider.GetRequiredService<ILocalizationService>();
+        var languageStore = _provider.GetRequiredService<ILanguageSettingsStore>();
+        LocalizationBootstrap.Initialize(localization, languageStore);
+        Application.Current.Resources["Loc"] = localization;
 
         var logger = _provider.GetRequiredService<ILoggerService>();
 

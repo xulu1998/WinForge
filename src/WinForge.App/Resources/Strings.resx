@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata" minOccurs="0" maxOccurs="unbounded">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly" minOccurs="0" maxOccurs="unbounded">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data" minOccurs="0" maxOccurs="unbounded">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader" minOccurs="0" maxOccurs="unbounded">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Workflow steps -->
+  <data name="Step.Source.Title" xml:space="preserve"><value>Source</value></data>
+  <data name="Step.Source.Description" xml:space="preserve"><value>Choose the Windows image and edition to customize.</value></data>
+  <data name="Step.Prepare.Title" xml:space="preserve"><value>Prepare</value></data>
+  <data name="Step.Prepare.Description" xml:space="preserve"><value>Export an isolated working image and mount it for changes.</value></data>
+  <data name="Step.Customize.Title" xml:space="preserve"><value>Customize</value></data>
+  <data name="Step.Customize.Description" xml:space="preserve"><value>Trim apps, tune services, and set privacy and system options.</value></data>
+  <data name="Step.Review.Title" xml:space="preserve"><value>Review</value></data>
+  <data name="Step.Review.Description" xml:space="preserve"><value>Check the declarative plan before applying it.</value></data>
+  <data name="Step.Apply.Title" xml:space="preserve"><value>Apply</value></data>
+  <data name="Step.Apply.Description" xml:space="preserve"><value>Write the validated changes to the mounted image.</value></data>
+  <data name="Step.Build.Title" xml:space="preserve"><value>Build</value></data>
+  <data name="Step.Build.Description" xml:space="preserve"><value>Produce the final image (planned for a later phase).</value></data>
+
+  <!-- Step states -->
+  <data name="StepState.NotAvailable" xml:space="preserve"><value>Not available</value></data>
+  <data name="StepState.Available" xml:space="preserve"><value>Available</value></data>
+  <data name="StepState.Current" xml:space="preserve"><value>In progress</value></data>
+  <data name="StepState.Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="StepState.RequiresAttention" xml:space="preserve"><value>Needs attention</value></data>
+
+  <!-- Navigation / buttons -->
+  <data name="Nav.Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Nav.Next" xml:space="preserve"><value>Next</value></data>
+  <data name="Nav.Home" xml:space="preserve"><value>Home</value></data>
+  <data name="Nav.Logs" xml:space="preserve"><value>Logs</value></data>
+  <data name="Nav.Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Nav.About" xml:space="preserve"><value>About</value></data>
+  <data name="Nav.Workflow" xml:space="preserve"><value>Workflow</value></data>
+  <data name="Action.Resume" xml:space="preserve"><value>Resume workflow</value></data>
+  <data name="Action.Start" xml:space="preserve"><value>Start workflow</value></data>
+  <data name="Action.Close" xml:space="preserve"><value>Close</value></data>
+
+  <!-- Home -->
+  <data name="Home.Title" xml:space="preserve"><value>WinForge</value></data>
+  <data name="Home.Subtitle" xml:space="preserve"><value>Build Windows your way.</value></data>
+  <data name="Home.Intro" xml:space="preserve"><value>Create a customized Windows 11 installation image while keeping full control over what gets changed.</value></data>
+  <data name="Home.SourceImage" xml:space="preserve"><value>Source image</value></data>
+  <data name="Home.Edition" xml:space="preserve"><value>Windows edition</value></data>
+  <data name="Home.Configuration" xml:space="preserve"><value>Configuration</value></data>
+  <data name="Home.BuildStatus" xml:space="preserve"><value>Build status</value></data>
+  <data name="Home.Progress" xml:space="preserve"><value>Workflow progress</value></data>
+  <data name="Home.SelectImage" xml:space="preserve"><value>Select Windows image</value></data>
+
+  <!-- Settings -->
+  <data name="Settings.Title" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings.Language" xml:space="preserve"><value>Display language</value></data>
+  <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>
+  <data name="Settings.Language.Chinese" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Settings.Language.Note" xml:space="preserve"><value>Changes apply immediately across the app.</value></data>
+  <data name="Settings.About.Link" xml:space="preserve"><value>About WinForge</value></data>
+
+  <!-- About -->
+  <data name="About.Title" xml:space="preserve"><value>About WinForge</value></data>
+  <data name="About.Body" xml:space="preserve"><value>WinForge builds customized Windows images from an offline working copy. The original ISO is never modified; all changes target an isolated, mounted working image.</value></data>
+  <data name="About.Version" xml:space="preserve"><value>Version</value></data>
+
+  <!-- Source / Prepare -->
+  <data name="Source.SelectIso" xml:space="preserve"><value>Select ISO</value></data>
+  <data name="Source.Inspect" xml:space="preserve"><value>Inspect</value></data>
+  <data name="Source.Inspecting" xml:space="preserve"><value>Inspecting ISO…</value></data>
+  <data name="Source.File" xml:space="preserve"><value>File</value></data>
+  <data name="Source.FileName" xml:space="preserve"><value>File name</value></data>
+  <data name="Source.Size" xml:space="preserve"><value>Size</value></data>
+  <data name="Source.Detection" xml:space="preserve"><value>Detection</value></data>
+  <data name="Source.InstallImage" xml:space="preserve"><value>Install image</value></data>
+  <data name="Source.Version" xml:space="preserve"><value>Windows version</value></data>
+  <data name="Source.Build" xml:space="preserve"><value>Build</value></data>
+  <data name="Source.Architecture" xml:space="preserve"><value>Architecture</value></data>
+  <data name="Source.Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Source.Inspection" xml:space="preserve"><value>Inspection</value></data>
+  <data name="Source.WindowsInfo" xml:space="preserve"><value>Windows information</value></data>
+  <data name="Source.Editions" xml:space="preserve"><value>Editions</value></data>
+  <data name="Source.SelectEditionHint" xml:space="preserve"><value>Select an edition to target it for customization.</value></data>
+  <data name="Source.SelectedImage" xml:space="preserve"><value>Selected image</value></data>
+  <data name="Source.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Source.Edition" xml:space="preserve"><value>Edition</value></data>
+  <data name="Source.Index" xml:space="preserve"><value>Index</value></data>
+  <data name="Source.Image" xml:space="preserve"><value>Image</value></data>
+  <data name="Source.Source" xml:space="preserve"><value>Source</value></data>
+  <data name="Source.WorkspaceNote" xml:space="preserve"><value>The workspace references the original ISO and the image's path inside it — the temporary mount drive is never stored or shown.</value></data>
+  <data name="Source.IsolatedNote" xml:space="preserve"><value>WinForge works on an isolated copy of the selected Windows edition. The original ISO and install.wim/install.esd are never modified.</value></data>
+  <data name="Source.Prepare" xml:space="preserve"><value>Prepare working image</value></data>
+  <data name="Source.Mount" xml:space="preserve"><value>Mount image</value></data>
+  <data name="Source.Unmount" xml:space="preserve"><value>Unmount &amp; discard changes</value></data>
+  <data name="Prepare.Heading" xml:space="preserve"><value>Prepare working image</value></data>
+  <data name="Prepare.Note" xml:space="preserve"><value>The original ISO and install.wim/install.esd are never modified. The working image is an isolated copy you can discard at any time.</value></data>
+  <data name="Source.WorkingImage" xml:space="preserve"><value>Working image</value></data>
+  <data name="Source.SourceEdition" xml:space="preserve"><value>Source edition</value></data>
+  <data name="Source.SourceIndex" xml:space="preserve"><value>Source index</value></data>
+  <data name="Source.WorkingIndex" xml:space="preserve"><value>Working index</value></data>
+  <data name="Source.WorkingDirectory" xml:space="preserve"><value>Working directory</value></data>
+  <data name="Source.MountDirectory" xml:space="preserve"><value>Mount directory</value></data>
+  <data name="Source.Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Source.ServicingStatus" xml:space="preserve"><value>Status</value></data>
+
+  <!-- Customize -->
+  <data name="Customize.Title" xml:space="preserve"><value>Customize</value></data>
+  <data name="Customize.Discover" xml:space="preserve"><value>Discover components</value></data>
+  <data name="Customize.Discovering" xml:space="preserve"><value>Discovering components from the mounted image…</value></data>
+  <data name="Customize.NeedsMount" xml:space="preserve"><value>Discovery requires a mounted working image.</value></data>
+  <data name="Customize.Selected" xml:space="preserve"><value>Selected</value></data>
+  <data name="Customize.Tab.Apps" xml:space="preserve"><value>Apps</value></data>
+  <data name="Customize.Tab.Components" xml:space="preserve"><value>Windows components</value></data>
+  <data name="Customize.Tab.Services" xml:space="preserve"><value>Services</value></data>
+  <data name="Customize.Tab.Privacy" xml:space="preserve"><value>Privacy</value></data>
+  <data name="Customize.Tab.System" xml:space="preserve"><value>System</value></data>
+  <data name="Customize.Tab.Experience" xml:space="preserve"><value>Experience</value></data>
+  <data name="Customize.Protected" xml:space="preserve"><value>Protected or unsupported — cannot be removed.</value></data>
+  <data name="Customize.ProtectedReason" xml:space="preserve"><value>Classified {0}; removal is not permitted by this step.</value></data>
+  <data name="Customize.DriverReason" xml:space="preserve"><value>Kernel / file-system driver — cannot be reconfigured by this step.</value></data>
+  <data name="Customize.ServiceProtectedReason" xml:space="preserve"><value>Not an approved service for this step — cannot be reconfigured.</value></data>
+  <data name="Customize.ServiceUnknownReason" xml:space="preserve"><value>Unknown service type — cannot be reconfigured.</value></data>
+  <data name="Customize.SettingProtectedReason" xml:space="preserve"><value>Setting is not permitted for offline modification.</value></data>
+  <data name="Customize.ShowProtected" xml:space="preserve"><value>Show protected entries</value></data>
+  <data name="Customize.PackageName" xml:space="preserve"><value>Package</value></data>
+  <data name="Customize.ServiceName" xml:space="preserve"><value>Service</value></data>
+  <data name="Customize.TechnicalId" xml:space="preserve"><value>Technical ID</value></data>
+
+  <!-- Review / Apply -->
+  <data name="Review.Title" xml:space="preserve"><value>Review plan</value></data>
+  <data name="Review.Intro" xml:space="preserve"><value>Review the declarative plan assembled from the Customize step. Execution only begins when you press Apply — never from a checkbox change.</value></data>
+  <data name="Review.Total" xml:space="preserve"><value>Total operations:</value></data>
+  <data name="Review.Apps" xml:space="preserve"><value>Apps:</value></data>
+  <data name="Review.Packages" xml:space="preserve"><value>Packages:</value></data>
+  <data name="Review.Registry" xml:space="preserve"><value>Registry:</value></data>
+  <data name="Review.Services" xml:space="preserve"><value>Services:</value></data>
+  <data name="Review.PageTitle" xml:space="preserve"><value>Plan Review</value></data>
+  <data name="Review.Warnings" xml:space="preserve"><value>Validation warnings</value></data>
+  <data name="Review.NoWarnings" xml:space="preserve"><value>No validation warnings.</value></data>
+  <data name="Review.Validate" xml:space="preserve"><value>Validate plan</value></data>
+  <data name="Review.Apply" xml:space="preserve"><value>Apply to mounted image</value></data>
+  <data name="Review.Progress" xml:space="preserve"><value>Applying {0} of {1}: {2}</value></data>
+  <data name="Review.Result" xml:space="preserve"><value>Result</value></data>
+  <data name="Review.Note" xml:space="preserve"><value>Applying changes the isolated, mounted working image only. The image remains mounted; commit/discard and image export happen in later steps.</value></data>
+  <data name="Review.ApplyTitle" xml:space="preserve"><value>Apply changes</value></data>
+  <data name="Review.ApplyIntro" xml:space="preserve"><value>Press Apply to write the validated plan to the mounted working image.</value></data>
+
+  <!-- Build -->
+  <data name="Build.Title" xml:space="preserve"><value>Build image</value></data>
+  <data name="Build.Intro" xml:space="preserve"><value>This step will produce your final customized Windows image.</value></data>
+  <data name="Build.Placeholder" xml:space="preserve"><value>Image export and ISO rebuild are planned for a later phase and are not implemented yet.</value></data>
+  <data name="Build.Note" xml:space="preserve"><value>No changes are written here. The Build step is an honest placeholder so the workflow is complete end to end.</value></data>
+  <data name="Build.Applied" xml:space="preserve"><value>Apply completed — changes are written to the mounted working image.</value></data>
+  <data name="Build.NotApplied" xml:space="preserve"><value>Apply has not completed yet. Use the Apply step to write the plan to the mounted image.</value></data>
+
+  <!-- Logs -->
+  <data name="Logs.Title" xml:space="preserve"><value>Logs</value></data>
+
+  <!-- Errors -->
+  <data name="Error.UnmountBeforeEdition" xml:space="preserve"><value>Unmount the working image before selecting a different edition.</value></data>
+  <data name="Error.UnmountBeforeIso" xml:space="preserve"><value>Unmount the working image before selecting a different ISO.</value></data>
+  <data name="Error.NoOperations" xml:space="preserve"><value>No operations are selected; nothing to execute.</value></data>
+  <data name="Error.PlanStarted" xml:space="preserve"><value>Plan has already started or finished; cannot re-validate.</value></data>
+  <data name="Error.ValidationFailed" xml:space="preserve"><value>Plan validation failed.</value></data>
+
+  <!-- Service friendly metadata -->
+  <data name="Svc.DiagTrack.Name" xml:space="preserve"><value>Connected User Experiences and Telemetry</value></data>
+  <data name="Svc.DiagTrack.Desc" xml:space="preserve"><value>Collects and uploads diagnostics and usage data.</value></data>
+  <data name="Svc.WerSvc.Name" xml:space="preserve"><value>Windows Error Reporting Service</value></data>
+  <data name="Svc.WerSvc.Desc" xml:space="preserve"><value>Sends error reports to Microsoft when programs stop responding.</value></data>
+  <data name="Svc.PcaSvc.Name" xml:space="preserve"><value>Program Compatibility Assistant Service</value></data>
+  <data name="Svc.PcaSvc.Desc" xml:space="preserve"><value>Detects incompatible applications and applies compatibility fixes.</value></data>
+
+  <!-- App friendly metadata -->
+  <data name="App.Microsoft.BingWeather.Name" xml:space="preserve"><value>Weather</value></data>
+  <data name="App.Microsoft.BingWeather.Desc" xml:space="preserve"><value>The preinstalled Bing Weather app.</value></data>
+  <data name="App.Microsoft.GetHelp.Name" xml:space="preserve"><value>Get Help</value></data>
+  <data name="App.Microsoft.GetHelp.Desc" xml:space="preserve"><value>Microsoft's help and support app.</value></data>
+  <data name="App.Microsoft.WindowsCamera.Name" xml:space="preserve"><value>Camera</value></data>
+  <data name="App.Microsoft.WindowsCamera.Desc" xml:space="preserve"><value>The preinstalled Windows Camera app.</value></data>
+  <data name="App.Microsoft.XboxApp.Name" xml:space="preserve"><value>Xbox</value></data>
+  <data name="App.Microsoft.XboxApp.Desc" xml:space="preserve"><value>The preinstalled Xbox app.</value></data>
+
+  <!-- Legacy utility views (Task 11 localization) -->
+  <data name="Logs.PageTitle" xml:space="preserve"><value>Application Logs</value></data>
+  <data name="ComingSoon.Planned" xml:space="preserve"><value>This section is planned for a future phase.</value></data>
+
+  <data name="Components.Title" xml:space="preserve"><value>Components</value></data>
+  <data name="Components.Intro" xml:space="preserve"><value>Discover removable items from the mounted working image. Selections build a declarative plan — nothing is changed until you apply it from the Plan page.</value></data>
+  <data name="Components.ProvisionedApps" xml:space="preserve"><value>Provisioned apps</value></data>
+  <data name="Components.WindowsPackages" xml:space="preserve"><value>Windows packages</value></data>
+  <data name="Components.PackagesHint" xml:space="preserve"><value>Only optional feature/capability packages are offered for removal. Language, core, driver, and servicing packages are protected.</value></data>
+  <data name="Components.Services" xml:space="preserve"><value>System components (services)</value></data>
+  <data name="Components.ServicesHint" xml:space="preserve"><value>Selecting a service disables it in the offline image. Protected services cannot be changed here.</value></data>
+
+  <data name="Privacy.Title" xml:space="preserve"><value>Privacy</value></data>
+  <data name="Privacy.Intro" xml:space="preserve"><value>Curated, documented, offline-applicable privacy toggles. These change the offline image's machine-policy registry only — never a signed-in user, cloud, or account policy.</value></data>
+  <data name="Privacy.Selected" xml:space="preserve"><value>Selected</value></data>
+
+  <data name="System.Title" xml:space="preserve"><value>System</value></data>
+  <data name="System.Intro" xml:space="preserve"><value>Safe, offline service and machine-policy changes only. No boot configuration, partitioning, drivers, kernel patches, or blanket security disabling.</value></data>
+  <data name="System.Selected" xml:space="preserve"><value>Selected</value></data>
+  <data name="System.RecommendedServices" xml:space="preserve"><value>Recommended service changes</value></data>
+  <data name="System.RegistryTweaks" xml:space="preserve"><value>System registry tweaks</value></data>
+
+  <!-- Image / servicing status + errors (localized) -->
+  <data name="Source.NoIsoSelected" xml:space="preserve"><value>No ISO selected</value></data>
+  <data name="Source.UnableToInspect" xml:space="preserve"><value>Unable to inspect ISO</value></data>
+  <data name="Source.Detection.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Source.Detection.Candidate" xml:space="preserve"><value>Windows ISO Candidate</value></data>
+  <data name="Common.NotDetected" xml:space="preserve"><value>Not detected</value></data>
+  <data name="Common.Mixed" xml:space="preserve"><value>Mixed</value></data>
+  <data name="Workspace.Status.SelectEdition" xml:space="preserve"><value>Select an edition</value></data>
+  <data name="Workspace.Status.Ready" xml:space="preserve"><value>Ready</value></data>
+
+  <data name="Servicing.NotPrepared" xml:space="preserve"><value>Not prepared</value></data>
+  <data name="Servicing.Preparing" xml:space="preserve"><value>Preparing…</value></data>
+  <data name="Servicing.Prepared" xml:space="preserve"><value>Prepared</value></data>
+  <data name="Servicing.Mounting" xml:space="preserve"><value>Mounting…</value></data>
+  <data name="Servicing.Mounted" xml:space="preserve"><value>Mounted</value></data>
+  <data name="Servicing.Unmounting" xml:space="preserve"><value>Unmounting…</value></data>
+  <data name="Servicing.Completed" xml:space="preserve"><value>Unmounted</value></data>
+  <data name="Servicing.Failed" xml:space="preserve"><value>Failed</value></data>
+
+  <data name="Servicing.Msg.Preparing" xml:space="preserve"><value>Preparing working image…</value></data>
+  <data name="Servicing.Msg.Prepared" xml:space="preserve"><value>Working image prepared.</value></data>
+  <data name="Servicing.Msg.PrepareFailed" xml:space="preserve"><value>Preparation failed.</value></data>
+  <data name="Servicing.Msg.Mounting" xml:space="preserve"><value>Mounting working image…</value></data>
+  <data name="Servicing.Msg.Mounted" xml:space="preserve"><value>Working image mounted.</value></data>
+  <data name="Servicing.Msg.MountFailed" xml:space="preserve"><value>Mount failed.</value></data>
+  <data name="Servicing.Msg.Unmounting" xml:space="preserve"><value>Unmounting working image…</value></data>
+  <data name="Servicing.Msg.Unmounted" xml:space="preserve"><value>Working image unmounted (changes discarded).</value></data>
+  <data name="Servicing.Msg.UnmountFailed" xml:space="preserve"><value>Unmount failed.</value></data>
+  <data name="Servicing.Msg.PrepareFailedUnexpected" xml:space="preserve"><value>Preparation failed unexpectedly.</value></data>
+  <data name="Servicing.Msg.MountFailedUnexpected" xml:space="preserve"><value>Mount failed unexpectedly.</value></data>
+  <data name="Servicing.Msg.UnmountFailedUnexpected" xml:space="preserve"><value>Unmount failed unexpectedly.</value></data>
+</root>

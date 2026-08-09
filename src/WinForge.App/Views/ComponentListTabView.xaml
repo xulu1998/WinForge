@@ -1,0 +1,37 @@
+<UserControl x:Class="WinForge.App.Views.ComponentListTabView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+             xmlns:conv="clr-namespace:WinForge.App.Converters"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:ComponentListTabViewModel}">
+    <StackPanel>
+        <CheckBox x:Name="ShowProtectedCheck" Margin="0,0,0,8"
+                  Checked="ShowProtectedCheck_OnChecked" Unchecked="ShowProtectedCheck_OnUnchecked">
+            <TextBlock>
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Customize.ShowProtected"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </CheckBox>
+        <ListView x:Name="ListView" BorderBrush="#CBD2D9" BorderThickness="1" MaxHeight="440">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal" Margin="4">
+                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanSelect}"
+                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Text="{Binding FriendlyName}" Width="280" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding TechnicalId}" Foreground="#9AA5B1" FontSize="11"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="8,0,0,0"/>
+                        <TextBlock Text="{Binding Reason}" Foreground="#9B1C1C" FontSize="11"
+                                   Margin="8,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </StackPanel>
+</UserControl>

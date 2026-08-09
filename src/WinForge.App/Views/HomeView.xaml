@@ -4,46 +4,95 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+             xmlns:conv="clr-namespace:WinForge.App.Converters"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:HomeViewModel}">
     <ScrollViewer Padding="32">
         <StackPanel MaxWidth="820">
-            <TextBlock Text="WinForge" FontSize="34" FontWeight="Bold" Foreground="#1F2933"/>
-            <TextBlock Text="Build Windows your way." FontSize="16" Foreground="#52606D" Margin="0,4,0,0"/>
-            <TextBlock TextWrapping="Wrap" Margin="0,16,0,0" FontSize="14" Foreground="#3E4C59"
-                       Text="Create a customized Windows 11 installation image while keeping full control over what gets changed."/>
+            <TextBlock FontSize="34" FontWeight="Bold" Foreground="#1F2933">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Home.Title"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <TextBlock FontSize="16" Foreground="#52606D" Margin="0,4,0,0">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Home.Subtitle"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <TextBlock TextWrapping="Wrap" Margin="0,16,0,0" FontSize="14" Foreground="#3E4C59">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Home.Intro"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
 
             <WrapPanel Margin="0,24,0,0">
                 <Border Style="{StaticResource StatusTile}">
                     <StackPanel>
-                        <TextBlock Text="Source Image" FontSize="12" Foreground="#7B8794"/>
+                        <TextBlock FontSize="12" Foreground="#7B8794">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Home.SourceImage"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
                         <TextBlock Text="{Binding SourceImageDisplay}" FontSize="14" FontWeight="SemiBold"
                                    Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatusTile}">
                     <StackPanel>
-                        <TextBlock Text="Windows Edition" FontSize="12" Foreground="#7B8794"/>
+                        <TextBlock FontSize="12" Foreground="#7B8794">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Home.Edition"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
                         <TextBlock Text="{Binding EditionDisplay}" FontSize="14" FontWeight="SemiBold" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatusTile}">
                     <StackPanel>
-                        <TextBlock Text="Configuration" FontSize="12" Foreground="#7B8794"/>
+                        <TextBlock FontSize="12" Foreground="#7B8794">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Home.Configuration"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
                         <TextBlock Text="{Binding ConfigurationDisplay}" FontSize="14" FontWeight="SemiBold" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatusTile}">
                     <StackPanel>
-                        <TextBlock Text="Build Status" FontSize="12" Foreground="#7B8794"/>
+                        <TextBlock FontSize="12" Foreground="#7B8794">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Home.BuildStatus"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
                         <TextBlock Text="{Binding BuildStatusDisplay}" FontSize="14" FontWeight="SemiBold" Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
             </WrapPanel>
 
-            <Button Style="{StaticResource PrimaryButton}" Content="Select Windows Image"
-                    Command="{Binding SelectImageCommand}" Margin="0,24,0,0" Width="200"
-                    HorizontalAlignment="Left"/>
+            <Button Style="{StaticResource PrimaryButton}" Margin="0,24,0,0" Width="200"
+                    HorizontalAlignment="Left" Command="{Binding SelectImageCommand}">
+                <TextBlock>
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Home.SelectImage"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </Button>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
