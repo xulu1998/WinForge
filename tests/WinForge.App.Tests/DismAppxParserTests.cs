@@ -11,6 +11,11 @@ namespace WinForge.App.Tests;
 /// </summary>
 public class DismAppxParserTests
 {
+    // REAL DISM output copied from a Windows 11 Pro mounted image
+    // (`dism /English /Image:<mount> /Get-ProvisionedAppxPackages`).
+    // Note the SINGLE-WORD headers `DisplayName` then `PackageName`, and that
+    // `PackageName` is the FULL identity (name_version_arch_~_publisher-hash)
+    // while `DisplayName` is only the friendly name.
     private const string Sample = @"
 Deployment Image Servicing and Management tool
 Version: 10.0.26100.1
@@ -19,23 +24,34 @@ Image Version: 10.0.26100.1742
 
 The following provisioned packages will be listed:
 
-Deployment package name : Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe
-Display name : Weather
+DisplayName : Clipchamp.Clipchamp
+Version : 4.4.10720.0
+Architecture : neutral
+ResourceId : ~
+PackageName : Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt
+Regions : all
+
+DisplayName : Microsoft.BingWeather
 Version : 4.53.53006.0
 Architecture : neutral
-Resource ID : ~
+ResourceId : ~
+PackageName : Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe
+Regions : all
 
-Deployment package name : Microsoft.Windows.Photos_2024.11020.15005.0_neutral_~_8wekyb3d8bbwe
-Display name : Photos
+DisplayName : Microsoft.Windows.Photos
 Version : 2024.11020.15005.0
 Architecture : neutral
+ResourceId : ~
+PackageName : Microsoft.Windows.Photos_2024.11020.15005.0_neutral_~_8wekyb3d8bbwe
+Regions : all
 ";
 
     [Fact]
     public void Parses_AllPackages_WithExactIdentity()
     {
         var result = DismAppxParser.Parse(Sample);
-        Assert.Equal(2, result.Count);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(result, p => p.PackageName == "Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt");
         Assert.Contains(result, p => p.PackageName == "Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe");
         Assert.Contains(result, p => p.PackageName == "Microsoft.Windows.Photos_2024.11020.15005.0_neutral_~_8wekyb3d8bbwe");
     }
@@ -45,7 +61,7 @@ Architecture : neutral
     {
         var result = DismAppxParser.Parse(Sample);
         var weather = result.First(p => p.PackageName.Contains("BingWeather"));
-        Assert.Equal("Weather", weather.DisplayName);
+        Assert.Equal("Microsoft.BingWeather", weather.DisplayName);
         Assert.Equal("4.53.53006.0", weather.Version);
         Assert.Equal(RiskClass.Removable, weather.Risk);
     }
@@ -61,7 +77,7 @@ Architecture : neutral
     [Fact]
     public void TrimsWhitespace_AroundValues()
     {
-        var outp = "Deployment package name :   Microsoft.XboxApp_1.0.0.0_neutral_~_8wekyb3d8bbwe   \nDisplay name : Xbox\n";
+        var outp = "PackageName :   Microsoft.XboxApp_1.0.0.0_neutral_~_8wekyb3d8bbwe   \nDisplayName : Xbox\n";
         var result = DismAppxParser.Parse(outp);
         Assert.Single(result);
         Assert.Equal("Microsoft.XboxApp_1.0.0.0_neutral_~_8wekyb3d8bbwe", result[0].PackageName);
@@ -70,46 +86,92 @@ Architecture : neutral
     [Fact]
     public void MissingPackageName_BlockSkipped()
     {
-        var outp = "Display name : Orphan\nVersion : 1.0.0.0\n";
+        // A block that has only a DisplayName (no PackageName) must be DROPPED,
+        // never keyed by the friendly DisplayName — that would be the wrong
+        // identity for /Remove-ProvisionedAppxPackage.
+        var outp = "DisplayName : Orphan\nVersion : 1.0.0.0\n";
         var result = DismAppxParser.Parse(outp);
         Assert.Empty(result);
     }
 
     [Fact]
-    public void Parses_RealDismSingleWordHeaders()
+    public void Parses_RealDismSingleWordHeaders_DisplayNameBeforePackageName()
     {
         // Real `dism /Get-ProvisionedAppxPackages /English` emits SINGLE-WORD
-        // headers ("PackageName", "DisplayName") — NOT the multi-word
-        // "Deployment package name" invented by earlier parsing. This is the
-        // exact output that previously yielded zero discovered apps.
+        // headers, with `DisplayName` listed BEFORE `PackageName` — NOT the
+        // multi-word "Deployment package name" invented by earlier parsing. This is
+        // the exact format that previously yielded zero discovered apps.
         const string real = @"
 Deployment Image Servicing and Management tool
 Version: 10.0.26100.1
 
 Image Version: 10.0.26100.1742
 
+DisplayName : Clipchamp.Clipchamp
+Version : 4.4.10720.0
+Architecture : neutral
+ResourceId : ~
+PackageName : Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt
+Regions : all
+
 DisplayName : Microsoft.BingWeather
-PackageName : Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe
 Version : 4.53.53006.0
 Architecture : neutral
 ResourceId : ~
-
-DisplayName : Microsoft.Windows.Photos
-PackageName : Microsoft.Windows.Photos_2024.11020.15005.0_neutral_~_8wekyb3d8bbwe
-Version : 2024.11020.15005.0
-Architecture : neutral
+PackageName : Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe
+Regions : all
 ";
         var result = DismAppxParser.Parse(real);
         Assert.Equal(2, result.Count);
+        Assert.Contains(result, p => p.PackageName == "Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt");
         Assert.Contains(result, p => p.PackageName == "Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe");
-        Assert.Contains(result, p => p.PackageName == "Microsoft.Windows.Photos_2024.11020.15005.0_neutral_~_8wekyb3d8bbwe");
-        Assert.Contains(result, p => p.DisplayName == "Microsoft.BingWeather");
+        Assert.Contains(result, p => p.DisplayName == "Clipchamp.Clipchamp");
+    }
+
+    [Fact]
+    public void RemovalIdentity_IsExactPackageName_NotDisplayName()
+    {
+        // The destructive operation must target the FULL PackageName identity
+        // (name_version_arch_~_publisher-hash), never the friendly DisplayName.
+        var result = DismAppxParser.Parse(Sample);
+        Assert.Equal(3, result.Count);
+        foreach (var p in result)
+        {
+            // Identity carries version + neutral + publisher hash segment.
+            Assert.Contains("_neutral_~_", p.PackageName);
+            // DisplayName is the short friendly name and must differ from identity.
+            Assert.NotEqual(p.PackageName, p.DisplayName);
+            Assert.DoesNotContain("_neutral_~_", p.DisplayName);
+        }
+
+        var clip = result.First(p => p.PackageName.Contains("Clipchamp"));
+        Assert.Equal("Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt", clip.PackageName);
+        Assert.Equal("Clipchamp.Clipchamp", clip.DisplayName);
     }
 
     [Fact]
     public void IsRecognizedOutput_True_ForEnglishBanner()
     {
         Assert.True(DismAppxParser.IsRecognizedOutput("Deployment Image Servicing and Management tool\nPackageName : X"));
+    }
+
+    [Fact]
+    public void IsRecognizedOutput_True_ForGenuineZeroWithBanner()
+    {
+        // A valid /English run that genuinely lists zero provisioned packages
+        // (no PackageName blocks) still carries the DISM banner — it is
+        // recognizable as DISM output, so the discovery must treat it as a
+        // legitimate SUCCESS(0), NOT as a parser failure. The zero is genuine.
+        const string genuineZero = @"
+Deployment Image Servicing and Management tool
+Version: 10.0.26100.1
+
+Image Version: 10.0.26100.1742
+
+The following provisioned packages will be listed:
+";
+        Assert.True(DismAppxParser.IsRecognizedOutput(genuineZero));
+        Assert.Empty(DismAppxParser.Parse(genuineZero));
     }
 
     [Fact]

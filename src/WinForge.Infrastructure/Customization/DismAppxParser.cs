@@ -11,9 +11,19 @@ namespace WinForge.Infrastructure.Customization;
 /// <see cref="DiscoveredAppxPackage"/> items.
 ///
 /// <para>DISM reports each provisioned package as a block of "Key : Value" lines
-/// (the same tolerant key/value grammar used elsewhere in WinForge). The block is
-/// keyed by <c>Deployment package name</c>, which is the exact identity DISM
-/// requires for removal — there is deliberately NO substring/fuzzy matching.</para>
+/// (the same tolerant key/value grammar used elsewhere in WinForge). On a real
+/// Windows image the <c>/English</c> run emits the SINGLE-WORD headers
+/// <c>PackageName</c> and <c>DisplayName</c> — never the synthetic multi-word
+/// "Deployment package name" / "Display name" that earlier parsing invented.
+/// Both forms are accepted for robustness.</para>
+///
+/// <para>The block's removal identity is the exact <c>PackageName</c> value
+/// (e.g. <c>Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt</c>), which is
+/// precisely what <c>dism /Remove-ProvisionedAppxPackage /PackageName:…</c>
+/// requires. <c>DisplayName</c> (e.g. <c>Clipchamp.Clipchamp</c>) is captured
+/// for display only and is NEVER used as the destructive-operation target. A block
+/// that lacks a <c>PackageName</c> is dropped rather than falling back to
+/// <c>DisplayName</c> — there is deliberately NO substring/fuzzy matching.</para>
 ///
 /// <para>Empty / missing output is tolerated: an empty list is returned. Unknown
 /// DISM fields are ignored; only the stable, documented keys are read.</para>

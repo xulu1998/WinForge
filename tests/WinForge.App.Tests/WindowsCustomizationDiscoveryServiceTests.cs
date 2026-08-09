@@ -96,21 +96,36 @@ public class WindowsCustomizationDiscoveryServiceTests : IAsyncLifetime
         };
     }
 
+    // REAL DISM output copied from a Windows 11 Pro mounted image
+    // (`dism /English /Image:<mount> /Get-ProvisionedAppxPackages`) — single-word
+    // `DisplayName` then `PackageName` headers, with Clipchamp from the desktop
+    // evidence plus two more real store apps.
     private const string AppxOut = @"
 Deployment Image Servicing and Management tool
 Version: 10.0.26100.1
 
 Image Version: 10.0.26100.1742
 
+DisplayName : Clipchamp.Clipchamp
+Version : 4.4.10720.0
+Architecture : neutral
+ResourceId : ~
+PackageName : Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt
+Regions : all
+
 DisplayName : Microsoft.BingWeather
-PackageName : Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe
 Version : 4.53.53006.0
 Architecture : neutral
+ResourceId : ~
+PackageName : Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe
+Regions : all
 
 DisplayName : Microsoft.Windows.Photos
-PackageName : Microsoft.Windows.Photos_2024.11020.15005.0_neutral_~_8wekyb3d8bbwe
 Version : 2024.11020.15005.0
 Architecture : neutral
+ResourceId : ~
+PackageName : Microsoft.Windows.Photos_2024.11020.15005.0_neutral_~_8wekyb3d8bbwe
+Regions : all
 ";
 
     private const string PkgOut = @"
@@ -129,7 +144,9 @@ Release Type : Feature Pack
         Build();
         var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
         Assert.True(inv.Discovered);
-        Assert.Equal(2, inv.AppxPackages.Count);
+        Assert.Equal(3, inv.AppxPackages.Count);
+        // The removal identity is the exact PackageName, not the DisplayName.
+        Assert.Contains(inv.AppxPackages, p => p.PackageName == "Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt");
     }
 
     [Fact]
@@ -245,5 +262,44 @@ Release Type : Feature Pack
         Assert.Equal(DiscoverySourceStatus.Failed, inv.ServiceStatus);
         Assert.False(string.IsNullOrEmpty(inv.ServiceError));
         Assert.Empty(inv.Services);
+    }
+
+    [Fact]
+    public async Task Discover_GenuineZeroAppx_IsSuccess_NotFailed()
+    {
+        Build();
+        // A valid /English DISM run that genuinely lists zero provisioned packages
+        // (the banner + "will be listed" but no PackageName blocks). This is a
+        // legitimate, recognizable result and must be reported as SUCCESS with 0
+        // items — NOT as a failure. It is distinct from:
+        //  - command failure (exit != 0)            -> Failed
+        //  - unrecognized/localized output           -> Failed
+        _runner.Responder = req =>
+        {
+            if (req.Arguments.Contains("/Get-ProvisionedAppxPackages"))
+            {
+                return new ProcessResult
+                {
+                    ExitCode = 0,
+                    StandardOutput = @"
+Deployment Image Servicing and Management tool
+Version: 10.0.26100.1
+
+Image Version: 10.0.26100.1742
+
+The following provisioned packages will be listed:
+"
+                };
+            }
+            if (req.Arguments.Contains("/Get-Packages"))
+            {
+                return new ProcessResult { ExitCode = 0, StandardOutput = PkgOut };
+            }
+            return new ProcessResult { ExitCode = 0, StandardOutput = string.Empty };
+        };
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        Assert.Equal(DiscoverySourceStatus.Success, inv.AppxStatus);
+        Assert.True(string.IsNullOrEmpty(inv.AppxError));
+        Assert.Empty(inv.AppxPackages);
     }
 }

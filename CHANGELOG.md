@@ -90,6 +90,31 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   (added `Discover_SurfacesEmptyServicesEnumeration_AsError_NotSilentZero`). Step 3.3 remains
   **PENDING real-desktop validation — re-run required**; not merged to `main`.
 
+### Fixed (Phase 3 Step 3.3 — Appx removal-identity / fixture fidelity, ADR-029)
+- **DEFECT 1 confirmation (reproduced independently on a real mounted image):** `dism /English
+  /Image:<mount> /Get-ProvisionedAppxPackages` **succeeds** and returns many packages, yet
+  WinForge reported "Discovered 0 app(s)". The remaining mismatch: the Step 3.3 report described
+  the parser as keying on the invented multi-word "Deployment package name", while the real
+  `/English` output uses the single-word `PackageName` header (`DisplayName` listed first).
+  The live parser already accepted `PackageName`, but the doc comment, fixtures, and historical
+  ADR text still referenced the synthetic key.
+- **Fix:** parser **doc comment** corrected to state the real single-word `PackageName`/
+  `DisplayName` headers; `DismAppxParserTests.Sample` and
+  `WindowsCustomizationDiscoveryServiceTests.AppxOut` now contain REAL DISM output copied from the
+  desktop test (Clipchamp, BingWeather, Windows.Photos). Removal identity is the exact
+  `PackageName` (full `name_version_arch_~_publisher-hash`) end-to-end
+  (`DismAppxParser` → `ComponentsViewModel.SyncAppx.TargetIdentifier` →
+  `/Remove-ProvisionedAppxPackage /PackageName:"…"`); `DisplayName` is display-only and a block
+  without `PackageName` is dropped (never keyed by `DisplayName`). The four-way outcome contract
+  is explicit: valid+found → `Success(N)`; valid+genuine-zero → `Success(0)` (legitimate); command
+  failure → `Failed`; unrecognized output → `Failed`.
+- **Tests added:** `RemovalIdentity_IsExactPackageName_NotDisplayName`,
+  `IsRecognizedOutput_True_ForGenuineZeroWithBanner`,
+  `Discover_GenuineZeroAppx_IsSuccess_NotFailed` (and the Appx `Sample`/`AppxOut` fixtures
+  replaced with real output). 224 automated tests pass (Core 37, App 187), 0 errors, 0 warnings
+  (Release), all CI-safe. Step 3.3 remains **PENDING real-desktop validation — re-run required**;
+  not merged to `main`.
+
 ### Status (Phase 3 Step 3.3 — implemented, pending real-desktop validation)
 - Step 3.3 is **IMPLEMENTED** on `feature/offline-customization` (2026-08-09). The full
   declarative plan, discovery, offline-registry, execution, and UI layers are complete and

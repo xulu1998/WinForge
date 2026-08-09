@@ -599,3 +599,42 @@ All decisions are `ACCEPTED` unless noted.
   `ServiceStatus = Failed` on hive-load throw, "0 services" can no longer masquerade as success.
   Step 3.3 real-desktop validation remains **PENDING** — RE-RUN required after this change.
 
+## ADR-029: Appx removal identity must be the exact PackageName, never DisplayName
+
+- **Status:** ACCEPTED
+- **Context:** Independent real-desktop reproduction of DEFECT 1 confirmed `dism /English
+  /Image:<mount> /Get-ProvisionedAppxPackages` **succeeds** and returns many provisioned
+  packages, yet WinForge reported "Discovered 0 app(s)". The root mismatch: the Step 3.3 report
+  described the parser as keying on the invented multi-word "Deployment package name", whereas the
+  real `/English` output uses the **single-word `PackageName`** header (with `DisplayName` listed
+  first). The live code already accepted `PackageName`, but the parser **doc comment**, the unit
+  **fixtures**, and the historical ADR text still referenced the synthetic key — so the contract
+  was ambiguous. The user also required an explicit guarantee that the destructive operation
+  targets the exact `PackageName` identity (e.g.
+  `Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt`), **never** the friendly `DisplayName`
+  (`Clipchamp.Clipchamp`), and that four outcomes stay distinct: (a) valid command + packages
+  found → `Success(N)`; (b) valid command + genuinely zero packages → `Success(0)` (legitimate,
+  NOT an error); (c) command failure (exit ≠ 0) → `Failed`; (d) unrecognized/localized output →
+  `Failed`. An unrecognized real DISM format must never silently become a successful empty
+  inventory.
+- **Decision:**
+  1. **Fixtures reflect reality** — `DismAppxParserTests.Sample` and
+     `WindowsCustomizationDiscoveryServiceTests.AppxOut` now contain REAL DISM output copied from
+     the desktop test (Clipchamp, BingWeather, Windows.Photos): single-word `DisplayName` then
+     `PackageName` headers, with `PackageName` as the full identity.
+  2. **Identity is PackageName end-to-end** — `DismAppxParser` extracts `PackageName`;
+     `ComponentsViewModel.SyncAppx` sets `TargetIdentifier = Package.PackageName`;
+     `WindowsCustomizationExecutionService` issues
+     `/Remove-ProvisionedAppxPackage /PackageName:"{TargetIdentifier}"`. `DisplayName` is
+     display-only. A block lacking `PackageName` is dropped (never keyed by `DisplayName`).
+  3. **Four-way outcome contract** — `RunDismAsync` enforces it: non-zero exit → throw →
+     `Failed`; exit 0 but unrecognized output → throw → `Failed`; exit 0 + recognized output
+     (English banner or a recognized key) → `Success`, with `Parse` yielding N or 0. Genuine
+     zero (banner present, no `PackageName` blocks) is `Success(0)`, explicitly distinct from a
+     parser failure.
+- **Consequences:** The Appx discovery contract is unambiguous and proven by tests
+  (`RemovalIdentity_IsExactPackageName_NotDisplayName`,
+  `IsRecognizedOutput_True_ForGenuineZeroWithBanner`, `Discover_GenuineZeroAppx_IsSuccess_NotFailed`).
+  A real Windows run will now discover the mounted image's provisioned packages by exact identity.
+  Step 3.3 real-desktop validation remains **PENDING** — RE-RUN required after this change.
+
