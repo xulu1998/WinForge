@@ -40,7 +40,41 @@ public sealed class AppState : IAppState
     public ImageServicingWorkspace? CurrentServicingWorkspace
     {
         get => _currentServicingWorkspace;
-        set => SetField(ref _currentServicingWorkspace, value);
+        set
+        {
+            // The servicing layer mutates ImageServicingWorkspace.State IN PLACE and
+            // returns the SAME reference. A plain reference-equality compare (SetField)
+            // would treat that reassignment as "no change" and suppress PropertyChanged,
+            // so the workflow coordinator (WorkflowViewModel) would never observe a
+            // Prepared -> Mounted transition and the Next button would stay disabled on
+            // the real desktop. We therefore:
+            //  - forward nested State/LastError changes from the current workspace,
+            //  - raise PropertyChanged even on a same-reference reassignment, and
+            //  - (re)subscribe when the reference actually changes.
+            if (ReferenceEquals(_currentServicingWorkspace, value))
+            {
+                if (value is not null)
+                {
+                    OnPropertyChanged(nameof(CurrentServicingWorkspace));
+                }
+
+                return;
+            }
+
+            if (_currentServicingWorkspace is INotifyPropertyChanged oldNested)
+            {
+                oldNested.PropertyChanged -= OnNestedServicingChanged;
+            }
+
+            _currentServicingWorkspace = value;
+
+            if (value is INotifyPropertyChanged newNested)
+            {
+                newNested.PropertyChanged += OnNestedServicingChanged;
+            }
+
+            OnPropertyChanged(nameof(CurrentServicingWorkspace));
+        }
     }
 
     public CustomizationPlan? CurrentCustomizationPlan
@@ -86,5 +120,19 @@ public sealed class AppState : IAppState
         field = value;
         OnPropertyChanged(propertyName);
         return true;
+    }
+
+    /// <summary>
+    /// Forwards nested <see cref="ImageServicingWorkspace"/> changes (notably
+    /// <see cref="ImageServicingWorkspace.State"/>) to <see cref="IAppState"/>
+    /// listeners. The workflow coordinator derives step availability from State, so
+    /// an in-place State mutation must surface as a CurrentServicingWorkspace change.
+    /// </summary>
+    private void OnNestedServicingChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is null or nameof(ImageServicingWorkspace.State))
+        {
+            OnPropertyChanged(nameof(CurrentServicingWorkspace));
+        }
     }
 }
