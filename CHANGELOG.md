@@ -105,17 +105,48 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   IMPLEMENTED / PENDING FINAL LANGUAGE-PARSER RE-VALIDATION — NOT COMPLETED.
 
 ### Status (Phase 2 Step 2.2)
-- Step 2.2 is implemented on `feature/iso-inspection` and passes the automated
-  test suite (0 errors, 0 warnings, 100% tests executed and passing). A real
-  Windows desktop run on the Windows 11 25H2 zh-CN x64 Consumer `install.wim`
-  validated the two-stage `/Get-ImageInfo` flow, 6 indexes, version/build/x64, and
-  localized Chinese edition names — but it exposed the trailing DISM footer
-  language-parsing defect, which is now fixed. Step 2.2 therefore remains
-  **pending one final real desktop re-validation** of the corrected language
-  parsing and is NOT yet marked COMPLETED.
-- `WindowsImageType` / architecture / version / build / language parsing is now
-  implemented; the real-desktop mount→inspect→dismount→metadata cycle still
-  requires one more user confirmation on a Windows machine.
+- Step 2.2 has been accepted and merged to `main` (2026-08-08). It passes the
+  automated test suite (0 errors, 0 warnings, 60/60 tests executed and passing:
+  Core 6, App 54). A real Windows desktop run on the Windows 11 25H2 zh-CN x64
+  Consumer `install.wim` validated the full two-stage `/Get-ImageInfo` flow: ISO
+  mount, `install.wim` detection, enumeration of 6 indexes, per-index detail
+  queries, Windows Version `10.0.26200`, Build `26200`, Architecture `x64`, Language
+  `zh-CN` (footer prose correctly rejected), localized Chinese edition names, and
+  guaranteed dismount. Both real-desktop findings (DISM exit 87, language footer
+  `The`) were fixed and revalidated. `v0.1.0-alpha` is unchanged; Step 2.3 is NOT
+  STARTED; `feature/iso-inspection` is retained for Step 2.3.
+
+### Accepted (Phase 2 Step 2.2 — Windows image metadata & editions)
+- Phase 2 Step 2.2 accepted and merged to `main` on 2026-08-08 via a `--no-ff`
+  merge commit (`feature/iso-inspection`, commits `a8f27ef`, `ec3df91`,
+  `2b5f848`, `929d399`). Pre-merge and post-merge `dotnet build` / `dotnet test`
+  verified clean: 0 errors, 0 warnings, 60/60 tests passing (Core 6, App 54).
+- Real Windows 11 25H2 (Chinese Simplified, x64, Consumer Editions, `install.wim`)
+  desktop validation PASSED: ISO mounted, `install.wim` detected, `/Get-ImageInfo`
+  enumeration succeeded (6 indexes: 家庭版/家庭单语言版/教育版/专业版/专业教育版/
+  专业工作站版), per-index detailed queries succeeded, Windows Version
+  `10.0.26200`, Build `26200`, Architecture `x64`, Language `zh-CN`, localized
+  Chinese edition names populated, ISO dismounted. The previous language bug
+  (`zh-CN, The`) is fixed (UI shows `zh-CN` only).
+- Both real-desktop findings from the metadata-inspection validation are fixed and
+  revalidated: (1) initial `/Get-WimInfo` caused DISM exit code 87 → corrected to
+  the documented `dism.exe /Get-ImageInfo /ImageFile:"<path>" /English` (enumeration)
+  and `... /Index:<n> /English` (per-index detail); (2) the trailing DISM footer
+  `The operation completed successfully.` was parsed as language `The` → fixed via
+  `TryNormalizeLanguageTag` (BCP-47-like validator, clean `Languages` section
+  termination). Added regression tests for both.
+- Delivered capabilities (Step 2.2): read-only WIM/ESD metadata (index, edition
+  name/description, architecture, Windows version, build, edition ID, installation
+  type, languages, default language) via two-stage `dism.exe /Get-ImageInfo`
+  (read-only, no WIM mount/servicing); `IProcessRunner` abstraction keeping Core
+  free of `Process`; combined mount→layout→metadata→dismount session preserving
+  ADR-015; Image page "Windows information" + editions list; edition selection →
+  `IAppState.SelectedEdition`. 60 automated tests (parser, service via fake process
+  runner, orchestrator lifecycle, ViewModel/Home selection).
+- Step 2.2 does not extract, mount, modify, or service the image. `v0.1.0-alpha`
+  remains unchanged; the next tag (`v0.2.0-alpha`) is deferred until Phase 2
+  completes. ESD (`install.esd`) metadata parsing is implemented but still
+  `Untested` on a real desktop.
 
 ## [0.1.0-alpha] — 2026-08-08
 
