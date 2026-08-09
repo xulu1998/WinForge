@@ -28,10 +28,36 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   edition/metadata, NotReady (no selection / failed metadata / missing ISO / unknown
   type), Invalid (selected index not in metadata), edition change, new-ISO reset,
   failed inspection, Home consistency, and `IWimService` validation/resolve. All prior
-  Step 2.1/2.2 tests (mount/dismount, ADR-015 cleanup) are retained. Total 90/90 pass
-  (Core 11, App 79), 0 errors, 0 warnings.
+  Step 2.1/2.2 tests (mount/dismount, ADR-015 cleanup) are retained. Total 92/92 pass
+  (Core 12, App 80), 0 errors, 0 warnings.
 - ADR-017 records that durable descriptors store ISO path + relative install-image
   path + selected index and never persist temporary mounted drive letters.
+
+### Changed (Phase 3 Step 3.1 — application elevation)
+- `WinForge.App` now declares `requestedExecutionLevel level="requireAdministrator"`
+  (uiAccess false) in its embedded application manifest (`src/WinForge.App/app.manifest`,
+  wired via `<ApplicationManifest>` in `WinForge.App.csproj`). A normal launch now
+  triggers the Windows UAC prompt for administrator rights. This is declarative only —
+  no self-elevation process spawn, PowerShell, or UAC suppression is used (ADR-018).
+- Reason (real desktop validation, 2026-08-09): the Phase 2 DISM image enumeration
+  (`dism.exe /Get-ImageInfo`) fails with **DISM exit code 740** (ERROR_ELEVATION_REQUIRED)
+  when `WinForge.App.exe` is launched without elevation; the same executable run as
+  Administrator succeeds. Elevation is therefore required for ISO inspection and any
+  future DISM-backed operation.
+
+### Status (Phase 3 Step 3.1 — desktop validation PASSED)
+- Step 3.1 real-desktop validation PASSED (2026-08-09) on a real Windows 11 25H2
+  (Chinese Simplified, x64, Consumer Editions, `install.wim`) ISO: `install.wim`
+  detected, 6 editions enumerated (Windows Version `10.0.26200`, Build `26200`,
+  Architecture `x64`, Language `zh-CN`), edition `Windows 11 专业版` (index 4) selected →
+  `ImageWorkspace` status **Ready**; Source remained the original `.iso`; the UI showed
+  `Image: install.wim` / `Source: <iso filename>` with **no temporary mount drive**
+  displayed or persisted (ADR-017 confirmed). The durable `ImageWorkspace.ImageRelativePath`
+  is the full normalized `sources\install.wim` (the UI intentionally presents only the
+  filename). Added 2 regression tests (Core 1, App 1): `AppManifestElevationTests` asserts
+  the source manifest requires `requireAdministrator`; a Core test asserts the model retains
+  the full relative path. Step 3.1 = **COMPLETED** (not yet merged to `main`); Step 3.2
+  NOT STARTED; no WIM mount/export/modification implemented.
 
 ### Added (Phase 2 Step 2.2 — Windows image metadata & editions)
 - Step 2.2 reads read-only metadata from the install image (`install.wim` /

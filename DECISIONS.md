@@ -301,3 +301,32 @@ All decisions are `ACCEPTED` unless noted.
   Phase 2 mount → inspect → metadata → dismount session (ADR-015) is unchanged and
   stays strictly read-only. UI/state equality tests can assert the durable descriptor
   contains no temporary drive letter.
+
+## ADR-018: WinForge.App requires administrator elevation
+
+- **Status:** ACCEPTED
+- **Context:** Step 3.1 real-desktop validation on a Windows 11 25H2 (zh-CN, x64,
+  Consumer `install.wim`) ISO confirmed the Phase 2 DISM inspection path
+  (`dism.exe /Get-ImageInfo`) fails with **DISM exit code 740**
+  (ERROR_ELEVATION_REQUIRED) when `WinForge.App.exe` is launched without
+  administrator rights — the application then reports "The Windows image could
+  not be read." Running the same executable as Administrator succeeds. The image
+  enumeration therefore requires an elevated token; a non-elevated launch can
+  never complete ISO inspection.
+- **Decision:** `WinForge.App.exe` declares the elevation requirement directly in
+  its embedded application manifest (`src/WinForge.App/app.manifest`) via
+  `<requestedExecutionLevel level="requireAdministrator" uiAccess="false" />`,
+  wired through `<ApplicationManifest>app.manifest</ApplicationManifest>` in
+  `WinForge.App.csproj`. A normal launch (double-click / launcher) therefore
+  triggers the standard Windows UAC prompt. No self-elevation process spawn, no
+  PowerShell, no UAC suppression, and no custom token logic is used — the EXE
+  itself states the requirement. A focused regression test
+  (`AppManifestElevationTests`) reads the SOURCE manifest and asserts
+  `level="requireAdministrator"`, so the setting cannot silently disappear in a
+  future edit.
+- **Consequences:** ISO inspection (and any future DISM-backed Phase 3/4 operation)
+  runs with the privileges it needs. The elevation policy is declarative and lives
+  in the EXE manifest, keeping it out of application code and reviewable in source
+  control. Standard-user launches are prompted for admin credentials via UAC; the
+  app does not attempt to bypass that. ADR-015 (guaranteed dismount) and ADR-016
+  (read-only DISM) are unaffected.

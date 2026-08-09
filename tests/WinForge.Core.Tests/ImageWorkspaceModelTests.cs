@@ -26,4 +26,24 @@ public class ImageWorkspaceModelTests
         Assert.Equal(string.Empty, ImageWorkspace.NormalizeRelativePath(null));
         Assert.Equal(string.Empty, ImageWorkspace.NormalizeRelativePath("   "));
     }
+
+    [Fact]
+    public void ImageWorkspace_RelativePath_Retains_FullNormalizedPath()
+    {
+        // Case 1: the durable model stores the FULL normalized relative path
+        // (sources\install.wim / sources\install.esd), never just the filename
+        // and never a temporary mounted-drive root such as D:\sources\install.wim.
+        var workspace = new ImageWorkspace
+        {
+            ImageRelativePath = ImageWorkspace.NormalizeRelativePath("sources/install.wim")
+        };
+
+        Assert.Equal("sources\\install.wim", workspace.ImageRelativePath);
+        Assert.DoesNotContain(":", workspace.ImageRelativePath);
+        Assert.StartsWith("sources", workspace.ImageRelativePath);
+
+        // The UI is allowed to present only the filename while the workspace
+        // retains the full relative path.
+        Assert.Equal("install.wim", System.IO.Path.GetFileName(workspace.ImageRelativePath));
+    }
 }

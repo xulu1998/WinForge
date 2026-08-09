@@ -119,7 +119,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 3 — WIM Engine
 
-- **Status:** IN PROGRESS (Step 3.1 started 2026-08-08 on `feature/wim-engine`; Step 3.2 NOT STARTED)
+- **Status:** IN PROGRESS (Step 3.1 **COMPLETED** on `feature/wim-engine` 2026-08-09 after real-desktop validation PASSED; Step 3.2 NOT STARTED)
 - **Goal:** WIM / ESD image handling via documented Microsoft mechanisms.
 - **Scope:** Enumerate images, read image info, export ESD → WIM, index selection.
 - **Deliverables:**
@@ -129,7 +129,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
   - Export an ESD image to WIM without data loss.
 
 ### Step 3.1 — WIM workspace & image selection foundation (2026-08-08)
-- **Status:** IMPLEMENTED / PENDING USER DESKTOP VALIDATION (not marked COMPLETED until the user re-confirms on a real Windows desktop). Do NOT add Step 3.2 here.
+- **Status:** COMPLETED (real-desktop validation PASSED 2026-08-09 on Windows 11 25H2 zh-CN x64 Consumer `install.wim`; not yet merged to `main`). WinForge.App now declares `requireAdministrator` in its embedded manifest (ADR-018) because the Phase 2 DISM enumeration returns exit code 740 when launched without elevation. Step 3.2 is NOT STARTED.
 - **Goal:** Convert the Phase 2 ISO selection + selected edition into a **durable** `ImageWorkspace` descriptor that survives ISO dismount and never persists a temporary mounted drive letter.
 - **Scope (this step, read-only):**
   - Core model `ImageWorkspace` (durable fields: `SourceIsoPath`, `ImageRelativePath` e.g. `sources\install.wim`, `ImageType`, `SelectedIndex`, `SelectedEditionName`, `Architecture`, `Version`, `Build`, `Languages`) plus `ImageWorkspaceStatus` (`NotReady` / `Ready` / `Invalid`).
