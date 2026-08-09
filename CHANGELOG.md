@@ -87,6 +87,30 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   new-ISO invalidation, busy-disable, and Prepared/Mounted disable. Total
   **133/133 pass (Core 21, App 112), 0 errors, 0 warnings** (Release).
 
+### Status (Phase 3 Step 3.2 — desktop validation PASSED)
+- Step 3.2 real-desktop validation **PASSED** (2026-08-09) on a real Windows 11 25H2
+  (Chinese Simplified, x64, Consumer Editions, `install.wim`) ISO:
+  `Win11_25H2_Chinese_Simplified_x64_v2.iso`, selected edition `Windows 11 专业版`
+  (source index 4). Observed successful lifecycle:
+  - ISO inspection succeeded; Selected Image became **Ready**.
+  - Prepare working image succeeded; source index 4 was exported into an isolated
+    single-index working `install.wim` (working index = 1) under
+    `%LOCALAPPDATA%\WinForge\Workspaces\<workspace-id>\` — the **isolated working-WIM
+    strategy is validated**.
+  - The original ISO / original `install.wim` were **not modified**.
+  - Mount image succeeded; the real mount directory contained the genuine Windows
+    filesystem (`Windows`, `Program Files`, `Program Files (x86)`, `Users`, `PerfLogs`,
+    `etc.`); DISM confirmed the image was genuinely mounted.
+  - Unmount & discard changes succeeded; UI returned to **Prepared**.
+  - `dism /English /Get-MountedWimInfo` reported **"No mounted images found."** — the
+    mount directory was empty after unmount; **no orphaned active mount remained**.
+  - The repeated Mount → Unmount lifecycle passed.
+  - The mounted-state source/edition switching safety guard passed (an active mount
+    refuses ISO re-inspection and edition re-selection).
+- Step 3.2 = **COMPLETED**; Desktop Validation = **PASSED**; Step 3.3 = **NOT STARTED**.
+  No package/component/tweak/customization work was implemented. Total **133/133 pass
+  (Core 21, App 112), 0 errors, 0 warnings** (Release).
+
 ### Changed (Phase 3 Step 3.1 — application elevation)
 - `WinForge.App` now declares `requestedExecutionLevel level="requireAdministrator"`
   (uiAccess false) in its embedded application manifest (`src/WinForge.App/app.manifest`,

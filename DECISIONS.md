@@ -371,3 +371,12 @@ All decisions are `ACCEPTED` unless noted.
   stored state against real files and DISM mount registration. ADR-017 (no temp
   mount drive persisted) and ADR-018 (elevation) remain in force. Unmount always
   discards — commit-on-unmount is out of scope for Step 3.2.
+- **Validation (2026-08-09, real Windows 11 25H2 zh-CN x64 Consumer `install.wim`):**
+  source index 4 → isolated working WIM index 1 export succeeded; the isolated
+  working-image strategy is validated; mount verified against real Windows filesystem
+  contents (`Windows` / `Program Files` / `Program Files (x86)` / `Users` / `PerfLogs`);
+  unmount/discard verified; `dism /English /Get-MountedWimInfo` reported no mounted
+  images afterward; remount lifecycle passed; an active mount cannot be silently
+  orphaned (ISO re-inspection / edition re-selection refused while Mounted); the
+  original ISO / `install.wim` / `install.esd` were never modified. Step 3.2 =
+  **COMPLETED**; Step 3.3 = **NOT STARTED**.

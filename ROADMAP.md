@@ -119,7 +119,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 3 — WIM Engine
 
-- **Status:** IN PROGRESS (Step 3.1 **COMPLETED** on `feature/wim-engine` 2026-08-09 after real-desktop validation PASSED; Step 3.2 **IMPLEMENTED** 2026-08-09 on `feature/wim-servicing`, pending real-desktop validation)
+- **Status:** IN PROGRESS (Step 3.1 **COMPLETED** — real-desktop validation PASSED 2026-08-09; Step 3.2 **COMPLETED** — real-desktop validation PASSED 2026-08-09 on Windows 11 25H2 zh-CN x64 Consumer `install.wim`; Step 3.3 **NOT STARTED**)
 - **Goal:** WIM / ESD image handling via documented Microsoft mechanisms.
 - **Scope:** Enumerate images, read image info, export ESD → WIM, index selection.
 - **Deliverables:**
@@ -141,7 +141,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - **Out of scope this step:** ESD → WIM export (Step 3.2), WIM mount (Phase 4), any image modification. The Phase 2 mount → inspect → metadata → dismount session (ADR-015) is unchanged and remains strictly read-only.
 
 ### Step 3.2 — Offline WIM servicing lifecycle (2026-08-09)
-- **Status:** IMPLEMENTED on `feature/wim-servicing` (2026-08-09); **NOT YET real-desktop validated**. 35 new automated tests (Core 10 + App 25); total **127/127 pass, 0 errors, 0 warnings**.
+- **Status:** **COMPLETED** — real-desktop validation PASSED 2026-08-09 on Windows 11 25H2 (Chinese Simplified, x64, Consumer Editions, `install.wim`): source index 4 → isolated working WIM index 1 export succeeded; isolated working-image strategy validated; mount verified against real Windows filesystem contents; unmount/discard verified; `dism /Get-MountedWimInfo` reported no mounted images afterward; remount lifecycle passed; an active mount cannot be silently orphaned (ISO re-inspection / edition re-selection refused while Mounted); original ISO / `install.wim` / `install.esd` never modified. 133 automated tests pass (Core 21, App 112), 0 errors, 0 warnings. Merged to `main` via `--no-ff`.
 - **Goal:** Prepare an isolated, WinForge-owned working image from the selected source edition, mount it for later customization phases, discard an unmount, and validate/recover a servicing session — all without ever modifying the original ISO or its `install.wim`/`install.esd`.
 - **Scope (this step):**
   - Core model `ImageServicingWorkspace` (durable: `SourceIsoPath`, `SourceImageRelativePath`, `SourceImageType`, `SelectedIndex`, `SelectedEditionName`, `Architecture`, `Build`, WinForge-owned `WorkingDirectory`/`WorkingImagePath`/`MountDirectory`, `WorkingImageType` — always WIM, `WorkingIndex` — always 1, `State`, `CreatedAt`, `LastError`). A selected source index N maps to a standalone working image whose own index is 1.
@@ -150,7 +150,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
   - `IWorkspacePathProvider` (`%LOCALAPPDATA%\WinForge\Workspaces\<id>\image` + `mount`) addressed by a safe id segment; `IWorkspaceSafeDelete` proves a target is strictly inside the workspace before any deletion (refuses drive/profile/repo roots).
   - `IAppState.CurrentServicingWorkspace` + `ImageViewModel` prepare/mount/unmount commands with state-aware `Can*` guards; an active mount REFUSES ISO re-inspection and edition re-selection (explanatory `BlockedMessage`). New Image page "Working image" section shows status/source edition/index/working image/working dir/mount dir/error.
   - Post-export validation uses the per-index `/Get-ImageInfo /Index:1` detail query (the index-less enumeration query does not report Architecture/Build).
-- **Out of scope this step:** Any image customization (package/component/Appx/registry tweaks), ISO build/rebuild, `boot.wim` servicing, commit-on-unmount (unmount always discards), and Phase 4 mount-engine work. The working image is prepared solely so Phase 4+ can mount and customize it. No Step 3.3.
+- **Out of scope this step:** Any image customization (package/component/Appx/registry tweaks), ISO build/rebuild, `boot.wim` servicing, commit-on-unmount (unmount always discards), and Phase 4 mount-engine work. The working image is prepared solely so Phase 4+ can mount and customize it. Step 3.3 = **NOT STARTED**.
 
 ---
 
