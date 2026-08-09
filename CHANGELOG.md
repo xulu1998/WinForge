@@ -17,13 +17,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   WinForge cannot reliably read stays `null` rather than being guessed; the UI
   decides between "Not detected" and "Mixed".
 - Infrastructure `WindowsImageMetadataService` queries the image read-only with
-  `dism.exe /English /Get-WimInfo` in **two stages**: one enumeration query (no
-  `/Index`) that reliably returns each index's `Index` / `Name` / `Description`,
-  followed by one per-index detail query (`/Index:<n>`) for **every** enumerated
-  index that supplies `Architecture`, `Version`/`Build`, `Edition Id`,
+  `dism.exe /Get-ImageInfo /ImageFile:"<path>" /English` in **two stages**: one
+  enumeration query (no `/Index`) that reliably returns each index's `Index` /
+  `Name` / `Description`, followed by one per-index detail query
+  (`/Get-ImageInfo /ImageFile:"<path>" /Index:<n> /English`) for **every**
+  enumerated index that supplies `Architecture`, `Version`/`Build`, `Edition Id`,
   `Installation`, and `Languages`/`Default Language`. The two parses are split to
-  match (`DismWimInfoParser.ParseImageList` for enumeration,
-  `DismWimInfoParser.ParseImageDetails` for per-index detail) and merged by index.
+  match (`DismImageInfoParser.ParseImageList` for enumeration,
+  `DismImageInfoParser.ParseImageDetails` for per-index detail) and merged by
+  index.
   Both are key-based, tolerant of unknown / future / reordered fields, and never
   parse by fixed column position.
 - `IProcessRunner` abstraction (Core) with `ProcessRequest` / `ProcessResult`
@@ -47,15 +49,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   2.1 tests are retained.
 
 ### Fixed (Phase 2 Step 2.2 — two-stage metadata query correctness)
-- Real-DISM correctness gap: a single `dism.exe /Get-WimInfo` (no `/Index`) only
+- Real-DISM correctness gap: a single `dism.exe /Get-ImageInfo` (no `/Index`) only
   reliably reports per-index `Index` / `Name` / `Description` (and `Size`). The
   detailed fields — `Architecture`, `Version`/`Build`, `Edition Id`,
   `Installation`, `Languages`, `Default Language` — are returned **only** by a
-  per-index query (`/Get-WimInfo /ImageFile:"..." /Index:<n>`). Step 2.2 now runs
-  the enumeration query once, then one detail query for **every** enumerated index
-  (index numbers are not assumed sequential and are not assumed to map to a
-  specific edition such as Home/Pro), and merges the results by index.
-  `DismWimInfoParser` was split into `ParseImageList` (enumeration fields only)
+  per-index query (`/Get-ImageInfo /ImageFile:"..." /Index:<n> /English`). Step 2.2
+  now runs the enumeration query once, then one detail query for **every**
+  enumerated index (index numbers are not assumed sequential and are not assumed
+  to map to a specific edition such as Home/Pro), and merges the results by index.
+  `DismImageInfoParser` was split into `ParseImageList` (enumeration fields only)
   and `ParseImageDetails` (full per-index detail). Failure semantics: if the
   enumeration query fails the whole result is `Failed`; if a single per-index
   detail query fails, that edition keeps its enumerated data, its detailed fields
@@ -68,10 +70,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   assert the exact command sequence (enumeration without `/Index`, then one
   `/Index:n` per index) via a recording fake process runner.
 
+### Fixed (Phase 2 Step 2.2 — DISM Error 87: use /Get-ImageInfo)
+- Real desktop validation (2026-08-08): initial Step 2.2 desktop validation
+  exposed DISM exit code 87 ("The parameter is incorrect") because the
+  implementation invoked `dism.exe /English /Get-WimInfo /ImageFile:"..."`, an
+  incorrect command combination for the Windows 11 DISM command line. Corrected to
+  the documented Windows 11 syntax: `dism.exe /Get-ImageInfo /ImageFile:"<path>" /English`
+  for enumeration and `dism.exe /Get-ImageInfo /ImageFile:"<path>" /Index:<n> /English`
+  for the per-index detail query. `/ImageFile:` is kept (not changed to
+  `/WimFile`). The two-stage design (enumeration → collect indexes → per-index
+  detail → merge by index) is retained. The parser type was renamed
+  `DismWimInfoParser` → `DismImageInfoParser` and all references/tests updated. A
+  regression test asserts production arguments never contain `/Get-WimInfo`. Step
+  2.2 remains IMPLEMENTED / PENDING REAL DESKTOP RE-VALIDATION — NOT COMPLETED.
+
 ### Status (Phase 2 Step 2.2)
 - Step 2.2 is implemented on `feature/iso-inspection` and passes the automated
   test suite (0 errors, 0 warnings, 100% tests executed and passing). It is
-  **pending real Windows ISO desktop validation** (the Windows 11 25H2 zh-CN x64
+  **pending real Windows ISO desktop RE-validation** (the Windows 11 25H2 zh-CN x64
   Consumer `install.wim` target) and therefore is NOT yet marked COMPLETED.
 - `WindowsImageType` / architecture / version / build / language parsing is now
   implemented; the real-desktop mount→inspect→dismount→metadata cycle still

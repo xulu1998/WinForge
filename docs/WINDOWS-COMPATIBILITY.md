@@ -25,11 +25,11 @@ Track which Windows releases WinForge supports for each operation.
 > (Step 2.1): the app mounted the ISO read-only, detected the Windows ISO
 > candidate layout, and dismounted — verified on a real Windows 11 25H2
 > (zh-CN, x64, Consumer ISO, `install.wim`) desktop on 2026-08-08. Step 2.2
-> (WIM/ESD metadata parsing via `dism.exe /English /Get-WimInfo`) is
+> (WIM/ESD metadata parsing via `dism.exe /Get-ImageInfo /ImageFile:... /English`) is
 > **implemented and passes automated tests that use fakes** (no real DISM/ISO),
 > but the end-to-end metadata read on a real Windows 11 25H2 ISO has **not yet
-> been confirmed on a Windows desktop** — it remains `Untested` for the metadata
-> path until the user validates it. This does **not** claim `Supported` for the
+> been re-confirmed on a Windows desktop** — it remains `Untested` for the metadata
+> path until the user re-validates it. This does **not** claim `Supported` for the
 > OS. The exact build number was not recorded during the Step 2.1 test.
 
 ## How to update

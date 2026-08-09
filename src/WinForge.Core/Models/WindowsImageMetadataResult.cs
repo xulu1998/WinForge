@@ -4,7 +4,7 @@ namespace WinForge.Core.Models;
 
 /// <summary>
 /// Outcome of a read-only Windows image metadata inspection (Step 2.2). It holds
-/// the structured, nullable data produced by parsing <c>dism /Get-WimInfo</c>
+/// the structured, nullable data produced by parsing <c>dism /Get-ImageInfo</c>
 /// output. Core keeps the raw/nullable values; the UI decides how to present
 /// missing or inconsistent data (e.g. "Not detected" or "Mixed").
 /// </summary>

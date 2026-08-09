@@ -6,16 +6,16 @@ using WinForge.Core.Models;
 namespace WinForge.Infrastructure.ImageMetadata;
 
 /// <summary>
-/// Parses the English (<c>/English</c>) output of <c>dism.exe /Get-WimInfo</c>
-/// into structured edition metadata.
+/// Parses the English (<c>/English</c>) output of
+/// <c>dism.exe /Get-ImageInfo</c> into structured edition metadata.
 ///
 /// Microsoft DISM exposes image metadata through TWO distinct read-only queries:
 ///
-/// 1. <c>/Get-WimInfo /ImageFile:"..."</c> (no <c>/Index</c>) — the *enumeration*
+/// 1. <c>/Get-ImageInfo /ImageFile:"..."</c> (no <c>/Index</c>) — the *enumeration*
 ///    query. It reliably yields, per image index, only <c>Index</c>,
 ///    <c>Name</c>, <c>Description</c>, and <c>Size</c>. It does NOT report
 ///    architecture, edition id, version, installation type, or languages.
-/// 2. <c>/Get-WimInfo /ImageFile:"..." /Index:&lt;n&gt;</c> — the *detail* query.
+/// 2. <c>/Get-ImageInfo /ImageFile:"..." /Index:&lt;n&gt;</c> — the *detail* query.
 ///    For that single index it additionally returns <c>Architecture</c>,
 ///    <c>Version</c>, <c>Edition</c>, <c>Edition Id</c>, <c>Installation</c>,
 ///    <c>Languages</c>, and <c>Default Language</c>.
@@ -33,7 +33,7 @@ namespace WinForge.Infrastructure.ImageMetadata;
 ///   intentionally ignored — only per-index <c>Version</c> values describe the
 ///   Windows image.
 /// </summary>
-public static class DismWimInfoParser
+public static class DismImageInfoParser
 {
     // Matches the start of an index block, e.g. "Index : 1".
     private static readonly Regex IndexRegex = new(@"^Index\s*:\s*(\d+)", RegexOptions.Compiled);

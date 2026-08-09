@@ -6,11 +6,11 @@ using Xunit;
 namespace WinForge.App.Tests;
 
 /// <summary>
-/// Pure parsing of <c>dism /English /Get-WimInfo</c> output, split into the two
+/// Pure parsing of <c>dism /Get-ImageInfo</c> output, split into the two
 /// real DISM stages (see Step 2.2 fix):
-/// - <see cref="DismWimInfoParser.ParseImageList"/> parses the *enumeration*
+/// - <see cref="DismImageInfoParser.ParseImageList"/> parses the *enumeration*
 ///   query (no /Index) — only Index / Name / Description are reliable there.
-/// - <see cref="DismWimInfoParser.ParseImageDetails"/> parses a single per-index
+/// - <see cref="DismImageInfoParser.ParseImageDetails"/> parses a single per-index
 ///   *detail* query (/Index:n) — Architecture / Version / Edition Id /
 ///   Installation / Languages / Default Language.
 ///
@@ -135,7 +135,7 @@ Default Language : en-US
     [Fact]
     public void ParseImageList_Reads_Index_Name_Description_Only() // Req 1
     {
-        var list = DismWimInfoParser.ParseImageList(EnumHome);
+        var list = DismImageInfoParser.ParseImageList(EnumHome);
 
         var ed = Assert.Single(list);
         Assert.Equal(1, ed.Index);
@@ -152,7 +152,7 @@ Default Language : en-US
     [Fact]
     public void ParseImageList_Enumerates_Home_And_Pro() // Req 2
     {
-        var list = DismWimInfoParser.ParseImageList(EnumHomeAndPro);
+        var list = DismImageInfoParser.ParseImageList(EnumHomeAndPro);
 
         Assert.Equal(2, list.Count);
         Assert.Equal(1, list[0].Index);
@@ -164,7 +164,7 @@ Default Language : en-US
     [Fact]
     public void ParseImageList_Handles_NonSequential_Indexes() // Req 3
     {
-        var list = DismWimInfoParser.ParseImageList(EnumNonSequential);
+        var list = DismImageInfoParser.ParseImageList(EnumNonSequential);
 
         Assert.Equal(2, list.Count);
         Assert.Equal(1, list[0].Index);
@@ -175,7 +175,7 @@ Default Language : en-US
     [Fact]
     public void ParseImageList_Ignores_Detail_Fields_Even_If_Present() // separation proof
     {
-        var list = DismWimInfoParser.ParseImageList(EnumWithStrayArchitecture);
+        var list = DismImageInfoParser.ParseImageList(EnumWithStrayArchitecture);
 
         var ed = Assert.Single(list);
         Assert.Equal(1, ed.Index);
@@ -187,7 +187,7 @@ Default Language : en-US
     [Fact]
     public void ParseImageDetails_Reads_Full_Single_Index() // Req 4, 6, 7, 8, 9
     {
-        var ed = DismWimInfoParser.ParseImageDetails(DetailHome);
+        var ed = DismImageInfoParser.ParseImageDetails(DetailHome);
 
         Assert.NotNull(ed);
         Assert.Equal(1, ed!.Index);
@@ -203,7 +203,7 @@ Default Language : en-US
     [Fact]
     public void ParseImageDetails_Parses_Multiple_Languages() // Req 10
     {
-        var ed = DismWimInfoParser.ParseImageDetails(DetailMultiLanguage);
+        var ed = DismImageInfoParser.ParseImageDetails(DetailMultiLanguage);
 
         Assert.NotNull(ed);
         Assert.Equal(new[] { "en-US", "fr-FR", "de-DE" }, ed!.Languages);
@@ -213,7 +213,7 @@ Default Language : en-US
     [Fact]
     public void ParseImageDetails_Ignores_Unknown_Fields() // Req 11
     {
-        var ed = DismWimInfoParser.ParseImageDetails(DetailReorderedUnknown);
+        var ed = DismImageInfoParser.ParseImageDetails(DetailReorderedUnknown);
 
         Assert.NotNull(ed);
         Assert.Equal(2, ed!.Index);
@@ -225,7 +225,7 @@ Default Language : en-US
     [Fact]
     public void ParseImageDetails_Tolerates_Reordered_Fields() // Req 12
     {
-        var ed = DismWimInfoParser.ParseImageDetails(DetailReorderedUnknown);
+        var ed = DismImageInfoParser.ParseImageDetails(DetailReorderedUnknown);
 
         Assert.NotNull(ed);
         Assert.Equal("Windows 11 Pro", ed!.Name);
@@ -237,14 +237,14 @@ Default Language : en-US
     [Fact]
     public void ParseImageList_Empty_Output_Returns_Empty() // supports Req 13
     {
-        Assert.Empty(DismWimInfoParser.ParseImageList(""));
-        Assert.Empty(DismWimInfoParser.ParseImageList("lorem ipsum\nnot a wim"));
+        Assert.Empty(DismImageInfoParser.ParseImageList(""));
+        Assert.Empty(DismImageInfoParser.ParseImageList("lorem ipsum\nnot a wim"));
     }
 
     [Fact]
     public void ParseImageDetails_Empty_Output_Returns_Null()
     {
-        Assert.Null(DismWimInfoParser.ParseImageDetails(""));
-        Assert.Null(DismWimInfoParser.ParseImageDetails("no indexes here"));
+        Assert.Null(DismImageInfoParser.ParseImageDetails(""));
+        Assert.Null(DismImageInfoParser.ParseImageDetails("no indexes here"));
     }
 }

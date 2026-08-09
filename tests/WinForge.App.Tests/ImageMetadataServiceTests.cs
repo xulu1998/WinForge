@@ -126,12 +126,16 @@ Default Language : en-US
         Assert.Contains("/Index:1", runner.Requests[1].Arguments);
         Assert.Contains("/Index:2", runner.Requests[2].Arguments);
 
+        // Canonical command form: dism.exe /Get-ImageInfo /ImageFile:"..." /English
+        // (enumeration, no /Index) and /Get-ImageInfo /ImageFile:"..." /Index:n /English
+        // (per-index detail). /ImageFile: is used (NOT /WimFile).
         foreach (var req in runner.Requests)
         {
             Assert.Equal("dism.exe", req.FileName);
-            Assert.Contains("/English", req.Arguments);
-            Assert.Contains("/Get-WimInfo", req.Arguments);
+            Assert.Contains("/Get-ImageInfo", req.Arguments);
             Assert.Contains("/ImageFile:", req.Arguments);
+            Assert.Contains("/English", req.Arguments);
+            Assert.DoesNotContain("/Get-WimInfo", req.Arguments); // regression: the exit-87 command
         }
 
         // Detail is merged onto the enumerated edition.
@@ -143,6 +147,42 @@ Default Language : en-US
         var pro = result.Editions[1];
         Assert.Equal(WindowsEditionDetailStatus.Queried, pro.DetailStatus);
         Assert.Equal("Windows 11 Pro", pro.Name);
+    }
+
+    [Fact]
+    public async Task Production_Arguments_Never_Use_GetWimInfo() // regression: DISM exit code 87 root cause
+    {
+        var path = MakeImageFile("install.wim");
+        var runner = new FakeProcessRunner
+        {
+            Responder = req =>
+            {
+                var idx = IndexFromArgs(req.Arguments);
+                if (idx is null)
+                {
+                    return new ProcessResult { ExitCode = 0, StandardOutput = EnumTwo };
+                }
+
+                return new ProcessResult { ExitCode = 0, StandardOutput = idx == 1 ? DetailHome : DetailPro };
+            }
+        };
+        var service = new WindowsImageMetadataService(runner, new InMemoryLoggerService());
+
+        var result = await service.InspectAsync(path);
+
+        Assert.Equal(WindowsImageMetadataStatus.Completed, result.Status);
+        // Guard against the exact real-desktop failure: production must invoke
+        // /Get-ImageInfo, never the incorrect /Get-WimInfo combination.
+        Assert.All(runner.Requests, req =>
+        {
+            Assert.DoesNotContain("/Get-WimInfo", req.Arguments); // caused DISM exit 87
+            Assert.Contains("/Get-ImageInfo", req.Arguments);     // corrected, documented command
+            Assert.Contains("/ImageFile:", req.Arguments);
+            Assert.Contains("/English", req.Arguments);
+        });
+        // The enumeration call must not carry /Index; each detail call must.
+        Assert.DoesNotContain("/Index", runner.Requests[0].Arguments);
+        Assert.All(runner.Requests.Skip(1), req => Assert.Contains("/Index:", req.Arguments));
     }
 
     [Fact]

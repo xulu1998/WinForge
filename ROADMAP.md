@@ -90,8 +90,8 @@ Phased development plan for WinForge. Each phase records its **Status**,
   the Windows 11 25H2 zh-CN x64 Consumer `install.wim` metadata read on a Windows
   desktop.
 - Implemented: `IWindowsImageMetadataService` + `WindowsImageMetadataResult` (Core);
-  `WindowsImageMetadataService` (`dism.exe /English /Get-WimInfo`, read-only, no
-  WIM mount) + pure `DismWimInfoParser` + `IProcessRunner`/`WindowsProcessRunner`
+  `WindowsImageMetadataService` (`dism.exe /Get-ImageInfo /ImageFile:... /English`, read-only, no
+  WIM mount) + pure `DismImageInfoParser` + `IProcessRunner`/`WindowsProcessRunner`
   (Infrastructure); `WindowsIsoInspectionService` extended into a single
   mount → layout → metadata → dismount session (ADR-015 preserved, ADR-016 added);
   Image page "Windows information" + editions `ListView`; edition selection →

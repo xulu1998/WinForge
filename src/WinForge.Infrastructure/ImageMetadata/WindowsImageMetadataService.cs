@@ -12,8 +12,8 @@ namespace WinForge.Infrastructure.ImageMetadata;
 
 /// <summary>
 /// Read-only Windows image metadata inspector. It queries an install.wim /
-/// install.esd through <c>dism.exe /English /Get-WimInfo</c> in TWO read-only
-/// stages and parses the results with <see cref="DismWimInfoParser"/>:
+/// install.esd through <c>dism.exe /Get-ImageInfo</c> in TWO read-only stages and
+/// parses the results with <see cref="DismImageInfoParser"/>:
 ///
 /// 1. Enumeration query (no <c>/Index</c>) — lists the image indexes and their
 ///    reliable list-level fields (Index, Name, Description).
@@ -67,7 +67,7 @@ public sealed class WindowsImageMetadataService : IWindowsImageMetadataService
                 new ProcessRequest
                 {
                     FileName = "dism.exe",
-                    Arguments = $"/English /Get-WimInfo /ImageFile:\"{imagePath}\""
+                    Arguments = $"/Get-ImageInfo /ImageFile:\"{imagePath}\" /English"
                 },
                 cancellationToken);
         }
@@ -89,7 +89,7 @@ public sealed class WindowsImageMetadataService : IWindowsImageMetadataService
             return Failed(imagePath, "The Windows image could not be read.", imageType);
         }
 
-        var enumerated = DismWimInfoParser.ParseImageList(enumRun.StandardOutput);
+        var enumerated = DismImageInfoParser.ParseImageList(enumRun.StandardOutput);
         if (enumerated.Count == 0)
         {
             _logger.Warning("DISM enumeration returned no image indexes.");
@@ -119,7 +119,7 @@ public sealed class WindowsImageMetadataService : IWindowsImageMetadataService
                     new ProcessRequest
                     {
                         FileName = "dism.exe",
-                        Arguments = $"/English /Get-WimInfo /ImageFile:\"{imagePath}\" /Index:{edition.Index}"
+                        Arguments = $"/Get-ImageInfo /ImageFile:\"{imagePath}\" /Index:{edition.Index} /English"
                     },
                     cancellationToken);
 
@@ -130,7 +130,7 @@ public sealed class WindowsImageMetadataService : IWindowsImageMetadataService
                     continue;
                 }
 
-                var detail = DismWimInfoParser.ParseImageDetails(detailRun.StandardOutput);
+                var detail = DismImageInfoParser.ParseImageDetails(detailRun.StandardOutput);
                 if (detail is null)
                 {
                     _logger.Warning($"DISM returned no detail for index {edition.Index}.");

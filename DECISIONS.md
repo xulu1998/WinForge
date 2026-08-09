@@ -202,15 +202,16 @@ All decisions are `ACCEPTED` unless noted.
   still mounted (Step 2.1's dismount would otherwise make the install image
   unreachable). The platform call must stay behind a Core abstraction so it is
   unit-testable without Windows/DISM and the UI never coordinates mount lifecycle.
-- **Decision:** Read metadata with `dism.exe /English /Get-WimInfo`, the
-  documented read-only image query (no `Mount-Image`, no servicing). Because the
-  host UI language may not be English, `/English` is mandatory so the parsed
-  fields are stable. The query is performed in **two stages** because a single
-  `/Get-WimInfo` call without `/Index` only reliably returns per-index
-  `Index` / `Name` / `Description` (and `Size`); the detailed fields —
+- **Decision:** Read metadata with `dism.exe /Get-ImageInfo /ImageFile:"<path>" /English`,
+  the documented Windows 11 read-only image query (no `Mount-Image`, no
+  servicing). `/ImageFile:` is used (not `/WimFile`). Because the host UI language
+  may not be English, `/English` is mandatory so the parsed fields are stable. The
+  query is performed in **two stages** because a single
+  `/Get-ImageInfo /ImageFile:"..."` call without `/Index` only reliably returns
+  per-index `Index` / `Name` / `Description` (and `Size`); the detailed fields —
   `Architecture`, `Version`/`Build`, `Edition Id`, `Installation`, and
   `Languages`/`Default Language` — are reported **only** by a per-index query
-  (`/Get-WimInfo /ImageFile:"..." /Index:<n>`). `WindowsImageMetadataService`
+  (`/Get-ImageInfo /ImageFile:"..." /Index:<n> /English`). `WindowsImageMetadataService`
   therefore (A) runs the enumeration query once, then (B) runs one detail query
   for **every** enumerated index (index numbers are not assumed sequential and are
   not assumed to map to a specific edition), and merges the two by index. If
@@ -218,8 +219,8 @@ All decisions are `ACCEPTED` unless noted.
   query fails, that edition keeps its enumerated `Index`/`Name`/`Description`, its
   detailed fields stay `null`, and its `DetailStatus` is set to `Failed` (logged,
   not shown raw) — WinForge never silently pretends full metadata arrived. Parsing
-  is split to match: `DismWimInfoParser.ParseImageList` reads only the reliable
-  enumeration fields, and `DismWimInfoParser.ParseImageDetails` reads the full
+  is split to match: `DismImageInfoParser.ParseImageList` reads only the reliable
+  enumeration fields, and `DismImageInfoParser.ParseImageDetails` reads the full
   detail for one index. Both are pure functions of the captured text, key-based,
   tolerant of unknown / future / reordered fields, and never slice fixed columns;
   empty or index-less output yields a `Failed` result, not an exception. Process
@@ -242,3 +243,12 @@ All decisions are `ACCEPTED` unless noted.
   agrees — otherwise the fields stay `null` and the UI shows "Mixed" rather than
   guessing from the first index. Raw DISM stderr / HRESULT is never shown to the
   user, only logged.
+- **Correction (2026-08-08):** Real desktop validation of Step 2.2 exposed DISM
+  exit code 87 because the original implementation invoked `dism.exe /English
+  /Get-WimInfo /ImageFile:"..."` — an incorrect command combination for the
+  Windows 11 DISM command line. The active, documented command is now `dism.exe
+  /Get-ImageInfo /ImageFile:"<path>" /English` (enumeration) and `dism.exe
+  /Get-ImageInfo /ImageFile:"<path>" /Index:<n> /English` (per-index detail);
+  `/ImageFile:` is kept (not `/WimFile`). The parser type was renamed
+  `DismWimInfoParser` → `DismImageInfoParser`. The two-stage design is unchanged.
+  Step 2.2 remains IMPLEMENTED / PENDING REAL DESKTOP RE-VALIDATION — NOT COMPLETED.
