@@ -5,6 +5,65 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added (Phase 3 Step 3.3 — offline customization plan & execution engine)
+- Declarative, platform-agnostic customization model in Core (no DISM/Win32):
+  `CustomizationPlan` with a strict lifecycle (`Draft` → `Validated` → `Executing` →
+  `Completed`/`CompletedWithErrors`/`Failed`/`Cancelled`); `CustomizationOperation`
+  (OperationType, exact TargetIdentifier, registry/service targets, `RiskClass`,
+  `ExecutionOrder`, `ValidationResult`); `CustomizationResult` (computed
+  `Success = FailedOperations == 0`, plus `TotalOperations`/`Succeeded`/`FailedOperations`/
+  `CriticalFailure`/`Summary`); `DiscoveryInventory` (Appx, packages, offline services,
+  trusted privacy/system definitions); and typed enums (`CustomizationCategory`,
+  `CustomizationOperationType`, `RiskClass`, `ServiceStartType`, `OperationValidationResult`).
+  `Validate()` recomputes issues (Duplicate/Conflict/Unsupported/MissingTarget) and only
+  marks `Validated` with no blocking issues and ≥1 selected op; `FreezeForExecution()`
+  snapshots selected ops and locks the live plan (ADR-020).
+- Discovery services (Infrastructure, behind Core interfaces): `DismAppxParser` enumerates
+  provisioned Appx by exact DISM "Deployment package name"; `DismPackageParser` enumerates
+  packages and classifies `Removable` only for an explicit allowlist
+  (`InternetExplorer-Optional`, `Printing-XPSServices`, `Xps-Document-Writer`) — everything
+  else is `Protected`; `OfflineRegistryService` loads/unloads offline hives via Win32
+  `RegLoadKey`/`RegUnLoadKey` under a WinForge-owned `HKLM\WinForge_<BASE>` name (always
+  unloaded in `finally`); `MountIdentityValidator` confines paths to the mount and binds the
+  session; `WindowsCustomizationDiscoveryService` enumerates services from the mounted
+  image's `SYSTEM` hive and merges a trusted `CustomizationDefinitionProvider` (5 Privacy + 3
+  System registry settings, 3 recommended service-start changes: DiagTrack/WerSvc/PcaSvc →
+  Disabled); discovery refuses to run on a session mismatch (ADR-021–ADR-024).
+- Execution orchestrator (`WindowsCustomizationExecutionService`): a pre-run critical-stop
+  guard fails the whole result as `CriticalFailure` unless the workspace is `Mounted`, the
+  mount session matches, DISM registered the mount, and the plan is `Validated`; execution
+  runs a frozen snapshot in defined order (registry 0 → services 1 → appx 2 → packages 3 →
+  files 4 → scheduled tasks 5); per-operation status; non-allowlisted `Removable` packages
+  are `Skipped` (never removed); a missing service is `Skipped`; and the image is **left
+  mounted** (no commit/unmount — owned by Step 3.2). `IAppState` carries a "dirty" flag so
+  the UI can warn before discarding a customized working image (ADR-022, ADR-025).
+- UI: Components / Privacy / System / Plan pages backed by discovery; selection toggles
+  declarative plan operations (`PlanSync`); an explicit `Validate` then `Apply` flow;
+  `PlanReviewViewModel` shows operation totals, warnings, progress, and a result summary.
+  A new `Plan` `PageKey` and four `DataTemplate`s (`App.xaml`) wire navigation; the new
+  `BooleanToVisibilityInverseConverter` supports conditional UI. Every operation is confined
+  to the mounted working image — no host path, source-ISO root, or arbitrary command/
+  registry/filesystem delete is ever issued; `AsyncRelayCommand.CanExecuteChanged` is raised
+  after state changes (the Step 3.2 real-desktop defect pattern is avoided).
+- 206 automated tests pass (Core 37, App 169), 0 errors, 0 warnings (Release), and are
+  CI-safe: no ISO, no administrator, no internet. Coverage: DismAppxParser (11), discovery
+  service (6), execution service (13 — guard/allowlist/skip/hive-never-touched), safety
+  (16 — registry safety, mount validator, definition provider), view models (11),
+  Core model lifecycle/validation (16), and the updated headless boot test. xUnit 2.5.3 with
+  fakes for `IProcessRunner`/registry/definition/mount-identity/discovery/execution.
+
+### Status (Phase 3 Step 3.3 — implemented, pending real-desktop validation)
+- Step 3.3 is **IMPLEMENTED** on `feature/offline-customization` (2026-08-09). The full
+  declarative plan, discovery, offline-registry, execution, and UI layers are complete and
+  the automated suite is green (206/206, 0 errors, 0 warnings). **Real-desktop validation is
+  still PENDING**: no real Windows mount / offline-hive edit / package removal was exercised
+  in this session. The next validation step is a real Windows run that discovers a mounted
+  working image, selects a few safe customizations (Privacy registry settings, disable
+  DiagTrack/WerSvc/PcaSvc, remove an allowlisted package), Validates, Applies, and confirms
+  the offline `SOFTWARE`/`SYSTEM` changes landed in the mounted image while the host OS and
+  the source ISO were untouched. Not merged to `main`; no new tag. No Step 3.4 / Phase 4
+  mount-engine work was started.
+
 ### Added (Phase 3 Step 3.1 — WIM workspace & image selection foundation)
 - Introduces the durable selected-image foundation for Phase 3. Converts a Phase 2
   `IsoInspectionResult` + selected `WindowsEditionInfo` into a durable

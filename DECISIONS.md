@@ -380,3 +380,125 @@ All decisions are `ACCEPTED` unless noted.
   orphaned (ISO re-inspection / edition re-selection refused while Mounted); the
   original ISO / `install.wim` / `install.esd` were never modified. Step 3.2 =
   **COMPLETED**; Step 3.3 = **NOT STARTED**.
+
+## ADR-020: Declarative offline customization plan (Step 3.3)
+
+- **Status:** ACCEPTED
+- **Context:** Step 3.3 lets users choose offline-image customizations (remove
+  provisioned Appx, remove removable packages, set trusted privacy/system
+  registry values, disable a small set of safe services) for the isolated working
+  image produced by Step 3.2. Those choices must be validated and reviewed *before*
+  anything is changed, and the change set must be auditable.
+- **Decision:** A declarative, platform-agnostic `CustomizationPlan` (Core) describes
+  **WHAT** to change: an ordered list of `CustomizationOperation` records, each with
+  `OperationType`, `TargetIdentifier`, a registry target (`RegistryHive` /
+  `RegistryKeyPath` / `RegistryValueName` / `RegistryValueKind` / `RegistryValueData`),
+  a service target (`ServiceName` / `ServiceStartType`), a `RiskClass`, an
+  `ExecutionOrder`, and a `ValidationResult`. The plan enforces a strict lifecycle:
+  `Draft` → `Validated` → `Executing` → `Completed` / `CompletedWithErrors` / `Failed` /
+  `Cancelled`. `Validate()` recomputes per-operation validation and only marks the plan
+  `Validated` when there are no blocking issues (Duplicate / Conflict / Unsupported /
+  MissingTarget) **and** at least one operation is selected; it returns the human-readable
+  issue list (empty on success). `FreezeForExecution()` snapshots the selected operations
+  into a locked, execution-safe copy and transitions the live plan to `Executing`, so it
+  can no longer be edited mid-run. Core performs **no** mutation — Infrastructure executes
+  the plan.
+- **Consequences:** The UI can preview and validate the full change set before any change
+  is made; execution operates on a frozen, immutable snapshot; the plan is fully
+  inspectable and testable without Windows/DISM (fakes). Validation issues are surfaced to
+  the user rather than silently skipped.
+
+## ADR-021: Offline-only boundary — customizations target only the mounted working image
+
+- **Status:** ACCEPTED
+- **Context:** WinForge runs elevated (ADR-018). A defect in a customization engine could
+  mutate the live host operating system. Step 3.3 must confine every change to the
+  isolated, mounted working image produced by Step 3.2 (ADR-019), which lives under a
+  WinForge-owned workspace and is never the host's running OS.
+- **Decision:** Every customization operation targets an object reachable **only** through
+  the mounted working image: offline registry hives loaded from files under the mount
+  (`…\Windows\System32\config\*`), provisioned Appx / packages enumerated from the mounted
+  image via DISM, services read from the mounted image's `SYSTEM` hive, and files strictly
+  under the mount root. No operation ever touches the host's live registry (the running
+  OS `HKLM` / `HKCU`), host services, host files outside the mount, or the source ISO. The
+  execution service refuses to run unless the workspace is `Mounted` and the mount session
+  matches (ADR-024).
+- **Consequences:** The host OS is structurally protected — there is no code path that
+  addresses the live host. Only the WinForge-owned working copy is ever changed.
+
+## ADR-022: Exact-identity operations (no fuzzy / ambiguous targeting)
+
+- **Status:** ACCEPTED
+- **Context:** Removing the wrong package or Appx, or editing the wrong registry key, can
+  break the offline image or open a security hole. Substring/wildcard matching against
+  package or key names is dangerous and unpredictable across Windows builds.
+- **Decision:** Provisioned Appx removal is identified by the **exact** DISM "Deployment
+  package name" (fully-qualified package identity) parsed from
+  `dism /Get-ProvisionedAppxPackages` — never by substring or wildcard. Package removal is
+  gated by an **explicit, small allowlist** (`InternetExplorer-Optional`,
+  `Printing-XPSServices`, `Xps-Document-Writer`); any package **not** on the allowlist is
+  **SKIPPED at execution** (never removed), regardless of UI selection, and its operation
+  is marked `Skipped`. Registry and service operations each target a single documented
+  key/value or service name. Discovery enumerates exact identities and the UI presents them
+  so the user selects by identity, not by guess.
+- **Consequences:** Only known-safe, explicitly listed packages can ever be removed; a
+  mislabeled or ambiguous selection cannot destroy the image. The allowlist is intentionally
+  tiny and grows only via a reviewed change, not via user free-text.
+
+## ADR-023: Offline hive lifecycle — WinForge-owned names, always unloaded
+
+- **Status:** ACCEPTED
+- **Context:** Offline registry editing loads a hive file from the mounted image (e.g.
+  `…\Windows\System32\config\SOFTWARE`) into the host's `HKLM` under a temporary key,
+  edits it, then must unload. Loading under a host-owned key name risks colliding with real
+  host hives; failing to unload leaks host-registry handles for the life of the process.
+- **Decision:** `OfflineRegistryService.LoadHive` validates the requested hive name against
+  `^WinForge_[A-Za-z0-9_]{1,80}$` and the file's existence, then loads under
+  `HKLM\<WinForge_BASE>` via the Win32 `RegLoadKey` P/Invoke. **All** hive access is wrapped
+  so `UnloadHive` runs in a `finally` block (and sets `IsLoaded = false` there) — a hive is
+  never left loaded. Only the known bases `SOFTWARE` / `SYSTEM` / `DEFAULT`
+  (`OfflineHivePaths.IsKnownBase`) may be loaded; host hives are never touched. `SetValue` /
+  `DeleteValue` / `GetValue` / `EnumSubKeys` operate only under the loaded handle.
+- **Consequences:** No host-hive name collision, no leaked registry handles, and offline
+  edits are isolated to the working image and always released — even when an operation fails
+  or throws.
+
+## ADR-024: Host-system safety guards (path confinement + session binding + pre-execution critical stop)
+
+- **Status:** ACCEPTED
+- **Context:** Multiple independent isolation layers are needed; no single guard is
+  sufficient to keep the host safe when the tool runs elevated.
+- **Decision:** Execution is preceded by a **critical-stop guard** that fails the whole
+  `CustomizationResult` as `CriticalFailure` unless **all** hold: (a) the servicing
+  workspace `State` is `Mounted`; (b) `MountIdentityValidator.MatchesSession` is true (the
+  mount directory and the working image both live under the workspace's `WorkingDirectory`
+  for the same session); (c) `MountIsRegisteredAsync` confirms DISM registered the mount;
+  (d) the plan `Status` is `Validated`. `MountIdentityValidator.IsWithinMount` refuses any
+  path that is not strictly under the mount root — no host path, no source-ISO root, and no
+  arbitrary command / registry / filesystem delete is ever issued by the engine. Operations
+  classified `Protected` / `Unsupported` are blocked at validation; the package allowlist
+  (ADR-022) prevents non-allowlisted removals; discovery refuses to run when
+  `MatchesSession` is false.
+- **Consequences:** Defense-in-depth: a session mismatch, a missing/unregistered mount, or
+  an unvalidated plan cannot cause host changes, and the engine never emits an unconstrained
+  filesystem/registry/command operation.
+
+## ADR-025: Dirty / commit-discard separation — Step 3.3 applies but does not unmount or commit
+
+- **Status:** ACCEPTED
+- **Context:** Step 3.2 owns the prepare / mount / unmount / discard lifecycle (ADR-019).
+  Step 3.3 must apply customizations to the mounted working image without taking over that
+  lifecycle or silently committing changes the user did not choose to keep.
+- **Decision:** Execution applies the (validated, frozen) operations to the mounted working
+  image and then **LEAVES THE IMAGE MOUNTED** — it issues no `/Unmount-Image`, no `/Commit`,
+  and no `/Discard`. The plan transitions `Executing` → `Completed` / `CompletedWithErrors`;
+  `IAppState` tracks a "dirty" flag (customizations were applied to the working image this
+  session) so the UI can warn before an unmount/discard. Reverting applied changes is **out
+  of scope** for Step 3.3 — the user reverts by discarding the working image (Step 3.2
+  unmount/discard) and re-preparing, which preserves a clean, auditable baseline.
+  `CustomizationResult` records per-operation status, `FailedOperations`, and a
+  human-readable `Summary`; the structured log records what was applied.
+- **Consequences:** A clean ownership boundary between Step 3.2 (mount lifecycle) and Step
+  3.3 (apply); no silent commit; the user always decides whether to keep or discard applied
+  customizations, and the conservative default (discard the working image) is always
+  available.

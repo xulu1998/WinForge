@@ -13,6 +13,7 @@ public enum PageKey
     Experience,
     Privacy,
     System,
+    Plan,
     Build,
     Logs,
     Settings

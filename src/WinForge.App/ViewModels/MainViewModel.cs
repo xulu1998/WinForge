@@ -17,6 +17,10 @@ public sealed class MainViewModel : ViewModelBase
     private readonly INavigationService _navigation;
     private readonly HomeViewModel _home;
     private readonly ImageViewModel _image;
+    private readonly ComponentsViewModel _components;
+    private readonly PrivacyViewModel _privacy;
+    private readonly SystemViewModel _system;
+    private readonly PlanReviewViewModel _plan;
     private readonly LogsViewModel _logs;
     private readonly ComingSoonViewModel _comingSoon;
     private object? _currentView;
@@ -25,12 +29,20 @@ public sealed class MainViewModel : ViewModelBase
         INavigationService navigation,
         HomeViewModel home,
         ImageViewModel image,
+        ComponentsViewModel components,
+        PrivacyViewModel privacy,
+        SystemViewModel system,
+        PlanReviewViewModel plan,
         LogsViewModel logs,
         ComingSoonViewModel comingSoon)
     {
         _navigation = navigation;
         _home = home;
         _image = image;
+        _components = components;
+        _privacy = privacy;
+        _system = system;
+        _plan = plan;
         _logs = logs;
         _comingSoon = comingSoon;
 
@@ -42,6 +54,7 @@ public sealed class MainViewModel : ViewModelBase
             new(PageKey.Experience, "Experience", new RelayCommand(_ => Navigate(PageKey.Experience))),
             new(PageKey.Privacy, "Privacy", new RelayCommand(_ => Navigate(PageKey.Privacy))),
             new(PageKey.System, "System", new RelayCommand(_ => Navigate(PageKey.System))),
+            new(PageKey.Plan, "Plan", new RelayCommand(_ => Navigate(PageKey.Plan))),
             new(PageKey.Build, "Build", new RelayCommand(_ => Navigate(PageKey.Build))),
             new(PageKey.Logs, "Logs", new RelayCommand(_ => Navigate(PageKey.Logs))),
             new(PageKey.Settings, "Settings", new RelayCommand(_ => Navigate(PageKey.Settings))),
@@ -70,12 +83,20 @@ public sealed class MainViewModel : ViewModelBase
     {
         SyncActive(page);
         CurrentView = Resolve(page);
+        if (page == PageKey.Plan)
+        {
+            _plan.Refresh();
+        }
     }
 
     private object Resolve(PageKey page) => page switch
     {
         PageKey.Home => _home,
         PageKey.Image => _image,
+        PageKey.Components => _components,
+        PageKey.Privacy => _privacy,
+        PageKey.System => _system,
+        PageKey.Plan => _plan,
         PageKey.Logs => _logs,
         _ => PrepareComingSoon(page)
     };
@@ -92,6 +113,7 @@ public sealed class MainViewModel : ViewModelBase
         PageKey.Experience => "Experience",
         PageKey.Privacy => "Privacy",
         PageKey.System => "System",
+        PageKey.Plan => "Plan Review",
         PageKey.Build => "Build",
         PageKey.Settings => "Settings",
         _ => "Coming soon"

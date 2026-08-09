@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using WinForge.App.Services;
 using WinForge.App.ViewModels;
 using WinForge.Core.Services;
+using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.ImageMetadata;
 using WinForge.Infrastructure.WimEngine;
 using WinForge.Infrastructure.IsoInspection;
@@ -44,10 +45,21 @@ public static class Bootstrapper
         services.AddSingleton<IWorkspaceSafeDelete, WorkspaceSafeDelete>();
         services.AddSingleton<IImageServicingService, ImageServicingService>();
 
+        // Phase 3 — Step 3.3 (Offline customization plan & execution engine)
+        services.AddSingleton<IOfflineRegistryService, OfflineRegistryService>();
+        services.AddSingleton<ICustomizationDefinitionProvider, CustomizationDefinitionProvider>();
+        services.AddSingleton<IMountIdentityValidator, MountIdentityValidator>();
+        services.AddSingleton<ICustomizationDiscoveryService, WindowsCustomizationDiscoveryService>();
+        services.AddSingleton<ICustomizationExecutionService, WindowsCustomizationExecutionService>();
+
         // View models (singletons, shared across navigation)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<HomeViewModel>();
         services.AddSingleton<ImageViewModel>();
+        services.AddSingleton<ComponentsViewModel>();
+        services.AddSingleton<PrivacyViewModel>();
+        services.AddSingleton<SystemViewModel>();
+        services.AddSingleton<PlanReviewViewModel>();
         services.AddSingleton<LogsViewModel>();
         services.AddSingleton<ComingSoonViewModel>();
 

@@ -1,0 +1,115 @@
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using WinForge.Core.Models;
+
+namespace WinForge.Infrastructure.Customization;
+
+/// <summary>
+/// Parses the English (<c>/English</c>) output of
+/// <c>dism.exe /Get-ProvisionedAppxPackages</c> into structured
+/// <see cref="DiscoveredAppxPackage"/> items.
+///
+/// <para>DISM reports each provisioned package as a block of "Key : Value" lines
+/// (the same tolerant key/value grammar used elsewhere in WinForge). The block is
+/// keyed by <c>Deployment package name</c>, which is the exact identity DISM
+/// requires for removal — there is deliberately NO substring/fuzzy matching.</para>
+///
+/// <para>Empty / missing output is tolerated: an empty list is returned. Unknown
+/// DISM fields are ignored; only the stable, documented keys are read.</para>
+/// </summary>
+public static class DismAppxParser
+{
+    private static readonly Regex KeyRegex = new(@"^([A-Za-z][A-Za-z0-9 ]*?)\s*:\s*(.*)$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Parses provisioned Appx package blocks. Returns one
+    /// <see cref="DiscoveredAppxPackage"/> per block that carries a non-empty
+    /// deployment package name. Every discovered package is classified
+    /// <see cref="RiskClass.Removable"/> (the user decides whether to select it);
+    /// the engine never auto-selects.
+    /// </summary>
+    public static IReadOnlyList<DiscoveredAppxPackage> Parse(string output)
+    {
+        var result = new List<DiscoveredAppxPackage>();
+        if (string.IsNullOrWhiteSpace(output))
+        {
+            return result;
+        }
+
+        string? packageName = null;
+        string? displayName = null;
+        string? version = null;
+        string? architecture = null;
+        string? publisher = null;
+
+        void Flush()
+        {
+            if (!string.IsNullOrWhiteSpace(packageName))
+            {
+                result.Add(new DiscoveredAppxPackage
+                {
+                    PackageName = packageName!,
+                    DisplayName = displayName ?? packageName!,
+                    Version = version,
+                    Architecture = architecture,
+                    Publisher = publisher,
+                    Risk = RiskClass.Removable
+                });
+            }
+
+            packageName = displayName = version = architecture = publisher = null;
+        }
+
+        foreach (var raw in output.Replace("\r\n", "\n").Split('\n'))
+        {
+            // A blank line separates package blocks.
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                Flush();
+                continue;
+            }
+
+            var km = KeyRegex.Match(raw);
+            if (!km.Success)
+            {
+                continue;
+            }
+
+            var key = km.Groups[1].Value.Trim();
+            var value = km.Groups[2].Value.Trim();
+
+            switch (key.ToLowerInvariant())
+            {
+                case "deployment package name":
+                case "package identity":
+                    if (string.IsNullOrEmpty(packageName))
+                    {
+                        packageName = value;
+                    }
+                    break;
+                case "display name":
+                    if (string.IsNullOrEmpty(displayName))
+                    {
+                        displayName = value;
+                    }
+                    break;
+                case "version":
+                    version = value;
+                    break;
+                case "architecture":
+                    architecture = value;
+                    break;
+                case "publisher":
+                    publisher = value;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // Flush the final block.
+        Flush();
+        return result;
+    }
+}
