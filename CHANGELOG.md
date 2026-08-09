@@ -16,10 +16,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   plus a per-index `WindowsEditionInfo` list). All fields are nullable so data
   WinForge cannot reliably read stays `null` rather than being guessed; the UI
   decides between "Not detected" and "Mixed".
-- Infrastructure `WindowsImageMetadataService` queries the image via
-  `dism.exe /English /Get-WimInfo` (read-only, no image mount) and parses the
-  stable English output with `DismWimInfoParser` (key-based, tolerant of unknown
-  / future / reordered fields, never parsing by fixed column position).
+- Infrastructure `WindowsImageMetadataService` queries the image read-only with
+  `dism.exe /English /Get-WimInfo` in **two stages**: one enumeration query (no
+  `/Index`) that reliably returns each index's `Index` / `Name` / `Description`,
+  followed by one per-index detail query (`/Index:<n>`) for **every** enumerated
+  index that supplies `Architecture`, `Version`/`Build`, `Edition Id`,
+  `Installation`, and `Languages`/`Default Language`. The two parses are split to
+  match (`DismWimInfoParser.ParseImageList` for enumeration,
+  `DismWimInfoParser.ParseImageDetails` for per-index detail) and merged by index.
+  Both are key-based, tolerant of unknown / future / reordered fields, and never
+  parse by fixed column position.
 - `IProcessRunner` abstraction (Core) with `ProcessRequest` / `ProcessResult`
   DTOs and an Infrastructure `WindowsProcessRunner` (`System.Diagnostics.Process`)
   implementation; keeps Core free of any `Process` dependency and makes DISM
@@ -39,6 +45,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   and empty output, non-zero DISM exit, cancellation, unknown/reordered fields,
   edition selection, and guaranteed dismount after metadata failure. All Step
   2.1 tests are retained.
+
+### Fixed (Phase 2 Step 2.2 — two-stage metadata query correctness)
+- Real-DISM correctness gap: a single `dism.exe /Get-WimInfo` (no `/Index`) only
+  reliably reports per-index `Index` / `Name` / `Description` (and `Size`). The
+  detailed fields — `Architecture`, `Version`/`Build`, `Edition Id`,
+  `Installation`, `Languages`, `Default Language` — are returned **only** by a
+  per-index query (`/Get-WimInfo /ImageFile:"..." /Index:<n>`). Step 2.2 now runs
+  the enumeration query once, then one detail query for **every** enumerated index
+  (index numbers are not assumed sequential and are not assumed to map to a
+  specific edition such as Home/Pro), and merges the results by index.
+  `DismWimInfoParser` was split into `ParseImageList` (enumeration fields only)
+  and `ParseImageDetails` (full per-index detail). Failure semantics: if the
+  enumeration query fails the whole result is `Failed`; if a single per-index
+  detail query fails, that edition keeps its enumerated data, its detailed fields
+  stay `null`, and `WindowsEditionInfo.DetailStatus` records `Failed` (logged, not
+  shown raw) so the UI never silently pretends full metadata arrived. Added a
+  per-edition `DetailStatus` / `DetailErrorMessage` and a `DefaultLanguage` field.
+  Version/build is parsed structurally and never fabricated (no invented
+  servicing/UBR segment). The guaranteed dismount (ADR-015) and read-only safety
+  are unchanged. Tests were expanded with realistic two-stage fixtures and now
+  assert the exact command sequence (enumeration without `/Index`, then one
+  `/Index:n` per index) via a recording fake process runner.
 
 ### Status (Phase 2 Step 2.2)
 - Step 2.2 is implemented on `feature/iso-inspection` and passes the automated

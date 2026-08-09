@@ -205,17 +205,32 @@ All decisions are `ACCEPTED` unless noted.
 - **Decision:** Read metadata with `dism.exe /English /Get-WimInfo`, the
   documented read-only image query (no `Mount-Image`, no servicing). Because the
   host UI language may not be English, `/English` is mandatory so the parsed
-  fields are stable. Parsing (`DismWimInfoParser`, a pure function of the captured
-  text) is key-based and tolerant of unknown / future / reordered fields and never
-  slices fixed columns; empty or index-less output yields a `Failed` result, not
-  an exception. Process execution is abstracted behind `IProcessRunner` (Core)
-  with `ProcessRequest` / `ProcessResult` DTOs; Infrastructure's
-  `WindowsProcessRunner` uses `System.Diagnostics.Process` (no window, captured
-  stdout/stderr, cancellation by killing the child). `IWindowsImageMetadataService`
-  returns a `WindowsImageMetadataResult` — environmental failures (missing tooling,
-  non-zero exit, corrupt image) are surfaced as `Failed` with a friendly message,
-  while only cancellation propagates as `OperationCanceledException`. The original
-  Step 2.1 orchestrator (`WindowsIsoInspectionService`) is extended into a single
+  fields are stable. The query is performed in **two stages** because a single
+  `/Get-WimInfo` call without `/Index` only reliably returns per-index
+  `Index` / `Name` / `Description` (and `Size`); the detailed fields —
+  `Architecture`, `Version`/`Build`, `Edition Id`, `Installation`, and
+  `Languages`/`Default Language` — are reported **only** by a per-index query
+  (`/Get-WimInfo /ImageFile:"..." /Index:<n>`). `WindowsImageMetadataService`
+  therefore (A) runs the enumeration query once, then (B) runs one detail query
+  for **every** enumerated index (index numbers are not assumed sequential and are
+  not assumed to map to a specific edition), and merges the two by index. If
+  enumeration fails the whole result is `Failed`; if a single per-index detail
+  query fails, that edition keeps its enumerated `Index`/`Name`/`Description`, its
+  detailed fields stay `null`, and its `DetailStatus` is set to `Failed` (logged,
+  not shown raw) — WinForge never silently pretends full metadata arrived. Parsing
+  is split to match: `DismWimInfoParser.ParseImageList` reads only the reliable
+  enumeration fields, and `DismWimInfoParser.ParseImageDetails` reads the full
+  detail for one index. Both are pure functions of the captured text, key-based,
+  tolerant of unknown / future / reordered fields, and never slice fixed columns;
+  empty or index-less output yields a `Failed` result, not an exception. Process
+  execution is abstracted behind `IProcessRunner` (Core) with `ProcessRequest` /
+  `ProcessResult` DTOs; Infrastructure's `WindowsProcessRunner` uses
+  `System.Diagnostics.Process` (no window, captured stdout/stderr, cancellation by
+  killing the child). `IWindowsImageMetadataService` returns a
+  `WindowsImageMetadataResult` — environmental failures (missing tooling, non-zero
+  exit, corrupt image) are surfaced as `Failed` with a friendly message, while
+  only cancellation propagates as `OperationCanceledException`. The original Step
+  2.1 orchestrator (`WindowsIsoInspectionService`) is extended into a single
   high-level session: mount → layout inspection → install-image metadata
   inspection (while still mounted) → guaranteed dismount (ADR-015 preserved). The
   ViewModel consumes the combined `IsoInspectionResult.ImageMetadata` and never

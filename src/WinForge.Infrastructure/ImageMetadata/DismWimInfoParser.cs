@@ -7,18 +7,31 @@ namespace WinForge.Infrastructure.ImageMetadata;
 
 /// <summary>
 /// Parses the English (<c>/English</c>) output of <c>dism.exe /Get-WimInfo</c>
-/// into a structured <see cref="WindowsImageMetadataResult"/>.
+/// into structured edition metadata.
+///
+/// Microsoft DISM exposes image metadata through TWO distinct read-only queries:
+///
+/// 1. <c>/Get-WimInfo /ImageFile:"..."</c> (no <c>/Index</c>) — the *enumeration*
+///    query. It reliably yields, per image index, only <c>Index</c>,
+///    <c>Name</c>, <c>Description</c>, and <c>Size</c>. It does NOT report
+///    architecture, edition id, version, installation type, or languages.
+/// 2. <c>/Get-WimInfo /ImageFile:"..." /Index:&lt;n&gt;</c> — the *detail* query.
+///    For that single index it additionally returns <c>Architecture</c>,
+///    <c>Version</c>, <c>Edition</c>, <c>Edition Id</c>, <c>Installation</c>,
+///    <c>Languages</c>, and <c>Default Language</c>.
+///
+/// The two parsers below mirror that split exactly. <see cref="ParseImageList"/>
+/// reads only the reliable enumeration fields; <see cref="ParseImageDetails"/>
+/// reads the full detail for one index. The service merges them by index.
 ///
 /// Design rules (see AGENTS.md and Step 2.2 spec):
 /// - Only the <c>/English</c> output is parsed, never localized text.
 /// - Parsing is order-insensitive within each index block and tolerant of
 ///   unknown / future DISM fields (they are ignored, never fatal).
 /// - It never relies on fixed column positions; every value is read by key.
-/// - Empty or index-less output is reported as a failed result, not an exception.
-///
-/// The DISM banner line <c>Version:</c> (the tool version, e.g. 10.0.26100.1) is
-/// intentionally ignored — only per-index <c>Version</c> values describe the
-/// Windows image.
+/// - The DISM banner <c>Version:</c> (the tool version, e.g. 10.0.26100.1) is
+///   intentionally ignored — only per-index <c>Version</c> values describe the
+///   Windows image.
 /// </summary>
 public static class DismWimInfoParser
 {
@@ -28,42 +41,59 @@ public static class DismWimInfoParser
     // Matches a "Key : Value" line. The key may contain spaces ("Edition Id").
     private static readonly Regex KeyRegex = new(@"^([A-Za-z][A-Za-z ]*?)\s*:\s*(.*)$", RegexOptions.Compiled);
 
-    public static WindowsImageMetadataResult Parse(string output, string imagePath, WindowsImageType imageType)
+    /// <summary>
+    /// Parses the enumeration query output (no <c>/Index</c>). Returns one
+    /// <see cref="WindowsEditionInfo"/> per image index, populated ONLY with the
+    /// fields DISM reliably reports at enumeration time: <see cref="Index"/>,
+    /// <see cref="Name"/>, <see cref="Description"/>. Other fields stay
+    /// <c>null</c> / empty; the detail query fills them later.
+    /// </summary>
+    /// <returns>Indexes in the order DISM reported them. Empty when none found.</returns>
+    public static IReadOnlyList<WindowsEditionInfo> ParseImageList(string output)
     {
-        var result = new WindowsImageMetadataResult
-        {
-            ImagePath = imagePath,
-            ImageType = imageType,
-            Editions = new List<WindowsEditionInfo>()
-        };
-
+        var editions = new List<WindowsEditionInfo>();
         if (string.IsNullOrWhiteSpace(output))
         {
-            result.Status = WindowsImageMetadataStatus.Failed;
-            result.ErrorMessage = "The image returned no readable information.";
-            return result;
+            return editions;
         }
 
         var lines = output.Replace("\r\n", "\n").Split('\n');
         foreach (var block in SplitIntoIndexBlocks(lines))
         {
-            var edition = ParseEditionBlock(block);
+            var edition = ParseListBlock(block);
             if (edition is not null)
             {
-                result.Editions.Add(edition);
+                editions.Add(edition);
             }
         }
 
-        if (result.Editions.Count == 0)
+        return editions;
+    }
+
+    /// <summary>
+    /// Parses a single per-index detail query output (<c>/Index:&lt;n&gt;</c>).
+    /// Returns the fully detailed <see cref="WindowsEditionInfo"/> for the index
+    /// DISM printed, or <c>null</c> when the output contained no index. The
+    /// caller is responsible for setting <see cref="WindowsEditionInfo.DetailStatus"/>.
+    /// </summary>
+    public static WindowsEditionInfo? ParseImageDetails(string output)
+    {
+        if (string.IsNullOrWhiteSpace(output))
         {
-            result.Status = WindowsImageMetadataStatus.Failed;
-            result.ErrorMessage = "No image indexes were found in the source.";
-            return result;
+            return null;
         }
 
-        ComputeTopLevel(result);
-        result.Status = WindowsImageMetadataStatus.Completed;
-        return result;
+        var lines = output.Replace("\r\n", "\n").Split('\n');
+        foreach (var block in SplitIntoIndexBlocks(lines))
+        {
+            var edition = ParseDetailBlock(block);
+            if (edition is not null)
+            {
+                return edition;
+            }
+        }
+
+        return null;
     }
 
     private static List<List<string>> SplitIntoIndexBlocks(string[] lines)
@@ -87,10 +117,60 @@ public static class DismWimInfoParser
         return blocks;
     }
 
-    private static WindowsEditionInfo? ParseEditionBlock(List<string> block)
+    private static WindowsEditionInfo? ParseListBlock(List<string> block)
+    {
+        var edition = new WindowsEditionInfo();
+        var captured = false;
+
+        foreach (var raw in block)
+        {
+            var km = KeyRegex.Match(raw);
+            if (!km.Success)
+            {
+                continue;
+            }
+
+            var key = km.Groups[1].Value.Trim();
+            var value = km.Groups[2].Value.Trim();
+
+            switch (key.ToLowerInvariant())
+            {
+                case "index":
+                    if (int.TryParse(value, out var idx))
+                    {
+                        edition.Index = idx;
+                        captured = true;
+                    }
+
+                    break;
+                case "name":
+                    if (string.IsNullOrEmpty(edition.Name))
+                    {
+                        edition.Name = value;
+                    }
+
+                    break;
+                case "description":
+                    edition.Description = value;
+                    break;
+                // Enumeration output may also contain Size (and, on some DISM
+                // builds, a few extra lines), but those are not the reliable
+                // detail fields — they are intentionally ignored here and read
+                // from the per-index detail query instead.
+                default:
+                    break;
+            }
+        }
+
+        // An index block without a parseable Index is not a valid edition.
+        return captured ? edition : null;
+    }
+
+    private static WindowsEditionInfo? ParseDetailBlock(List<string> block)
     {
         var edition = new WindowsEditionInfo();
         var inLanguages = false;
+        var captured = false;
 
         foreach (var raw in block)
         {
@@ -134,6 +214,7 @@ public static class DismWimInfoParser
                     if (int.TryParse(value, out var idx))
                     {
                         edition.Index = idx;
+                        captured = true;
                     }
 
                     break;
@@ -169,6 +250,9 @@ public static class DismWimInfoParser
                 case "installation":
                     edition.InstallationType = value;
                     break;
+                case "default language":
+                    edition.DefaultLanguage = string.IsNullOrEmpty(value) ? null : value;
+                    break;
                 case "languages":
                     if (string.IsNullOrEmpty(value))
                     {
@@ -193,7 +277,7 @@ public static class DismWimInfoParser
             }
         }
 
-        return edition;
+        return captured ? edition : null;
     }
 
     private static bool IsKeyLine(string line)
@@ -218,52 +302,10 @@ public static class DismWimInfoParser
             return null;
         }
 
+        // DISM reports "10.0.26100.1742" (or, on some images, "10.0.26100").
+        // The Windows build number is the third dot segment and is genuinely
+        // present; we never fabricate a servicing/UBR segment (e.g. "26100.xxxx").
         var parts = version.Split('.');
         return parts.Length >= 3 ? parts[2] : null;
-    }
-
-    private static void ComputeTopLevel(WindowsImageMetadataResult result)
-    {
-        result.Architecture = Consistent(result.Editions, e => e.Architecture);
-        result.Version = Consistent(result.Editions, e => e.Version);
-        result.Build = Consistent(result.Editions, e => e.Build);
-        result.Languages = ConsistentLanguages(result.Editions);
-    }
-
-    private static string? Consistent(List<WindowsEditionInfo> editions, Func<WindowsEditionInfo, string?> selector)
-    {
-        var distinct = editions
-            .Select(selector)
-            .Where(v => !string.IsNullOrEmpty(v))
-            .Select(v => v!)
-            .Distinct()
-            .ToList();
-
-        return distinct.Count == 1 ? distinct[0] : null;
-    }
-
-    private static List<string>? ConsistentLanguages(List<WindowsEditionInfo> editions)
-    {
-        var lists = editions
-            .Select(e => e.Languages)
-            .Where(l => l.Count > 0)
-            .ToList();
-
-        // If any edition reports no languages, we cannot assert a consistent set.
-        if (lists.Count != editions.Count)
-        {
-            return null;
-        }
-
-        var first = lists[0];
-        for (var i = 1; i < lists.Count; i++)
-        {
-            if (!first.SequenceEqual(lists[i]))
-            {
-                return null;
-            }
-        }
-
-        return first.ToList();
     }
 }

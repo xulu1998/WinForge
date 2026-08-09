@@ -33,6 +33,7 @@ public class WindowsImageMetadataResultTests
 
         Assert.Equal(1, edition.Index);
         Assert.Equal("Windows 11 Home", edition.Name);
+        Assert.Null(edition.Description);
         Assert.Null(edition.Architecture);
         Assert.Null(edition.Version);
         Assert.Null(edition.Build);
@@ -40,5 +41,8 @@ public class WindowsImageMetadataResultTests
         Assert.Null(edition.InstallationType);
         Assert.NotNull(edition.Languages);
         Assert.Empty(edition.Languages);
+        Assert.Null(edition.DefaultLanguage);
+        Assert.Equal(WindowsEditionDetailStatus.NotQueried, edition.DetailStatus);
+        Assert.Null(edition.DetailErrorMessage);
     }
 }
