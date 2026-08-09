@@ -67,7 +67,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 2 — ISO Inspection
 
-- **Status:** IN PROGRESS (Step 2.1 COMPLETED and merged to `main` on 2026-08-08; Step 2.2 NOT STARTED)
+- **Status:** IN PROGRESS (Step 2.1 COMPLETED and merged to `main` on 2026-08-08; Step 2.2 COMPLETED and merged to `main` on 2026-08-08; Step 2.3 NOT STARTED)
 - **Goal:** Inspect an official Microsoft Windows 11 ISO non-destructively.
 - **Scope:** ISO metadata reading, edition enumeration, architecture/language
   detection, install.wim / install.esd detection.
@@ -84,11 +84,33 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - Detection: a Windows ISO **candidate** is `\sources` + `\boot` + `install.wim`/`install.esd`. No WIM/ESD content parsing, no edition/version recognition yet.
 - 15 automated tests added (9 inspection-logic via fake mount, 6 ViewModel). No DISM servicing, no registry, no ISO modification. Real Windows 11 25H2 (zh-CN, x64, Consumer ISO, install.wim) desktop mount/inspect/dismount validation completed (user-confirmed via application logs).
 
-### Step 2.2 — Windows image metadata and edition inspection (NOT STARTED)
-- **Status:** NOT STARTED
-- Scope: read `install.wim` / `install.esd` metadata (WIM index, edition,
-  Windows version, build, architecture, language) **without modifying the
-  source**.
+### Step 2.2 — Windows image metadata and edition inspection (COMPLETED)
+- **Status:** COMPLETED and merged to `main` on 2026-08-08. **Real Windows desktop
+  validation of the two-stage `/Get-ImageInfo` flow PASSED** (Windows 11 25H2
+  Chinese Simplified x64 Consumer `install.wim`: ISO mounted, `install.wim`
+  detected, `/Get-ImageInfo` enumeration of 6 indexes, per-index detail queries,
+  Windows Version `10.0.26200`, Build `26200`, Architecture `x64`, Language `zh-CN`,
+  localized Chinese edition names, guaranteed dismount). Both real-desktop defects
+  found during validation are fixed and revalidated: (1) initial `/Get-WimInfo`
+  caused DISM exit 87 → corrected to `/Get-ImageInfo`; (2) trailing DISM footer
+  `The operation completed successfully.` was parsed as language `The` → fixed via
+  `TryNormalizeLanguageTag` (UI now shows `zh-CN` only). Automated tests: 60/60
+  (Core 6, App 54), 0 errors, 0 warnings.
+- Implemented: `IWindowsImageMetadataService` + `WindowsImageMetadataResult` (Core);
+  `WindowsImageMetadataService` (`dism.exe /Get-ImageInfo /ImageFile:... /English`, read-only, no
+  WIM mount) + pure `DismImageInfoParser` + `IProcessRunner`/`WindowsProcessRunner`
+  (Infrastructure); `WindowsIsoInspectionService` extended into a single
+  mount → layout → metadata → dismount session (ADR-015 preserved, ADR-016 added);
+  Image page "Windows information" + editions `ListView`; edition selection →
+  `IAppState.SelectedEdition` (status only, no extraction/mount/modify).
+- Reads WIM/ESD index, edition name/description, architecture, Windows version,
+  build, edition ID, installation type, and languages; top-level version/build/
+  architecture/languages reported only when every edition agrees (otherwise the
+  UI shows "Mixed"). `DismImageInfoParser` parses the two DISM stages
+  (`ParseImageList` / `ParseImageDetails`) and validates language tags with
+  `TryNormalizeLanguageTag` (BCP-47-like; rejects footer prose such as
+  "The operation completed successfully."). Automated tests clean (0 errors, 0
+  warnings, 100% passing) using fakes plus real-footer-shape regression tests.
 - Not part of Step 2.1. Step 2.1 inspects only the on-disk ISO directory
   layout (`\boot`, `\sources`, `install.wim`/`install.esd`); it does not open
   or parse the WIM/ESD content.

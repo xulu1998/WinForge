@@ -3,6 +3,151 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added (Phase 2 Step 2.2 — Windows image metadata & editions)
+- Step 2.2 reads read-only metadata from the install image (`install.wim` /
+  `install.esd`) found under the mounted ISO: WIM/ESD indexes, edition name,
+  edition description, architecture, Windows version, Windows build, edition ID,
+  installation type, and languages — without mounting, modifying, or servicing
+  the image.
+- Core contract `IWindowsImageMetadataService` returning a structured
+  `WindowsImageMetadataResult` (top-level version/build/architecture/languages
+  plus a per-index `WindowsEditionInfo` list). All fields are nullable so data
+  WinForge cannot reliably read stays `null` rather than being guessed; the UI
+  decides between "Not detected" and "Mixed".
+- Infrastructure `WindowsImageMetadataService` queries the image read-only with
+  `dism.exe /Get-ImageInfo /ImageFile:"<path>" /English` in **two stages**: one
+  enumeration query (no `/Index`) that reliably returns each index's `Index` /
+  `Name` / `Description`, followed by one per-index detail query
+  (`/Get-ImageInfo /ImageFile:"<path>" /Index:<n> /English`) for **every**
+  enumerated index that supplies `Architecture`, `Version`/`Build`, `Edition Id`,
+  `Installation`, and `Languages`/`Default Language`. The two parses are split to
+  match (`DismImageInfoParser.ParseImageList` for enumeration,
+  `DismImageInfoParser.ParseImageDetails` for per-index detail) and merged by
+  index.
+  Both are key-based, tolerant of unknown / future / reordered fields, and never
+  parse by fixed column position.
+- `IProcessRunner` abstraction (Core) with `ProcessRequest` / `ProcessResult`
+  DTOs and an Infrastructure `WindowsProcessRunner` (`System.Diagnostics.Process`)
+  implementation; keeps Core free of any `Process` dependency and makes DISM
+  invocation fully testable with a fake.
+- High-level inspection session in `WindowsIsoInspectionService` now mounts the
+  ISO, inspects the layout (Step 2.1), reads the install-image metadata (Step
+  2.2) **while the ISO is still mounted**, then always dismounts — preserving the
+  ADR-015 cancellation-safe cleanup. The ViewModel never coordinates mount
+  lifecycle.
+- Image page shows a "Windows information" section (Windows Version, Build,
+  Architecture, Language) and an editions `ListView`; selecting an edition writes
+  `IAppState.SelectedEdition` (status only — no extraction/mount/modify), and the
+  Home page "Windows Edition" tile reflects the selection.
+- 16 new automated tests (parser, service via fake process runner, orchestrator
+  lifecycle, ViewModel/Home selection) covering single/multi-index WIM, ESD,
+  Home+Pro enumeration, architecture/version/build/language parsing, malformed
+  and empty output, non-zero DISM exit, cancellation, unknown/reordered fields,
+  edition selection, and guaranteed dismount after metadata failure. All Step
+  2.1 tests are retained.
+
+### Fixed (Phase 2 Step 2.2 — two-stage metadata query correctness)
+- Real-DISM correctness gap: a single `dism.exe /Get-ImageInfo` (no `/Index`) only
+  reliably reports per-index `Index` / `Name` / `Description` (and `Size`). The
+  detailed fields — `Architecture`, `Version`/`Build`, `Edition Id`,
+  `Installation`, `Languages`, `Default Language` — are returned **only** by a
+  per-index query (`/Get-ImageInfo /ImageFile:"..." /Index:<n> /English`). Step 2.2
+  now runs the enumeration query once, then one detail query for **every**
+  enumerated index (index numbers are not assumed sequential and are not assumed
+  to map to a specific edition such as Home/Pro), and merges the results by index.
+  `DismImageInfoParser` was split into `ParseImageList` (enumeration fields only)
+  and `ParseImageDetails` (full per-index detail). Failure semantics: if the
+  enumeration query fails the whole result is `Failed`; if a single per-index
+  detail query fails, that edition keeps its enumerated data, its detailed fields
+  stay `null`, and `WindowsEditionInfo.DetailStatus` records `Failed` (logged, not
+  shown raw) so the UI never silently pretends full metadata arrived. Added a
+  per-edition `DetailStatus` / `DetailErrorMessage` and a `DefaultLanguage` field.
+  Version/build is parsed structurally and never fabricated (no invented
+  servicing/UBR segment). The guaranteed dismount (ADR-015) and read-only safety
+  are unchanged. Tests were expanded with realistic two-stage fixtures and now
+  assert the exact command sequence (enumeration without `/Index`, then one
+  `/Index:n` per index) via a recording fake process runner.
+
+### Fixed (Phase 2 Step 2.2 — DISM Error 87: use /Get-ImageInfo)
+- Real desktop validation (2026-08-08): initial Step 2.2 desktop validation
+  exposed DISM exit code 87 ("The parameter is incorrect") because the
+  implementation invoked `dism.exe /English /Get-WimInfo /ImageFile:"..."`, an
+  incorrect command combination for the Windows 11 DISM command line. Corrected to
+  the documented Windows 11 syntax: `dism.exe /Get-ImageInfo /ImageFile:"<path>" /English`
+  for enumeration and `dism.exe /Get-ImageInfo /ImageFile:"<path>" /Index:<n> /English`
+  for the per-index detail query. `/ImageFile:` is kept (not changed to
+  `/WimFile`). The two-stage design (enumeration → collect indexes → per-index
+  detail → merge by index) is retained. The parser type was renamed
+  `DismWimInfoParser` → `DismImageInfoParser` and all references/tests updated. A
+  regression test asserts production arguments never contain `/Get-WimInfo`. Step
+  2.2 remains IMPLEMENTED / PENDING REAL DESKTOP RE-VALIDATION — NOT COMPLETED.
+
+### Fixed (Phase 2 Step 2.2 — DISM language footer parsing defect)
+- Real desktop validation (2026-08-08) on the Windows 11 25H2 zh-CN x64 Consumer
+  `install.wim` **succeeded** for the full two-stage flow: `/Get-ImageInfo`
+  enumeration, 6 real indexes (家庭版/家庭单语言版/教育版/专业版/专业教育版/
+  专业工作站版), per-index detailed queries, Version `10.0.26200`, Build `26200`,
+  Architecture `x64`, and guaranteed ISO dismount. It exposed one parser defect:
+  because `DismImageInfoParser` blindly took the first whitespace token of any
+  non-key line inside the `Languages` section, DISM's trailing footer
+  `The operation completed successfully.` was parsed as the language `The`
+  (UI showed `zh-CN, The`). `ExtractLanguage` was replaced by
+  `TryNormalizeLanguageTag`, a conservative BCP-47-like validator: only a 2–3
+  letter primary subtag followed by at least one hyphenated region/script/variant
+  subtag (`en-US`, `zh-CN`, `pt-BR`, `sr-Latn-RS`) is accepted; a trailing
+  `(Default)` annotation is stripped before validation. The `Languages` section now
+  **terminates** as soon as a non-language, non-blank, non-key line is seen, so
+  future DISM footer prose can never leak in. Regression tests assert
+  `Languages == ["zh-CN"]` (not `["zh-CN","The"]`) and `["en-US","fr-CA"]` against
+  the exact real-footer shape, plus rejection of arbitrary prose. Step 2.2 remains
+  IMPLEMENTED / PENDING FINAL LANGUAGE-PARSER RE-VALIDATION — NOT COMPLETED.
+
+### Status (Phase 2 Step 2.2)
+- Step 2.2 has been accepted and merged to `main` (2026-08-08). It passes the
+  automated test suite (0 errors, 0 warnings, 60/60 tests executed and passing:
+  Core 6, App 54). A real Windows desktop run on the Windows 11 25H2 zh-CN x64
+  Consumer `install.wim` validated the full two-stage `/Get-ImageInfo` flow: ISO
+  mount, `install.wim` detection, enumeration of 6 indexes, per-index detail
+  queries, Windows Version `10.0.26200`, Build `26200`, Architecture `x64`, Language
+  `zh-CN` (footer prose correctly rejected), localized Chinese edition names, and
+  guaranteed dismount. Both real-desktop findings (DISM exit 87, language footer
+  `The`) were fixed and revalidated. `v0.1.0-alpha` is unchanged; Step 2.3 is NOT
+  STARTED; `feature/iso-inspection` is retained for Step 2.3.
+
+### Accepted (Phase 2 Step 2.2 — Windows image metadata & editions)
+- Phase 2 Step 2.2 accepted and merged to `main` on 2026-08-08 via a `--no-ff`
+  merge commit (`feature/iso-inspection`, commits `a8f27ef`, `ec3df91`,
+  `2b5f848`, `929d399`). Pre-merge and post-merge `dotnet build` / `dotnet test`
+  verified clean: 0 errors, 0 warnings, 60/60 tests passing (Core 6, App 54).
+- Real Windows 11 25H2 (Chinese Simplified, x64, Consumer Editions, `install.wim`)
+  desktop validation PASSED: ISO mounted, `install.wim` detected, `/Get-ImageInfo`
+  enumeration succeeded (6 indexes: 家庭版/家庭单语言版/教育版/专业版/专业教育版/
+  专业工作站版), per-index detailed queries succeeded, Windows Version
+  `10.0.26200`, Build `26200`, Architecture `x64`, Language `zh-CN`, localized
+  Chinese edition names populated, ISO dismounted. The previous language bug
+  (`zh-CN, The`) is fixed (UI shows `zh-CN` only).
+- Both real-desktop findings from the metadata-inspection validation are fixed and
+  revalidated: (1) initial `/Get-WimInfo` caused DISM exit code 87 → corrected to
+  the documented `dism.exe /Get-ImageInfo /ImageFile:"<path>" /English` (enumeration)
+  and `... /Index:<n> /English` (per-index detail); (2) the trailing DISM footer
+  `The operation completed successfully.` was parsed as language `The` → fixed via
+  `TryNormalizeLanguageTag` (BCP-47-like validator, clean `Languages` section
+  termination). Added regression tests for both.
+- Delivered capabilities (Step 2.2): read-only WIM/ESD metadata (index, edition
+  name/description, architecture, Windows version, build, edition ID, installation
+  type, languages, default language) via two-stage `dism.exe /Get-ImageInfo`
+  (read-only, no WIM mount/servicing); `IProcessRunner` abstraction keeping Core
+  free of `Process`; combined mount→layout→metadata→dismount session preserving
+  ADR-015; Image page "Windows information" + editions list; edition selection →
+  `IAppState.SelectedEdition`. 60 automated tests (parser, service via fake process
+  runner, orchestrator lifecycle, ViewModel/Home selection).
+- Step 2.2 does not extract, mount, modify, or service the image. `v0.1.0-alpha`
+  remains unchanged; the next tag (`v0.2.0-alpha`) is deferred until Phase 2
+  completes. ESD (`install.esd`) metadata parsing is implemented but still
+  `Untested` on a real desktop.
+
 ## [0.1.0-alpha] — 2026-08-08
 
 ### Added

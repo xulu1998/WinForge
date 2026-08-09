@@ -191,3 +191,76 @@ All decisions are `ACCEPTED` unless noted.
   Cleanup is observable and unit-testable with a fake `IIsoMountService` that
   records the token used. The fix adds no new dependencies and keeps
   Infrastructure free of WPF.
+
+## ADR-016: Read-only Windows image metadata via DISM (Step 2.2)
+
+- **Status:** ACCEPTED
+- **Context:** Step 2.2 must read WIM/ESD image indexes, editions, architecture,
+  Windows version, build, edition ID, installation type, and languages — but the
+  operation must remain strictly read-only. The image must NOT be mounted,
+  modified, exported, or serviced, and the inspection must occur while the ISO is
+  still mounted (Step 2.1's dismount would otherwise make the install image
+  unreachable). The platform call must stay behind a Core abstraction so it is
+  unit-testable without Windows/DISM and the UI never coordinates mount lifecycle.
+- **Decision:** Read metadata with `dism.exe /Get-ImageInfo /ImageFile:"<path>" /English`,
+  the documented Windows 11 read-only image query (no `Mount-Image`, no
+  servicing). `/ImageFile:` is used (not `/WimFile`). Because the host UI language
+  may not be English, `/English` is mandatory so the parsed fields are stable. The
+  query is performed in **two stages** because a single
+  `/Get-ImageInfo /ImageFile:"..."` call without `/Index` only reliably returns
+  per-index `Index` / `Name` / `Description` (and `Size`); the detailed fields —
+  `Architecture`, `Version`/`Build`, `Edition Id`, `Installation`, and
+  `Languages`/`Default Language` — are reported **only** by a per-index query
+  (`/Get-ImageInfo /ImageFile:"..." /Index:<n> /English`). `WindowsImageMetadataService`
+  therefore (A) runs the enumeration query once, then (B) runs one detail query
+  for **every** enumerated index (index numbers are not assumed sequential and are
+  not assumed to map to a specific edition), and merges the two by index. If
+  enumeration fails the whole result is `Failed`; if a single per-index detail
+  query fails, that edition keeps its enumerated `Index`/`Name`/`Description`, its
+  detailed fields stay `null`, and its `DetailStatus` is set to `Failed` (logged,
+  not shown raw) — WinForge never silently pretends full metadata arrived. Parsing
+  is split to match: `DismImageInfoParser.ParseImageList` reads only the reliable
+  enumeration fields, and `DismImageInfoParser.ParseImageDetails` reads the full
+  detail for one index. Both are pure functions of the captured text, key-based,
+  tolerant of unknown / future / reordered fields, and never slice fixed columns;
+  empty or index-less output yields a `Failed` result, not an exception. Process
+  execution is abstracted behind `IProcessRunner` (Core) with `ProcessRequest` /
+  `ProcessResult` DTOs; Infrastructure's `WindowsProcessRunner` uses
+  `System.Diagnostics.Process` (no window, captured stdout/stderr, cancellation by
+  killing the child). `IWindowsImageMetadataService` returns a
+  `WindowsImageMetadataResult` — environmental failures (missing tooling, non-zero
+  exit, corrupt image) are surfaced as `Failed` with a friendly message, while
+  only cancellation propagates as `OperationCanceledException`. The original Step
+  2.1 orchestrator (`WindowsIsoInspectionService`) is extended into a single
+  high-level session: mount → layout inspection → install-image metadata
+  inspection (while still mounted) → guaranteed dismount (ADR-015 preserved). The
+  ViewModel consumes the combined `IsoInspectionResult.ImageMetadata` and never
+  touches mounting, DISM, or `Process`.
+- **Consequences:** ESD and WIM are handled identically by DISM (no ESD→WIM
+  conversion, no image modification). Core stays platform-agnostic and fully
+  testable via fakes; parsing and invocation are independently unit-tested. Top-
+  level version/build/architecture/languages are reported only when every edition
+  agrees — otherwise the fields stay `null` and the UI shows "Mixed" rather than
+  guessing from the first index. Raw DISM stderr / HRESULT is never shown to the
+  user, only logged.
+- **Correction (2026-08-08):** Real desktop validation of Step 2.2 exposed DISM
+  exit code 87 because the original implementation invoked `dism.exe /English
+  /Get-WimInfo /ImageFile:"..."` — an incorrect command combination for the
+  Windows 11 DISM command line. The active, documented command is now `dism.exe
+  /Get-ImageInfo /ImageFile:"<path>" /English` (enumeration) and `dism.exe
+  /Get-ImageInfo /ImageFile:"<path>" /Index:<n> /English` (per-index detail);
+  `/ImageFile:` is kept (not `/WimFile`). The parser type was renamed
+  `DismWimInfoParser` → `DismImageInfoParser`. The two-stage design is unchanged.
+  Step 2.2 remains IMPLEMENTED / PENDING REAL DESKTOP RE-VALIDATION — NOT COMPLETED.
+- **Correction (2026-08-08, language parsing):** The same real desktop run that
+  validated the two-stage flow also exposed a parser defect: `ParseImageDetails`
+  blindly took the first whitespace token of any non-key line inside the
+  `Languages` section, so DISM's trailing footer `The operation completed
+  successfully.` was added to the language list as `The`. `ExtractLanguage` was
+  replaced by `TryNormalizeLanguageTag`, a conservative BCP-47-like validator that
+  accepts only a 2–3 letter primary subtag followed by ≥1 hyphenated region/script/
+  variant subtag (e.g. `en-US`, `zh-CN`, `pt-BR`, `sr-Latn-RS`), strips a trailing
+  `(Default)` annotation before validation, and rejects arbitrary prose. The
+  `Languages` section now terminates on the first non-language, non-blank, non-key
+  line, so future DISM footer prose cannot leak in. Step 2.2 remains IMPLEMENTED /
+  PENDING FINAL LANGUAGE-PARSER RE-VALIDATION — NOT COMPLETED.

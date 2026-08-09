@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -10,10 +12,13 @@ namespace WinForge.App.ViewModels;
 
 /// <summary>
 /// Image page. Lets the user pick a Windows ISO, validates it, and runs a safe,
-/// read-only inspection that reports the detected type and install-image layout.
-/// All platform work (file dialog, ISO mount, PowerShell) is reached through
-/// abstractions; this ViewModel never touches WPF dialogs, the registry, or
-/// <c>Process</c> directly.
+/// read-only inspection that reports the detected type, install-image layout,
+/// and (Step 2.2) the Windows image metadata: version, build, architecture,
+/// languages, and the list of editions. All platform work (file dialog, ISO
+/// mount, DISM) is reached through abstractions; this ViewModel never touches
+/// WPF dialogs, the registry, or <c>Process</c> directly. Edition selection is
+/// written to <see cref="IAppState.SelectedEdition"/> for the Home page to show;
+/// it never mounts, extracts, or modifies an image.
 /// </summary>
 public sealed class ImageViewModel : ViewModelBase
 {
@@ -24,7 +29,6 @@ public sealed class ImageViewModel : ViewModelBase
 
     private IsoInspectionResult? _result;
     private bool _isInspecting;
-    private readonly WindowsImageInfo _imageInfo = new();
 
     public ImageViewModel(IAppState appState, ILoggerService logger, IIsoInspectionService inspection, IFilePicker filePicker)
     {
@@ -76,12 +80,73 @@ public sealed class ImageViewModel : ViewModelBase
 
     public bool HasResult => _result is not null;
 
-    // Future-phase fields — not populated by Step 2.1 inspection.
-    public string ArchitectureDisplay => _imageInfo.Architecture ?? "Not detected";
-    public string VersionDisplay => _imageInfo.Version ?? "Not detected";
-    public string BuildDisplay => _imageInfo.Build ?? "Not detected";
+    // Step 2.2 — Windows image metadata. When every edition agrees, the top-level
+    // value is shown; when editions disagree, "Mixed"; when nothing was read,
+    // "Not detected". The model keeps raw nullable data — the UI owns this choice.
+
+    public string WindowsVersionDisplay => TopLevelOr(
+        _result?.ImageMetadata?.Version,
+        e => e.Version,
+        "Not detected");
+
+    public string BuildDisplay => TopLevelOr(
+        _result?.ImageMetadata?.Build,
+        e => e.Build,
+        "Not detected");
+
+    public string ArchitectureDisplay => TopLevelOr(
+        _result?.ImageMetadata?.Architecture,
+        e => e.Architecture,
+        "Not detected");
+
+    public string LanguagesDisplay
+    {
+        get
+        {
+            var md = _result?.ImageMetadata;
+            if (md is null || md.Editions.Count == 0)
+            {
+                return "Not detected";
+            }
+
+            if (md.Languages is { Count: > 0 })
+            {
+                return string.Join(", ", md.Languages);
+            }
+
+            return md.Editions.Any(e => e.Languages.Count > 0) ? "Mixed" : "Not detected";
+        }
+    }
+
     public string EditionsDisplay =>
-        _imageInfo.Editions.Count > 0 ? $"{_imageInfo.Editions.Count} edition(s)" : "Not detected";
+        _result?.ImageMetadata?.Editions.Count > 0
+            ? $"{_result.ImageMetadata.Editions.Count} edition(s)"
+            : "Not detected";
+
+    /// <summary>Editions (image indexes) detected in the install image.</summary>
+    public IReadOnlyList<WindowsEditionInfo> Editions =>
+        (IReadOnlyList<WindowsEditionInfo>?)_result?.ImageMetadata?.Editions
+        ?? Array.Empty<WindowsEditionInfo>();
+
+    /// <summary>
+    /// The edition the user has selected for customization. Writing it updates
+    /// <see cref="IAppState.SelectedEdition"/> so the Home page reflects it. This
+    /// is a status selection only — it performs no image extraction or mounting.
+    /// </summary>
+    public WindowsEditionInfo? SelectedEdition
+    {
+        get => _appState.SelectedEdition;
+        set
+        {
+            if (Equals(_appState.SelectedEdition, value))
+            {
+                return;
+            }
+
+            _appState.SelectedEdition = value;
+            OnPropertyChanged();
+        }
+    }
 
     public async Task SelectIsoAsync()
     {
@@ -94,7 +159,6 @@ public sealed class ImageViewModel : ViewModelBase
         }
 
         _appState.SourceImagePath = path;
-        _imageInfo.SourcePath = path;
         _logger.Info($"ISO selected: {path}");
 
         await InspectCurrentAsync();
@@ -108,13 +172,15 @@ public sealed class ImageViewModel : ViewModelBase
             return;
         }
 
+        // A new inspection supersedes any prior edition selection.
+        _appState.SelectedEdition = null;
+
         IsInspecting = true;
         _logger.Info("ISO inspection started.");
         try
         {
             var result = await _inspection.InspectAsync(path, CancellationToken.None);
             _result = result;
-            _imageInfo.Size = result.FileSizeBytes;
             _logger.Info(result.Status == IsoInspectionStatus.Completed
                 ? "ISO inspection completed."
                 : "ISO inspection failed.");
@@ -131,6 +197,25 @@ public sealed class ImageViewModel : ViewModelBase
         }
     }
 
+    private string TopLevelOr(
+        string? consistent,
+        Func<WindowsEditionInfo, string?> selector,
+        string whenAbsent)
+    {
+        var md = _result?.ImageMetadata;
+        if (md is null || md.Editions.Count == 0)
+        {
+            return whenAbsent;
+        }
+
+        if (consistent is not null)
+        {
+            return consistent;
+        }
+
+        return md.Editions.Any(e => !string.IsNullOrEmpty(selector(e))) ? "Mixed" : whenAbsent;
+    }
+
     private void Refresh()
     {
         OnPropertyChanged(nameof(FileDisplay));
@@ -142,10 +227,13 @@ public sealed class ImageViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsInspecting));
         OnPropertyChanged(nameof(HasError));
         OnPropertyChanged(nameof(HasResult));
-        OnPropertyChanged(nameof(ArchitectureDisplay));
-        OnPropertyChanged(nameof(VersionDisplay));
+        OnPropertyChanged(nameof(WindowsVersionDisplay));
         OnPropertyChanged(nameof(BuildDisplay));
+        OnPropertyChanged(nameof(ArchitectureDisplay));
+        OnPropertyChanged(nameof(LanguagesDisplay));
         OnPropertyChanged(nameof(EditionsDisplay));
+        OnPropertyChanged(nameof(Editions));
+        OnPropertyChanged(nameof(SelectedEdition));
     }
 
     private static string FormatSize(long bytes)

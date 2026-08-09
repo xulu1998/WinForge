@@ -34,8 +34,10 @@ public class IsoInspectionTests : IDisposable
         catch { /* best effort */ }
     }
 
-    private WindowsIsoInspectionService CreateService(FakeIsoMountService mount) =>
-        new(mount, _logger);
+    private WindowsIsoInspectionService CreateService(
+        FakeIsoMountService mount,
+        FakeImageMetadataService? metadata = null) =>
+        new(mount, metadata ?? new FakeImageMetadataService(), _logger);
 
     private string MakeIsoFile()
     {
@@ -268,6 +270,28 @@ public class IsoInspectionTests : IDisposable
             DismountCount++;
             DismountToken = cancellationToken;
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeImageMetadataService : IWindowsImageMetadataService
+    {
+        public WindowsImageMetadataResult? Next { get; set; }
+        public Exception? Throw { get; set; }
+
+        public Task<WindowsImageMetadataResult> InspectAsync(string imagePath, CancellationToken cancellationToken = default)
+        {
+            if (Throw is not null)
+            {
+                return Task.FromException<WindowsImageMetadataResult>(Throw);
+            }
+
+            return Task.FromResult(Next ?? new WindowsImageMetadataResult
+            {
+                ImagePath = imagePath,
+                ImageType = WindowsImageType.Wim,
+                Status = WindowsImageMetadataStatus.Completed,
+                Editions = new()
+            });
         }
     }
 }

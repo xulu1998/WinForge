@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
+using WinForge.Infrastructure.ImageMetadata;
 
 namespace WinForge.Infrastructure.IsoInspection;
 
@@ -16,11 +17,16 @@ namespace WinForge.Infrastructure.IsoInspection;
 public sealed class WindowsIsoInspectionService : IIsoInspectionService
 {
     private readonly IIsoMountService _mountService;
+    private readonly IWindowsImageMetadataService _metadataService;
     private readonly ILoggerService _logger;
 
-    public WindowsIsoInspectionService(IIsoMountService mountService, ILoggerService logger)
+    public WindowsIsoInspectionService(
+        IIsoMountService mountService,
+        IWindowsImageMetadataService metadataService,
+        ILoggerService logger)
     {
         _mountService = mountService ?? throw new ArgumentNullException(nameof(mountService));
+        _metadataService = metadataService ?? throw new ArgumentNullException(nameof(metadataService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -94,7 +100,44 @@ public sealed class WindowsIsoInspectionService : IIsoInspectionService
             InspectLayout(mountedRoot, result);
             _logger.Info("ISO structure inspected.");
 
-            result.Status = IsoInspectionStatus.Completed;
+            // Step 2.2: read install-image metadata *while the ISO is still
+            // mounted*. The high-level inspection session owns the mount
+            // lifecycle, so the ViewModel never mounts/unmounts or coordinates
+            // this itself. Metadata inspection uses the same cancellation token,
+            // but its failure cannot prevent the guaranteed dismount below.
+            string? imagePath = null;
+            if (result.HasInstallWim)
+            {
+                imagePath = Path.Combine(mountedRoot, "sources", "install.wim");
+            }
+            else if (result.HasInstallEsd)
+            {
+                imagePath = Path.Combine(mountedRoot, "sources", "install.esd");
+            }
+
+            if (imagePath is not null)
+            {
+                _logger.Info($"Found {(result.HasInstallWim ? "install.wim" : "install.esd")}");
+                result.ImageMetadata = await _metadataService.InspectAsync(imagePath, cancellationToken);
+
+                if (result.ImageMetadata.Status == WindowsImageMetadataStatus.Failed)
+                {
+                    // The layout was a valid Windows ISO candidate, but its image
+                    // metadata could not be read. Surface a friendly failure; the
+                    // finally block still dismounts the ISO.
+                    result.Status = IsoInspectionStatus.Failed;
+                    result.DetectedType = IsoDetectedType.WindowsIsoCandidate;
+                    result.ErrorMessage = result.ImageMetadata.ErrorMessage
+                        ?? "The Windows image metadata could not be read.";
+                    _logger.Error("Windows image metadata inspection failed.");
+                }
+            }
+
+            if (result.Status != IsoInspectionStatus.Failed)
+            {
+                result.Status = IsoInspectionStatus.Completed;
+            }
+
             _logger.Info(result.DetectedType == IsoDetectedType.WindowsIsoCandidate
                 ? $"Detected Windows ISO candidate (install image: {result.InstallImageType})."
                 : "ISO layout does not match a Windows installation image (Unknown).");
