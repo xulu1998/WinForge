@@ -571,3 +571,31 @@ All decisions are `ACCEPTED` unless noted.
   that execution would refuse. The policy is defined once and referenced thrice, eliminating
   the classification/execution mismatch. Step 3.3 real-desktop validation remains **PENDING**.
 
+## ADR-028: Offline service discovery must never report a silent "0 services"
+
+- **Status:** ACCEPTED
+- **Context:** Re-investigation of DEFECT 2 after real-desktop evidence confirmed the SYSTEM
+  hive file is present and readable (9,175,040 bytes at
+  `<mount>\Windows\System32\Config\SYSTEM`). That rules out the originally-suspected "missing /
+  wrong hive path" cause. The remaining silent-zero risk was a **successfully-loaded** hive
+  whose resolved `ControlSet00x\Services` enumeration returned empty — `DiscoverServices` then
+  returned `DiscoverySourceStatus.Success` with 0 items, collapsing a mis-resolved / unexpected
+  hive structure into a misleading success.
+- **Decision:** Two changes close the gap:
+  1. **Empty-Services guard** — after resolving the ControlSet and enumerating
+     `ControlSet00x\Services`, an empty result is now treated as `DiscoverySourceStatus.Failed`
+     with an explicit error, never a successful "0 services". A real Windows SYSTEM hive always
+     has service sub-keys under the current ControlSet, so an empty enumeration indicates a
+     mis-resolved ControlSet or unexpected structure that must surface.
+  2. **Diagnostics** — `OfflineRegistryService` now takes `ILoggerService` and logs the
+     full hive-load / unload lifecycle so any real-desktop failure is observable: the (redacted)
+     hive file path, the WinForge-owned temporary HKLM name, `SeRestorePrivilege` /
+     `SeBackupPrivilege` enablement outcome (including `ERROR_NOT_ALL_ASSIGNED`), the
+     `RegLoadKey` and `RegUnLoadKey` return codes, the resolved ControlSet, and the service
+     count. The mount-root prefix is redacted (`<mount>`) and no host-registry data is logged,
+     preserving the host-system safety boundary.
+- **Consequences:** A load or enumeration failure (privilege, return code, missing Services
+  sub-key) always surfaces as an explicit discovery error. Combined with the prior
+  `ServiceStatus = Failed` on hive-load throw, "0 services" can no longer masquerade as success.
+  Step 3.3 real-desktop validation remains **PENDING** — RE-RUN required after this change.
+

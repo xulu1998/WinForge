@@ -232,4 +232,18 @@ Release Type : Feature Pack
         Assert.Equal(2, inv.Services.Count);
         Assert.Contains(inv.Services, s => s.ServiceName == "Spooler");
     }
+
+    [Fact]
+    public async Task Discover_SurfacesEmptyServicesEnumeration_AsError_NotSilentZero()
+    {
+        Build();
+        // The hive loads fine (privileges/paths OK), but the resolved ControlSet's
+        // Services key is empty/absent. This must surface as a failure — never a
+        // misleading successful "0 services discovered".
+        _registry.SubKeys.Remove("WinForge_SYSTEM|ControlSet001\\Services");
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        Assert.Equal(DiscoverySourceStatus.Failed, inv.ServiceStatus);
+        Assert.False(string.IsNullOrEmpty(inv.ServiceError));
+        Assert.Empty(inv.Services);
+    }
 }

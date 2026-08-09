@@ -151,8 +151,24 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
 
             var current = ReadCurrentControlSet(handle);
             var servicesRoot = $"ControlSet{current:D3}\\Services";
+            _logger.Info($"Customization: resolved current ControlSet to ControlSet{current:D3} (services root '{servicesRoot}').");
 
-            foreach (var name in _registry.EnumSubKeys(handle, servicesRoot))
+            var names = _registry.EnumSubKeys(handle, servicesRoot);
+
+            // A successfully-loaded hive that yields ZERO service sub-keys under the
+            // resolved ControlSet is suspicious: a real Windows SYSTEM hive always
+            // contains services there. An empty enumeration is therefore treated as
+            // a discovery failure — never collapsed into a misleading "0 services
+            // discovered" success. This closes the last silent-zero path.
+            if (names.Count == 0)
+            {
+                const string msg =
+                    "Resolved ControlSet had no Services sub-keys (unexpected for a Windows image); refusing to report 0 services.";
+                _logger.Error($"Customization: service discovery failed: {msg}");
+                return (services, DiscoverySourceStatus.Failed, msg);
+            }
+
+            foreach (var name in names)
             {
                 var key = $"{servicesRoot}\\{name}";
                 var startValue = _registry.GetValue(handle, key, "Start");
@@ -170,7 +186,7 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
                 });
             }
 
-            _logger.Info($"Customization: discovered {services.Count} offline service(s).");
+            _logger.Info($"Customization: discovered {services.Count} offline service(s) from '{servicesRoot}'.");
             return (services, DiscoverySourceStatus.Success, null);
         }
         catch (Exception ex)

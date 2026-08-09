@@ -36,6 +36,13 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
     private static readonly System.Text.RegularExpressions.Regex SafeHiveNameRegex =
         new(@"^WinForge_[A-Za-z0-9_]{1,80}$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
+    private readonly ILoggerService _logger;
+
+    public OfflineRegistryService(ILoggerService logger)
+    {
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
     public OfflineHiveHandle LoadHive(string hiveFilePath, string hiveName)
     {
         if (string.IsNullOrWhiteSpace(hiveFilePath))
@@ -54,11 +61,18 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
             throw new System.IO.FileNotFoundException("Offline hive file not found.", hiveFilePath);
         }
 
+        // Diagnostics: log the requested hive file (mount path redacted so no
+        // local filesystem layout is leaked) and the WinForge-owned temporary
+        // HKLM name actually used. None of this is host-registry data — it is the
+        // OFFLINE image's hive, loaded strictly under HKLM\<WinForge_*>.
+        _logger.Info($"OfflineRegistry: loading offline hive '{hiveName}' from '{RedactHivePath(hiveFilePath)}'.");
+
         // RegLoadKey requires SeRestorePrivilege (and RegUnLoadKey SeBackupPrivilege),
         // which are present in an elevated token but usually DISABLED by default.
         // Enable them before the call — without this, hive load fails with
         // ERROR_PRIVILEGE_NOT_HELD on a real elevated Windows session, which is
-        // exactly why offline service discovery could silently return zero.
+        // exactly why offline service discovery could silently return zero. The
+        // enablement result is logged so a privilege failure is observable.
         EnableRequiredPrivileges();
 
         // Load under HKLM\<hiveName>. RegLoadKey requires the target not already be
@@ -69,9 +83,12 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
             hiveFilePath);
         if (rc != 0)
         {
-            throw new Win32Exception(rc, $"Failed to load offline hive '{hiveName}' (Win32 {rc}).");
+            var msg = new Win32Exception(rc).Message;
+            _logger.Error($"OfflineRegistry: RegLoadKey FAILED (return code {rc}: {msg}) for hive '{hiveName}'. The offline hive was NOT loaded.");
+            throw new Win32Exception(rc, $"Failed to load offline hive '{hiveName}' (Win32 {rc}: {msg}).");
         }
 
+        _logger.Info($"OfflineRegistry: RegLoadKey OK (return code 0) — hive '{hiveName}' loaded under HKLM.");
         return new OfflineHiveHandle(hiveFilePath, hiveName);
     }
 
@@ -84,10 +101,21 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
 
         // Best effort: unloading may transiently fail if a handle is still open;
         // we still mark the handle as unloaded so callers cannot double-unload.
+        // The RegUnLoadKey return code is logged so a leaked/unloadable hive is
+        // observable rather than silently ignored.
         try
         {
             EnableRequiredPrivileges();
-            RegUnLoadKey((int)RegistryHive.LocalMachine, handle.HiveName);
+            var rc = RegUnLoadKey((int)RegistryHive.LocalMachine, handle.HiveName);
+            if (rc != 0)
+            {
+                var msg = new Win32Exception(rc).Message;
+                _logger.Warning($"OfflineRegistry: RegUnLoadKey FAILED (return code {rc}: {msg}) for hive '{handle.HiveName}'. The hive may remain loaded in the host registry; ensure no open handles.");
+            }
+            else
+            {
+                _logger.Info($"OfflineRegistry: RegUnLoadKey OK (return code 0) — hive '{handle.HiveName}' unloaded.");
+            }
         }
         finally
         {
@@ -273,6 +301,7 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
     private const int SE_PRIVILEGE_ENABLED = 0x00000002;
     private const int TOKEN_ADJUST_PRIVILEGES = 0x00000020;
     private const int TOKEN_QUERY = 0x00000008;
+    private const uint ERROR_NOT_ALL_ASSIGNED = 1300;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Luid
@@ -314,30 +343,36 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
 
     /// <summary>
     /// Enables <c>SeRestorePrivilege</c> and <c>SeBackupPrivilege</c> on the
-    /// current process token (best effort). These are required by
-    /// <see cref="RegLoadKey"/> / <see cref="RegUnLoadKey"/> and are present in an
-    /// elevated token but disabled by default. If enabling fails (e.g. not
-    /// elevated, or not Windows) the load/unload call is still attempted and will
-    /// fail with a clear Win32 error rather than silently returning zero items.
+    /// current process token. These are required by <see cref="RegLoadKey"/> /
+    /// <see cref="RegUnLoadKey"/> and are present in an elevated token but
+    /// disabled by default — without this, hive load fails with
+    /// ERROR_PRIVILEGE_NOT_HELD on a real elevated Windows session, which is
+    /// exactly why offline service discovery could silently return zero. The
+    /// outcome is logged so a privilege failure is observable rather than silent.
     /// </summary>
-    private static void EnableRequiredPrivileges()
+    private void EnableRequiredPrivileges()
     {
         if (!OperatingSystem.IsWindows())
         {
+            _logger.Debug("OfflineRegistry: privilege enable skipped (not Windows).");
             return;
         }
 
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out var token))
         {
+            var openErr = Marshal.GetLastWin32Error();
+            _logger.Warning($"OfflineRegistry: OpenProcessToken failed (Win32 {openErr}); RegLoadKey/RegUnLoadKey may fail with ERROR_PRIVILEGE_NOT_HELD.");
             return;
         }
 
         try
         {
+            var failures = new List<string>();
             foreach (var privilege in new[] { "SeRestorePrivilege", "SeBackupPrivilege" })
             {
                 if (!LookupPrivilegeValue(null, privilege, out var luid))
                 {
+                    failures.Add($"{privilege} (LookupPrivilegeValue Win32 {Marshal.GetLastWin32Error()})");
                     continue;
                 }
 
@@ -348,12 +383,54 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
                     Attributes = SE_PRIVILEGE_ENABLED
                 };
 
-                AdjustTokenPrivileges(token, disableAllPrivileges: false, ref state, 0, IntPtr.Zero, IntPtr.Zero);
+                if (!AdjustTokenPrivileges(token, disableAllPrivileges: false, ref state, 0, IntPtr.Zero, IntPtr.Zero))
+                {
+                    failures.Add($"{privilege} (AdjustTokenPrivileges Win32 {Marshal.GetLastWin32Error()})");
+                    continue;
+                }
+
+                // AdjustTokenPrivileges returns TRUE even when a privilege could not
+                // actually be enabled; the real status is in GetLastError.
+                if (Marshal.GetLastWin32Error() == ERROR_NOT_ALL_ASSIGNED)
+                {
+                    failures.Add($"{privilege} (not held/assigned on this token)");
+                }
+            }
+
+            if (failures.Count == 0)
+            {
+                _logger.Info("OfflineRegistry: enabled SeRestorePrivilege and SeBackupPrivilege on the process token.");
+            }
+            else
+            {
+                _logger.Warning($"OfflineRegistry: some required privileges could not be enabled: {string.Join("; ", failures)}. Hive load/unload may fail.");
             }
         }
         finally
         {
             CloseHandle(token);
         }
+    }
+
+    /// <summary>
+    /// Produces a diagnostic-safe representation of an offline hive file path: the
+    /// mount-root prefix (which can leak a user's local filesystem layout such as
+    /// <c>C:\Users\&lt;user&gt;\...</c>) is replaced with <c>&lt;mount&gt;</c>, leaving only
+    /// the in-image portion (e.g. <c>&lt;mount&gt;\Windows\System32\config\SYSTEM</c>).
+    /// If no mount marker is present, only the final two segments are revealed.
+    /// This never exposes host-registry data — only the OFFLINE image's hive path.
+    /// </summary>
+    private static string RedactHivePath(string hiveFilePath)
+    {
+        const string marker = "\\mount\\";
+        var idx = hiveFilePath.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (idx >= 0)
+        {
+            return "<mount>\\" + hiveFilePath.Substring(idx + marker.Length);
+        }
+
+        var name = System.IO.Path.GetFileName(hiveFilePath);
+        var parent = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(hiveFilePath) ?? string.Empty);
+        return string.IsNullOrEmpty(parent) ? name : parent + "\\" + name;
     }
 }

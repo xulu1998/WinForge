@@ -73,6 +73,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - 220 automated tests pass (Core 37, App 183), 0 errors, 0 warnings (Release), all CI-safe.
   Step 3.3 remains **PENDING real-desktop validation — re-run required**; not merged to `main`.
 
+### Fixed (Phase 3 Step 3.3 — offline-services silent-zero re-investigation, ADR-028)
+- **DEFECT 2 re-investigation (silent "0 services"):** real-desktop evidence confirmed the
+  SYSTEM hive file exists and is readable (`<mount>\Windows\System32\Config\SYSTEM`, 9,175,040
+  bytes), so the cause was **not** a missing/wrong hive path. The residual silent-zero path was
+  a *successfully loaded* hive whose resolved `ControlSet00x\Services` enumeration returned
+  empty, which previously returned `Success` with 0 items. `DiscoverServices` now treats an
+  empty Services enumeration as `ServiceStatus = Failed` (never a misleading "0 services").
+- **Diagnostics:** `OfflineRegistryService` now depends on `ILoggerService` and logs the full
+  load/unload lifecycle — redacted hive file path, the WinForge-owned temporary HKLM name,
+  `SeRestorePrivilege`/`SeBackupPrivilege` enablement outcome (incl. `ERROR_NOT_ALL_ASSIGNED`),
+  `RegLoadKey`/`RegUnLoadKey` return codes, the resolved ControlSet, and the service count. The
+  mount-root prefix is redacted (`<mount>`) and no host-registry data is logged, preserving the
+  host-system safety boundary.
+- 221 automated tests pass (Core 37, App 184), 0 errors, 0 warnings (Release), all CI-safe
+  (added `Discover_SurfacesEmptyServicesEnumeration_AsError_NotSilentZero`). Step 3.3 remains
+  **PENDING real-desktop validation — re-run required**; not merged to `main`.
+
 ### Status (Phase 3 Step 3.3 — implemented, pending real-desktop validation)
 - Step 3.3 is **IMPLEMENTED** on `feature/offline-customization` (2026-08-09). The full
   declarative plan, discovery, offline-registry, execution, and UI layers are complete and

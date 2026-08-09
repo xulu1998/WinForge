@@ -1,7 +1,9 @@
 using System;
 using System.IO;
 using WinForge.Core.Models;
+using WinForge.Core.Services;
 using WinForge.Infrastructure.Customization;
+using WinForge.Infrastructure.Logging;
 using Xunit;
 
 namespace WinForge.App.Tests;
@@ -14,7 +16,7 @@ namespace WinForge.App.Tests;
 /// </summary>
 public class OfflineRegistrySafetyTests
 {
-    private readonly OfflineRegistryService _service = new();
+    private readonly OfflineRegistryService _service = new(new InMemoryLoggerService());
 
     [Fact]
     public void LoadHive_RejectsHostHiveName()
