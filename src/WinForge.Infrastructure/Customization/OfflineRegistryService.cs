@@ -126,16 +126,25 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
     public void SetValue(OfflineHiveHandle handle, string keyPath, string valueName, OfflineRegistryValueKind kind, string data)
     {
         Validate(handle, keyPath, valueName);
+        keyPath = NormalizeKeyPath(handle, keyPath);
 
         using var root = OpenLoadedRoot(handle, writable: true);
         using var key = EnsureKeyPath(root, keyPath);
         var (nativeKind, value) = ConvertToNative(kind, data);
         key.SetValue(valueName, value, nativeKind);
+
+        // SUCCESS CONTRACT (hardened): a registry write is only a success when an
+        // independent read-back confirms the value is present, of the requested
+        // type, and equal to the requested data. SetValue returning without an
+        // exception is NOT sufficient proof — a write can silently fail to persist
+        // (registry quota, permissions, a path that escaped the intended root).
+        VerifyPersisted(handle, keyPath, valueName, kind, data);
     }
 
     public void DeleteValue(OfflineHiveHandle handle, string keyPath, string valueName)
     {
         Validate(handle, keyPath, valueName);
+        keyPath = NormalizeKeyPath(handle, keyPath);
 
         using var root = OpenLoadedRoot(handle, writable: true);
         using var key = root.OpenSubKey(keyPath, writable: true);
@@ -151,11 +160,16 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
         }
 
         key.DeleteValue(valueName, throwOnMissingValue: false);
+
+        // SUCCESS CONTRACT (hardened): deletion is only a success when an
+        // independent read-back confirms the value is now absent.
+        VerifyAbsent(handle, keyPath, valueName);
     }
 
     public string? GetValue(OfflineHiveHandle handle, string keyPath, string valueName)
     {
         Validate(handle, keyPath, valueName);
+        keyPath = NormalizeKeyPath(handle, keyPath);
 
         using var root = OpenLoadedRoot(handle, writable: false);
         using var key = root.OpenSubKey(keyPath, writable: false);
@@ -175,6 +189,118 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
             byte[] bytes => Convert.ToHexString(bytes),
             _ => obj.ToString()
         };
+    }
+
+    public OfflineRegistryReadResult ReadValue(OfflineHiveHandle handle, string keyPath, string valueName)
+    {
+        Validate(handle, keyPath, valueName);
+        keyPath = NormalizeKeyPath(handle, keyPath);
+
+        using var root = OpenLoadedRoot(handle, writable: false);
+        using var key = root.OpenSubKey(keyPath, writable: false);
+        if (key is null)
+        {
+            return new OfflineRegistryReadResult { Exists = false };
+        }
+
+        RegistryValueKind nativeKind;
+        try
+        {
+            nativeKind = key.GetValueKind(valueName);
+        }
+        catch (ArgumentException)
+        {
+            // GetValueKind throws when the named value does not exist.
+            return new OfflineRegistryReadResult { Exists = false };
+        }
+
+        if (nativeKind is RegistryValueKind.Unknown or RegistryValueKind.None)
+        {
+            return new OfflineRegistryReadResult { Exists = false };
+        }
+
+        var obj = key.GetValue(valueName);
+        if (obj is null)
+        {
+            return new OfflineRegistryReadResult { Exists = false };
+        }
+
+        return new OfflineRegistryReadResult
+        {
+            Exists = true,
+            Kind = ToOfflineKind(nativeKind),
+            Data = RenderData(obj, nativeKind)
+        };
+    }
+
+    // ---- verification helpers (hardened success contract) ----
+
+    private void VerifyPersisted(
+        OfflineHiveHandle handle, string keyPath, string valueName,
+        OfflineRegistryValueKind kind, string expectedData)
+    {
+        var actual = ReadValue(handle, keyPath, valueName);
+        if (!actual.Exists)
+        {
+            throw new InvalidOperationException(
+                $"Offline registry write did not persist: value '{valueName}' is absent under " +
+                $"'{handle.HiveName}\\{keyPath}' after SetValue. The change was NOT applied.");
+        }
+
+        if (actual.Kind != kind)
+        {
+            throw new InvalidOperationException(
+                $"Offline registry write type mismatch: value '{valueName}' under " +
+                $"'{handle.HiveName}\\{keyPath}' has kind {actual.Kind} but {kind} was requested. " +
+                "The change was NOT applied as intended.");
+        }
+
+        if (!string.Equals(actual.Data, expectedData, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Offline registry write value mismatch: value '{valueName}' under " +
+                $"'{handle.HiveName}\\{keyPath}' = '{actual.Data}' but '{expectedData}' was requested. " +
+                "The change was NOT applied as intended.");
+        }
+    }
+
+    private void VerifyAbsent(OfflineHiveHandle handle, string keyPath, string valueName)
+    {
+        var actual = ReadValue(handle, keyPath, valueName);
+        if (actual.Exists)
+        {
+            throw new InvalidOperationException(
+                $"Offline registry delete did not take effect: value '{valueName}' is still present " +
+                $"under '{handle.HiveName}\\{keyPath}' after DeleteValue.");
+        }
+    }
+
+    private static OfflineRegistryValueKind ToOfflineKind(RegistryValueKind kind) => kind switch
+    {
+        RegistryValueKind.DWord => OfflineRegistryValueKind.DWord,
+        RegistryValueKind.QWord => OfflineRegistryValueKind.QWord,
+        RegistryValueKind.String => OfflineRegistryValueKind.String,
+        RegistryValueKind.ExpandString => OfflineRegistryValueKind.ExpandString,
+        RegistryValueKind.MultiString => OfflineRegistryValueKind.MultiString,
+        RegistryValueKind.Binary => OfflineRegistryValueKind.Binary,
+        _ => OfflineRegistryValueKind.String
+    };
+
+    private static string RenderData(object obj, RegistryValueKind kind) => kind switch
+    {
+        RegistryValueKind.DWord => ((int)obj).ToString(System.Globalization.CultureInfo.InvariantCulture),
+        RegistryValueKind.QWord => ((long)obj).ToString(System.Globalization.CultureInfo.InvariantCulture),
+        RegistryValueKind.MultiString => string.Join("\n", (string[])obj),
+        RegistryValueKind.Binary => Convert.ToHexString((byte[])obj),
+        _ => (string)obj
+    };
+
+    private static string NormalizeKeyPath(OfflineHiveHandle handle, string keyPath)
+    {
+        var baseName = handle.HiveName.StartsWith("WinForge_", StringComparison.OrdinalIgnoreCase)
+            ? handle.HiveName.Substring("WinForge_".Length)
+            : handle.HiveName;
+        return OfflineHivePaths.NormalizeKeyPath(baseName, keyPath);
     }
 
     public IReadOnlyList<string> EnumSubKeys(OfflineHiveHandle handle, string keyPath)

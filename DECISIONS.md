@@ -683,3 +683,55 @@ All decisions are `ACCEPTED` unless noted.
   after this change; on the real desktop the service count shown should drop from 699 to the small
   trusted-allowlist set.
 
+## ADR-031: Offline registry writes must be verified by read-back, never trusted on no-throw
+
+- **Status:** ACCEPTED
+- **Context:** A real-desktop run of a 3-operation plan (remove Microsoft.BingWeather, disable
+  DiagTrack, turn off advertising ID) reported "3 succeeded, 0 failed", yet an independent
+  `reg.exe` check found the advertising-ID value **absent** from the offline `SOFTWARE` hive
+  (`reg query …\AdvertisingInfo /v Enabled` → "The system was unable to find the specified
+  registry key or value"). BingWeather removal and DiagTrack disable were independently confirmed
+  correct; only the registry write was silently wrong. Two distinct root causes were identified:
+  1. **Wrong key path in the trusted definition** — `privacy.advertising-id` targeted
+     `Microsoft\Windows\CurrentVersion\Advertising\Id`, but the real Windows key is
+     `Microsoft\Windows\CurrentVersion\AdvertisingInfo` with value `Enabled` directly under it. The
+     write *succeeded at the wrong location*, so the expected path was empty.
+  2. **Weak success contract** — `WindowsCustomizationExecutionService.ApplyRegistry` returned
+     `Succeeded` solely because `OfflineRegistryService.SetValue` / `DeleteValue` did not throw.
+     There was **no post-write read-back verification** of existence, type, or value, so a write to
+     the wrong location (or any silent non-persistence) was reported as success.
+  - The reporter's hypothesis of a duplicated `SOFTWARE\SOFTWARE` prefix
+    (`HKLM\WinForge_SOFTWARE\SOFTWARE\Microsoft\…`) was **investigated and ruled out**: the write
+    chain passes `op.RegistryKeyPath` **relative to the loaded hive root** (`HKLM\WinForge_SOFTWARE`),
+    so no duplicated base was ever produced. A guard was added anyway so the class of bug cannot
+    arise in future.
+- **Decision:**
+  1. **Fix the definition** — `privacy.advertising-id` →
+     `Microsoft\Windows\CurrentVersion\AdvertisingInfo` (value `Enabled`, `DWord` `0`). All other
+     5 Privacy + 3 System definitions were audited and are correctly relative to the `SOFTWARE` hive
+     root with no `SOFTWARE\` prefix (hive-prefix consistent).
+  2. **Verify-and-report contract** — after every `SetOfflineRegistryValue`, the engine performs an
+     independent `OfflineRegistryService.ReadValue` read-back and confirms the value **exists**, has
+     the **requested `OfflineRegistryValueKind`**, and **equals the requested data**; otherwise the
+     operation is reported `FailedRecoverable`. `DeleteOfflineRegistryValue` verifies the value is
+     **absent** afterward (delete-no-op → `Failed`). The production `OfflineRegistryService` also
+     self-verifies on write/delete (throws `InvalidOperationException` on any mismatch) as
+     defense-in-depth; `ReadValue` returns `{ Exists = false }` for a missing key/value.
+  3. **Path-prefix guard** — new `OfflineHivePaths.NormalizeKeyPath(hiveBase, keyPath)` strips a
+     leading `HKLM\` designator and any leading hive-base segment (`SOFTWARE\`, `SYSTEM\`) so a key
+     path is always strictly relative to the loaded hive root. Applied in both the execution engine
+     and the production registry service; idempotent for already-relative paths.
+  4. **Host isolation preserved** — write targets remain confined to the mounted workspace via
+     `OfflineHivePaths` + `IMountIdentityValidator`; an unknown/absolute hive base (e.g. `HKLM`) is
+     rejected before any write; `SafeHiveNameRegex` and `Validate` (".." / leading `\`) remain.
+- **Consequences:** A registry operation can no longer be reported successful when an independent
+  read-back would fail. The advertising-ID value now targets the real Windows key and will be
+  confirmed present (DWORD `0`) after apply. 17 new regression tests (`OfflineRegistryContractTests`)
+  pin the contract: root-relative mapping for both hives, no duplicated `SOFTWARE\` prefix, DWORD &
+  String read-back verification, create-missing-subkey, write-failure / wrong-value / wrong-type /
+  persists-but-read-back-missing all → Failed, delete-then-verify-absent (+ delete-no-op → Failed),
+  host-style hive base rejected, path-outside-mount rejected, the real definition maps to the correct
+  location, and "never report success when read-back would fail". Total suite: **259** tests
+  (Core 37, App 222), 0 errors, 0 warnings (Release). Step 3.3 real-desktop validation remains
+  **PENDING** — RE-RUN required after this change.
+

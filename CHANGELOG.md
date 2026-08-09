@@ -144,10 +144,51 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   pass (Core 37, App 205), 0 errors, 0 warnings (Release), all CI-safe. Step 3.3 remains **PENDING
   real-desktop validation — re-run required**; not merged to `main`.
 
+### Fixed (Phase 3 Step 3.3 — offline registry write success contract, ADR-031)
+- **Real-desktop defect:** a 3-operation plan (remove BingWeather, disable DiagTrack, turn off
+  advertising ID) reported "3 succeeded, 0 failed", yet independent `reg.exe` verification found
+  the advertising-ID value **absent** from the offline `SOFTWARE` hive. Investigation showed two
+  distinct root causes:
+  1. **Wrong key path in the trusted definition** — `privacy.advertising-id` used
+     `Microsoft\Windows\CurrentVersion\Advertising\Id` but the real Windows key is
+     `Microsoft\Windows\CurrentVersion\AdvertisingInfo` (value `Enabled` directly under it). The
+     write *succeeded at the wrong location*, so the expected path was empty.
+  2. **Weak success contract** — `ApplyRegistry` returned `Succeeded` merely because `SetValue` /
+     `DeleteValue` did not throw. There was **no post-write read-back verification** of existence,
+     type, or value, so a write to the wrong location (or any silent non-persistence) was reported
+     as success.
+  - The hypothesized "duplicated `SOFTWARE\SOFTWARE` prefix" was **investigated and ruled out**: the
+    write chain passes `op.RegistryKeyPath` **relative to the loaded hive root** (`HKLM\WinForge_SOFTWARE`),
+    so no `WinForge_SOFTWARE\SOFTWARE\…` was ever produced. A guard was still added so the class of
+    bug can never occur (see below).
+- **Fixed definition path:** `privacy.advertising-id` → `Microsoft\Windows\CurrentVersion\AdvertisingInfo`
+  (value `Enabled`, `DWord` `0`). All other 5 Privacy + 3 System definitions were audited and are
+  correctly relative to the `SOFTWARE` hive root with no `SOFTWARE\` prefix (hive-prefix consistent).
+- **Strengthened success contract:** after every `SetOfflineRegistryValue`, the engine now performs an
+  independent read-back and confirms the value **exists**, has the **requested registry type**, and
+  **equals the requested data** — otherwise the operation is reported `FailedRecoverable`. The same
+  applies to `DeleteOfflineRegistryValue` (the value must be **absent** afterward). The production
+  `OfflineRegistryService` also self-verifies on write/delete (throws on mismatch) as defense-in-depth.
+- **Path-prefix guard:** new `OfflineHivePaths.NormalizeKeyPath` strips a leading `HKLM\` designator and
+  any leading hive-base segment (`SOFTWARE\`, `SYSTEM\`) so a key path is always strictly relative to the
+  loaded hive root — a stray `SOFTWARE\`/`HKLM\SOFTWARE\` prefix can no longer duplicate the hive base.
+  Applied in both the execution engine and the production registry service.
+- **Host isolation preserved:** write targets are still confined to the mounted workspace via
+  `OfflineHivePaths` + `IMountIdentityValidator`; an unknown/absolute hive base (e.g. `HKLM`) is rejected
+  before any write; the `SafeHiveNameRegex` / `Validate` ".." checks remain.
+- **Tests added (17):** `OfflineRegistryContractTests` — SOFTWARE/SYSTEM root-relative mapping; no
+  duplicated `SOFTWARE\SOFTWARE` prefix; DWORD & String write verified by read-back; create-missing-subkey;
+  write-failure / write-persists-but-read-back-missing / wrong-value / wrong-type all → Failed; delete
+  then verify absent (and delete-no-op → Failed); host-style hive base rejected; path-outside-mount
+  rejected; the real `privacy.advertising-id` definition maps to the correct offline location; an
+  operation is never reported success when the read-back would fail. 259 automated tests pass
+  (Core 37, App 222), 0 errors, 0 warnings (Release), all CI-safe. Step 3.3 remains **PENDING
+  real-desktop validation — re-run required**; not merged to `main`.
+
 ### Status (Phase 3 Step 3.3 — implemented, pending real-desktop validation)
 - Step 3.3 is **IMPLEMENTED** on `feature/offline-customization` (2026-08-09). The full
   declarative plan, discovery, offline-registry, execution, and UI layers are complete and
-  the automated suite is green (242/242, 0 errors, 0 warnings). **Real-desktop validation is
+  the automated suite is green (259/259, 0 errors, 0 warnings). **Real-desktop validation is
   still PENDING**: no real Windows mount / offline-hive edit / package removal was exercised
   in this session. The next validation step is a real Windows run that discovers a mounted
   working image, selects a few safe customizations (Privacy registry settings, disable

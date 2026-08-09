@@ -80,8 +80,33 @@ public interface IOfflineRegistryService
     void DeleteValue(OfflineHiveHandle handle, string keyPath, string valueName);
     string? GetValue(OfflineHiveHandle handle, string keyPath, string valueName);
 
+    /// <summary>
+    /// Reads back a value from the loaded offline hive for independent
+    /// verification. Returns <see cref="OfflineRegistryReadResult.Exists"/> = false
+    /// when the key or value is absent, so a caller can confirm a write actually
+    /// landed (existence + kind + data) before reporting success.
+    /// </summary>
+    OfflineRegistryReadResult ReadValue(OfflineHiveHandle handle, string keyPath, string valueName);
+
     /// <summary>Enumerates the immediate sub-key names of <paramref name="keyPath"/>.</summary>
     IReadOnlyList<string> EnumSubKeys(OfflineHiveHandle handle, string keyPath);
+}
+
+/// <summary>
+/// Independent read-back of a single offline registry value. Used to verify a
+/// write actually persisted (existence, registry type, and data) rather than
+/// trusting that <c>SetValue</c> did not throw.
+/// </summary>
+public sealed class OfflineRegistryReadResult
+{
+    /// <summary>True when the key and value both exist in the offline hive.</summary>
+    public bool Exists { get; init; }
+
+    /// <summary>The registry value kind actually stored (only meaningful when <see cref="Exists"/>).</summary>
+    public OfflineRegistryValueKind Kind { get; init; }
+
+    /// <summary>The value data rendered as a string (only meaningful when <see cref="Exists"/>).</summary>
+    public string? Data { get; init; }
 }
 
 /// <summary>

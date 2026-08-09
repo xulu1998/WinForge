@@ -16,10 +16,32 @@ internal sealed class FakeOfflineRegistryService : IOfflineRegistryService
     public List<string> LoadedHives { get; } = new();
     public List<string> UnloadedHives { get; } = new();
     public Dictionary<string, string> Values { get; } = new();
+    public Dictionary<string, OfflineRegistryValueKind> ValueKinds { get; } = new();
     public Dictionary<string, List<string>> SubKeys { get; } = new();
     public int SetValueCalls { get; private set; }
     public int DeleteValueCalls { get; private set; }
     public bool ThrowOnLoad { get; set; }
+
+    /// <summary>When true (default), SetValue actually records the value so a
+    /// subsequent read-back finds it. When false, SetValue silently records
+    /// nothing — used to simulate a write that does not persist.</summary>
+    public bool SimulatePersist { get; set; } = true;
+
+    /// <summary>When set, SetValue stores this data instead of the requested
+    /// data — used to simulate a value that persisted with the wrong content.</summary>
+    public string? ForcedData { get; set; }
+
+    /// <summary>When set, SetValue stores this kind instead of the requested
+    /// kind — used to simulate a value that persisted with the wrong type.</summary>
+    public OfflineRegistryValueKind? ForcedKind { get; set; }
+
+    /// <summary>When true (default), DeleteValue actually removes the value. When
+    /// false, DeleteValue is a no-op so the value remains present — used to
+    /// simulate a delete that did not take effect.</summary>
+    public bool SimulateDeleteRemoves { get; set; } = true;
+
+    /// <summary>When true, SetValue throws instead of recording anything.</summary>
+    public bool ThrowOnSetValue { get; set; }
 
     private static string Key(string hive, string path, string name) => $"{hive}|{path}|{name}";
 
@@ -39,17 +61,52 @@ internal sealed class FakeOfflineRegistryService : IOfflineRegistryService
     public void SetValue(OfflineHiveHandle handle, string keyPath, string valueName, OfflineRegistryValueKind kind, string data)
     {
         SetValueCalls++;
-        Values[Key(handle.HiveName, keyPath, valueName)] = data;
+        if (ThrowOnSetValue)
+        {
+            throw new System.InvalidOperationException("Simulated SetValue failure.");
+        }
+
+        if (!SimulatePersist)
+        {
+            return;
+        }
+
+        var k = Key(handle.HiveName, keyPath, valueName);
+        Values[k] = ForcedData ?? data;
+        ValueKinds[k] = ForcedKind ?? kind;
     }
 
     public void DeleteValue(OfflineHiveHandle handle, string keyPath, string valueName)
     {
         DeleteValueCalls++;
-        Values.Remove(Key(handle.HiveName, keyPath, valueName));
+        if (!SimulateDeleteRemoves)
+        {
+            return;
+        }
+
+        var k = Key(handle.HiveName, keyPath, valueName);
+        Values.Remove(k);
+        ValueKinds.Remove(k);
     }
 
     public string? GetValue(OfflineHiveHandle handle, string keyPath, string valueName)
         => Values.TryGetValue(Key(handle.HiveName, keyPath, valueName), out var v) ? v : null;
+
+    public OfflineRegistryReadResult ReadValue(OfflineHiveHandle handle, string keyPath, string valueName)
+    {
+        var k = Key(handle.HiveName, keyPath, valueName);
+        if (Values.TryGetValue(k, out var data))
+        {
+            return new OfflineRegistryReadResult
+            {
+                Exists = true,
+                Kind = ValueKinds.TryGetValue(k, out var kind) ? kind : OfflineRegistryValueKind.String,
+                Data = data
+            };
+        }
+
+        return new OfflineRegistryReadResult { Exists = false };
+    }
 
     public IReadOnlyList<string> EnumSubKeys(OfflineHiveHandle handle, string keyPath)
         => SubKeys.TryGetValue($"{handle.HiveName}|{keyPath}", out var s) ? s : System.Array.Empty<string>();

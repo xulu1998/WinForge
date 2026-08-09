@@ -23,7 +23,7 @@ public sealed class CustomizationDefinitionProvider : ICustomizationDefinitionPr
     {
         Setting("privacy.advertising-id", "Turn off advertising ID",
             "Disables the per-device advertising ID used for targeted content.",
-            "SOFTWARE", @"Microsoft\Windows\CurrentVersion\Advertising\Id", "Enabled",
+            "SOFTWARE", @"Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled",
             OfflineRegistryValueKind.DWord, "0", CustomizationCategory.Privacy),
         Setting("privacy.tailored-experiences", "Disable tailored experiences",
             "Stops Windows using diagnostics data to offer personalized tips and recommendations.",

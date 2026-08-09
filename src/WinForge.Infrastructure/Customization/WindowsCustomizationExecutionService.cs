@@ -219,6 +219,11 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
             return (CustomizationOperationStatus.FailedRecoverable, "Registry hive file is outside the mounted workspace or missing.");
         }
 
+        // The key path MUST be relative to the loaded hive root. Normalize it so a
+        // stray "SOFTWARE\" / "HKLM\SOFTWARE\" prefix can never duplicate the hive
+        // base (which would silently write to the wrong, unverifiable location).
+        var keyPath = OfflineHivePaths.NormalizeKeyPath(op.RegistryHive!, op.RegistryKeyPath!);
+
         var hiveName = OfflineHivePaths.GetWinForgeHiveName(op.RegistryHive);
         OfflineHiveHandle? handle = null;
         try
@@ -226,15 +231,21 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
             handle = _registry.LoadHive(hiveFile, hiveName);
             if (set)
             {
-                _registry.SetValue(handle, op.RegistryKeyPath!, op.RegistryValueName!,
+                _registry.SetValue(handle, keyPath, op.RegistryValueName!,
+                    op.RegistryValueKind ?? OfflineRegistryValueKind.String, op.RegistryValueData ?? string.Empty);
+
+                // SUCCESS CONTRACT: an offline registry write is only a success when
+                // an independent read-back confirms the value exists, has the
+                // requested type, and equals the requested data. SetValue not
+                // throwing is not enough (see OfflineRegistryService.VerifyPersisted).
+                return VerifySet(handle, keyPath, op.RegistryValueName!,
                     op.RegistryValueKind ?? OfflineRegistryValueKind.String, op.RegistryValueData ?? string.Empty);
             }
-            else
-            {
-                _registry.DeleteValue(handle, op.RegistryKeyPath!, op.RegistryValueName!);
-            }
 
-            return (CustomizationOperationStatus.Succeeded, null);
+            _registry.DeleteValue(handle, keyPath, op.RegistryValueName!);
+
+            // SUCCESS CONTRACT: deletion is only a success when the value is now absent.
+            return VerifyDelete(handle, keyPath, op.RegistryValueName!);
         }
         finally
         {
@@ -243,6 +254,45 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
                 _registry.UnloadHive(handle);
             }
         }
+    }
+
+    private (CustomizationOperationStatus, string?) VerifySet(
+        OfflineHiveHandle handle, string keyPath, string valueName,
+        OfflineRegistryValueKind kind, string expectedData)
+    {
+        var actual = _registry.ReadValue(handle, keyPath, valueName);
+        if (!actual.Exists)
+        {
+            return (CustomizationOperationStatus.FailedRecoverable,
+                $"Registry value '{valueName}' was not persisted under '{keyPath}' in the offline {handle.HiveName} hive.");
+        }
+
+        if (actual.Kind != kind)
+        {
+            return (CustomizationOperationStatus.FailedRecoverable,
+                $"Registry value '{valueName}' under '{keyPath}' has kind {actual.Kind} but {kind} was requested.");
+        }
+
+        if (!string.Equals(actual.Data, expectedData, StringComparison.Ordinal))
+        {
+            return (CustomizationOperationStatus.FailedRecoverable,
+                $"Registry value '{valueName}' under '{keyPath}' = '{actual.Data}' but '{expectedData}' was requested.");
+        }
+
+        return (CustomizationOperationStatus.Succeeded, null);
+    }
+
+    private (CustomizationOperationStatus, string?) VerifyDelete(
+        OfflineHiveHandle handle, string keyPath, string valueName)
+    {
+        var actual = _registry.ReadValue(handle, keyPath, valueName);
+        if (actual.Exists)
+        {
+            return (CustomizationOperationStatus.FailedRecoverable,
+                $"Registry value '{valueName}' is still present under '{keyPath}' after deletion from the offline {handle.HiveName} hive.");
+        }
+
+        return (CustomizationOperationStatus.Succeeded, null);
     }
 
     private (CustomizationOperationStatus, string?) ApplyService(CustomizationOperation op, ImageServicingWorkspace workspace)
@@ -276,6 +326,7 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
 
             var current = ReadCurrentControlSet(handle);
             var serviceKey = $"ControlSet{current:D3}\\Services\\{op.ServiceName}";
+            serviceKey = OfflineHivePaths.NormalizeKeyPath("SYSTEM", serviceKey);
 
             // The service must actually exist in the offline image; otherwise the
             // change is meaningless and is skipped (not an error).
@@ -285,10 +336,12 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
                 return (CustomizationOperationStatus.Skipped, "Service not present in the offline image.");
             }
 
-            _registry.SetValue(handle, serviceKey, "Start", OfflineRegistryValueKind.DWord,
-                ((int)op.ServiceStartType!).ToString(System.Globalization.CultureInfo.InvariantCulture));
+            var requestedStart = ((int)op.ServiceStartType!).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            _registry.SetValue(handle, serviceKey, "Start", OfflineRegistryValueKind.DWord, requestedStart);
 
-            return (CustomizationOperationStatus.Succeeded, null);
+            // SUCCESS CONTRACT: confirm the Start value persisted with the right
+            // type and data before reporting success.
+            return VerifySet(handle, serviceKey, "Start", OfflineRegistryValueKind.DWord, requestedStart);
         }
         finally
         {
