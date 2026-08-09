@@ -132,6 +132,73 @@ Languages :
 Default Language : en-US
 ";
 
+    // Real desktop validation shape for Windows 11 25H2 zh-CN x64 Consumer:
+    // a single language followed by the DISM success footer. The footer MUST
+    // NOT leak into the language list (this is the bug that produced "zh-CN, The").
+    private const string DetailZhCnWithFooter = @"
+Index : 1
+Name : Windows 11 家庭版
+Description : Windows 11 家庭版
+Architecture : x64
+Version : 10.0.26200.1
+Edition : Core
+Edition Id :
+Installation : Client
+Languages :
+        zh-CN
+
+The operation completed successfully.
+";
+
+    // Multiple languages followed by the DISM success footer.
+    private const string DetailMultiWithFooter = @"
+Index : 1
+Name : Windows 11 Home
+Description : Windows 11 Home
+Architecture : x64
+Version : 10.0.26200.1
+Edition : Core
+Edition Id :
+Installation : Client
+Languages :
+        en-US
+        fr-CA
+
+The operation completed successfully.
+";
+
+    // Inline (single-line) language list with the (Default) annotation, as some
+    // DISM builds print it on the Languages line itself.
+    private const string DetailInlineDefault = @"
+Index : 1
+Architecture : x64
+Version : 10.0.26200.1
+Languages : en-US (Default), fr-CA
+Default Language : en-US
+";
+
+    // Arbitrary prose instead of language tags (must be rejected wholesale).
+    private const string DetailProseLanguages = @"
+Index : 1
+Architecture : x64
+Languages :
+        Deployment Image
+        Image
+        Version
+        random prose
+        ---
+";
+
+    // 3-subtag script form (sr-Latn-RS) and region-only form (pt-BR) are valid.
+    private const string DetailScriptRegionTags = @"
+Index : 1
+Architecture : x64
+Version : 10.0.26200.1
+Languages :
+        pt-BR
+        sr-Latn-RS
+";
+
     [Fact]
     public void ParseImageList_Reads_Index_Name_Description_Only() // Req 1
     {
@@ -246,5 +313,57 @@ Default Language : en-US
     {
         Assert.Null(DismImageInfoParser.ParseImageDetails(""));
         Assert.Null(DismImageInfoParser.ParseImageDetails("no indexes here"));
+    }
+
+    // ---- Language footer / prose regression (real desktop defect) -----------
+
+    [Fact]
+    public void ParseImageDetails_Dism_Footer_Not_Added_As_Language() // Req (zh-CN, The)
+    {
+        var ed = DismImageInfoParser.ParseImageDetails(DetailZhCnWithFooter);
+
+        Assert.NotNull(ed);
+        Assert.Equal(new[] { "zh-CN" }, ed!.Languages);
+        Assert.DoesNotContain("The", ed.Languages);
+    }
+
+    [Fact]
+    public void ParseImageDetails_Multiple_Languages_With_Footer_Are_Clean() // Req exact
+    {
+        var ed = DismImageInfoParser.ParseImageDetails(DetailMultiWithFooter);
+
+        Assert.NotNull(ed);
+        Assert.Equal(new[] { "en-US", "fr-CA" }, ed!.Languages);
+        Assert.DoesNotContain("The", ed.Languages);
+    }
+
+    [Fact]
+    public void ParseImageDetails_Inline_Default_Annotation_Is_Stripped() // en-US (Default)
+    {
+        var ed = DismImageInfoParser.ParseImageDetails(DetailInlineDefault);
+
+        Assert.NotNull(ed);
+        Assert.Equal(new[] { "en-US", "fr-CA" }, ed!.Languages);
+        Assert.Equal("en-US", ed.DefaultLanguage);
+    }
+
+    [Fact]
+    public void ParseImageDetails_Rejects_Arbitrary_Prose_As_Languages() // rejection tests
+    {
+        var ed = DismImageInfoParser.ParseImageDetails(DetailProseLanguages);
+
+        Assert.NotNull(ed);
+        // None of "Deployment Image" / "Image" / "Version" / "random prose" /
+        // "---" is a valid tag, so the list stays empty (no prose leakage).
+        Assert.Empty(ed!.Languages);
+    }
+
+    [Fact]
+    public void ParseImageDetails_Accepts_Script_And_Region_Tags() // sr-Latn-RS, pt-BR
+    {
+        var ed = DismImageInfoParser.ParseImageDetails(DetailScriptRegionTags);
+
+        Assert.NotNull(ed);
+        Assert.Equal(new[] { "pt-BR", "sr-Latn-RS" }, ed!.Languages);
     }
 }

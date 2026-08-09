@@ -252,3 +252,15 @@ All decisions are `ACCEPTED` unless noted.
   `/ImageFile:` is kept (not `/WimFile`). The parser type was renamed
   `DismWimInfoParser` → `DismImageInfoParser`. The two-stage design is unchanged.
   Step 2.2 remains IMPLEMENTED / PENDING REAL DESKTOP RE-VALIDATION — NOT COMPLETED.
+- **Correction (2026-08-08, language parsing):** The same real desktop run that
+  validated the two-stage flow also exposed a parser defect: `ParseImageDetails`
+  blindly took the first whitespace token of any non-key line inside the
+  `Languages` section, so DISM's trailing footer `The operation completed
+  successfully.` was added to the language list as `The`. `ExtractLanguage` was
+  replaced by `TryNormalizeLanguageTag`, a conservative BCP-47-like validator that
+  accepts only a 2–3 letter primary subtag followed by ≥1 hyphenated region/script/
+  variant subtag (e.g. `en-US`, `zh-CN`, `pt-BR`, `sr-Latn-RS`), strips a trailing
+  `(Default)` annotation before validation, and rejects arbitrary prose. The
+  `Languages` section now terminates on the first non-language, non-blank, non-key
+  line, so future DISM footer prose cannot leak in. Step 2.2 remains IMPLEMENTED /
+  PENDING FINAL LANGUAGE-PARSER RE-VALIDATION — NOT COMPLETED.

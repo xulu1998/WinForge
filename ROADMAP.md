@@ -84,11 +84,14 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - Detection: a Windows ISO **candidate** is `\sources` + `\boot` + `install.wim`/`install.esd`. No WIM/ESD content parsing, no edition/version recognition yet.
 - 15 automated tests added (9 inspection-logic via fake mount, 6 ViewModel). No DISM servicing, no registry, no ISO modification. Real Windows 11 25H2 (zh-CN, x64, Consumer ISO, install.wim) desktop mount/inspect/dismount validation completed (user-confirmed via application logs).
 
-### Step 2.2 — Windows image metadata and edition inspection (IMPLEMENTED, pending desktop validation)
-- **Status:** IMPLEMENTED on `feature/iso-inspection` (2026-08-08); **PENDING real
-  Windows ISO desktop validation** — do not mark COMPLETED until the user confirms
-  the Windows 11 25H2 zh-CN x64 Consumer `install.wim` metadata read on a Windows
-  desktop.
+### Step 2.2 — Windows image metadata and edition inspection (IMPLEMENTED, pending final language-parser re-validation)
+- **Status:** IMPLEMENTED on `feature/iso-inspection` (2026-08-08); **real Windows
+  desktop validation of the two-stage `/Get-ImageInfo` flow SUCCEEDED** (Windows 11
+  25H2 zh-CN x64 Consumer `install.wim`: 6 indexes, version `10.0.26200`, build
+  `26200`, x64, localized Chinese edition names, guaranteed dismount) but **exposed
+  a trailing DISM footer language-parsing defect** (now fixed). **PENDING one final
+  real desktop re-validation** of the corrected language parsing — do not mark
+  COMPLETED until the user re-confirms on a Windows desktop.
 - Implemented: `IWindowsImageMetadataService` + `WindowsImageMetadataResult` (Core);
   `WindowsImageMetadataService` (`dism.exe /Get-ImageInfo /ImageFile:... /English`, read-only, no
   WIM mount) + pure `DismImageInfoParser` + `IProcessRunner`/`WindowsProcessRunner`
@@ -99,8 +102,11 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - Reads WIM/ESD index, edition name/description, architecture, Windows version,
   build, edition ID, installation type, and languages; top-level version/build/
   architecture/languages reported only when every edition agrees (otherwise the
-  UI shows "Mixed"). 16 new automated tests; `dotnet build`/`dotnet test -c Release`
-  clean (0 errors, 0 warnings, 100% passing) using fakes — no real ISO/DISM.
+  UI shows "Mixed"). `DismImageInfoParser` parses the two DISM stages
+  (`ParseImageList` / `ParseImageDetails`) and validates language tags with
+  `TryNormalizeLanguageTag` (BCP-47-like; rejects footer prose such as
+  "The operation completed successfully."). Automated tests clean (0 errors, 0
+  warnings, 100% passing) using fakes plus real-footer-shape regression tests.
 - Not part of Step 2.1. Step 2.1 inspects only the on-disk ISO directory
   layout (`\boot`, `\sources`, `install.wim`/`install.esd`); it does not open
   or parse the WIM/ESD content.

@@ -17,20 +17,24 @@ Track which Windows releases WinForge supports for each operation.
 | Windows 11 24H2 | 26100 | x64  | en-US | — | Untested | Untested | Untested | Untested | Untested | Untested | Not yet verified |
 | Windows 11 23H2 | 22631 | x64  | en-US | — | Untested | Untested | Untested | Untested | Untested | Untested | Not yet verified |
 | Windows 11 22H2 | 22621 | x64  | en-US | — | Untested | Untested | Untested | Untested | Untested | Untested | Not yet verified |
-| Windows 11 25H2 | — | x64 | zh-CN | Consumer (install.wim) | Untested | Untested | Tested | Untested | Untested | Untested | ISO layout inspection tested on real desktop 2026-08-08; WIM/ESD metadata parsing implemented (Step 2.2) with automated fake-based tests, pending real-desktop metadata validation |
+| Windows 11 25H2 | 26200 | x64 | zh-CN | Consumer (install.wim) | Tested | Untested | Tested | Untested | Untested | Untested | ISO layout + WIM metadata inspection tested on real desktop 2026-08-08; two-stage `/Get-ImageInfo` flow validated (6 indexes, version 10.0.26200, build 26200, x64, localized zh-CN edition names, guaranteed dismount); trailing DISM footer language-parsing defect found and fixed (pending one final real-desktop re-validation) |
 
 > No Windows version is claimed as `Supported` yet. All rows above are
-> `Untested` until validated through the testing strategy in docs/TESTING.md.
-> Windows 11 25H2 `Inspection` is `Tested` for **ISO-layout inspection only**
-> (Step 2.1): the app mounted the ISO read-only, detected the Windows ISO
-> candidate layout, and dismounted — verified on a real Windows 11 25H2
-> (zh-CN, x64, Consumer ISO, `install.wim`) desktop on 2026-08-08. Step 2.2
-> (WIM/ESD metadata parsing via `dism.exe /Get-ImageInfo /ImageFile:... /English`) is
-> **implemented and passes automated tests that use fakes** (no real DISM/ISO),
-> but the end-to-end metadata read on a real Windows 11 25H2 ISO has **not yet
-> been re-confirmed on a Windows desktop** — it remains `Untested` for the metadata
-> path until the user re-validates it. This does **not** claim `Supported` for the
-> OS. The exact build number was not recorded during the Step 2.1 test.
+> `Untested` for columns not yet validated through the testing strategy in
+> docs/TESTING.md. Windows 11 25H2 `Inspection` is `Tested` for **ISO-layout
+> inspection (Step 2.1)** and for the **two-stage WIM metadata read (Step 2.2)**:
+> on a real Windows 11 25H2 (zh-CN, x64, Consumer ISO, `install.wim`) desktop on
+> 2026-08-08 the app mounted the ISO read-only, ran `dism.exe /Get-ImageInfo` to
+> enumerate 6 indexes (家庭版/家庭单语言版/教育版/专业版/专业教育版/专业工作站版),
+> queried each index for detail (version `10.0.26200`, build `26200`, x64,
+> localized Chinese edition names), and dismounted. The run **exposed a trailing
+> DISM footer language-parsing defect** (footer prose `The operation completed
+> successfully.` was parsed as the language `The`); it is fixed via
+> `TryNormalizeLanguageTag` (BCP-47-like validator) with clean section
+> termination, and needs **one final real-desktop re-validation** of the corrected
+> language output before Step 2.2 is marked COMPLETED. This does **not** claim
+> `Supported` for the OS. ESD (`install.esd`) metadata parsing is implemented but
+> still `Untested` on a real desktop.
 
 ## How to update
 

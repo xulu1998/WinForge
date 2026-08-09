@@ -32,6 +32,11 @@ namespace WinForge.Infrastructure.ImageMetadata;
 /// - The DISM banner <c>Version:</c> (the tool version, e.g. 10.0.26100.1) is
 ///   intentionally ignored — only per-index <c>Version</c> values describe the
 ///   Windows image.
+/// - Language entries are validated with <see cref="TryNormalizeLanguageTag"/>:
+///   only conservative BCP-47-like tags are accepted, so DISM footer prose such
+///   as "The operation completed successfully." can never leak into the language
+///   list. The language section terminates as soon as a non-language, non-blank,
+///   non-key line is seen.
 /// </summary>
 public static class DismImageInfoParser
 {
@@ -40,6 +45,15 @@ public static class DismImageInfoParser
 
     // Matches a "Key : Value" line. The key may contain spaces ("Edition Id").
     private static readonly Regex KeyRegex = new(@"^([A-Za-z][A-Za-z ]*?)\s*:\s*(.*)$", RegexOptions.Compiled);
+
+    // Conservative BCP-47-like language tag: a 2-3 letter primary subtag followed
+    // by at least one hyphenated subtag that is either a 2-letter region/script
+    // variant, a 3-digit region, or a 4-letter script (e.g. en-US, zh-CN,
+    // pt-BR, sr-Latn-RS). Requiring the hyphen + subtag structure rejects ordinary
+    // prose such as "The", "Deployment", "Image", or "Version".
+    private static readonly Regex LanguageTagRegex = new(
+        @"^[A-Za-z]{2,3}(-([A-Za-z]{2}|[0-9]{3}|[A-Za-z]{4}))+$",
+        RegexOptions.Compiled);
 
     /// <summary>
     /// Parses the enumeration query output (no <c>/Index</c>). Returns one
@@ -185,14 +199,24 @@ public static class DismImageInfoParser
 
                 if (IsKeyLine(line))
                 {
-                    inLanguages = false; // a new key started; parse it below
+                    // A new "Key : Value" line started — leave the language
+                    // section and parse it normally below.
+                    inLanguages = false;
                 }
                 else
                 {
-                    var lang = ExtractLanguage(line.Trim());
-                    if (!string.IsNullOrEmpty(lang))
+                    var tag = TryNormalizeLanguageTag(line.Trim());
+                    if (tag is not null)
                     {
-                        edition.Languages.Add(lang);
+                        edition.Languages.Add(tag);
+                    }
+                    else
+                    {
+                        // Non-language prose (e.g. the DISM footer
+                        // "The operation completed successfully."). Terminate the
+                        // language section and ignore this and any following
+                        // non-language lines; do NOT treat them as languages.
+                        inLanguages = false;
                     }
 
                     continue;
@@ -262,10 +286,10 @@ public static class DismImageInfoParser
                     {
                         foreach (var token in value.Split(',', StringSplitOptions.RemoveEmptyEntries))
                         {
-                            var lang = ExtractLanguage(token.Trim());
-                            if (!string.IsNullOrEmpty(lang))
+                            var tag = TryNormalizeLanguageTag(token.Trim());
+                            if (tag is not null)
                             {
-                                edition.Languages.Add(lang);
+                                edition.Languages.Add(tag);
                             }
                         }
                     }
@@ -283,16 +307,28 @@ public static class DismImageInfoParser
     private static bool IsKeyLine(string line)
         => KeyRegex.IsMatch(line);
 
-    private static string? ExtractLanguage(string token)
+    /// <summary>
+    /// Returns a syntactically plausible Windows / BCP-47-like language tag, or
+    /// <c>null</c> when the token is not one. Real DISM language entries are
+    /// <c>en-US</c>, <c>zh-CN</c>, <c>fr-CA</c>, <c>pt-BR</c>, <c>sr-Latn-RS</c>,
+    /// optionally carrying a trailing annotation such as <c>(Default)</c> which
+    /// is stripped before validation. Arbitrary free text (footer prose like
+    /// "The operation completed successfully.", "Deployment", "Image", …) is
+    /// rejected — the parser never takes a blind first word.
+    /// </summary>
+    private static string? TryNormalizeLanguageTag(string token)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
             return null;
         }
 
-        // "en-US (Default)" -> "en-US"
-        var lang = token.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
-        return string.IsNullOrEmpty(lang) ? null : lang;
+        // DISM may append an annotation such as "(Default)" on the default
+        // language line; take the first whitespace-delimited token
+        // ("en-US (Default)" -> "en-US") before validating.
+        var candidate = token.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+
+        return LanguageTagRegex.IsMatch(candidate) ? candidate : null;
     }
 
     private static string? ExtractBuild(string? version)

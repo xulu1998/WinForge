@@ -84,14 +84,38 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   regression test asserts production arguments never contain `/Get-WimInfo`. Step
   2.2 remains IMPLEMENTED / PENDING REAL DESKTOP RE-VALIDATION — NOT COMPLETED.
 
+### Fixed (Phase 2 Step 2.2 — DISM language footer parsing defect)
+- Real desktop validation (2026-08-08) on the Windows 11 25H2 zh-CN x64 Consumer
+  `install.wim` **succeeded** for the full two-stage flow: `/Get-ImageInfo`
+  enumeration, 6 real indexes (家庭版/家庭单语言版/教育版/专业版/专业教育版/
+  专业工作站版), per-index detailed queries, Version `10.0.26200`, Build `26200`,
+  Architecture `x64`, and guaranteed ISO dismount. It exposed one parser defect:
+  because `DismImageInfoParser` blindly took the first whitespace token of any
+  non-key line inside the `Languages` section, DISM's trailing footer
+  `The operation completed successfully.` was parsed as the language `The`
+  (UI showed `zh-CN, The`). `ExtractLanguage` was replaced by
+  `TryNormalizeLanguageTag`, a conservative BCP-47-like validator: only a 2–3
+  letter primary subtag followed by at least one hyphenated region/script/variant
+  subtag (`en-US`, `zh-CN`, `pt-BR`, `sr-Latn-RS`) is accepted; a trailing
+  `(Default)` annotation is stripped before validation. The `Languages` section now
+  **terminates** as soon as a non-language, non-blank, non-key line is seen, so
+  future DISM footer prose can never leak in. Regression tests assert
+  `Languages == ["zh-CN"]` (not `["zh-CN","The"]`) and `["en-US","fr-CA"]` against
+  the exact real-footer shape, plus rejection of arbitrary prose. Step 2.2 remains
+  IMPLEMENTED / PENDING FINAL LANGUAGE-PARSER RE-VALIDATION — NOT COMPLETED.
+
 ### Status (Phase 2 Step 2.2)
 - Step 2.2 is implemented on `feature/iso-inspection` and passes the automated
-  test suite (0 errors, 0 warnings, 100% tests executed and passing). It is
-  **pending real Windows ISO desktop RE-validation** (the Windows 11 25H2 zh-CN x64
-  Consumer `install.wim` target) and therefore is NOT yet marked COMPLETED.
+  test suite (0 errors, 0 warnings, 100% tests executed and passing). A real
+  Windows desktop run on the Windows 11 25H2 zh-CN x64 Consumer `install.wim`
+  validated the two-stage `/Get-ImageInfo` flow, 6 indexes, version/build/x64, and
+  localized Chinese edition names — but it exposed the trailing DISM footer
+  language-parsing defect, which is now fixed. Step 2.2 therefore remains
+  **pending one final real desktop re-validation** of the corrected language
+  parsing and is NOT yet marked COMPLETED.
 - `WindowsImageType` / architecture / version / build / language parsing is now
   implemented; the real-desktop mount→inspect→dismount→metadata cycle still
-  requires user confirmation on a Windows machine.
+  requires one more user confirmation on a Windows machine.
 
 ## [0.1.0-alpha] — 2026-08-08
 
