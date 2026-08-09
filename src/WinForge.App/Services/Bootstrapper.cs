@@ -7,6 +7,7 @@ using WinForge.Infrastructure.WimEngine;
 using WinForge.Infrastructure.IsoInspection;
 using WinForge.Infrastructure.Execution;
 using WinForge.Infrastructure.Logging;
+using WinForge.Infrastructure.Servicing;
 
 namespace WinForge.App.Services;
 
@@ -37,6 +38,11 @@ public static class Bootstrapper
         // Phase 3 — WIM Engine (Step 3.1, read-only durable workspace)
         services.AddSingleton<IImageWorkspaceFactory, ImageWorkspaceFactory>();
         services.AddSingleton<IWimService, WimService>();
+
+        // Phase 3 — Step 3.2 (WIM servicing workspace & mount lifecycle)
+        services.AddSingleton<IWorkspacePathProvider, WorkspacePathProvider>();
+        services.AddSingleton<IWorkspaceSafeDelete, WorkspaceSafeDelete>();
+        services.AddSingleton<IImageServicingService, ImageServicingService>();
 
         // View models (singletons, shared across navigation)
         services.AddSingleton<MainViewModel>();

@@ -13,12 +13,13 @@ namespace WinForge.App.ViewModels;
 /// <summary>
 /// Image page. Lets the user pick a Windows ISO, validates it, and runs a safe,
 /// read-only inspection that reports the detected type, install-image layout,
-/// and (Step 2.2) the Windows image metadata: version, build, architecture,
-/// languages, and the list of editions. All platform work (file dialog, ISO
-/// mount, DISM) is reached through abstractions; this ViewModel never touches
-/// WPF dialogs, the registry, or <c>Process</c> directly. Edition selection is
-/// written to <see cref="IAppState.SelectedEdition"/> for the Home page to show;
-/// it never mounts, extracts, or modifies an image.
+/// and the Windows image metadata: version, build, architecture, languages, and
+/// the list of editions. Edition selection creates the durable selected-image
+/// <see cref="IAppState.CurrentImageWorkspace"/>. Phase 3 Step 3.2 then lets the
+/// user prepare an isolated working image, mount it, and discard the unmount —
+/// all through <see cref="IImageServicingService"/>. All platform work (file
+/// dialog, ISO mount, DISM) is reached through abstractions; this ViewModel never
+/// touches WPF dialogs, the registry, or <c>Process</c> directly.
 /// </summary>
 public sealed class ImageViewModel : ViewModelBase
 {
@@ -28,9 +29,13 @@ public sealed class ImageViewModel : ViewModelBase
     private readonly IFilePicker _filePicker;
     private readonly IImageWorkspaceFactory _workspaceFactory;
     private readonly IWimService _wimService;
+    private readonly IImageServicingService _servicing;
 
     private IsoInspectionResult? _result;
     private bool _isInspecting;
+    private bool _isServicing;
+    private string _servicingMessage = string.Empty;
+    private string? _blockedMessage;
 
     public ImageViewModel(
         IAppState appState,
@@ -38,7 +43,8 @@ public sealed class ImageViewModel : ViewModelBase
         IIsoInspectionService inspection,
         IFilePicker filePicker,
         IImageWorkspaceFactory workspaceFactory,
-        IWimService wimService)
+        IWimService wimService,
+        IImageServicingService servicing)
     {
         _appState = appState;
         _logger = logger;
@@ -46,14 +52,27 @@ public sealed class ImageViewModel : ViewModelBase
         _filePicker = filePicker;
         _workspaceFactory = workspaceFactory;
         _wimService = wimService;
+        _servicing = servicing;
 
         SelectIsoCommand = new AsyncRelayCommand(_ => SelectIsoAsync());
         InspectIsoCommand = new AsyncRelayCommand(_ => InspectCurrentAsync());
+        PrepareWorkingImageCommand = new AsyncRelayCommand(
+            _ => PrepareWorkingImageAsync(), _ => CanPrepareWorkingImage);
+        MountWorkingImageCommand = new AsyncRelayCommand(
+            _ => MountWorkingImageAsync(), _ => CanMountWorkingImage);
+        UnmountDiscardCommand = new AsyncRelayCommand(
+            _ => UnmountDiscardAsync(), _ => CanUnmountDiscard);
     }
 
     public ICommand SelectIsoCommand { get; }
 
     public ICommand InspectIsoCommand { get; }
+
+    public ICommand PrepareWorkingImageCommand { get; }
+
+    public ICommand MountWorkingImageCommand { get; }
+
+    public ICommand UnmountDiscardCommand { get; }
 
     public string FileDisplay =>
         string.IsNullOrEmpty(_appState.SourceImagePath) ? "No ISO selected" : _appState.SourceImagePath;
@@ -89,10 +108,6 @@ public sealed class ImageViewModel : ViewModelBase
     public bool HasError => _result?.Status == IsoInspectionStatus.Failed;
 
     public bool HasResult => _result is not null;
-
-    // Step 2.2 — Windows image metadata. When every edition agrees, the top-level
-    // value is shown; when editions disagree, "Mixed"; when nothing was read,
-    // "Not detected". The model keeps raw nullable data — the UI owns this choice.
 
     public string WindowsVersionDisplay => TopLevelOr(
         _result?.ImageMetadata?.Version,
@@ -140,10 +155,13 @@ public sealed class ImageViewModel : ViewModelBase
 
     /// <summary>
     /// The edition the user has selected for customization. Writing it updates
-    /// <see cref="IAppState.SelectedEdition"/> so the Home page reflects it, and
-    /// also creates/updates the durable <see cref="IAppState.CurrentImageWorkspace"/>
-    /// for the selected index. This is a status selection only — it performs no
-    /// image extraction, mount, or modification.
+    /// <see cref="IAppState.SelectedEdition"/> so the Home page reflects it, creates
+    /// /updates the durable <see cref="IAppState.CurrentImageWorkspace"/> for the
+    /// selected index, and INVALIDATES any prepared (not mounted) servicing
+    /// workspace so a stale working image from a previous edition cannot linger.
+    /// When an active mount exists, the change is REFUSED with an explanatory
+    /// message — the user must unmount first. This never silently destroys an
+    /// active servicing session.
     /// </summary>
     public WindowsEditionInfo? SelectedEdition
     {
@@ -155,16 +173,22 @@ public sealed class ImageViewModel : ViewModelBase
                 return;
             }
 
+            if (IsServicingMounted)
+            {
+                _blockedMessage = "Unmount the working image before selecting a different edition.";
+                Refresh();
+                return;
+            }
+
             _appState.SelectedEdition = value;
             UpdateWorkspace(value);
+            InvalidatePreparedServicingWorkspace();
             Refresh();
         }
     }
 
-    // Step 3.1 — Durable selected-image workspace. These read from the durable
-    // AppState workspace, which never holds a temporary mounted drive letter.
+    // ---- Step 3.1 — durable selected-image workspace ----
 
-    /// <summary>The durable selected-image workspace, or null when none is ready.</summary>
     public ImageWorkspace? Workspace => _appState.CurrentImageWorkspace;
 
     public string WorkspaceStatusDisplay =>
@@ -187,12 +211,89 @@ public sealed class ImageViewModel : ViewModelBase
     public string WorkspaceSourceDisplay =>
         _appState.CurrentImageWorkspace?.SourceIsoPath is { } p ? System.IO.Path.GetFileName(p) : "—";
 
+    // ---- Step 3.2 — offline servicing lifecycle ----
+
+    public ImageServicingWorkspace? Servicing => _appState.CurrentServicingWorkspace;
+
+    /// <summary>
+    /// True while a DISM-backed servicing operation (prepare / mount / unmount) is
+    /// running, so the UI can show a busy state and disable controls.
+    /// </summary>
+    public bool IsServicing
+    {
+        get => _isServicing;
+        private set => SetField(ref _isServicing, value);
+    }
+
+    public string ServicingMessage
+    {
+        get => _servicingMessage;
+        private set => SetField(ref _servicingMessage, value);
+    }
+
+    public string? BlockedMessage
+    {
+        get => _blockedMessage;
+        private set => SetField(ref _blockedMessage, value);
+    }
+
+    public bool IsServicingMounted =>
+        _appState.CurrentServicingWorkspace?.State == ServicingWorkspaceState.Mounted;
+
+    public string ServicingStatusDisplay => _appState.CurrentServicingWorkspace?.State switch
+    {
+        null => "Not prepared",
+        ServicingWorkspaceState.NotPrepared => "Not prepared",
+        ServicingWorkspaceState.Preparing => "Preparing…",
+        ServicingWorkspaceState.Prepared => "Prepared",
+        ServicingWorkspaceState.Mounting => "Mounting…",
+        ServicingWorkspaceState.Mounted => "Mounted",
+        ServicingWorkspaceState.Unmounting => "Unmounting…",
+        ServicingWorkspaceState.Completed => "Unmounted",
+        ServicingWorkspaceState.Failed => "Failed",
+        _ => "—"
+    };
+
+    public string ServicingSourceEditionDisplay => _appState.CurrentServicingWorkspace?.SelectedEditionName ?? "—";
+
+    public string ServicingSourceIndexDisplay =>
+        _appState.CurrentServicingWorkspace is { SelectedIndex: > 0 } s ? s.SelectedIndex.ToString() : "—";
+
+    public string ServicingWorkingImageDisplay => _appState.CurrentServicingWorkspace?.WorkingImagePath is { } p
+        ? System.IO.Path.GetFileName(p) : "—";
+
+    public string ServicingWorkingIndexDisplay =>
+        _appState.CurrentServicingWorkspace is { WorkingIndex: > 0 } s ? s.WorkingIndex.ToString() : "—";
+
+    public string ServicingWorkingDirectoryDisplay =>
+        _appState.CurrentServicingWorkspace?.WorkingDirectory ?? "—";
+
+    public string ServicingMountDirectoryDisplay =>
+        _appState.CurrentServicingWorkspace?.MountDirectory ?? "—";
+
+    public string ServicingErrorDisplay => _appState.CurrentServicingWorkspace?.LastError ?? string.Empty;
+
+    public bool CanPrepareWorkingImage =>
+        !IsServicing
+        && _appState.CurrentImageWorkspace is { } ws
+        && _wimService.ValidateWorkspace(ws) == ImageWorkspaceStatus.Ready
+        && (_appState.CurrentServicingWorkspace is null
+            || _appState.CurrentServicingWorkspace!.State is ServicingWorkspaceState.Failed
+                or ServicingWorkspaceState.NotPrepared);
+
+    public bool CanMountWorkingImage =>
+        !IsServicing
+        && _appState.CurrentServicingWorkspace is { State: ServicingWorkspaceState.Prepared };
+
+    public bool CanUnmountDiscard =>
+        !IsServicing
+        && _appState.CurrentServicingWorkspace is { State: ServicingWorkspaceState.Mounted };
+
     public async Task SelectIsoAsync()
     {
         var path = _filePicker.PickIsoFile();
         if (path is null)
         {
-            // Cancellation is not an error and must not produce a failure state.
             _logger.Debug("ISO picker cancelled by user.");
             return;
         }
@@ -211,11 +312,20 @@ public sealed class ImageViewModel : ViewModelBase
             return;
         }
 
+        if (IsServicingMounted)
+        {
+            // Do NOT silently forget an active mount: refuse the new ISO and tell
+            // the user to unmount first.
+            _blockedMessage = "Unmount the working image before selecting a different ISO.";
+            Refresh();
+            return;
+        }
+
         // A new inspection supersedes any prior edition selection and any prior
-        // durable workspace. Clearing the workspace first prevents a stale
-        // selected index from the previous ISO from surviving into the new one.
+        // durable workspace (and any prepared, non-mounted servicing workspace).
         _appState.SelectedEdition = null;
         _appState.CurrentImageWorkspace = null;
+        InvalidatePreparedServicingWorkspace();
 
         IsInspecting = true;
         _logger.Info("ISO inspection started.");
@@ -235,6 +345,103 @@ public sealed class ImageViewModel : ViewModelBase
         finally
         {
             IsInspecting = false;
+            Refresh();
+        }
+    }
+
+    public async Task PrepareWorkingImageAsync()
+    {
+        if (!CanPrepareWorkingImage)
+        {
+            return;
+        }
+
+        var source = _appState.CurrentImageWorkspace!;
+        var workspaceId = "wf-" + System.Guid.NewGuid().ToString("N").Substring(0, 12);
+
+        IsServicing = true;
+        ServicingMessage = "Preparing working image…";
+        _blockedMessage = null;
+        Refresh();
+        try
+        {
+            var result = await _servicing.PrepareWorkingImageAsync(source, workspaceId, CancellationToken.None);
+            _appState.CurrentServicingWorkspace = result.Workspace;
+            ServicingMessage = result.Success
+                ? "Working image prepared."
+                : (result.ErrorMessage ?? "Preparation failed.");
+        }
+        catch (Exception ex)
+        {
+            _appState.CurrentServicingWorkspace = null;
+            ServicingMessage = "Preparation failed unexpectedly.";
+            _logger.Error($"Servicing prepare failed: {ex.Message}");
+        }
+        finally
+        {
+            IsServicing = false;
+            Refresh();
+        }
+    }
+
+    public async Task MountWorkingImageAsync()
+    {
+        if (!CanMountWorkingImage)
+        {
+            return;
+        }
+
+        var workspace = _appState.CurrentServicingWorkspace!;
+        IsServicing = true;
+        ServicingMessage = "Mounting working image…";
+        Refresh();
+        try
+        {
+            var result = await _servicing.MountAsync(workspace, CancellationToken.None);
+            _appState.CurrentServicingWorkspace = result.Workspace;
+            ServicingMessage = result.Success
+                ? "Working image mounted."
+                : (result.ErrorMessage ?? "Mount failed.");
+        }
+        catch (Exception ex)
+        {
+            ServicingMessage = "Mount failed unexpectedly.";
+            _logger.Error($"Servicing mount failed: {ex.Message}");
+        }
+        finally
+        {
+            IsServicing = false;
+            Refresh();
+        }
+    }
+
+    public async Task UnmountDiscardAsync()
+    {
+        if (!CanUnmountDiscard)
+        {
+            return;
+        }
+
+        var workspace = _appState.CurrentServicingWorkspace!;
+        IsServicing = true;
+        ServicingMessage = "Unmounting working image…";
+        Refresh();
+        try
+        {
+            var result = await _servicing.UnmountDiscardAsync(workspace, CancellationToken.None);
+            _appState.CurrentServicingWorkspace = result.Workspace;
+            ServicingMessage = result.Success
+                ? "Working image unmounted (changes discarded)."
+                : (result.ErrorMessage ?? "Unmount failed.");
+        }
+        catch (Exception ex)
+        {
+            ServicingMessage = "Unmount failed unexpectedly.";
+            _logger.Error($"Servicing unmount failed: {ex.Message}");
+        }
+        finally
+        {
+            IsServicing = false;
             Refresh();
         }
     }
@@ -259,11 +466,9 @@ public sealed class ImageViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Builds/updates the durable <see cref="IAppState.CurrentImageWorkspace"/> for
-    /// the given selected edition. A workspace is persisted only when the factory
-    /// produces a ready descriptor and <see cref="IWimService.ValidateWorkspace"/>
-    /// agrees; otherwise the workspace is cleared (including a rejected/invalid
-    /// selection) so no stale or invalid index is retained.
+    /// Builds/updates the durable selected-image workspace for the given edition.
+    /// A workspace is persisted only when the factory produces a ready descriptor
+    /// and <see cref="IWimService.ValidateWorkspace"/> agrees.
     /// </summary>
     private void UpdateWorkspace(WindowsEditionInfo? selectedEdition)
     {
@@ -280,6 +485,28 @@ public sealed class ImageViewModel : ViewModelBase
         }
 
         _appState.CurrentImageWorkspace = next;
+    }
+
+    /// <summary>
+    /// Invalidates a prepared (not mounted) servicing workspace when the source
+    /// ISO or selected edition changes. An actively mounted session is never
+    /// invalidated here — that requires an explicit unmount by the user.
+    /// </summary>
+    private void InvalidatePreparedServicingWorkspace()
+    {
+        var s = _appState.CurrentServicingWorkspace;
+        if (s is null)
+        {
+            return;
+        }
+
+        if (s.State is ServicingWorkspaceState.Mounted or ServicingWorkspaceState.Unmounting
+            or ServicingWorkspaceState.Mounting)
+        {
+            return;
+        }
+
+        _appState.CurrentServicingWorkspace = null;
     }
 
     private void Refresh()
@@ -308,6 +535,44 @@ public sealed class ImageViewModel : ViewModelBase
         OnPropertyChanged(nameof(WorkspaceArchitectureDisplay));
         OnPropertyChanged(nameof(WorkspaceBuildDisplay));
         OnPropertyChanged(nameof(WorkspaceSourceDisplay));
+        OnPropertyChanged(nameof(Servicing));
+        OnPropertyChanged(nameof(IsServicing));
+        OnPropertyChanged(nameof(ServicingMessage));
+        OnPropertyChanged(nameof(BlockedMessage));
+        OnPropertyChanged(nameof(IsServicingMounted));
+        OnPropertyChanged(nameof(ServicingStatusDisplay));
+        OnPropertyChanged(nameof(ServicingSourceEditionDisplay));
+        OnPropertyChanged(nameof(ServicingSourceIndexDisplay));
+        OnPropertyChanged(nameof(ServicingWorkingImageDisplay));
+        OnPropertyChanged(nameof(ServicingWorkingIndexDisplay));
+        OnPropertyChanged(nameof(ServicingWorkingDirectoryDisplay));
+        OnPropertyChanged(nameof(ServicingMountDirectoryDisplay));
+        OnPropertyChanged(nameof(ServicingErrorDisplay));
+        OnPropertyChanged(nameof(CanPrepareWorkingImage));
+        OnPropertyChanged(nameof(CanMountWorkingImage));
+        OnPropertyChanged(nameof(CanUnmountDiscard));
+
+        // CRITICAL: a WPF ICommand bound to a Button only re-queries CanExecute
+        // when the COMMAND raises CanExecuteChanged. Raising PropertyChanged on the
+        // Can* properties above is NOT enough — without this, the buttons stay
+        // disabled even after the underlying state flips to ready. This was the
+        // Step 3.2 real-desktop defect: after ISO inspection + edition selection
+        // the Prepare command's CanExecute became true, but the binding never
+        // re-evaluated it because CanExecuteChanged was never raised.
+        if (PrepareWorkingImageCommand is AsyncRelayCommand prepare)
+        {
+            prepare.RaiseCanExecuteChanged();
+        }
+
+        if (MountWorkingImageCommand is AsyncRelayCommand mount)
+        {
+            mount.RaiseCanExecuteChanged();
+        }
+
+        if (UnmountDiscardCommand is AsyncRelayCommand unmount)
+        {
+            unmount.RaiseCanExecuteChanged();
+        }
     }
 
     private static string FormatSize(long bytes)

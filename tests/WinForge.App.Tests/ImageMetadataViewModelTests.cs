@@ -61,7 +61,8 @@ public class ImageMetadataViewModelTests
             inspection,
             new FakeFilePicker(),
             new ImageWorkspaceFactory(),
-            new WimService());
+            new WimService(),
+            new FakeImageServicingService());
 
         await vm.InspectCurrentAsync();
 

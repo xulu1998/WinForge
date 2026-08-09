@@ -330,3 +330,53 @@ All decisions are `ACCEPTED` unless noted.
   control. Standard-user launches are prompted for admin credentials via UAC; the
   app does not attempt to bypass that. ADR-015 (guaranteed dismount) and ADR-016
   (read-only DISM) are unaffected.
+
+## ADR-019: Servicing uses a WinForge-owned isolated working image; the source is never modified
+
+- **Status:** ACCEPTED
+- **Context:** Phase 3 Step 3.2 prepares an offline servicing workspace so later
+  phases can mount and customize a Windows edition. The original ISO and its
+  `install.wim`/`install.esd` must remain untouched (ADR-004/ADR-006). A user's
+  selected source index N (inside the original install image) must be copied to an
+  isolated, WinForge-owned working image whose own index is 1, and only that working
+  image is ever mounted or serviced.
+- **Decision:**
+  - `ImageServicingService.PrepareWorkingImageAsync` uses `dism.exe /Export-Image`
+    to export ONLY the selected source index into a new standalone WIM (always a
+    WIM, even from an ESD source) under
+    `%LOCALAPPDATA%\WinForge\Workspaces\<id>\image\install.wim`. The export reads the
+    source from a transient read-only ISO mount that is always released in a `finally`
+    block.
+  - The working image is mounted (`/Mount-Image`) and unmounted (`/Unmount-Image
+    /Discard`) only at its dedicated, empty `…\mount` directory; the source image is
+    never mounted. Mount success is never trusted on exit code alone — registration
+    is verified via `/Get-MountedImageInfo`, and a mount that is not registered is
+    best-effort unmounted and marked `Failed`.
+  - `IWorkspacePathProvider` addresses each workspace by a safe id segment (validated
+    as `[A-Za-z0-9_-]{1,120}`), so a workspace id can never contain separators that
+    escape its folder. `IWorkspaceSafeDelete` proves a deletion target is strictly
+    inside the WinForge-owned workspace root and refuses drive roots, user-profile
+    roots, the repository root, and the workspace root itself — cleanup can never
+    recursively remove anything outside the workspace.
+  - An active mount REFUSES ISO re-inspection and edition re-selection (the ViewModel
+    sets a `BlockedMessage`); the session is only invalidated by an explicit unmount.
+  - Working-image post-export validation uses the per-index
+    `/Get-ImageInfo /Index:1` detail query (NOT the index-less enumeration query),
+    because only the detail query reports Architecture/Version/Build. The original
+    code used the index-less query and would have always failed validation — fixed
+    during Step 3.2.
+- **Consequences:** The original ISO/install image is immutable; all DISM mutation
+  targets a WinForge-owned copy. Crash recovery (`ValidateServicingWorkspaceAsync`)
+  classifies a session as Prepared / Mounted / Stale / Invalid / Failed by comparing
+  stored state against real files and DISM mount registration. ADR-017 (no temp
+  mount drive persisted) and ADR-018 (elevation) remain in force. Unmount always
+  discards — commit-on-unmount is out of scope for Step 3.2.
+- **Validation (2026-08-09, real Windows 11 25H2 zh-CN x64 Consumer `install.wim`):**
+  source index 4 → isolated working WIM index 1 export succeeded; the isolated
+  working-image strategy is validated; mount verified against real Windows filesystem
+  contents (`Windows` / `Program Files` / `Program Files (x86)` / `Users` / `PerfLogs`);
+  unmount/discard verified; `dism /English /Get-MountedWimInfo` reported no mounted
+  images afterward; remount lifecycle passed; an active mount cannot be silently
+  orphaned (ISO re-inspection / edition re-selection refused while Mounted); the
+  original ISO / `install.wim` / `install.esd` were never modified. Step 3.2 =
+  **COMPLETED**; Step 3.3 = **NOT STARTED**.

@@ -26,6 +26,16 @@ public interface IAppState : INotifyPropertyChanged
     ImageWorkspace? CurrentImageWorkspace { get; set; }
 
     /// <summary>
+    /// The active offline image servicing session (Phase 3 Step 3.2), or null
+    /// when none exists. Represents the isolated working image and its mount
+    /// lifecycle. Lifecycle rules: selecting a new ISO or a different edition
+    /// invalidates a non-mounted prepared workspace; an actively mounted session
+    /// must be unmounted/discarded before the source ISO or edition may change —
+    /// it is never silently forgotten or destroyed.
+    /// </summary>
+    ImageServicingWorkspace? CurrentServicingWorkspace { get; set; }
+
+    /// <summary>
     /// The active build configuration (skeleton in Phase 1). Presets are loaded
     /// into this model later; they are data, not separate code paths.
     /// </summary>

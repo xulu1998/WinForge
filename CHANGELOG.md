@@ -33,6 +33,84 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - ADR-017 records that durable descriptors store ISO path + relative install-image
   path + selected index and never persist temporary mounted drive letters.
 
+### Added (Phase 3 Step 3.2 — offline WIM servicing lifecycle)
+- Introduces the durable offline servicing foundation for Phase 3. A new
+  `ImageServicingWorkspace` descriptor captures the selected edition's source
+  identifiers (mirroring `ImageWorkspace`) plus WinForge-owned servicing state:
+  `WorkingDirectory` (`%LOCALAPPDATA%\WinForge\Workspaces\<id>`), `WorkingImagePath`
+  (`…\image\install.wim`), `MountDirectory` (`…\mount`), `WorkingImageType` (always
+  WIM), `WorkingIndex` (always 1), and a `ServicingWorkspaceState` lifecycle
+  (`NotPrepared`/`Preparing`/`Prepared`/`Mounting`/`Mounted`/`Unmounting`/`Completed`/`Failed`)
+  with a `ServicingHealth` classification and a `ServicingResult` outcome.
+- Core contract `IImageServicingService` (`PrepareWorkingImageAsync` /
+  `MountAsync` / `UnmountDiscardAsync` / `ValidateServicingWorkspaceAsync`) and
+  Infrastructure `ImageServicingService` (DISM `/Export-Image` source index N →
+  standalone WIM index 1, `/Mount-Image` working image only, `/Unmount-Image /Discard`,
+  `/Get-MountedImageInfo` registration verification). The original ISO and its
+  `install.wim`/`install.esd` are never modified — export reads a transient
+  read-only ISO mount that is always released; the working image lives under a
+  WinForge-owned workspace.
+- `IWorkspacePathProvider` addresses workspaces by a safe id segment (no path
+  separators can escape the folder); `IWorkspaceSafeDelete` proves a target is
+  strictly inside the workspace before any deletion and refuses drive/profile/repo
+  roots. Working-image post-export validation uses the per-index
+  `/Get-ImageInfo /Index:1` detail query so edition/architecture/build are checked.
+- `IAppState.CurrentServicingWorkspace` + `ImageViewModel` prepare/mount/unmount
+  commands with state-aware `Can*` guards. An active mount REFUSES ISO re-inspection
+  and edition re-selection (explanatory `BlockedMessage`) instead of destroying the
+  session. A new Image page "Working image" section shows status, source
+  edition/index, working image, working directory, mount directory, and any error.
+- 35 new automated tests (Core 10 + App 25): model/state, WIM+ESD export, post-export
+  validation (success, non-zero exit, edition/arch mismatch, missing source), mount
+  guards (not-prepared, missing image, DISM-success-but-not-registered), unmount
+  (discard, no-op when not mounted, DISM failure), stale/missing/invalid recovery,
+  and ViewModel guards. Total **127/127 pass (Core 21, App 106), 0 errors, 0 warnings**.
+
+### Fixed (Phase 3 Step 3.2 — prepare-command enablement)
+- Real-desktop defect: the "Prepare working image" command stayed greyed out even
+  when a Ready selected image existed. `AsyncRelayCommand` only re-evaluates
+  `CanExecute` when it raises `CanExecuteChanged`; it does **not** hook
+  `CommandManager.RequerySuggested`. The ViewModel raised `PropertyChanged` on the
+  `Can*` properties, but a Button bound to the command only listens to the command's
+  `CanExecuteChanged` event — so the cached disabled state was never refreshed after
+  ISO inspection + edition selection flipped `CanPrepareWorkingImage` to true. The
+  `CanPrepareWorkingImage` property was already correct; the command notification
+  path was missing. Fix: `ImageViewModel.Refresh()` now raises `CanExecuteChanged`
+  on the prepare / mount / unmount commands after every state transition (inspection,
+  edition selection, `CurrentImageWorkspace` replacement, servicing state changes).
+- Aligned `CanPrepareWorkingImage` to the approved state machine: a `Prepared`
+  session now disables Prepare (re-prepare is no longer allowed; Mount is the next
+  step). `Mounted` already disabled it. `Failed`/`NotPrepared`/`null` still allow it.
+- 6 new regression tests drive the real sequence (no image → inspect → select
+  edition → Ready) and assert the command's `CanExecuteChanged` actually fires — the
+  exact mechanism WPF uses to enable the button — plus edition-change refresh,
+  new-ISO invalidation, busy-disable, and Prepared/Mounted disable. Total
+  **133/133 pass (Core 21, App 112), 0 errors, 0 warnings** (Release).
+
+### Status (Phase 3 Step 3.2 — desktop validation PASSED)
+- Step 3.2 real-desktop validation **PASSED** (2026-08-09) on a real Windows 11 25H2
+  (Chinese Simplified, x64, Consumer Editions, `install.wim`) ISO:
+  `Win11_25H2_Chinese_Simplified_x64_v2.iso`, selected edition `Windows 11 专业版`
+  (source index 4). Observed successful lifecycle:
+  - ISO inspection succeeded; Selected Image became **Ready**.
+  - Prepare working image succeeded; source index 4 was exported into an isolated
+    single-index working `install.wim` (working index = 1) under
+    `%LOCALAPPDATA%\WinForge\Workspaces\<workspace-id>\` — the **isolated working-WIM
+    strategy is validated**.
+  - The original ISO / original `install.wim` were **not modified**.
+  - Mount image succeeded; the real mount directory contained the genuine Windows
+    filesystem (`Windows`, `Program Files`, `Program Files (x86)`, `Users`, `PerfLogs`,
+    `etc.`); DISM confirmed the image was genuinely mounted.
+  - Unmount & discard changes succeeded; UI returned to **Prepared**.
+  - `dism /English /Get-MountedWimInfo` reported **"No mounted images found."** — the
+    mount directory was empty after unmount; **no orphaned active mount remained**.
+  - The repeated Mount → Unmount lifecycle passed.
+  - The mounted-state source/edition switching safety guard passed (an active mount
+    refuses ISO re-inspection and edition re-selection).
+- Step 3.2 = **COMPLETED**; Desktop Validation = **PASSED**; Step 3.3 = **NOT STARTED**.
+  No package/component/tweak/customization work was implemented. Total **133/133 pass
+  (Core 21, App 112), 0 errors, 0 warnings** (Release).
+
 ### Changed (Phase 3 Step 3.1 — application elevation)
 - `WinForge.App` now declares `requestedExecutionLevel level="requireAdministrator"`
   (uiAccess false) in its embedded application manifest (`src/WinForge.App/app.manifest`,
