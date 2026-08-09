@@ -43,21 +43,20 @@ public sealed class AppState : IAppState
         set
         {
             // The servicing layer mutates ImageServicingWorkspace.State IN PLACE and
-            // returns the SAME reference. A plain reference-equality compare (SetField)
-            // would treat that reassignment as "no change" and suppress PropertyChanged,
-            // so the workflow coordinator (WorkflowViewModel) would never observe a
-            // Prepared -> Mounted transition and the Next button would stay disabled on
-            // the real desktop. We therefore:
-            //  - forward nested State/LastError changes from the current workspace,
-            //  - raise PropertyChanged even on a same-reference reassignment, and
-            //  - (re)subscribe when the reference actually changes.
+            // returns the SAME reference (see ImageServicingService.MountAsync, which
+            // sets workspace.State = Mounted and then returns that very instance). We
+            // surface that transition through ImageServicingWorkspace.INotifyPropertyChanged:
+            // the in-place State mutation raises PropertyChanged, which OnNestedServicingChanged
+            // forwards to IAppState listeners as CurrentServicingWorkspace.
+            //
+            // A same-reference reassignment therefore needs NO extra notification. Raising
+            // one here would be a redundant, synthetic event: if any downstream consumer
+            // reacted to CurrentServicingWorkspace by reassigning the same workspace back,
+            // it would create a notification feedback loop. (That loop was the real-desktop
+            // 0xc00000fd crash class when entering Customize.) We only fire when the reference
+            // actually changes, and (re)subscribe when it does.
             if (ReferenceEquals(_currentServicingWorkspace, value))
             {
-                if (value is not null)
-                {
-                    OnPropertyChanged(nameof(CurrentServicingWorkspace));
-                }
-
                 return;
             }
 

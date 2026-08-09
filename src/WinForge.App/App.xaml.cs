@@ -69,10 +69,18 @@ public partial class App : Application
         var message = ex?.Message ?? "Unknown error";
         logger.Error($"Fatal error ({source}): {message}");
 
-        MessageBox.Show(
-            $"WinForge encountered an unexpected error and recovered.\n\n{message}\n\nDetails have been recorded in the Logs page.",
-            "WinForge — Unexpected Error",
-            MessageBoxButton.OK,
-            MessageBoxImage.Error);
+        // Coalesce repeated fatal errors into at most one user-visible dialog. A single
+        // root cause (e.g. a binding/render that keeps throwing after entering a step)
+        // must never generate an unbounded storm of MessageBoxes — that storm can
+        // escalate into a process-terminating stack overflow (0xc00000fd). The error is
+        // always logged; only rapid repeats and the total dialog count are throttled.
+        if (ErrorDialogGuard.ShouldShow($"{source}:{message}"))
+        {
+            MessageBox.Show(
+                $"WinForge encountered an unexpected error and recovered.\n\n{message}\n\nDetails have been recorded in the Logs page.",
+                "WinForge — Unexpected Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 }
