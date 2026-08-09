@@ -119,7 +119,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 3 — WIM Engine
 
-- **Status:** NOT STARTED
+- **Status:** IN PROGRESS (Step 3.1 started 2026-08-08 on `feature/wim-engine`; Step 3.2 NOT STARTED)
 - **Goal:** WIM / ESD image handling via documented Microsoft mechanisms.
 - **Scope:** Enumerate images, read image info, export ESD → WIM, index selection.
 - **Deliverables:**
@@ -127,6 +127,18 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - **Acceptance Criteria:**
   - Enumerate images in install.wim / install.esd.
   - Export an ESD image to WIM without data loss.
+
+### Step 3.1 — WIM workspace & image selection foundation (2026-08-08)
+- **Status:** IMPLEMENTED / PENDING USER DESKTOP VALIDATION (not marked COMPLETED until the user re-confirms on a real Windows desktop). Do NOT add Step 3.2 here.
+- **Goal:** Convert the Phase 2 ISO selection + selected edition into a **durable** `ImageWorkspace` descriptor that survives ISO dismount and never persists a temporary mounted drive letter.
+- **Scope (this step, read-only):**
+  - Core model `ImageWorkspace` (durable fields: `SourceIsoPath`, `ImageRelativePath` e.g. `sources\install.wim`, `ImageType`, `SelectedIndex`, `SelectedEditionName`, `Architecture`, `Version`, `Build`, `Languages`) plus `ImageWorkspaceStatus` (`NotReady` / `Ready` / `Invalid`).
+  - `IImageWorkspaceFactory` (Core) + `ImageWorkspaceFactory` (Infrastructure) — builds a `ImageWorkspaceBuildResult` from `IsoInspectionResult` + `WindowsEditionInfo` with validation rules (missing ISO path / unknown image type / failed metadata / no selected edition / selected index not present in inspected editions → NotReady or Invalid). The relative path is derived (`sources\install.wim` / `sources\install.esd`), never copied from a temp mount root.
+  - `IWimService` (Core) + `WimService` (Infrastructure) — read-only Step 3.1 responsibilities only: `ValidateWorkspace(ImageWorkspace)` and `ResolveSelectedImage(ImageWorkspace)` (returns a `SelectedImageContext` carrying the durable source identifiers for a future Phase 3 op to acquire its own temporary source-access session). No DISM export/mount/apply/capture; no image modification.
+  - `IAppState.CurrentImageWorkspace` — the application maintains a durable selected-image workspace; selecting an edition (or changing it) creates/updates it, and selecting a new ISO resets it before the new ISO is ready (no stale indexes from a previous ISO).
+  - Image page "Selected image / Workspace" section bound to the durable descriptor (Edition, Index, Image, Architecture, Build, Status, original ISO source). No temporary `G:\` path is ever shown; no export/mount/build buttons.
+  - ADR-017 records that durable descriptors store ISO path + relative install-image path + selected index and never persist temporary mounted drive letters.
+- **Out of scope this step:** ESD → WIM export (Step 3.2), WIM mount (Phase 4), any image modification. The Phase 2 mount → inspect → metadata → dismount session (ADR-015) is unchanged and remains strictly read-only.
 
 ---
 

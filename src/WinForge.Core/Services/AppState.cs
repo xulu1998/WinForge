@@ -11,6 +11,7 @@ public sealed class AppState : IAppState
 {
     private string? _sourceImagePath;
     private WindowsEditionInfo? _selectedEdition;
+    private ImageWorkspace? _currentImageWorkspace;
     private BuildStatus _buildStatus = BuildStatus.NotStarted;
     private readonly BuildPlan _configuration = new();
 
@@ -24,6 +25,12 @@ public sealed class AppState : IAppState
     {
         get => _selectedEdition;
         set => SetField(ref _selectedEdition, value);
+    }
+
+    public ImageWorkspace? CurrentImageWorkspace
+    {
+        get => _currentImageWorkspace;
+        set => SetField(ref _currentImageWorkspace, value);
     }
 
     public BuildPlan Configuration => _configuration;

@@ -5,6 +5,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added (Phase 3 Step 3.1 — WIM workspace & image selection foundation)
+- Introduces the durable selected-image foundation for Phase 3. Converts a Phase 2
+  `IsoInspectionResult` + selected `WindowsEditionInfo` into a durable
+  `ImageWorkspace` descriptor that survives ISO dismount: it stores the original
+  ISO path (`SourceIsoPath`) and the image's **relative** path inside the ISO
+  (`ImageRelativePath`, e.g. `sources\install.wim` / `sources\install.esd`), never a
+  temporary mounted drive letter. Durable fields: `ImageType`, `SelectedIndex`,
+  `SelectedEditionName`, `Architecture`, `Version`, `Build`, `Languages`.
+- Core contracts: `IImageWorkspaceFactory` (`BuildWorkspace` → `ImageWorkspaceBuildResult`
+  with `ImageWorkspaceStatus` `NotReady`/`Ready`/`Invalid` and structured issues) and
+  `IWimService` (read-only Step 3.1 responsibilities: `ValidateWorkspace` and
+  `ResolveSelectedImage` → `SelectedImageContext`). Both implemented in Infrastructure
+  as pure, read-only logic (no DISM export/mount/apply/capture; no image modification).
+- `IAppState.CurrentImageWorkspace` holds the durable selected-image workspace. The
+  Image page builds/updates it when an edition is selected or changed, and clears it
+  when a new ISO is inspected — so a stale selected index from a previous ISO can never
+  survive. A new "Selected image" section shows Edition / Index / Image / Architecture /
+  Build / Status / Source (original `.iso`); no temporary mount drive is ever shown.
+- 30 new automated tests (Core 5 + App 25) cover valid WIM/ESD workspace creation,
+  original-ISO source, relative path, no temp-drive persistence, preserved index/
+  edition/metadata, NotReady (no selection / failed metadata / missing ISO / unknown
+  type), Invalid (selected index not in metadata), edition change, new-ISO reset,
+  failed inspection, Home consistency, and `IWimService` validation/resolve. All prior
+  Step 2.1/2.2 tests (mount/dismount, ADR-015 cleanup) are retained. Total 90/90 pass
+  (Core 11, App 79), 0 errors, 0 warnings.
+- ADR-017 records that durable descriptors store ISO path + relative install-image
+  path + selected index and never persist temporary mounted drive letters.
+
 ### Added (Phase 2 Step 2.2 — Windows image metadata & editions)
 - Step 2.2 reads read-only metadata from the install image (`install.wim` /
   `install.esd`) found under the mounted ISO: WIM/ESD indexes, edition name,

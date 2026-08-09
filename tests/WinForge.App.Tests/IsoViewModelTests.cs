@@ -7,6 +7,7 @@ using WinForge.App.ViewModels;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.Logging;
+using WinForge.Infrastructure.WimEngine;
 using Xunit;
 
 namespace WinForge.App.Tests;
@@ -20,7 +21,13 @@ public class IsoViewModelTests
     private static (ImageViewModel vm, AppState state) Build(IIsoInspectionService inspection, IFilePicker picker)
     {
         var state = new AppState();
-        var vm = new ImageViewModel(state, new InMemoryLoggerService(), inspection, picker);
+        var vm = new ImageViewModel(
+            state,
+            new InMemoryLoggerService(),
+            inspection,
+            picker,
+            new ImageWorkspaceFactory(),
+            new WimService());
         return (vm, state);
     }
 
