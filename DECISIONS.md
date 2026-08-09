@@ -264,3 +264,15 @@ All decisions are `ACCEPTED` unless noted.
   `Languages` section now terminates on the first non-language, non-blank, non-key
   line, so future DISM footer prose cannot leak in. Step 2.2 remains IMPLEMENTED /
   PENDING FINAL LANGUAGE-PARSER RE-VALIDATION — NOT COMPLETED.
+
+- **Closure (2026-08-08):** Phase 2 — ISO Inspection is formally **COMPLETED**. The
+  final Step 2.2 real-desktop re-validation PASSED on Windows 11 25H2 (Chinese
+  Simplified, x64, Consumer Editions, `install.wim`): Language was `zh-CN` only
+  (footer prose `The operation completed successfully.` correctly rejected),
+  confirming the language-parsing fix. The two prior `NOT COMPLETED` notes above are
+  therefore superseded. Phase 2 acceptance criteria are met: official Microsoft ISO
+  inspected non-destructively, image type detected, editions enumerated, architecture
+  detected, languages detected, and real Windows 11 25H2 desktop validation passed;
+  Step 2.1 and Step 2.2 are both merged to `main`. There is no Step 2.3 in the
+  roadmap — Phase 2 comprises only Step 2.1 and Step 2.2 — and none is invented. Next
+  phase: Phase 3 — WIM Engine (NOT STARTED).

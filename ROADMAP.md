@@ -67,7 +67,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 2 — ISO Inspection
 
-- **Status:** IN PROGRESS (Step 2.1 COMPLETED and merged to `main` on 2026-08-08; Step 2.2 COMPLETED and merged to `main` on 2026-08-08; Step 2.3 NOT STARTED)
+- **Status:** COMPLETED (Step 2.1 and Step 2.2 accepted and merged to `main` on 2026-08-08; real Windows 11 25H2 zh-CN x64 Consumer `install.wim` desktop validation PASSED — Phase 2 acceptance criteria met). No Step 2.3 is defined; Phase 2 comprises only Step 2.1 and Step 2.2.
 - **Goal:** Inspect an official Microsoft Windows 11 ISO non-destructively.
 - **Scope:** ISO metadata reading, edition enumeration, architecture/language
   detection, install.wim / install.esd detection.

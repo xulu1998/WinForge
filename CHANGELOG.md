@@ -113,8 +113,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   queries, Windows Version `10.0.26200`, Build `26200`, Architecture `x64`, Language
   `zh-CN` (footer prose correctly rejected), localized Chinese edition names, and
   guaranteed dismount. Both real-desktop findings (DISM exit 87, language footer
-  `The`) were fixed and revalidated. `v0.1.0-alpha` is unchanged; Step 2.3 is NOT
-  STARTED; `feature/iso-inspection` is retained for Step 2.3.
+  `The`) were fixed and revalidated.   `v0.1.0-alpha` is unchanged; `feature/iso-inspection` is retained (history).
+  Step 2.2 is the final step of Phase 2 — there is no Step 2.3; Phase 3 — WIM
+  Engine remains NOT STARTED.
 
 ### Accepted (Phase 2 Step 2.2 — Windows image metadata & editions)
 - Phase 2 Step 2.2 accepted and merged to `main` on 2026-08-08 via a `--no-ff`
@@ -144,9 +145,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   `IAppState.SelectedEdition`. 60 automated tests (parser, service via fake process
   runner, orchestrator lifecycle, ViewModel/Home selection).
 - Step 2.2 does not extract, mount, modify, or service the image. `v0.1.0-alpha`
-  remains unchanged; the next tag (`v0.2.0-alpha`) is deferred until Phase 2
-  completes. ESD (`install.esd`) metadata parsing is implemented but still
-  `Untested` on a real desktop.
+  remains the current release tag; the next tag (`v0.2.0-alpha`) is NOT created in
+  the Phase 2 closure task (tagging deferred pending release policy). ESD
+  (`install.esd`) metadata parsing is implemented but still `Untested` on a real
+  desktop.
+
+### Accepted (Phase 2 — ISO Inspection formal closure)
+- Phase 2 — ISO Inspection is formally **COMPLETED** (2026-08-08). It consists of
+  exactly two steps — Step 2.1 (read-only ISO layout inspection) and Step 2.2
+  (Windows image metadata & edition inspection) — both accepted and merged to
+  `main`. No Step 2.3 is defined in ROADMAP.md and none is invented.
+- Phase 2 acceptance criteria satisfied: an official Microsoft Windows 11 ISO was
+  inspected non-destructively; image type (`install.wim`) detected; editions
+  enumerated (6 indexes on the validated 25H2 zh-CN x64 Consumer ISO); architecture
+  detected (`x64`); languages detected (`zh-CN`, with DISM footer prose rejected via
+  `TryNormalizeLanguageTag`); and real Windows 11 25H2 desktop validation PASSED.
+- Both real-desktop findings from the Step 2.2 validation are fixed and revalidated:
+  (1) DISM exit code 87 from `/Get-WimInfo` → corrected to documented
+  `dism.exe /Get-ImageInfo`; (2) trailing DISM footer `The operation completed
+  successfully.` parsed as language `The` → fixed via `TryNormalizeLanguageTag`.
+- `v0.1.0-alpha` remains unchanged; `v0.2.0-alpha` is NOT created in this closure
+  (tagging deferred pending release policy). Next phase: Phase 3 — WIM Engine
+  (NOT STARTED). `feature/iso-inspection` is retained (history). Automated tests:
+  60/60 passing (Core 6, App 54), 0 errors, 0 warnings.
 
 ## [0.1.0-alpha] — 2026-08-08
 
