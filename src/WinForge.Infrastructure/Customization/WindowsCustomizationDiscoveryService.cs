@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using WinForge.Core.Models;
@@ -168,22 +169,68 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
                 return (services, DiscoverySourceStatus.Failed, msg);
             }
 
+            // Trusted service changes supplied by WinForge's definition provider
+            // (single source of truth for which services may be reconfigured). A
+            // discovered service that matches one of these is the ONLY class that
+            // becomes user-configurable; everything else is protected.
+            var recommended = _definitions.GetRecommendedServiceChanges()
+                .Where(s => !string.IsNullOrEmpty(s.ServiceName) && s.RecommendedStartType is not null)
+                .ToDictionary(s => s.ServiceName!, s => s.RecommendedStartType!.Value);
+
             foreach (var name in names)
             {
                 var key = $"{servicesRoot}\\{name}";
-                var startValue = _registry.GetValue(handle, key, "Start");
+                var typeRaw = _registry.GetValue(handle, key, "Type");
+                var startRaw = _registry.GetValue(handle, key, "Start");
                 var display = _registry.GetValue(handle, key, "DisplayName") ?? name;
-                var start = int.TryParse(startValue, out var s)
+                var type = int.TryParse(typeRaw, out var t) ? t : 0;
+                var start = int.TryParse(startRaw, out var s)
                     ? s
                     : (int)ServiceStartType.Manual;
+
+                // ADR-030 service-inventory safety boundary: separate DISCOVERED
+                // from USER-CONFIGURABLE. Merely existing under Services does NOT
+                // make an entry safe to reconfigure.
+                //
+                //   1. Driver / kernel / file-system / adapter types are protected
+                //      unconditionally — they are low-level components, never the
+                //      user-facing Win32 services WinForge may touch.
+                //   2. A Win32 service that matches the trusted allowlist is
+                //      RecommendedConfigurable (the only selectable class).
+                //   3. Everything else is Protected: discovered for diagnostics but
+                //      not offered as a disableable checkbox.
+                ServiceClass kind;
+                RiskClass risk;
+                ServiceStartType? recommendedStart = null;
+                if (IsDriverType(type))
+                {
+                    kind = ServiceClass.Driver;
+                    risk = RiskClass.Protected;
+                }
+                else if (recommended.TryGetValue(name, out var rec))
+                {
+                    kind = ServiceClass.RecommendedConfigurable;
+                    risk = RiskClass.Removable;
+                    recommendedStart = rec;
+                }
+                else
+                {
+                    kind = ServiceClass.Protected;
+                    risk = RiskClass.Protected;
+                }
 
                 services.Add(new DiscoveredOfflineService
                 {
                     ServiceName = name,
                     DisplayName = display,
                     CurrentStartValue = start,
-                    Risk = RiskClass.Removable
+                    ServiceType = type,
+                    ServiceKind = kind,
+                    Risk = risk,
+                    RecommendedStartType = recommendedStart
                 });
+
+                _logger.Info($"Customization: service '{name}' Type={type} -> {kind}.");
             }
 
             _logger.Info($"Customization: discovered {services.Count} offline service(s) from '{servicesRoot}'.");
@@ -215,6 +262,21 @@ public sealed class WindowsCustomizationDiscoveryService : ICustomizationDiscove
 
         // Fallback to ControlSet001 if the Select value is absent.
         return 1;
+    }
+
+    /// <summary>
+    /// Returns true when a service <c>Type</c> value denotes a kernel / file-system
+    /// / adapter driver. These are the low-level components that live under
+    /// <c>Services</c> alongside user-facing Win32 services and must never be
+    /// reconfigured by Step 3.3 (ADR-030). Win32 service types (0x10 / 0x20) and
+    /// the interactive-process bit (0x100) leave the low nibble zero, so they are
+    /// correctly treated as non-drivers.
+    /// </summary>
+    private static bool IsDriverType(int type)
+    {
+        const int driverMask = 0x0F;
+        var low = type & driverMask;
+        return low is 1 or 2 or 4 or 8; // SERVICE_KERNEL_DRIVER / FILE_SYSTEM_DRIVER / ADAPTER / RECOGNIZED_DRIVER
     }
 
     /// <summary>

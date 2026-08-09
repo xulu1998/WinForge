@@ -61,8 +61,21 @@ public class WindowsCustomizationDiscoveryServiceTests : IAsyncLifetime
         _registry.SubKeys["WinForge_SYSTEM|ControlSet001\\Services"] = new() { "DiagTrack", "Dnscache" };
         _registry.Values["WinForge_SYSTEM|Select|Current"] = "1";
         _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\DiagTrack|Start"] = "2";
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\DiagTrack|Type"] = "16"; // Win32 own process
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\Dnscache|Start"] = "2";
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\Dnscache|Type"] = "32"; // Win32 share process
 
         _defs = new FakeCustomizationDefinitionProvider();
+        // DiagTrack is a trusted, recommended service change -> configurable.
+        _defs.Services.Add(new DiscoveredOfflineService
+        {
+            ServiceName = "DiagTrack",
+            DisplayName = "Connected User Experiences and Telemetry",
+            CurrentStartValue = 2,
+            RecommendedStartType = ServiceStartType.Disabled,
+            ServiceKind = ServiceClass.RecommendedConfigurable,
+            Risk = RiskClass.Removable
+        });
         _defs.Privacy.Add(new DiscoveredRegistrySetting
         {
             SettingId = "p1", Category = CustomizationCategory.Privacy, Title = "Privacy 1",
@@ -301,5 +314,97 @@ The following provisioned packages will be listed:
         Assert.Equal(DiscoverySourceStatus.Success, inv.AppxStatus);
         Assert.True(string.IsNullOrEmpty(inv.AppxError));
         Assert.Empty(inv.AppxPackages);
+    }
+
+    // ---- ADR-030: service-inventory safety classification ----
+    // A discovered service is NOT automatically user-configurable merely because
+    // it exists under Services. Only the trusted allowlist (DiagTrack / WerSvc /
+    // PcaSvc) is configurable; drivers and unrelated Win32 services are protected.
+
+    [Fact]
+    public async Task Discover_ClassifiesKernelDriver_AsDriverProtected()
+    {
+        Build();
+        _registry.SubKeys["WinForge_SYSTEM|ControlSet001\\Services"] = new() { "MyBootDriver" };
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\MyBootDriver|Type"] = "1"; // SERVICE_KERNEL_DRIVER
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\MyBootDriver|Start"] = "0";
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        var svc = Assert.Single(inv.Services);
+        Assert.Equal("MyBootDriver", svc.ServiceName);
+        Assert.Equal(ServiceClass.Driver, svc.ServiceKind);
+        Assert.Equal(RiskClass.Protected, svc.Risk);
+    }
+
+    [Fact]
+    public async Task Discover_ClassifiesFileSystemDriver_AsDriverProtected()
+    {
+        Build();
+        _registry.SubKeys["WinForge_SYSTEM|ControlSet001\\Services"] = new() { "MyFsDriver" };
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\MyFsDriver|Type"] = "2"; // SERVICE_FILE_SYSTEM_DRIVER
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\MyFsDriver|Start"] = "1";
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        var svc = Assert.Single(inv.Services);
+        Assert.Equal(ServiceClass.Driver, svc.ServiceKind);
+    }
+
+    [Fact]
+    public async Task Discover_ClassifiesWin32NonAllowlisted_AsProtected()
+    {
+        Build();
+        // A performance / provider-style Win32 service that merely exists under
+        // Services must NOT become configurable.
+        _registry.SubKeys["WinForge_SYSTEM|ControlSet001\\Services"] = new() { ".NET CLR Data" };
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\.NET CLR Data|Type"] = "16"; // Win32 own process
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\.NET CLR Data|Start"] = "3";
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        var svc = Assert.Single(inv.Services);
+        Assert.Equal(ServiceClass.Protected, svc.ServiceKind);
+        Assert.Equal(RiskClass.Protected, svc.Risk);
+    }
+
+    [Fact]
+    public async Task Discover_ClassifiesTrustedDiagTrack_AsRecommendedConfigurable()
+    {
+        Build();
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        var diag = inv.Services.First(s => s.ServiceName == "DiagTrack");
+        Assert.Equal(ServiceClass.RecommendedConfigurable, diag.ServiceKind);
+        Assert.Equal(ServiceStartType.Disabled, diag.RecommendedStartType);
+    }
+
+    [Fact]
+    public async Task Discover_ClassifiesTrustedWerSvc_AsRecommendedConfigurable()
+    {
+        Build();
+        _registry.SubKeys["WinForge_SYSTEM|ControlSet001\\Services"].Add("WerSvc");
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\WerSvc|Type"] = "16";
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\WerSvc|Start"] = "2";
+        _defs.Services.Add(new DiscoveredOfflineService
+        {
+            ServiceName = "WerSvc", DisplayName = "Windows Error Reporting Service",
+            RecommendedStartType = ServiceStartType.Disabled,
+            ServiceKind = ServiceClass.RecommendedConfigurable, Risk = RiskClass.Removable
+        });
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        var svc = inv.Services.First(s => s.ServiceName == "WerSvc");
+        Assert.Equal(ServiceClass.RecommendedConfigurable, svc.ServiceKind);
+    }
+
+    [Fact]
+    public async Task Discover_ClassifiesTrustedPcaSvc_AsRecommendedConfigurable()
+    {
+        Build();
+        _registry.SubKeys["WinForge_SYSTEM|ControlSet001\\Services"].Add("PcaSvc");
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\PcaSvc|Type"] = "16";
+        _registry.Values["WinForge_SYSTEM|ControlSet001\\Services\\PcaSvc|Start"] = "2";
+        _defs.Services.Add(new DiscoveredOfflineService
+        {
+            ServiceName = "PcaSvc", DisplayName = "Program Compatibility Assistant Service",
+            RecommendedStartType = ServiceStartType.Disabled,
+            ServiceKind = ServiceClass.RecommendedConfigurable, Risk = RiskClass.Removable
+        });
+        var inv = await _service.DiscoverAsync(Mounted(), CancellationToken.None);
+        var svc = inv.Services.First(s => s.ServiceName == "PcaSvc");
+        Assert.Equal(ServiceClass.RecommendedConfigurable, svc.ServiceKind);
     }
 }

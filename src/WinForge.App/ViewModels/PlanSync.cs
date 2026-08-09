@@ -62,6 +62,17 @@ public static class PlanSync
                     return;
                 }
 
+                // Service-specific guard (ADR-030): a ConfigureOfflineService
+                // operation whose service name is NOT on the trusted allowlist is
+                // refused even if the caller set Risk = Removable. This blocks an
+                // unapproved service identifier (e.g. a kernel driver or an
+                // arbitrary discovered Win32 service) from entering the plan.
+                if (op.OperationType == CustomizationOperationType.ConfigureOfflineService &&
+                    !ServiceConfigPolicy.IsConfigurable(op.ServiceName))
+                {
+                    return;
+                }
+
                 plan.AddOperation(op);
             }
             else if (!existing.IsSelected)

@@ -49,7 +49,7 @@ public class CustomizationViewModelsTests
                 },
                 Services = new[]
                 {
-                    new DiscoveredOfflineService { ServiceName = "DiagTrack", CurrentStartValue = 2, Risk = RiskClass.Removable }
+                    new DiscoveredOfflineService { ServiceName = "DiagTrack", CurrentStartValue = 2, ServiceKind = ServiceClass.RecommendedConfigurable, Risk = RiskClass.Removable }
                 }
             }
         };
@@ -169,7 +169,7 @@ public class CustomizationViewModelsTests
         provider.Services.Add(new DiscoveredOfflineService
         {
             ServiceName = "DiagTrack", DisplayName = "Telemetry", CurrentStartValue = 2,
-            RecommendedStartType = ServiceStartType.Disabled, Risk = RiskClass.Removable
+            RecommendedStartType = ServiceStartType.Disabled, ServiceKind = ServiceClass.RecommendedConfigurable, Risk = RiskClass.Removable
         });
         var vm = new SystemViewModel(new AppState(), new InMemoryLoggerService(), provider);
         Assert.Single(vm.RecommendedServices);
@@ -184,7 +184,7 @@ public class CustomizationViewModelsTests
         provider.Services.Add(new DiscoveredOfflineService
         {
             ServiceName = "DiagTrack", DisplayName = "Telemetry", CurrentStartValue = 2,
-            RecommendedStartType = ServiceStartType.Disabled, Risk = RiskClass.Removable
+            RecommendedStartType = ServiceStartType.Disabled, ServiceKind = ServiceClass.RecommendedConfigurable, Risk = RiskClass.Removable
         });
         var vm = new SystemViewModel(appState, new InMemoryLoggerService(), provider);
         vm.RecommendedServices[0].IsSelected = true;

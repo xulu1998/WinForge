@@ -100,6 +100,8 @@ public sealed class CustomizationDefinitionProvider : ICustomizationDefinitionPr
         DisplayName = display,
         CurrentStartValue = (int)ServiceStartType.Automatic,
         RecommendedStartType = start,
+        // Trusted, recommended service change — the only user-configurable class.
+        ServiceKind = ServiceClass.RecommendedConfigurable,
         Risk = RiskClass.Removable
     };
 }

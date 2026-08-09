@@ -71,11 +71,15 @@ public sealed class ServiceSelectionItem : ViewModelBase
         RecommendedStartType = recommended;
     }
 
-    public bool CanSelect => Service.Risk is RiskClass.Safe or RiskClass.Removable;
+    public bool CanSelect => Service.ServiceKind is ServiceClass.RecommendedConfigurable or ServiceClass.Configurable;
 
-    public string Reason => CanSelect
-        ? string.Empty
-        : "Service is protected — cannot be reconfigured.";
+    public string Reason => Service.ServiceKind switch
+    {
+        ServiceClass.Driver => "Kernel / file-system driver — cannot be reconfigured by this step.",
+        ServiceClass.Protected => "Not an approved service for this step — cannot be reconfigured.",
+        ServiceClass.Unknown => "Unknown service type — cannot be reconfigured.",
+        _ => string.Empty
+    };
 
     private bool _isSelected;
     public bool IsSelected

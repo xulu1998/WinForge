@@ -149,6 +149,15 @@ public sealed class CustomizationPlan
             return op.IsSelected ? OperationValidationResult.Unsupported : OperationValidationResult.Valid;
         }
 
+        // ADR-030: a ConfigureOfflineService whose service name is not on the
+        // trusted allowlist is never permitted, regardless of how the operation
+        // was constructed. This rejects a manually injected unapproved service op.
+        if (op.OperationType == CustomizationOperationType.ConfigureOfflineService &&
+            !ServiceConfigPolicy.IsConfigurable(op.ServiceName))
+        {
+            return OperationValidationResult.Unsupported;
+        }
+
         if (op.OperationType is CustomizationOperationType.RemoveProvisionedAppx or CustomizationOperationType.RemovePackage
             or CustomizationOperationType.RemoveOfflineFile)
         {

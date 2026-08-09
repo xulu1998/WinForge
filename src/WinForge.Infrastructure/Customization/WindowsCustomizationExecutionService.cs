@@ -252,6 +252,16 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
             return (CustomizationOperationStatus.FailedRecoverable, "Missing service name or start type.");
         }
 
+        // Hard safety (ADR-030, final defense-in-depth guard): never reconfigure a
+        // service that is not on the explicit allowlist. By policy such an
+        // operation should already be Protected (not selectable), rejected by
+        // PlanSync, and flagged Unsupported by plan validation — but if one ever
+        // reaches here it is skipped rather than applied.
+        if (!ServiceConfigPolicy.IsConfigurable(op.ServiceName))
+        {
+            return (CustomizationOperationStatus.Skipped, "Service is not on the configuration allowlist.");
+        }
+
         var hiveFile = OfflineHivePaths.GetHiveFilePath(workspace, "SYSTEM");
         if (hiveFile is null || !_validator.IsWithinMount(hiveFile, workspace) || !File.Exists(hiveFile))
         {

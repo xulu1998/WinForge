@@ -207,10 +207,14 @@ public class WindowsCustomizationExecutionServiceTests : IAsyncLifetime
     public async Task Execute_ConfigureService_Absent_IsSkipped()
     {
         Build();
+        // WerSvc is on the trusted allowlist (so it passes validation) but is not
+        // present in the offline image's Services tree — it must be gracefully
+        // Skipped, not treated as a failure. (DiagTrack is the only present
+        // allowlisted service in Build().)
         var plan = PlanWith(new CustomizationOperation
         {
             OperationId = "s", OperationType = CustomizationOperationType.ConfigureOfflineService,
-            ServiceName = "NoSuchService", ServiceStartType = ServiceStartType.Disabled,
+            ServiceName = "WerSvc", ServiceStartType = ServiceStartType.Disabled,
             Risk = RiskClass.Removable
         });
         var result = await _service.ExecuteAsync(plan, _workspace, null, CancellationToken.None);

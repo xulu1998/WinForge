@@ -115,10 +115,39 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   (Release), all CI-safe. Step 3.3 remains **PENDING real-desktop validation — re-run required**;
   not merged to `main`.
 
+### Fixed (Phase 3 Step 3.3 — service-inventory safety boundary, ADR-030)
+- **NEW safety defect (real-desktop re-validation):** the Components page exposed a disableable
+  checkbox for **every one of the 699 discovered service records** — including kernel / file-system
+  drivers, performance and provider entries (`.NET CLR Data`, `.NET Data Provider for Oracle`,
+  `.NET Memory Cache 4.0`, …) and other low-level `SYSTEM\ControlSet00x\Services` sub-keys. The
+  prior code classified every discovered service as `RiskClass.Removable` unconditionally, so
+  discovery success was wrongly treated as "safe to disable". The fix separates **DISCOVERED**
+  from **USER-CONFIGURABLE**.
+- **New `ServiceClass` enum** (`Unknown`/`Driver`/`Protected`/`Configurable`/`RecommendedConfigurable`)
+  and new `ServiceConfigPolicy` (single source of truth, in Core) — only the trusted allowlist
+  `DiagTrack` / `WerSvc` / `PcaSvc` may be reconfigured; a unit test pins it to
+  `CustomizationDefinitionProvider`'s recommended service changes. `DiscoverServices` now reads each
+  service `Type`: driver types → `Driver` (protected); allowlisted Win32 services →
+  `RecommendedConfigurable`; everything else → `Protected`.
+- **UI:** `ServiceSelectionItem.CanSelect` is driven by `ServiceClass`; non-selectable entries show
+  a short reason ("Kernel / file-system driver…", "Not an approved service…", "Unknown service
+  type…"). `ComponentsViewModel` shows **only configurable services by default**; a
+  `ShowProtectedEntries` toggle reveals the protected/system entries read-only. Status message
+  reports the true discovered total and hidden count.
+- **Three-layer guard:** `PlanSync.Toggle` refuses unapproved service ids; `CustomizationPlan
+  .ClassifyBase` flags unapproved service ops `Unsupported` (rejected by validation);
+  `WindowsCustomizationExecutionService.ApplyService` retains a final `Skipped` guard; host SYSTEM
+  hive boundary (`IsWithinMount` + `OfflineHivePaths`) intact.
+- **Tests added (12):** driver/fs-driver/Win32-non-allowlisted/unknown classification, DiagTrack/
+  WerSvc/PcaSvc configurable, UI hides protected entries, PlanSync refusal, plan-validation
+  rejection, execution backstop, host-hive safety, and policy↔provider sync. 242 automated tests
+  pass (Core 37, App 205), 0 errors, 0 warnings (Release), all CI-safe. Step 3.3 remains **PENDING
+  real-desktop validation — re-run required**; not merged to `main`.
+
 ### Status (Phase 3 Step 3.3 — implemented, pending real-desktop validation)
 - Step 3.3 is **IMPLEMENTED** on `feature/offline-customization` (2026-08-09). The full
   declarative plan, discovery, offline-registry, execution, and UI layers are complete and
-  the automated suite is green (206/206, 0 errors, 0 warnings). **Real-desktop validation is
+  the automated suite is green (242/242, 0 errors, 0 warnings). **Real-desktop validation is
   still PENDING**: no real Windows mount / offline-hive edit / package removal was exercised
   in this session. The next validation step is a real Windows run that discovers a mounted
   working image, selects a few safe customizations (Privacy registry settings, disable

@@ -110,6 +110,39 @@ public enum CustomizationOperationStatus
 }
 
 /// <summary>
+/// Conservative classification of a discovered offline Windows service
+/// (Step 3.3 service-inventory safety boundary, ADR-030). It separates what was
+/// merely <b>discovered</b> (every sub-key under
+/// <c>SYSTEM\ControlSet00x\Services</c>) from what is actually
+/// <b>user-configurable</b> by this step.
+///
+/// <para>A service is configurable ONLY when it appears on the trusted allowlist
+/// in <see cref="ServiceConfigPolicy"/> (currently DiagTrack / WerSvc / PcaSvc).
+/// Driver / kernel / file-system components and any merely-discovered Win32
+/// service are <see cref="Protected"/> or <see cref="Driver"/> and must never be
+/// offered as a disableable checkbox. This prevents the UI from exposing the
+/// hundreds of low-level driver / performance-provider entries that live in the
+/// Services tree.</para>
+/// </summary>
+public enum ServiceClass
+{
+    /// <summary>Not classified (e.g. Type could not be read). Treated as protected.</summary>
+    Unknown,
+
+    /// <summary>Kernel / file-system / adapter driver — never reconfigured by this step.</summary>
+    Driver,
+
+    /// <summary>Discovered but not on the trusted allowlist — protected from reconfiguration.</summary>
+    Protected,
+
+    /// <summary>On the trusted allowlist but not flagged "recommended" (reserved for future use).</summary>
+    Configurable,
+
+    /// <summary>On the trusted allowlist AND a recommended change — the only user-configurable class.</summary>
+    RecommendedConfigurable
+}
+
+/// <summary>
 /// Safety classification of an operation / discovered item. Drives whether the
 /// UI may present it as selectable and whether real removal is permitted.
 /// </summary>

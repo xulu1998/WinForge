@@ -70,6 +70,11 @@ public sealed class DiscoveredOfflineService
     /// <summary>Current START value as read from the offline hive (0-4).</summary>
     public int CurrentStartValue { get; init; }
 
+    /// <summary>Raw service <c>Type</c> value as read from the offline hive. Used
+    /// for conservative classification (ADR-030): driver types (kernel /
+    /// file-system / adapter) are protected.</summary>
+    public int ServiceType { get; init; }
+
     public ServiceStartType CurrentStartType => (ServiceStartType)CurrentStartValue;
 
     /// <summary>
@@ -78,6 +83,15 @@ public sealed class DiscoveredOfflineService
     /// recommendation applies.
     /// </summary>
     public ServiceStartType? RecommendedStartType { get; init; }
+
+    /// <summary>
+    /// Conservative safety classification (ADR-030). Only
+    /// <see cref="ServiceClass.RecommendedConfigurable"/> services are
+    /// user-configurable by this step; <see cref="ServiceClass.Driver"/> and
+    /// <see cref="ServiceClass.Protected"/> entries are discovered for
+    /// diagnostics but must never be offered as disableable checkboxes.
+    /// </summary>
+    public ServiceClass ServiceKind { get; init; } = ServiceClass.Unknown;
 
     public RiskClass Risk { get; init; } = RiskClass.Removable;
 }

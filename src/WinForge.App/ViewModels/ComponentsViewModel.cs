@@ -27,6 +27,8 @@ public sealed class ComponentsViewModel : ViewModelBase
 
     private bool _isDiscovering;
     private bool _hasInventory;
+    private bool _showProtectedEntries;
+    private DiscoveryInventory? _lastInventory;
     private string _statusMessage = "Select and mount a working image, then discover components.";
 
     public ComponentsViewModel(
@@ -64,6 +66,25 @@ public sealed class ComponentsViewModel : ViewModelBase
     {
         get => _hasInventory;
         private set => SetField(ref _hasInventory, value);
+    }
+
+    /// <summary>
+    /// When false (the default) the Components page shows only the services that
+    /// are actually user-configurable by this step (the trusted allowlist). The
+    /// many driver / kernel / protected entries that are discovered for
+    /// diagnostics are hidden. Flip to true to inspect them (read-only — they
+    /// remain non-selectable). ADR-030.
+    /// </summary>
+    public bool ShowProtectedEntries
+    {
+        get => _showProtectedEntries;
+        set
+        {
+            if (SetField(ref _showProtectedEntries, value) && _lastInventory is not null)
+            {
+                BuildCollections(_lastInventory);
+            }
+        }
     }
 
     public string StatusMessage
@@ -117,7 +138,10 @@ public sealed class ComponentsViewModel : ViewModelBase
             }
 
             var summary = inventory.Discovered
-                ? $"Discovered {AppxPackages.Count} app(s), {WindowsPackages.Count} package(s), {Services.Count} service(s)."
+                ? $"Discovered {AppxPackages.Count} app(s), {WindowsPackages.Count} package(s), {inventory.Services.Count} service(s)." +
+                  ((!ShowProtectedEntries && inventory.Services.Count > Services.Count)
+                      ? $" Showing {Services.Count} configurable service(s); {inventory.Services.Count - Services.Count} protected/system entries hidden."
+                      : string.Empty)
                 : "Discovery found no usable mounted session.";
 
             StatusMessage = errors.Count > 0
@@ -138,6 +162,8 @@ public sealed class ComponentsViewModel : ViewModelBase
 
     private void BuildCollections(DiscoveryInventory inventory)
     {
+        _lastInventory = inventory;
+
         AppxPackages.Clear();
         WindowsPackages.Clear();
         Services.Clear();
@@ -158,11 +184,20 @@ public sealed class ComponentsViewModel : ViewModelBase
 
         foreach (var svc in inventory.Services)
         {
-            var item = new ServiceSelectionItem(svc, ServiceStartType.Disabled)
+            var item = new ServiceSelectionItem(svc, svc.RecommendedStartType ?? ServiceStartType.Disabled)
             {
                 IsSelected = IsSelectedInPlan("svc|" + svc.ServiceName)
             };
             item.PropertyChanged += OnSelectionChanged;
+
+            // ADR-030: by default only configurable (trusted-allowlist) services
+            // are shown. Driver / protected / unknown entries are discovered for
+            // diagnostics but hidden unless the operator opts in to inspect them.
+            if (!ShowProtectedEntries && !item.CanSelect)
+            {
+                continue;
+            }
+
             Services.Add(item);
         }
     }

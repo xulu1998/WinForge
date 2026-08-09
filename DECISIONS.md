@@ -638,3 +638,48 @@ All decisions are `ACCEPTED` unless noted.
   A real Windows run will now discover the mounted image's provisioned packages by exact identity.
   Step 3.3 real-desktop validation remains **PENDING** — RE-RUN required after this change.
 
+## ADR-030: Service inventory must separate DISCOVERED from USER-CONFIGURABLE
+
+- **Status:** ACCEPTED
+- **Context:** A real-desktop re-validation of Step 3.3 reported the GOOD results (47 Appx, 149
+  packages, 699 services discovered; non-approved packages correctly disabled) but surfaced a NEW
+  safety defect: the Components page exposed a **disableable checkbox for every one of the 699
+  discovered service records**, including kernel / file-system drivers, performance and provider
+  entries (e.g. `.NET CLR Data`, `.NET Data Provider for Oracle`, `.NET Memory Cache 4.0`),
+  and other low-level `SYSTEM\ControlSet00x\Services` sub-keys. The UI's claim "Selecting a service
+  disables it in the offline image" is unsafe: **discovery success does not mean every discovered
+  key is safe to reconfigure.** The existing discovery code classified every service as
+  `RiskClass.Removable` unconditionally, so all 699 became selectable.
+- **Decision:**
+  1. **New `ServiceClass` enum** (`Unknown`, `Driver`, `Protected`, `Configurable`,
+     `RecommendedConfigurable`) separates what was merely *discovered* from what is
+     *user-configurable* by this step.
+  2. **New `ServiceConfigPolicy`** (single source of truth, in Core so discovery, plan validation,
+     and execution all share it) — only `DiagTrack`, `WerSvc`, `PcaSvc` (the existing trusted
+     `CustomizationDefinitionProvider` recommended changes) may be reconfigured. A unit test pins
+     the policy's markers to the provider's recommended service names so they cannot drift.
+  3. **Classification inspects `Type`** — `WindowsCustomizationDiscoveryService.DiscoverServices`
+     reads each service's `Type`; kernel / file-system / adapter driver types
+     (`SERVICE_KERNEL_DRIVER` 0x1, `SERVICE_FILE_SYSTEM_DRIVER` 0x2, `ADAPTER` 0x4,
+     `RECOGNIZED_DRIVER` 0x8) are classified `Driver` (protected); Win32 services that match the
+     trusted allowlist become `RecommendedConfigurable`; everything else is `Protected`. The
+     recommended start type is taken from the trusted definition.
+  4. **UI gating** — `ServiceSelectionItem.CanSelect` is driven by `ServiceClass` (only
+     `RecommendedConfigurable`/`Configurable` are selectable); non-selectable entries show a short
+     reason ("Kernel / file-system driver…", "Not an approved service…", "Unknown service type…").
+     `ComponentsViewModel` shows **only configurable services by default**; a `ShowProtectedEntries`
+     toggle reveals the protected/system entries read-only. The status message reports the true
+     discovered total and how many are hidden.
+  5. **Three-layer guard** — (a) `PlanSync.Toggle` refuses to add a `ConfigureOfflineService`
+     operation for any unapproved service name even if `Risk` is crafted to `Removable`; (b)
+     `CustomizationPlan.ClassifyBase` flags an unapproved service op `Unsupported`, so plan
+     validation rejects it; (c) `WindowsCustomizationExecutionService.ApplyService` retains a final
+     `Skipped` guard for any non-allowlisted service that somehow reaches execution. The host
+     SYSTEM-hive boundary (`IsWithinMount` + `OfflineHivePaths`) remains intact.
+- **Consequences:** The Components page will no longer expose 699 arbitrary disableable service
+  entries — only the trusted allowlist is configurable, and the hundreds of driver / kernel /
+  protected records are discovered for diagnostics but hidden and non-selectable. 12 regression
+  tests pin the boundary. Step 3.3 real-desktop validation remains **PENDING** — RE-RUN required
+  after this change; on the real desktop the service count shown should drop from 699 to the small
+  trusted-allowlist set.
+
