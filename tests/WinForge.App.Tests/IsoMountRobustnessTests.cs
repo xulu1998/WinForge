@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -261,9 +262,10 @@ public sealed class IsoMountRobustnessTests
         Assert.Contains("$ErrorActionPreference = 'Stop'", script);
     }
 
-    // 9b) The mount/resolve scripts opt into strict error handling.
+    // 9b) The mount/resolve scripts opt into strict error handling, and the
+    //     resolve script uses a VALID Get-Volume parameter set (no -DevicePath).
     [Fact]
-    public void BuildScripts_EnableStrictErrorHandling()
+    public void BuildScripts_EnableStrictErrorHandling_AndValidResolveCmdlet()
     {
         var mount = WindowsIsoMountService.BuildMountScript("C:\\x.iso");
         var resolve = WindowsIsoMountService.BuildResolveScript("C:\\x.iso");
@@ -275,6 +277,56 @@ public sealed class IsoMountRobustnessTests
         Assert.Contains("$ErrorActionPreference = 'Stop'", resolve);
         Assert.Contains("Get-DiskImage", resolve);
         Assert.Contains("Get-Volume", resolve);
+
+        // CRITICAL: Get-Volume has no -DevicePath parameter; the original defect
+        // used it and every poll failed. The corrected script must NOT use it.
+        Assert.DoesNotContain("Get-Volume -DevicePath", resolve);
+
+        // Valid forms: Get-DiskImage piped into Get-Volume, or Get-Volume -DiskImage.
+        var piped = resolve.Contains("Get-DiskImage") &&
+                    resolve.Contains("| Get-Volume");
+        var diskImageParam = resolve.Contains("Get-Volume -DiskImage");
+        Assert.True(piped || diskImageParam,
+            "resolve script must use 'Get-DiskImage | Get-Volume' or 'Get-Volume -DiskImage'");
+    }
+
+    // 9c) Regression for the CORRECTED root cause: the resolve query must use a
+    //     valid parameter set (this is what the previous -DevicePath form violated).
+    [Fact]
+    public void BuildResolveScript_DoesNotUseInvalidDevicePathParameter()
+    {
+        var resolve = WindowsIsoMountService.BuildResolveScript("C:\\x.iso");
+        Assert.DoesNotContain("-DevicePath", resolve);
+    }
+
+    // 11) Resolve ExitCode != 0 is a real query failure: fail IMMEDIATELY (not
+    //     after the readiness timeout), perform cleanup, and surface the
+    //     normalized diagnostic rather than a misleading "no drive letter".
+    [Fact]
+    public async Task Mount_ResolveNonZeroExit_FailsImmediately_NotTimeout_AndDismounts()
+    {
+        var sw = Stopwatch.StartNew();
+        var runner = new FakeRunner
+        {
+            ResolveHandler = _ => new WindowsIsoMountService.PowerShellResult
+            {
+                ExitCode = 1,
+                StandardError = "#< CLIXML <Objs><S>Get-Volume : The term 'Get-Volume' is not " +
+                                "recognized as the name of a cmdlet.</S></Objs>"
+            }
+        };
+        // Long timeout proves we do NOT wait it out.
+        var svc = CreateService(runner, timeout: TimeSpan.FromSeconds(5), poll: TimeSpan.FromMilliseconds(10));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => svc.MountReadOnlyAsync("C:\\images\\win.iso"));
+
+        var elapsed = sw.Elapsed;
+        Assert.True(elapsed < TimeSpan.FromSeconds(2),
+            $"resolve failure must fail fast, not wait the readiness timeout (took {elapsed.TotalSeconds:0.0}s)");
+        Assert.Contains("Get-Volume", ex.Message); // normalized diagnostic preserved
+        Assert.DoesNotContain("no drive letter", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(runner.DismountScripts); // cleanup ran
     }
 
     // 10) Distinct phases are logged (requested -> attached -> waiting -> resolved).

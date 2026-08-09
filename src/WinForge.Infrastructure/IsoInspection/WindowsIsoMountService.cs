@@ -101,6 +101,19 @@ public sealed class WindowsIsoMountService : IIsoMountService
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var resolve = await _runner.RunAsync(BuildResolveScript(isoPath), cancellationToken);
+                if (resolve.ExitCode != 0)
+                {
+                    // A non-zero exit from the resolve query is a REAL failure
+                    // (e.g. Get-DiskImage could not find the attached image), NOT a
+                    // "letter not assigned yet" state. Fail immediately rather than
+                    // burning the readiness timeout pretending the volume is merely
+                    // slow to appear.
+                    var msg = BuildFailureMessage("volume resolution", resolve.ExitCode, resolve);
+                    _logger?.Error($"mount failed (volume query): {msg}");
+                    await DismountBestEffortAsync(isoPath);
+                    throw new InvalidOperationException(msg);
+                }
+
                 var candidate = (resolve.StandardOutput ?? string.Empty).Trim();
                 if (candidate.Length != 0 && candidate.EndsWith(":\\", StringComparison.Ordinal))
                 {
@@ -196,9 +209,16 @@ public sealed class WindowsIsoMountService : IIsoMountService
     public static string BuildResolveScript(string isoPath)
     {
         var safe = EscapeSingleQuoted(isoPath);
+        // Get-Volume has NO -DevicePath parameter. The valid relationship is
+        // Get-DiskImage | Get-Volume (or Get-Volume -DiskImage $img); the original
+        // working manual command used exactly this pipeline. -ErrorAction
+        // SilentlyContinue on Get-Volume keeps a genuine "letter not assigned yet"
+        // as ExitCode 0 + empty stdout (a legitimate not-ready state to retry),
+        // while a failing Get-DiskImage (which uses -ErrorAction Stop) surfaces as
+        // a non-zero exit and is treated as a real query failure, not a timeout.
         return "$ErrorActionPreference = 'Stop'; " +
-               "$dev = (Get-DiskImage -ImagePath '" + safe + "' -ErrorAction Stop).DevicePath; " +
-               "$vol = Get-Volume -DevicePath $dev -ErrorAction SilentlyContinue; " +
+               "$img = Get-DiskImage -ImagePath '" + safe + "' -ErrorAction Stop; " +
+               "$vol = $img | Get-Volume -ErrorAction SilentlyContinue; " +
                "if ($vol -and -not [string]::IsNullOrEmpty($vol.DriveLetter)) { $vol.DriveLetter + ':\\' } else { '' }";
     }
 
