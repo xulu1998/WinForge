@@ -124,6 +124,11 @@ public class ComponentIntelligenceXamlLoadRegressionTests
             // resource / TwoWay / Path defect surfaces during attach.
             view.Measure(new Size(1000, 800));
             view.Arrange(new Rect(0, 0, 1000, 800));
+
+            // ROOT-CAUSE REGRESSION GUARD: the missing code-behind made
+            // InitializeComponent() never run, so Content stayed null and the page
+            // rendered blank. A correctly-loaded view must have a non-null root.
+            Assert.NotNull(view.Content);
         });
     }
 
