@@ -996,3 +996,47 @@ All decisions are `ACCEPTED` unless noted.
   Verification uses the real DISM tooling (not the builder's own memory), so a tool-level mismatch is
   caught. The recovery file is written atomically so it is never observed half-written.
 
+## ADR-044: Final Build step — completion-gated Finish → Home, with a single navigation coordinator
+
+- **Status:** ACCEPTED
+- **Context:** Phase 10's Build step is the final wizard step. Two real-desktop defects surfaced and
+  were closed here: (1) the final step still showed a **disabled "Next"** after a successful build
+  (the wizard's `NextCommand`/`CanGoNext` is always false on the last step, so it rendered a dead
+  button); (2) clicking the new Finish button did **nothing visible** — `WorkflowViewModel.Finish()`
+  called `INavigationService.NavigateTo(PageKey.Home)`, but `INavigationService.CurrentPage` had
+  initialized to `Home` and was never updated when the wizard was shown (the shell set
+  `ActiveView = _workflow` directly, bypassing the navigation service). The two "coordinators" — the
+  wizard surface driven directly by `MainViewModel`, and the utility pages driven via
+  `INavigationService` — were desynced, so a Home→Home navigation short-circuited and the wizard never
+  disappeared.
+- **Decision:**
+  1. **One coordinator.** `INavigationService` is the single source of truth for the visible surface.
+     A new `PageKey.Workflow` (Core enum) makes the wizard a first-class navigation destination.
+     `MainViewModel` no longer sets `ActiveView`/`IsWorkflowActive` directly for the workflow — it
+     shows the wizard via `NavigateTo(PageKey.Workflow)` (constructor + rail button + commands) and
+     `OnNavigated` handles `PageKey.Workflow` by showing the workflow without resetting the step.
+     Utility pages (Home/Logs/Settings/About) continue to route through `NavigateTo(page)`.
+  2. **Completion-gated Finish.** On the final step, the disabled "Next" is hidden and a localized
+     **Finish** (`Nav.Finish` = `Finish` / `完成`) is shown, enabled only when
+     `BuildState == Completed`. `CanFinish = IsFinalStep && BuildState == Completed`, so
+     NotStarted/Building → unavailable; Completed → enabled; Failed/Cancelled → stay on Build and
+     never present a successful Finish.
+  3. **Finish is a clean navigation, never a teardown.** `WorkflowViewModel.Finish()` calls
+     `_navigation?.NavigateTo(PageKey.Home)`. It **never** calls `Application.Shutdown()`, never
+     deletes or dismounts the generated ISO, never touches logs or the workspace, and performs no
+     remount/dismount. The app remains running so the user can view logs, open the output folder,
+     start another workflow, or change settings.
+  4. **Localization stays key-based.** All new strings (`Nav.Finish`, `Build.OpenOutputFolder`) live
+     in `Strings.resx` + `Strings.zh-CN.resx` and bind through `Loc[key]`; no hard-coded language
+     checks. `Open output folder` (`打开输出文件夹`) opens the folder containing the ISO and is
+     enabled only when the output exists (`IFileLauncher` + `WindowsFileLauncher`, which swallows
+     shell exceptions so it is headless/test-safe).
+- **Consequences:** Finish is now a real, observable Workflow → Home transition (the shell's
+  `ActiveView` becomes `HomeViewModel` and `IsWorkflowActive = false`), proven by shell-level
+  integration tests that drive the real `MainViewModel` + real `NavigationService` (asserting the
+  navigation fires exactly once, HomeView becomes current, the ISO and logs remain, and no
+  dismount/remount occurs). Failed/Cancelled builds cannot Finish; zh-CN and en-US behavior is
+  identical. The wizard and utility navigation are unified under one coordinator, eliminating the
+  class of "navigated but nothing changed" desync defect. Status: **IMPLEMENTED / REAL DESKTOP
+  VALIDATED / COMPLETED** (2026-08-10); PENDING closeout merge to `main` via `--no-ff`.
+
