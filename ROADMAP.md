@@ -166,6 +166,57 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ---
 
+## Phase 3.5 — UX Workflow Refactor + Localization Foundation
+
+- **Status:** **COMPLETED** — real-desktop validation PASSED 2026-08-09 on Windows 11 25H2 (Chinese
+  Simplified, x64, Consumer Editions, `install.wim`); merged to `main` via `--no-ff`. Built on top of
+  the completed Step 3.3 customization engine (no engine changes — workflow code contains no DISM).
+- **Goal:** Provide a guided, gated primary workflow (Wizard/Stepper) over Step 3.3, plus an
+  English / Simplified-Chinese localization foundation with runtime switching and persistence.
+- **Scope:**
+  - Sequential 6-step Stepper replacing the left feature-list nav: Source / Prepare / Customize /
+    Review / Apply / Build (zh: 选择镜像 / 准备镜像 / 自定义 / 审核计划 / 应用修改 / 构建镜像).
+  - Step states (NotAvailable / Available / Current / Completed / RequiresAttention) computed purely
+    from `IAppState`; gated Back/Next + direct-step skip-guard; source-change / dirty / mounted /
+    executing safety (ADR-032).
+  - Utility rail (Home / Logs / Settings / About) separate from the workflow; legacy deep-links
+    translated onto the matching step (ADR-033).
+  - Localization: neutral `Strings.resx` + `Strings.zh-CN.resx` satellite; `ResourceManagerLocalizationService`
+    exposed as `Loc`; `LocKeyMultiConverter` (re-evaluates on key + culture); `ILocalizationService`
+    in Core; runtime `SetCulture` with `ILanguageSettingsStore` persistence and English fallback
+    (ADR-034, ADR-035).
+  - Friendly metadata: `FriendlyMetadataProvider` + `ISelectableItem` show localized names but always
+    preserve the immutable technical id; `ServiceConfigPolicy` still gates configurable services
+    (ADR-036).
+  - `ComponentsViewModel` selection→plan resync re-entrancy guard (ADR-037).
+- **Deliverables:**
+  - `WinForge.App/Workflow/` (`WorkflowViewModel`, `WorkflowStep`, `WorkflowStepState`,
+    `WorkflowStepViewModel`, `IWorkflowNavigator`).
+  - `WinForge.App/Localization/` (`ResourceManagerLocalizationService`, `LocalizationBootstrap`,
+    `InMemoryLanguageSettingsStore`, `FileLanguageSettingsStore`); `WinForge.Core/Services/`
+    (`ILocalizationService`, `ILanguageSettingsStore`).
+  - `WinForge.App/FriendlyMetadata/` (`FriendlyMetadataProvider`, `IFriendlyMetadataProvider`).
+  - `WinForge.App/Resources/` (`Strings.resx`, `Strings.zh-CN.resx`),
+    `WinForge.App/Converters/WorkflowConverters.cs`.
+  - Wizard Views: `WizardView`, `SourceView`, `PrepareView`, `CustomizeView`,
+    `ComponentListTabView`, `ApplyView`, `BuildView`; `AboutView`, `SettingsView`;
+    `WizardStepTemplateSelector`.
+  - Step VMs: `CustomizeStepViewModel`, `BuildStepViewModel`; `SettingsViewModel`, `AboutViewModel`.
+  - Customize tabs: Apps / Windows Components / Services / Privacy / System / Experience.
+- **Acceptance Criteria:**
+  - The app opens into the 6-step Wizard; Review / Apply / Build are unreachable until prerequisites
+    are met; Customize is unreachable until the image is mounted.
+  - Switching language in Settings applies instantly and persists across launches; zh-CN strings render.
+  - Friendly service/app labels show the canonical technical id; unapproved services remain
+    non-selectable.
+  -   `dotnet build` / `dotnet test -c Release` clean: **362 pass (Core 37, App 325), 0 errors,
+    0 warnings**.
+- **Out of scope:** Any ISO rebuild in Build (honest placeholder — Build/ISO export is the next
+  development phase, **NOT STARTED**); new Phase 4 mount-engine work; new customization categories
+  beyond what Step 3.3 shipped.
+
+---
+
 ## Phase 4 — Mount Engine
 
 - **Status:** NOT STARTED

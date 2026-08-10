@@ -136,3 +136,36 @@ WinForge.Infrastructure  (Windows only)
   clean baseline.
 
 See DECISIONS.md ADR-020 through ADR-025 for the full rationale.
+
+## UX Workflow & Localization (Phase 3.5)
+
+The Wizard/Stepper is the primary application surface; it orchestrates the existing Step 3.3
+customization engine without adding any DISM/Win32 code.
+
+### Workflow layer (App)
+- `WinForge.App/Workflow/` holds `WorkflowViewModel` (derives 6 step states purely from
+  `IAppState`), `WorkflowStep` / `WorkflowStepState` / `WorkflowStepViewModel`, and
+  `IWorkflowNavigator`. There is **no DISM** in this layer — availability is a function of app
+  state (image ready, mounted, plan validated, plan executing).
+- Navigation is gated: `CanGoNext` / `CanGoBack` follow the current step's state, and
+  `CanGoToStep` refuses a `NotAvailable` target or any jump that would skip an earlier
+  `NotAvailable` step. Source-change / mounted / executing guards protect the plan (ADR-032).
+  Utility pages (Home / Logs / Settings / About) live on a separate rail in `MainViewModel`
+  and never disturb step state (ADR-033).
+
+### Localization layer
+- User-facing strings live in `WinForge.App/Resources/Strings.resx` (neutral) plus a
+  `Strings.zh-CN.resx` satellite. `ResourceManagerLocalizationService` (App) wraps a
+  `ResourceManager` and is exposed to XAML as `Loc`; `LocKeyMultiConverter` re-evaluates a
+  binding on both a key change and a culture change (ADR-034).
+- `ILocalizationService` is defined in **Core** (`WinForge.Core/Services`) so non-UI code can
+  localize. `SetCulture` updates the thread + ResourceManager and raises `PropertyChanged` /
+  `CultureChanged` for a live switch; `ILanguageSettingsStore` persists the choice and
+  `LocalizationBootstrap.Initialize` applies the saved culture with an English fallback
+  (ADR-035).
+- `FriendlyMetadataProvider` (`WinForge.App/FriendlyMetadata`) maps a trusted allowlist to
+  localized `.resx` keys while `ISelectableItem` always preserves the immutable technical id;
+  `ServiceConfigPolicy` (Core, ADR-030) remains the single source of truth for which services
+  are configurable (ADR-036).
+
+See DECISIONS.md ADR-032 through ADR-037 for the full rationale.

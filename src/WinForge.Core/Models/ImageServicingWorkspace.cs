@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace WinForge.Core.Models;
 
@@ -27,7 +28,7 @@ namespace WinForge.Core.Models;
 /// <see cref="WorkingImagePath"/>, <see cref="MountDirectory"/>).
 /// </para>
 /// </summary>
-public sealed class ImageServicingWorkspace
+public sealed class ImageServicingWorkspace : INotifyPropertyChanged
 {
     // ---- Source identifiers (mirror ImageWorkspace; never a temp mount root) ----
 
@@ -82,7 +83,24 @@ public sealed class ImageServicingWorkspace
     public WindowsImageType WorkingImageType { get; set; } = WindowsImageType.Wim;
 
     /// <summary>Current lifecycle <see cref="ServicingWorkspaceState"/>.</summary>
-    public ServicingWorkspaceState State { get; set; } = ServicingWorkspaceState.NotPrepared;
+    public ServicingWorkspaceState State
+    {
+        get => _state;
+        set
+        {
+            if (_state == value)
+            {
+                return;
+            }
+
+            _state = value;
+            OnPropertyChanged();
+            // HasError is derived from State; notify so any binding stays correct.
+            OnPropertyChanged(nameof(HasError));
+        }
+    }
+
+    private ServicingWorkspaceState _state = ServicingWorkspaceState.NotPrepared;
 
     /// <summary>
     /// 1-based index of the selected edition inside the WORKING image. After a
@@ -99,7 +117,36 @@ public sealed class ImageServicingWorkspace
     /// <see cref="ServicingWorkspaceState.Failed"/>. Empty otherwise. Never holds
     /// raw DISM output verbatim — high-level only.
     /// </summary>
-    public string? LastError { get; set; }
+    public string? LastError
+    {
+        get => _lastError;
+        set
+        {
+            if (_lastError == value)
+            {
+                return;
+            }
+
+            _lastError = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private string? _lastError;
+
+    /// <summary>
+    /// Raised when a mutable property (<see cref="State"/>, <see cref="LastError"/>)
+    /// changes in place. The servicing layer mutates <see cref="State"/> on the same
+    /// workspace instance it returns, so <see cref="IAppState.CurrentServicingWorkspace"/>
+    /// can receive an identical reference; this event lets <c>AppState</c> forward the
+    /// transition to workflow-level listeners (e.g. <see cref="WorkflowViewModel"/>,
+    /// which derives step availability from <see cref="State"/> and would otherwise
+    /// never observe a Prepared→Mounted change).
+    /// </summary>
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     /// <summary>
     /// True when <see cref="State"/> is a terminal failure that requires recovery

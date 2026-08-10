@@ -5,6 +5,65 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added (UX Workflow Refactor + Localization Foundation — feature/wizard-localization)
+- **Wizard/Stepper primary workflow (ADR-032):** the left feature-list nav is replaced by a gated
+  6-step Stepper — Source → Prepare → Customize → Review → Apply → Build (zh: 选择镜像 → 准备镜像 →
+  自定义 → 审核计划 → 应用修改 → 构建镜像). Step state (NotAvailable / Available / Current / Completed /
+  RequiresAttention) is derived purely from `IAppState` by `WorkflowViewModel.RecomputeStates()`;
+  `CanGoNext` / `CanGoBack` and `CanGoToStep` (skip-guard) enforce prerequisites; source-change /
+  mounted / executing safety guards protect the plan. Source and Prepare share one `ImageViewModel`.
+- **Utility vs workflow navigation (ADR-033):** Home / Logs / Settings / About are a separate rail in
+  `MainViewModel`; legacy `INavigationService` deep-links are translated onto the matching step
+  (Image→Source, Components/Privacy/System/Experience→Customize, Plan→Review, Build→Build).
+- **Localization architecture (ADR-034):** all user-facing strings moved to `Strings.resx` (neutral)
+  with a `Strings.zh-CN.resx` satellite (parity tested). `ResourceManagerLocalizationService` is
+  exposed to XAML as `Loc`; `LocKeyMultiConverter` re-evaluates bindings on both key and culture
+  change; `ILocalizationService` lives in Core so non-UI code can localize.
+- **Runtime language switching + persistence (ADR-035):** `SetCulture` updates the thread +
+  ResourceManager and raises `PropertyChanged` / `CultureChanged` for a live switch;
+  `ILanguageSettingsStore` (InMemory + File) persists the choice; `LocalizationBootstrap.Initialize`
+  applies the saved culture and falls back to a shipped language (en / zh-CN) on an invalid saved
+  value. English is the ultimate fallback for missing keys and the default culture.
+- **Friendly metadata preserves technical ids (ADR-036):** `FriendlyMetadataProvider` +
+  `ISelectableItem` show localized service/app names while always displaying and operating on the
+  immutable technical id (e.g. `DiagTrack`, `Microsoft.BingWeather`); `ServiceConfigPolicy` still gates
+  which services are configurable. Unknown identifiers return the raw name (no fabrication).
+- **ComponentsViewModel re-entrancy fix (ADR-037):** a `_suppressPlanResync` flag prevents a selection
+  toggle's plan mutation from re-entering `ResyncSelections()` and cancelling itself; external plan
+  resets (e.g. source change) still re-sync; `DiscoverCommand.CanExecuteChanged` is raised explicitly
+  after every state transition (no `CommandManager.RequerySuggested`).
+- **Customize tabs:** Apps / Windows Components / Services / Privacy / System / Experience. Review
+  reshapes the Plan; Apply is the execution UX; Build is an honest placeholder (no fake ISO rebuild).
+- **≈100 new automated tests** across WORKFLOW / COMMANDS / LOCALIZATION / SERVICE / APP / REGRESSION
+  (the workflow + localization foundation added 49–50; the seven real-desktop defect fixes added the
+  rest as targeted regression suites). Total suite: **362 pass (Core 37, App 325), 0 errors, 0 warnings (Release)**, all
+  CI-safe (no ISO / admin / internet). Covers: wizard initial state + readiness transitions + skip-guard;
+  command can-execute without auto-requery (explicit raise); localization bootstrap init + zh-CN switch
+  + parity; friendly service/app metadata + `ServiceConfigPolicy` gating; and regression
+  (ImageViewModel falls back without localization, workflow never auto-advances, Apply hidden until
+  Validated, source-change clears plan + discovery unless Executing).
+
+### Status (UX Workflow Refactor + Localization Foundation — COMPLETED, real-desktop validation PASSED)
+- **IMPLEMENTED / REAL DESKTOP VALIDATED / COMPLETED** (2026-08-09). Built on Step 3.3 — workflow
+  code contains no DISM. ADR-032…ADR-037. Merged to `main` via `--no-ff` (feature history preserved,
+  no squash).
+- **Real-desktop acceptance chain (all PASS) on Windows 11 25H2 zh-CN x64 Consumer `install.wim`:** (1)
+  Source ISO selection + ISO inspection; (2) Prepare isolated working image; (3) Mount working WIM;
+  (4) Mounted → Next enables; (5) Customize page loads; (6) all Customize tabs load with no XAML/
+  binding crash; (7) runtime localization / zh-CN UI works; (8) discovery + selections work; (9)
+  selecting 1 valid customization enables Review/Next; (10) Review page loads; (11) plan validation
+  succeeds; (12) Apply to mounted image succeeds; (13) execution success advances Wizard state
+  (Review→Completed, Apply→Available, Next→enabled); (14) Build placeholder reachable; (15) Build/ISO
+  export intentionally NOT implemented (honest placeholder, not a validation failure); (16) working
+  image cleanly unmounted/discarded, no mounted WIM remains.
+- **Total suite: 362 pass (Core 37, App 325), 0 errors, 0 warnings (Release).** Feature branch carried
+  seven real-desktop defect fixes: ISO mount robustness / valid Get-Volume resolution (`7f90d48`/
+  `4360612`), servicing workspace nested notification (`28b8bb5`), `CustomizationPlan` nested
+  notification (`06de8f9`), `Run.Text` MultiBinding `Mode=OneWay` (`f1e4370`), read-only binding `OneWay`
+  audit (`9f68f97`), `ErrorDialogGuard` (`bed2e73`), Review/Apply gating on execution success (`7da38dd`).
+- **Next phase: Build/ISO Export — NOT STARTED.** Build/ISO export is intentionally NOT implemented
+  (the Build step is an honest placeholder; no ISO-rebuild engine exists yet — roadmap Phase 10).
+
 ### Added (Phase 3 Step 3.3 — offline customization plan & execution engine)
 - Declarative, platform-agnostic customization model in Core (no DISM/Win32):
   `CustomizationPlan` with a strict lifecycle (`Draft` → `Validated` → `Executing` →

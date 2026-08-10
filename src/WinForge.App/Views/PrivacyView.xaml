@@ -4,15 +4,36 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+             xmlns:conv="clr-namespace:WinForge.App.Converters"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:PrivacyViewModel}">
     <ScrollViewer Padding="32">
         <StackPanel MaxWidth="900">
-            <TextBlock Text="Privacy" FontSize="24" FontWeight="Bold" Foreground="#1F2933"/>
-            <TextBlock Text="Curated, documented, offline-applicable privacy toggles. These change the offline image's machine-policy registry only — never a signed-in user, cloud, or account policy."
-                       FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap"/>
-            <TextBlock Text="{Binding SelectedTotal, StringFormat='Selected: {0}'}" FontSize="13" FontWeight="SemiBold"
-                       Foreground="#1F2933" Margin="0,12,0,0"/>
+            <TextBlock FontSize="24" FontWeight="Bold" Foreground="#1F2933">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Privacy.Title"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Privacy.Intro"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,12,0,0">
+                <Run>
+                    <Run.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Mode="OneWay" Source="Privacy.Selected"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </Run.Text>
+                </Run>
+                <Run Text=": "/>
+                <Run Text="{Binding SelectedTotal, Mode=OneWay}"/>
+            </TextBlock>
 
             <ListView ItemsSource="{Binding Settings}" BorderBrush="#CBD2D9" BorderThickness="1" Margin="0,8,0,0">
                 <ListView.ItemTemplate>

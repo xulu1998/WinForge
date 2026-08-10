@@ -1,64 +1,101 @@
 using Microsoft.Extensions.DependencyInjection;
 using WinForge.App.Services;
 using WinForge.App.ViewModels;
+using WinForge.App.Workflow;
 using WinForge.Core.Services;
 using Xunit;
 
 namespace WinForge.App.Tests;
 
 /// <summary>
-/// Headless verification that the application starts and its runtime wiring
-/// works without requiring a physical WPF window (the CI/sandbox has no
-/// display). It builds the real DI container, resolves the navigation shell,
-/// navigates between pages, simulates a source-image selection, and confirms
-/// the logger records the expected lifecycle events.
+/// Headless verification that the application starts and its runtime wiring works
+/// without requiring a physical WPF window (the CI/sandbox has no display). It
+/// builds the real DI container, resolves the shell, and confirms the wizard is
+/// the default surface while the utility rail (Home / Logs / Settings / About)
+/// switches the active view. It also confirms the legacy deep link from Home's
+/// "Select image" still jumps the workflow to the Source step.
 /// </summary>
 public class AppBootTests
 {
     [Fact]
-    public void Application_Boots_Navigates_And_Logs_WithoutDisplay()
+    public void Application_Boots_With_Workflow_As_Default_Surface()
     {
-        // Arrange + Act: build the real container and resolve the shell.
-        // (App.OnStartup is intentionally NOT run here — it creates a WPF window
-        // which a headless environment cannot display. Its lifecycle logging is
-        // therefore absent; we verify the wiring that does not need a window.)
         var provider = Bootstrapper.Build();
         var main = provider.GetRequiredService<MainViewModel>();
         var logger = provider.GetRequiredService<ILoggerService>();
-        var appState = provider.GetRequiredService<IAppState>();
+
+        // The wizard is the primary surface on startup.
+        Assert.True(main.IsWorkflowActive);
+        Assert.IsType<WorkflowViewModel>(main.ActiveView);
+        Assert.IsType<WorkflowViewModel>(main.Workflow);
 
         // The logger starts empty until something logs.
         Assert.Empty(logger.Entries);
+    }
 
-        // Navigate to the Image page -> navigation is logged and the correct
-        // view model becomes active.
-        main.Navigate(PageKey.Image);
-        Assert.IsType<ImageViewModel>(main.CurrentView);
+    [Fact]
+    public void Utility_Rail_Switches_Active_View_And_Back()
+    {
+        var provider = Bootstrapper.Build();
+        var main = provider.GetRequiredService<MainViewModel>();
+
+        main.ShowUtilityCommand.Execute(PageKey.Home);
+        Assert.False(main.IsWorkflowActive);
+        Assert.IsType<HomeViewModel>(main.ActiveView);
+
+        main.ShowUtilityCommand.Execute(PageKey.Settings);
+        Assert.IsType<SettingsViewModel>(main.ActiveView);
+
+        main.ShowUtilityCommand.Execute(PageKey.About);
+        Assert.IsType<AboutViewModel>(main.ActiveView);
+
+        main.ShowUtilityCommand.Execute(PageKey.Logs);
+        Assert.IsType<LogsViewModel>(main.ActiveView);
+
+        // Returning to the workflow restores the wizard surface.
+        main.ShowWorkflowCommand.Execute(null);
+        Assert.True(main.IsWorkflowActive);
+        Assert.IsType<WorkflowViewModel>(main.ActiveView);
+    }
+
+    [Fact]
+    public void Home_SelectImage_DeepLink_JumpTo_Workflow_Source()
+    {
+        var provider = Bootstrapper.Build();
+        var main = provider.GetRequiredService<MainViewModel>();
+        var logger = provider.GetRequiredService<ILoggerService>();
+        var home = provider.GetRequiredService<HomeViewModel>();
+        var workflow = provider.GetRequiredService<WorkflowViewModel>();
+
+        // Simulate the Browse button: Home navigates to the Image page, which the
+        // shell translates onto the workflow Source step.
+        home.SelectImageCommand.Execute(null);
+
+        Assert.True(main.IsWorkflowActive);
+        Assert.Equal(WorkflowStep.Source, workflow.CurrentStep?.Step);
         Assert.Contains(logger.Entries, e => e.Message.Contains("Navigation changed"));
+    }
 
-        // Step 3.3 pages now resolve to real, dedicated view models.
-        main.Navigate(PageKey.Components);
-        Assert.IsType<ComponentsViewModel>(main.CurrentView);
+    [Fact]
+    public void All_Workflow_And_Utility_ViewModels_Resolve()
+    {
+        var provider = Bootstrapper.Build();
 
-        main.Navigate(PageKey.Privacy);
-        Assert.IsType<PrivacyViewModel>(main.CurrentView);
+        // Workflow coordinator + step view models.
+        Assert.NotNull(provider.GetRequiredService<WorkflowViewModel>());
+        Assert.NotNull(provider.GetRequiredService<CustomizeStepViewModel>());
+        Assert.NotNull(provider.GetRequiredService<BuildStepViewModel>());
 
-        main.Navigate(PageKey.System);
-        Assert.IsType<SystemViewModel>(main.CurrentView);
+        // Utility pages.
+        Assert.NotNull(provider.GetRequiredService<HomeViewModel>());
+        Assert.NotNull(provider.GetRequiredService<LogsViewModel>());
+        Assert.NotNull(provider.GetRequiredService<SettingsViewModel>());
+        Assert.NotNull(provider.GetRequiredService<AboutViewModel>());
 
-        main.Navigate(PageKey.Plan);
-        Assert.IsType<PlanReviewViewModel>(main.CurrentView);
-
-        // A genuine future-phase page still uses the shared ComingSoon shell.
-        main.Navigate(PageKey.Build);
-        Assert.IsType<ComingSoonViewModel>(main.CurrentView);
-
-        // Simulate the source-image selection that the Browse dialog performs.
-        appState.SourceImagePath = @"C:\images\windows.iso";
-        Assert.Equal(@"C:\images\windows.iso", appState.SourceImagePath);
-
-        // The Logs page reflects the live entries.
-        var logs = provider.GetRequiredService<LogsViewModel>();
-        Assert.Contains(logs.Entries, e => e.Level == LogLevel.Info);
+        // Shared customization view models reused by the wizard.
+        Assert.NotNull(provider.GetRequiredService<ComponentsViewModel>());
+        Assert.NotNull(provider.GetRequiredService<PrivacyViewModel>());
+        Assert.NotNull(provider.GetRequiredService<SystemViewModel>());
+        Assert.NotNull(provider.GetRequiredService<PlanReviewViewModel>());
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
+using WinForge.App.FriendlyMetadata;
 using WinForge.App.Mvvm;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
@@ -20,15 +21,18 @@ public sealed class SystemViewModel : ViewModelBase
     private readonly IAppState _appState;
     private readonly ILoggerService _logger;
     private readonly ICustomizationDefinitionProvider _definitions;
+    private readonly IFriendlyMetadataProvider? _friendly;
 
     public SystemViewModel(
         IAppState appState,
         ILoggerService logger,
-        ICustomizationDefinitionProvider definitions)
+        ICustomizationDefinitionProvider definitions,
+        IFriendlyMetadataProvider? friendly = null)
     {
         _appState = appState;
         _logger = logger;
         _definitions = definitions;
+        _friendly = friendly;
 
         RecommendedServices = new ObservableCollection<ServiceSelectionItem>();
         RegistrySettings = new ObservableCollection<RegistrySettingItem>();
@@ -50,7 +54,10 @@ public sealed class SystemViewModel : ViewModelBase
         foreach (var svc in _definitions.GetRecommendedServiceChanges())
         {
             var target = svc.RecommendedStartType ?? ServiceStartType.Disabled;
-            var item = new ServiceSelectionItem(svc, target) { IsSelected = IsSelectedInPlan("svc|" + svc.ServiceName) };
+            var item = new ServiceSelectionItem(svc, target, _friendly?.GetServiceFriendlyName(svc.ServiceName))
+            {
+                IsSelected = IsSelectedInPlan("svc|" + svc.ServiceName)
+            };
             item.PropertyChanged += OnServiceSelectionChanged;
             RecommendedServices.Add(item);
         }

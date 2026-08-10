@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata" minOccurs="0" maxOccurs="unbounded">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly" minOccurs="0" maxOccurs="unbounded">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data" minOccurs="0" maxOccurs="unbounded">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader" minOccurs="0" maxOccurs="unbounded">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- 工作流步骤 -->
+  <data name="Step.Source.Title" xml:space="preserve"><value>选择镜像</value></data>
+  <data name="Step.Source.Description" xml:space="preserve"><value>选择要自定义的 Windows 镜像与版本。</value></data>
+  <data name="Step.Prepare.Title" xml:space="preserve"><value>准备镜像</value></data>
+  <data name="Step.Prepare.Description" xml:space="preserve"><value>导出隔离的工作镜像并挂载以进行修改。</value></data>
+  <data name="Step.Customize.Title" xml:space="preserve"><value>自定义</value></data>
+  <data name="Step.Customize.Description" xml:space="preserve"><value>精简应用、调整服务，并设置隐私与系统选项。</value></data>
+  <data name="Step.Review.Title" xml:space="preserve"><value>审核计划</value></data>
+  <data name="Step.Review.Description" xml:space="preserve"><value>在应用前检查这份声明式计划。</value></data>
+  <data name="Step.Apply.Title" xml:space="preserve"><value>应用修改</value></data>
+  <data name="Step.Apply.Description" xml:space="preserve"><value>将已校验的修改写入已挂载的镜像。</value></data>
+  <data name="Step.Build.Title" xml:space="preserve"><value>构建镜像</value></data>
+  <data name="Step.Build.Description" xml:space="preserve"><value>生成最终镜像（计划在后续阶段实现）。</value></data>
+
+  <!-- 步骤状态 -->
+  <data name="StepState.NotAvailable" xml:space="preserve"><value>不可用</value></data>
+  <data name="StepState.Available" xml:space="preserve"><value>可用</value></data>
+  <data name="StepState.Current" xml:space="preserve"><value>进行中</value></data>
+  <data name="StepState.Completed" xml:space="preserve"><value>已完成</value></data>
+  <data name="StepState.RequiresAttention" xml:space="preserve"><value>需要关注</value></data>
+
+  <!-- 导航 / 按钮 -->
+  <data name="Nav.Back" xml:space="preserve"><value>上一步</value></data>
+  <data name="Nav.Next" xml:space="preserve"><value>下一步</value></data>
+  <data name="Nav.Home" xml:space="preserve"><value>主页</value></data>
+  <data name="Nav.Logs" xml:space="preserve"><value>日志</value></data>
+  <data name="Nav.Settings" xml:space="preserve"><value>设置</value></data>
+  <data name="Nav.About" xml:space="preserve"><value>关于</value></data>
+  <data name="Nav.Workflow" xml:space="preserve"><value>工作流</value></data>
+  <data name="Action.Resume" xml:space="preserve"><value>继续工作流</value></data>
+  <data name="Action.Start" xml:space="preserve"><value>开始工作流</value></data>
+  <data name="Action.Close" xml:space="preserve"><value>关闭</value></data>
+
+  <!-- 主页 -->
+  <data name="Home.Title" xml:space="preserve"><value>WinForge</value></data>
+  <data name="Home.Subtitle" xml:space="preserve"><value>按你的方式构建 Windows。</value></data>
+  <data name="Home.Intro" xml:space="preserve"><value>创建自定义的 Windows 11 安装镜像，同时完全掌控将要发生的改动。</value></data>
+  <data name="Home.SourceImage" xml:space="preserve"><value>源镜像</value></data>
+  <data name="Home.Edition" xml:space="preserve"><value>Windows 版本</value></data>
+  <data name="Home.Configuration" xml:space="preserve"><value>配置</value></data>
+  <data name="Home.BuildStatus" xml:space="preserve"><value>构建状态</value></data>
+  <data name="Home.Progress" xml:space="preserve"><value>工作流进度</value></data>
+  <data name="Home.SelectImage" xml:space="preserve"><value>选择 Windows 镜像</value></data>
+
+  <!-- 设置 -->
+  <data name="Settings.Title" xml:space="preserve"><value>设置</value></data>
+  <data name="Settings.Language" xml:space="preserve"><value>显示语言</value></data>
+  <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>
+  <data name="Settings.Language.Chinese" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Settings.Language.Note" xml:space="preserve"><value>更改会即时应用到整个应用。</value></data>
+  <data name="Settings.About.Link" xml:space="preserve"><value>关于 WinForge</value></data>
+
+  <!-- 关于 -->
+  <data name="About.Title" xml:space="preserve"><value>关于 WinForge</value></data>
+  <data name="About.Body" xml:space="preserve"><value>WinForge 基于离线工作副本构建自定义的 Windows 镜像。原始 ISO 永远不会被修改；所有改动都只针对隔离且已挂载的工作镜像。</value></data>
+  <data name="About.Version" xml:space="preserve"><value>版本</value></data>
+
+  <!-- 选择镜像 / 准备 -->
+  <data name="Source.SelectIso" xml:space="preserve"><value>选择 ISO</value></data>
+  <data name="Source.Inspect" xml:space="preserve"><value>检测</value></data>
+  <data name="Source.Inspecting" xml:space="preserve"><value>正在检测 ISO…</value></data>
+  <data name="Source.File" xml:space="preserve"><value>文件</value></data>
+  <data name="Source.FileName" xml:space="preserve"><value>文件名</value></data>
+  <data name="Source.Size" xml:space="preserve"><value>大小</value></data>
+  <data name="Source.Detection" xml:space="preserve"><value>检测结果</value></data>
+  <data name="Source.InstallImage" xml:space="preserve"><value>安装镜像</value></data>
+  <data name="Source.Version" xml:space="preserve"><value>Windows 版本</value></data>
+  <data name="Source.Build" xml:space="preserve"><value>构建号</value></data>
+  <data name="Source.Architecture" xml:space="preserve"><value>架构</value></data>
+  <data name="Source.Language" xml:space="preserve"><value>语言</value></data>
+  <data name="Source.Inspection" xml:space="preserve"><value>检测</value></data>
+  <data name="Source.WindowsInfo" xml:space="preserve"><value>Windows 信息</value></data>
+  <data name="Source.Editions" xml:space="preserve"><value>版本</value></data>
+  <data name="Source.SelectEditionHint" xml:space="preserve"><value>选择一个版本以将其作为自定义目标。</value></data>
+  <data name="Source.SelectedImage" xml:space="preserve"><value>已选镜像</value></data>
+  <data name="Source.Status" xml:space="preserve"><value>状态</value></data>
+  <data name="Source.Edition" xml:space="preserve"><value>版本</value></data>
+  <data name="Source.Index" xml:space="preserve"><value>索引</value></data>
+  <data name="Source.Image" xml:space="preserve"><value>镜像</value></data>
+  <data name="Source.Source" xml:space="preserve"><value>来源</value></data>
+  <data name="Source.WorkspaceNote" xml:space="preserve"><value>工作区引用原始 ISO 及其内部路径——临时挂载盘符从不被存储或显示。</value></data>
+  <data name="Source.IsolatedNote" xml:space="preserve"><value>WinForge 操作的是所选 Windows 版本的隔离副本。原始 ISO 与 install.wim/install.esd 永远不会被修改。</value></data>
+  <data name="Source.Prepare" xml:space="preserve"><value>准备工作镜像</value></data>
+  <data name="Source.Mount" xml:space="preserve"><value>挂载镜像</value></data>
+  <data name="Source.Unmount" xml:space="preserve"><value>卸载并丢弃更改</value></data>
+  <data name="Prepare.Heading" xml:space="preserve"><value>准备工作镜像</value></data>
+  <data name="Prepare.Note" xml:space="preserve"><value>原始 ISO 与 install.wim/install.esd 永远不会被修改。工作镜像是一份隔离副本，你可随时丢弃。</value></data>
+  <data name="Source.WorkingImage" xml:space="preserve"><value>工作镜像</value></data>
+  <data name="Source.SourceEdition" xml:space="preserve"><value>源版本</value></data>
+  <data name="Source.SourceIndex" xml:space="preserve"><value>源索引</value></data>
+  <data name="Source.WorkingIndex" xml:space="preserve"><value>工作索引</value></data>
+  <data name="Source.WorkingDirectory" xml:space="preserve"><value>工作目录</value></data>
+  <data name="Source.MountDirectory" xml:space="preserve"><value>挂载目录</value></data>
+  <data name="Source.Error" xml:space="preserve"><value>错误</value></data>
+  <data name="Source.ServicingStatus" xml:space="preserve"><value>状态</value></data>
+
+  <!-- 自定义 -->
+  <data name="Customize.Title" xml:space="preserve"><value>自定义</value></data>
+  <data name="Customize.Discover" xml:space="preserve"><value>发现组件</value></data>
+  <data name="Customize.Discovering" xml:space="preserve"><value>正在从已挂载的镜像中发现组件…</value></data>
+  <data name="Customize.NeedsMount" xml:space="preserve"><value>发现组件需要先挂载工作镜像。</value></data>
+  <data name="Customize.Selected" xml:space="preserve"><value>已选</value></data>
+  <data name="Customize.Tab.Apps" xml:space="preserve"><value>应用</value></data>
+  <data name="Customize.Tab.Components" xml:space="preserve"><value>Windows 组件</value></data>
+  <data name="Customize.Tab.Services" xml:space="preserve"><value>服务</value></data>
+  <data name="Customize.Tab.Privacy" xml:space="preserve"><value>隐私</value></data>
+  <data name="Customize.Tab.System" xml:space="preserve"><value>系统</value></data>
+  <data name="Customize.Tab.Experience" xml:space="preserve"><value>个性化</value></data>
+  <data name="Customize.Protected" xml:space="preserve"><value>受保护或不支持——无法移除。</value></data>
+  <data name="Customize.ProtectedReason" xml:space="preserve"><value>分类为 {0}；本步骤不允许移除。</value></data>
+  <data name="Customize.DriverReason" xml:space="preserve"><value>内核 / 文件系统驱动——本步骤无法重新配置。</value></data>
+  <data name="Customize.ServiceProtectedReason" xml:space="preserve"><value>不是本步骤已批准的服务——无法重新配置。</value></data>
+  <data name="Customize.ServiceUnknownReason" xml:space="preserve"><value>未知服务类型——无法重新配置。</value></data>
+  <data name="Customize.SettingProtectedReason" xml:space="preserve"><value>该设置不允许离线修改。</value></data>
+  <data name="Customize.ShowProtected" xml:space="preserve"><value>显示受保护项</value></data>
+  <data name="Customize.PackageName" xml:space="preserve"><value>程序包</value></data>
+  <data name="Customize.ServiceName" xml:space="preserve"><value>服务</value></data>
+  <data name="Customize.TechnicalId" xml:space="preserve"><value>技术 ID</value></data>
+
+  <!-- 审核 / 应用 -->
+  <data name="Review.Title" xml:space="preserve"><value>审核计划</value></data>
+  <data name="Review.Intro" xml:space="preserve"><value>查看“自定义”步骤汇总出的声明式计划。执行只会在你点击“应用”时开始——绝不会因为勾选框而改变。</value></data>
+  <data name="Review.Total" xml:space="preserve"><value>操作总数：</value></data>
+  <data name="Review.Apps" xml:space="preserve"><value>应用：</value></data>
+  <data name="Review.Packages" xml:space="preserve"><value>程序包：</value></data>
+  <data name="Review.Registry" xml:space="preserve"><value>注册表：</value></data>
+  <data name="Review.Services" xml:space="preserve"><value>服务：</value></data>
+  <data name="Review.PageTitle" xml:space="preserve"><value>计划审核</value></data>
+  <data name="Review.Warnings" xml:space="preserve"><value>校验警告</value></data>
+  <data name="Review.NoWarnings" xml:space="preserve"><value>没有校验警告。</value></data>
+  <data name="Review.Validate" xml:space="preserve"><value>校验计划</value></data>
+  <data name="Review.Apply" xml:space="preserve"><value>应用到已挂载镜像</value></data>
+  <data name="Review.Progress" xml:space="preserve"><value>正在应用第 {0} / {1} 项：{2}</value></data>
+  <data name="Review.Result" xml:space="preserve"><value>结果</value></data>
+  <data name="Review.Note" xml:space="preserve"><value>应用只会改动隔离且已挂载的工作镜像。镜像保持挂载；提交/丢弃与镜像导出在后续步骤进行。</value></data>
+  <data name="Review.ApplyTitle" xml:space="preserve"><value>应用修改</value></data>
+  <data name="Review.ApplyIntro" xml:space="preserve"><value>点击“应用”将已校验的计划写入已挂载的镜像。</value></data>
+
+  <!-- 构建 -->
+  <data name="Build.Title" xml:space="preserve"><value>构建镜像</value></data>
+  <data name="Build.Intro" xml:space="preserve"><value>此步骤将生成你最终的自定义 Windows 镜像。</value></data>
+  <data name="Build.Placeholder" xml:space="preserve"><value>镜像导出与 ISO 重建计划在后续阶段实现，目前尚未实现。</value></data>
+  <data name="Build.Note" xml:space="preserve"><value>此处不会写入任何更改。构建步骤是一个诚实的占位符，使整个工作流端到端完整。</value></data>
+  <data name="Build.Applied" xml:space="preserve"><value>应用已完成——更改已写入已挂载的工作镜像。</value></data>
+  <data name="Build.NotApplied" xml:space="preserve"><value>应用尚未完成。请使用“应用”步骤将计划写入已挂载的镜像。</value></data>
+
+  <!-- 日志 -->
+  <data name="Logs.Title" xml:space="preserve"><value>日志</value></data>
+
+  <!-- 错误 -->
+  <data name="Error.UnmountBeforeEdition" xml:space="preserve"><value>选择其他版本前请先卸载工作镜像。</value></data>
+  <data name="Error.UnmountBeforeIso" xml:space="preserve"><value>选择其他 ISO 前请先卸载工作镜像。</value></data>
+  <data name="Error.NoOperations" xml:space="preserve"><value>未选择任何操作；没有可执行的内容。</value></data>
+  <data name="Error.PlanStarted" xml:space="preserve"><value>计划已开始或已结束；无法重新校验。</value></data>
+  <data name="Error.ValidationFailed" xml:space="preserve"><value>计划校验失败。</value></data>
+
+  <!-- 服务友好元数据 -->
+  <data name="Svc.DiagTrack.Name" xml:space="preserve"><value>诊断与使用情况遥测</value></data>
+  <data name="Svc.DiagTrack.Desc" xml:space="preserve"><value>收集并上传诊断与使用数据。</value></data>
+  <data name="Svc.WerSvc.Name" xml:space="preserve"><value>Windows 错误报告服务</value></data>
+  <data name="Svc.WerSvc.Desc" xml:space="preserve"><value>当程序停止响应时向 Microsoft 发送错误报告。</value></data>
+  <data name="Svc.PcaSvc.Name" xml:space="preserve"><value>程序兼容性助手服务</value></data>
+  <data name="Svc.PcaSvc.Desc" xml:space="preserve"><value>检测不兼容的应用程序并应用兼容性修复。</value></data>
+
+  <!-- 应用友好元数据 -->
+  <data name="App.Microsoft.BingWeather.Name" xml:space="preserve"><value>天气</value></data>
+  <data name="App.Microsoft.BingWeather.Desc" xml:space="preserve"><value>预装的必应天气应用。</value></data>
+  <data name="App.Microsoft.GetHelp.Name" xml:space="preserve"><value>获取帮助</value></data>
+  <data name="App.Microsoft.GetHelp.Desc" xml:space="preserve"><value>Microsoft 的帮助与支持应用。</value></data>
+  <data name="App.Microsoft.WindowsCamera.Name" xml:space="preserve"><value>相机</value></data>
+  <data name="App.Microsoft.WindowsCamera.Desc" xml:space="preserve"><value>预装的 Windows 相机应用。</value></data>
+  <data name="App.Microsoft.XboxApp.Name" xml:space="preserve"><value>Xbox</value></data>
+  <data name="App.Microsoft.XboxApp.Desc" xml:space="preserve"><value>预装的 Xbox 应用。</value></data>
+
+  <!-- 旧版工具页（Task 11 本地化） -->
+  <data name="Logs.PageTitle" xml:space="preserve"><value>应用日志</value></data>
+  <data name="ComingSoon.Planned" xml:space="preserve"><value>此部分计划在后续阶段实现。</value></data>
+
+  <data name="Components.Title" xml:space="preserve"><value>组件</value></data>
+  <data name="Components.Intro" xml:space="preserve"><value>从已挂载的工作镜像中发现可移除项。选择会生成一份声明式计划——在“计划”页应用之前，不会发生任何实际改动。</value></data>
+  <data name="Components.ProvisionedApps" xml:space="preserve"><value>预装应用</value></data>
+  <data name="Components.WindowsPackages" xml:space="preserve"><value>Windows 程序包</value></data>
+  <data name="Components.PackagesHint" xml:space="preserve"><value>仅提供可选的功能/能力程序包用于移除。语言、核心、驱动与服务类程序包均受保护。</value></data>
+  <data name="Components.Services" xml:space="preserve"><value>系统组件（服务）</value></data>
+  <data name="Components.ServicesHint" xml:space="preserve"><value>选择某项服务会在离线镜像中将其禁用。受保护的服务无法在此更改。</value></data>
+
+  <data name="Privacy.Title" xml:space="preserve"><value>隐私</value></data>
+  <data name="Privacy.Intro" xml:space="preserve"><value>经过筛选、有文档说明、可离线应用的隐私开关。它们只修改离线镜像的机器策略注册表——绝不影响已登录用户、云端或账户策略。</value></data>
+  <data name="Privacy.Selected" xml:space="preserve"><value>已选</value></data>
+
+  <data name="System.Title" xml:space="preserve"><value>系统</value></data>
+  <data name="System.Intro" xml:space="preserve"><value>仅做安全、离线的服务与机器策略更改。不涉及启动配置、分区、驱动、内核补丁，或一刀切地关闭安全。</value></data>
+  <data name="System.Selected" xml:space="preserve"><value>已选</value></data>
+  <data name="System.RecommendedServices" xml:space="preserve"><value>推荐的服务更改</value></data>
+  <data name="System.RegistryTweaks" xml:space="preserve"><value>系统注册表微调</value></data>
+
+  <!-- 镜像 / 服务状态与错误（本地化） -->
+  <data name="Source.NoIsoSelected" xml:space="preserve"><value>未选择 ISO</value></data>
+  <data name="Source.UnableToInspect" xml:space="preserve"><value>无法检测 ISO</value></data>
+  <data name="Source.Detection.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Source.Detection.Candidate" xml:space="preserve"><value>Windows ISO 候选</value></data>
+  <data name="Common.NotDetected" xml:space="preserve"><value>未检测到</value></data>
+  <data name="Common.Mixed" xml:space="preserve"><value>混合</value></data>
+  <data name="Workspace.Status.SelectEdition" xml:space="preserve"><value>请选择一个版本</value></data>
+  <data name="Workspace.Status.Ready" xml:space="preserve"><value>就绪</value></data>
+
+  <data name="Servicing.NotPrepared" xml:space="preserve"><value>未准备</value></data>
+  <data name="Servicing.Preparing" xml:space="preserve"><value>正在准备…</value></data>
+  <data name="Servicing.Prepared" xml:space="preserve"><value>已准备</value></data>
+  <data name="Servicing.Mounting" xml:space="preserve"><value>正在挂载…</value></data>
+  <data name="Servicing.Mounted" xml:space="preserve"><value>已挂载</value></data>
+  <data name="Servicing.Unmounting" xml:space="preserve"><value>正在卸载…</value></data>
+  <data name="Servicing.Completed" xml:space="preserve"><value>已卸载</value></data>
+  <data name="Servicing.Failed" xml:space="preserve"><value>失败</value></data>
+
+  <data name="Servicing.Msg.Preparing" xml:space="preserve"><value>正在准备工作镜像…</value></data>
+  <data name="Servicing.Msg.Prepared" xml:space="preserve"><value>工作镜像已准备。</value></data>
+  <data name="Servicing.Msg.PrepareFailed" xml:space="preserve"><value>准备失败。</value></data>
+  <data name="Servicing.Msg.Mounting" xml:space="preserve"><value>正在挂载工作镜像…</value></data>
+  <data name="Servicing.Msg.Mounted" xml:space="preserve"><value>工作镜像已挂载。</value></data>
+  <data name="Servicing.Msg.MountFailed" xml:space="preserve"><value>挂载失败。</value></data>
+  <data name="Servicing.Msg.Unmounting" xml:space="preserve"><value>正在卸载工作镜像…</value></data>
+  <data name="Servicing.Msg.Unmounted" xml:space="preserve"><value>工作镜像已卸载（更改已丢弃）。</value></data>
+  <data name="Servicing.Msg.UnmountFailed" xml:space="preserve"><value>卸载失败。</value></data>
+  <data name="Servicing.Msg.PrepareFailedUnexpected" xml:space="preserve"><value>准备时发生意外错误。</value></data>
+  <data name="Servicing.Msg.MountFailedUnexpected" xml:space="preserve"><value>挂载时发生意外错误。</value></data>
+  <data name="Servicing.Msg.UnmountFailedUnexpected" xml:space="preserve"><value>卸载时发生意外错误。</value></data>
+</root>

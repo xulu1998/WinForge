@@ -1,5 +1,10 @@
+using System.Globalization;
+using System.Resources;
 using Microsoft.Extensions.DependencyInjection;
+using WinForge.App.FriendlyMetadata;
+using WinForge.App.Localization;
 using WinForge.App.Services;
+using WinForge.App.Workflow;
 using WinForge.App.ViewModels;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.Customization;
@@ -28,6 +33,17 @@ public static class Bootstrapper
         services.AddSingleton<ILoggerService, InMemoryLoggerService>();
         services.AddSingleton<IAppState, AppState>();
         services.AddSingleton<INavigationService, NavigationService>();
+
+        // Localization foundation (en-US / zh-CN, runtime switch + persisted choice).
+        // The ResourceManager pulls the invariant Strings.resx plus the zh-CN
+        // satellite; the service falls back to English when a key is missing.
+        services.AddSingleton<ILocalizationService>(_ =>
+        {
+            var resourceManager = new ResourceManager("WinForge.App.Resources.Strings", typeof(Bootstrapper).Assembly);
+            return new ResourceManagerLocalizationService(resourceManager, CultureInfo.GetCultureInfo("en"));
+        });
+        services.AddSingleton<ILanguageSettingsStore, FileLanguageSettingsStore>();
+        services.AddSingleton<IFriendlyMetadataProvider, FriendlyMetadataProvider>();
 
         // Phase 2 — ISO Inspection (read-only)
         services.AddSingleton<IIsoMountService, WindowsIsoMountService>();
@@ -62,6 +78,13 @@ public static class Bootstrapper
         services.AddSingleton<PlanReviewViewModel>();
         services.AddSingleton<LogsViewModel>();
         services.AddSingleton<ComingSoonViewModel>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<AboutViewModel>();
+
+        // Wizard / Stepper workflow (singletons; the coordinator reuses the page VMs above)
+        services.AddSingleton<CustomizeStepViewModel>();
+        services.AddSingleton<BuildStepViewModel>();
+        services.AddSingleton<WorkflowViewModel>();
 
         return services.BuildServiceProvider();
     }

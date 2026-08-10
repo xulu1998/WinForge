@@ -1,0 +1,95 @@
+<UserControl x:Class="WinForge.App.Views.WizardView"
+             x:Name="Root"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:wf="clr-namespace:WinForge.App.Workflow"
+             xmlns:views="clr-namespace:WinForge.App.Views"
+             xmlns:conv="clr-namespace:WinForge.App.Converters"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance wf:WorkflowViewModel}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Stepper: state shown by glyph + caption, not color alone -->
+        <Border Grid.Row="0" BorderBrush="#E4E7EB" BorderThickness="0,0,0,1" Padding="20,14">
+            <ItemsControl ItemsSource="{Binding Steps}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type wf:WorkflowStepViewModel}">
+                        <Button Style="{StaticResource StepButton}"
+                                Command="{Binding ElementName=Root, Path=DataContext.SelectStepCommand}"
+                                CommandParameter="{Binding Step}">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1"
+                                        BorderBrush="#CBD2D9" Background="#F5F7FA" VerticalAlignment="Center">
+                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               FontWeight="SemiBold" FontSize="13">
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{StaticResource stepBadge}">
+                                                <Binding Path="State"/>
+                                                <Binding Path="Ordinal"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </Border>
+                                <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock FontWeight="SemiBold" FontSize="13" Foreground="#1F2933">
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{StaticResource locKey}">
+                                                <Binding Path="TitleKey"/>
+                                                <Binding Source="{StaticResource Loc}"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                    <TextBlock FontSize="11" Foreground="#7B8794">
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{StaticResource stateCaption}">
+                                                <Binding Path="State"/>
+                                                <Binding Source="{StaticResource Loc}"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <!-- Active step content -->
+        <ContentControl Grid.Row="1" Margin="20,12" Content="{Binding CurrentStep}">
+            <ContentControl.ContentTemplateSelector>
+                <views:WizardStepTemplateSelector
+                    SourceTemplate="{StaticResource SourceStepTemplate}"
+                    PrepareTemplate="{StaticResource PrepareStepTemplate}"
+                    CustomizeTemplate="{StaticResource CustomizeStepTemplate}"
+                    ReviewTemplate="{StaticResource ReviewStepTemplate}"
+                    ApplyTemplate="{StaticResource ApplyStepTemplate}"
+                    BuildTemplate="{StaticResource BuildStepTemplate}"/>
+            </ContentControl.ContentTemplateSelector>
+        </ContentControl>
+
+        <!-- Back / Next navigation -->
+        <Border Grid.Row="2" BorderBrush="#E4E7EB" BorderThickness="0,1,0,0" Padding="20,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource PrimaryButton}" Background="#7B8794"
+                        Content="{Binding Source={StaticResource Loc}, Path=[Nav.Back]}"
+                        Command="{Binding BackCommand}" Margin="0,0,8,0"/>
+                <Button Style="{StaticResource PrimaryButton}"
+                        Content="{Binding Source={StaticResource Loc}, Path=[Nav.Next]}"
+                        Command="{Binding NextCommand}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

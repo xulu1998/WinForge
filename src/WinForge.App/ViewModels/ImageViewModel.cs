@@ -30,6 +30,7 @@ public sealed class ImageViewModel : ViewModelBase
     private readonly IImageWorkspaceFactory _workspaceFactory;
     private readonly IWimService _wimService;
     private readonly IImageServicingService _servicing;
+    private readonly ILocalizationService? _loc;
 
     private IsoInspectionResult? _result;
     private bool _isInspecting;
@@ -44,7 +45,8 @@ public sealed class ImageViewModel : ViewModelBase
         IFilePicker filePicker,
         IImageWorkspaceFactory workspaceFactory,
         IWimService wimService,
-        IImageServicingService servicing)
+        IImageServicingService servicing,
+        ILocalizationService? loc = null)
     {
         _appState = appState;
         _logger = logger;
@@ -53,6 +55,7 @@ public sealed class ImageViewModel : ViewModelBase
         _workspaceFactory = workspaceFactory;
         _wimService = wimService;
         _servicing = servicing;
+        _loc = loc;
 
         SelectIsoCommand = new AsyncRelayCommand(_ => SelectIsoAsync());
         InspectIsoCommand = new AsyncRelayCommand(_ => InspectCurrentAsync());
@@ -75,7 +78,7 @@ public sealed class ImageViewModel : ViewModelBase
     public ICommand UnmountDiscardCommand { get; }
 
     public string FileDisplay =>
-        string.IsNullOrEmpty(_appState.SourceImagePath) ? "No ISO selected" : _appState.SourceImagePath;
+        string.IsNullOrEmpty(_appState.SourceImagePath) ? L("Source.NoIsoSelected", "No ISO selected") : _appState.SourceImagePath;
 
     public string FileNameDisplay => _result?.FileName ?? "—";
 
@@ -83,10 +86,10 @@ public sealed class ImageViewModel : ViewModelBase
 
     public string DetectedTypeDisplay => _result switch
     {
-        null => "No ISO selected",
-        _ when _result.Status == IsoInspectionStatus.Failed => "Unable to inspect ISO",
-        _ when _result.DetectedType == IsoDetectedType.WindowsIsoCandidate => "Windows ISO Candidate",
-        _ => "Unknown"
+        null => L("Source.NoIsoSelected", "No ISO selected"),
+        _ when _result.Status == IsoInspectionStatus.Failed => L("Source.UnableToInspect", "Unable to inspect ISO"),
+        _ when _result.DetectedType == IsoDetectedType.WindowsIsoCandidate => L("Source.Detection.Candidate", "Windows ISO Candidate"),
+        _ => L("Source.Detection.Unknown", "Unknown")
     };
 
     public string InstallImageDisplay => _result switch
@@ -112,17 +115,17 @@ public sealed class ImageViewModel : ViewModelBase
     public string WindowsVersionDisplay => TopLevelOr(
         _result?.ImageMetadata?.Version,
         e => e.Version,
-        "Not detected");
+        L("Common.NotDetected", "Not detected"));
 
     public string BuildDisplay => TopLevelOr(
         _result?.ImageMetadata?.Build,
         e => e.Build,
-        "Not detected");
+        L("Common.NotDetected", "Not detected"));
 
     public string ArchitectureDisplay => TopLevelOr(
         _result?.ImageMetadata?.Architecture,
         e => e.Architecture,
-        "Not detected");
+        L("Common.NotDetected", "Not detected"));
 
     public string LanguagesDisplay
     {
@@ -131,7 +134,7 @@ public sealed class ImageViewModel : ViewModelBase
             var md = _result?.ImageMetadata;
             if (md is null || md.Editions.Count == 0)
             {
-                return "Not detected";
+                return L("Common.NotDetected", "Not detected");
             }
 
             if (md.Languages is { Count: > 0 })
@@ -139,14 +142,16 @@ public sealed class ImageViewModel : ViewModelBase
                 return string.Join(", ", md.Languages);
             }
 
-            return md.Editions.Any(e => e.Languages.Count > 0) ? "Mixed" : "Not detected";
+            return md.Editions.Any(e => e.Languages.Count > 0)
+                ? L("Common.Mixed", "Mixed")
+                : L("Common.NotDetected", "Not detected");
         }
     }
 
     public string EditionsDisplay =>
         _result?.ImageMetadata?.Editions.Count > 0
             ? $"{_result.ImageMetadata.Editions.Count} edition(s)"
-            : "Not detected";
+            : L("Common.NotDetected", "Not detected");
 
     /// <summary>Editions (image indexes) detected in the install image.</summary>
     public IReadOnlyList<WindowsEditionInfo> Editions =>
@@ -175,7 +180,7 @@ public sealed class ImageViewModel : ViewModelBase
 
             if (IsServicingMounted)
             {
-                _blockedMessage = "Unmount the working image before selecting a different edition.";
+                _blockedMessage = L("Error.UnmountBeforeEdition", "Unmount the working image before selecting a different edition.");
                 Refresh();
                 return;
             }
@@ -192,7 +197,9 @@ public sealed class ImageViewModel : ViewModelBase
     public ImageWorkspace? Workspace => _appState.CurrentImageWorkspace;
 
     public string WorkspaceStatusDisplay =>
-        _appState.CurrentImageWorkspace is null ? "Select an edition" : "Ready";
+        _appState.CurrentImageWorkspace is null
+            ? L("Workspace.Status.SelectEdition", "Select an edition")
+            : L("Workspace.Status.Ready", "Ready");
 
     public string WorkspaceEditionDisplay => _appState.CurrentImageWorkspace?.SelectedEditionName ?? "—";
 
@@ -242,15 +249,15 @@ public sealed class ImageViewModel : ViewModelBase
 
     public string ServicingStatusDisplay => _appState.CurrentServicingWorkspace?.State switch
     {
-        null => "Not prepared",
-        ServicingWorkspaceState.NotPrepared => "Not prepared",
-        ServicingWorkspaceState.Preparing => "Preparing…",
-        ServicingWorkspaceState.Prepared => "Prepared",
-        ServicingWorkspaceState.Mounting => "Mounting…",
-        ServicingWorkspaceState.Mounted => "Mounted",
-        ServicingWorkspaceState.Unmounting => "Unmounting…",
-        ServicingWorkspaceState.Completed => "Unmounted",
-        ServicingWorkspaceState.Failed => "Failed",
+        null => L("Servicing.NotPrepared", "Not prepared"),
+        ServicingWorkspaceState.NotPrepared => L("Servicing.NotPrepared", "Not prepared"),
+        ServicingWorkspaceState.Preparing => L("Servicing.Preparing", "Preparing…"),
+        ServicingWorkspaceState.Prepared => L("Servicing.Prepared", "Prepared"),
+        ServicingWorkspaceState.Mounting => L("Servicing.Mounting", "Mounting…"),
+        ServicingWorkspaceState.Mounted => L("Servicing.Mounted", "Mounted"),
+        ServicingWorkspaceState.Unmounting => L("Servicing.Unmounting", "Unmounting…"),
+        ServicingWorkspaceState.Completed => L("Servicing.Completed", "Unmounted"),
+        ServicingWorkspaceState.Failed => L("Servicing.Failed", "Failed"),
         _ => "—"
     };
 
@@ -316,7 +323,7 @@ public sealed class ImageViewModel : ViewModelBase
         {
             // Do NOT silently forget an active mount: refuse the new ISO and tell
             // the user to unmount first.
-            _blockedMessage = "Unmount the working image before selecting a different ISO.";
+            _blockedMessage = L("Error.UnmountBeforeIso", "Unmount the working image before selecting a different ISO.");
             Refresh();
             return;
         }
@@ -360,7 +367,7 @@ public sealed class ImageViewModel : ViewModelBase
         var workspaceId = "wf-" + System.Guid.NewGuid().ToString("N").Substring(0, 12);
 
         IsServicing = true;
-        ServicingMessage = "Preparing working image…";
+        ServicingMessage = L("Servicing.Msg.Preparing", "Preparing working image…");
         _blockedMessage = null;
         Refresh();
         try
@@ -368,13 +375,13 @@ public sealed class ImageViewModel : ViewModelBase
             var result = await _servicing.PrepareWorkingImageAsync(source, workspaceId, CancellationToken.None);
             _appState.CurrentServicingWorkspace = result.Workspace;
             ServicingMessage = result.Success
-                ? "Working image prepared."
-                : (result.ErrorMessage ?? "Preparation failed.");
+                ? L("Servicing.Msg.Prepared", "Working image prepared.")
+                : (result.ErrorMessage ?? L("Servicing.Msg.PrepareFailed", "Preparation failed."));
         }
         catch (Exception ex)
         {
             _appState.CurrentServicingWorkspace = null;
-            ServicingMessage = "Preparation failed unexpectedly.";
+            ServicingMessage = L("Servicing.Msg.PrepareFailedUnexpected", "Preparation failed unexpectedly.");
             _logger.Error($"Servicing prepare failed: {ex.Message}");
         }
         finally
@@ -393,19 +400,19 @@ public sealed class ImageViewModel : ViewModelBase
 
         var workspace = _appState.CurrentServicingWorkspace!;
         IsServicing = true;
-        ServicingMessage = "Mounting working image…";
+        ServicingMessage = L("Servicing.Msg.Mounting", "Mounting working image…");
         Refresh();
         try
         {
             var result = await _servicing.MountAsync(workspace, CancellationToken.None);
             _appState.CurrentServicingWorkspace = result.Workspace;
             ServicingMessage = result.Success
-                ? "Working image mounted."
-                : (result.ErrorMessage ?? "Mount failed.");
+                ? L("Servicing.Msg.Mounted", "Working image mounted.")
+                : (result.ErrorMessage ?? L("Servicing.Msg.MountFailed", "Mount failed."));
         }
         catch (Exception ex)
         {
-            ServicingMessage = "Mount failed unexpectedly.";
+            ServicingMessage = L("Servicing.Msg.MountFailedUnexpected", "Mount failed unexpectedly.");
             _logger.Error($"Servicing mount failed: {ex.Message}");
         }
         finally
@@ -424,19 +431,19 @@ public sealed class ImageViewModel : ViewModelBase
 
         var workspace = _appState.CurrentServicingWorkspace!;
         IsServicing = true;
-        ServicingMessage = "Unmounting working image…";
+        ServicingMessage = L("Servicing.Msg.Unmounting", "Unmounting working image…");
         Refresh();
         try
         {
             var result = await _servicing.UnmountDiscardAsync(workspace, CancellationToken.None);
             _appState.CurrentServicingWorkspace = result.Workspace;
             ServicingMessage = result.Success
-                ? "Working image unmounted (changes discarded)."
-                : (result.ErrorMessage ?? "Unmount failed.");
+                ? L("Servicing.Msg.Unmounted", "Working image unmounted (changes discarded).")
+                : (result.ErrorMessage ?? L("Servicing.Msg.UnmountFailed", "Unmount failed."));
         }
         catch (Exception ex)
         {
-            ServicingMessage = "Unmount failed unexpectedly.";
+            ServicingMessage = L("Servicing.Msg.UnmountFailedUnexpected", "Unmount failed unexpectedly.");
             _logger.Error($"Servicing unmount failed: {ex.Message}");
         }
         finally
@@ -445,6 +452,13 @@ public sealed class ImageViewModel : ViewModelBase
             Refresh();
         }
     }
+
+    /// <summary>
+    /// Resolves a localized string by key, falling back to <paramref name="fallback"/>
+    /// when no localization service is available (e.g. in unit tests) or the key
+    /// is missing. Keeps the view model usable without an injected service.
+    /// </summary>
+    private string L(string key, string fallback) => _loc is null ? fallback : (_loc[key] ?? fallback);
 
     private string TopLevelOr(
         string? consistent,
@@ -462,7 +476,9 @@ public sealed class ImageViewModel : ViewModelBase
             return consistent;
         }
 
-        return md.Editions.Any(e => !string.IsNullOrEmpty(selector(e))) ? "Mixed" : whenAbsent;
+        return md.Editions.Any(e => !string.IsNullOrEmpty(selector(e)))
+            ? L("Common.Mixed", "Mixed")
+            : whenAbsent;
     }
 
     /// <summary>

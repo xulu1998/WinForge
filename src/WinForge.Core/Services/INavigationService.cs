@@ -16,7 +16,8 @@ public enum PageKey
     Plan,
     Build,
     Logs,
-    Settings
+    Settings,
+    About
 }
 
 /// <summary>
