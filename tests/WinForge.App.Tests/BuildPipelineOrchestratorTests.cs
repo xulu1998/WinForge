@@ -212,7 +212,14 @@ public sealed class BuildPipelineOrchestratorTests
         Assert.Equal(BuildState.ExportingImage, result.FailedPhase);
         Assert.False(result.Success);
         Assert.Equal(0, iso.Calls);
-        Assert.Contains(BuildWs, fs.DeletedDirectories);
+        // Post-commit failure: committed working image + recovery marker retained
+        // (no whole-workspace cleanup) so a retry can resume from Export. The
+        // workspace is still present (recreated at preflight, not discarded).
+        Assert.True(fs.DirectoryExists(BuildWs));
+        Assert.True(fs.FileExists(WorkingImage));
+        Assert.True(fs.FileExists(BuildWs + @"\build.recovery.json"));
+        Assert.False(fs.FileExists(BuildWs + @"\install.wim"));
+        Assert.Equal(1, exporter.Calls);
     }
 
     [Fact]
@@ -267,31 +274,69 @@ public sealed class BuildPipelineOrchestratorTests
     public async Task Build_Iso_Build_Failure_Fails_At_BuildingIso_With_ExitCode()
     {
         var fs = new RecordingFileSystem();
+        var exporter = new ConfigurableWimExporter { FileSystem = fs };
         var iso = new ConfigurableIsoBuilder(fs) { Succeeds = false, ExitCode = 7 };
-        var service = MakeService(new(), new(), new(), iso, new(), new FakeAdkToolLocator(), fs);
+        var service = MakeService(new(), exporter, new(), iso, new(), new FakeAdkToolLocator(), fs);
 
         var result = await service.BuildAsync(MakeRequest(fs));
 
         Assert.Equal(BuildState.BuildingIso, result.FailedPhase);
         Assert.Equal(7, result.ToolExitCode);
         Assert.False(result.Success);
-        Assert.Contains(BuildWs, fs.DeletedDirectories);
+        // Durable exported WIM retained for resume; workspace not discarded.
+        Assert.True(fs.DirectoryExists(BuildWs));
+        Assert.True(fs.FileExists(BuildWs + @"\install.wim"));
     }
 
     [Fact]
     public async Task Build_Verify_Failure_Fails_At_Verifying_Even_When_Iso_Succeeded()
     {
         var fs = new RecordingFileSystem();
+        var exporter = new ConfigurableWimExporter { FileSystem = fs };
         var iso = new ConfigurableIsoBuilder(fs);
         var verifier = new ConfigurableVerifier { Succeeds = false };
-        var service = MakeService(new(), new(), new(), iso, verifier, new FakeAdkToolLocator(), fs);
+        var service = MakeService(new(), exporter, new(), iso, verifier, new FakeAdkToolLocator(), fs);
 
         var result = await service.BuildAsync(MakeRequest(fs));
 
         Assert.False(result.Success); // never derive success from the ISO tool
         Assert.Equal(BuildState.Verifying, result.FailedPhase);
         Assert.Equal(BuildState.Failed, result.FinalState);
-        Assert.Contains(BuildWs, fs.DeletedDirectories);
+        // Durable exported WIM retained for resume; workspace not discarded.
+        Assert.True(fs.DirectoryExists(BuildWs));
+        Assert.True(fs.FileExists(BuildWs + @"\install.wim"));
+    }
+
+    [Fact]
+    public async Task Build_PostCommitMediaFailure_RetainsCheckpoint_And_Resumes_WithoutReCommit()
+    {
+        var fs = new RecordingFileSystem();
+        var svc = new ConfigurableServicingService();
+        var exporter = new ConfigurableWimExporter { FileSystem = fs };
+        var media = new ConfigurableMediaPreparer { Succeeds = false }; // first run fails at media
+        var iso = new ConfigurableIsoBuilder(fs);
+        var verifier = new ConfigurableVerifier();
+        var service = MakeService(svc, exporter, media, iso, verifier, new FakeAdkToolLocator(), fs);
+
+        // First run: commit + export succeed, media prepare fails.
+        var first = await service.BuildAsync(MakeRequest(fs));
+        Assert.False(first.Success);
+        Assert.Equal(BuildState.PreparingMedia, first.FailedPhase);
+        // Durable checkpoint is retained (not discarded) so the build is retryable.
+        Assert.True(fs.FileExists(BuildWs + @"\install.wim"));
+        Assert.True(fs.FileExists(BuildWs + @"\build.recovery.json"));
+        Assert.Equal(1, svc.CommitCalls);
+        Assert.Equal(1, exporter.Calls);
+
+        // Retry with media now succeeding: must RESUME, not re-commit or re-export.
+        media.Succeeds = true;
+        var second = await service.BuildAsync(MakeRequest(fs));
+        Assert.True(second.Success);
+        Assert.Equal(BuildState.Completed, second.FinalState);
+        // Commit/Export were skipped (checkpoint present); only the media copy re-ran.
+        Assert.Equal(1, svc.CommitCalls);
+        Assert.Equal(1, exporter.Calls);
+        Assert.Equal(2, media.Calls);
     }
 
     [Fact]

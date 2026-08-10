@@ -148,8 +148,8 @@ public sealed class BuildStepViewModelTests
     // (constructed once, before Apply runs), so it must react live to the shared
     // CustomizationExecutionState change and clear the stale banner. ----
 
-    private static BuildStepViewModel NewVm(AppState state, IAdkToolLocator adk)
-        => new BuildStepViewModel(state, new FakeBuildService(), new RecordingFileSystem(),
+    private static BuildStepViewModel NewVm(AppState state, IAdkToolLocator adk, IFileSystem? fs = null)
+        => new BuildStepViewModel(state, new FakeBuildService(), fs ?? new RecordingFileSystem(),
             new FakeFilePicker(), adk, new InMemoryLoggerService(), new FakeLocalizationService());
 
     /// <summary>
@@ -289,6 +289,46 @@ public sealed class BuildStepViewModelTests
         Assert.Equal(string.Empty, vm.StatusMessage); // cleared in every culture
         Assert.True(vm.CanBuild);
         Assert.True(vm.HasApplied);
+    }
+
+    // ---- Phase 10 real-desktop defect: after a successful Commit the working image
+    // is unmounted, so IsMounted is no longer true. The build must still be
+    // retryable from the durable exported-WIM checkpoint without re-applying or
+    // re-committing. HasBuildCheckpoint keeps CanBuild usable. ----
+
+    [Fact]
+    public void PostCommitFailure_BuildRemainsRetryable_ViaCheckpoint()
+    {
+        var state = ReadyState(); // Applied + Mounted, WorkingDirectory = C:\ws
+        var fs = new RecordingFileSystem();
+        // Simulate a prior post-commit run that left a durable exported WIM.
+        fs.SeedFile(@"C:\ws\build\install.wim", 100);
+
+        var vm = NewVm(state, new FakeAdkToolLocator(), fs);
+        Assert.True(vm.CanBuild); // open while mounted
+
+        // Post-commit failure: image committed & unmounted, but checkpoint survives.
+        state.CurrentServicingWorkspace!.State = ServicingWorkspaceState.Prepared;
+        vm.Refresh();
+
+        Assert.False(vm.IsMounted);
+        Assert.True(vm.HasBuildCheckpoint);
+        Assert.True(vm.CanBuild);                 // retryable without re-apply/re-commit
+        Assert.Equal(string.Empty, vm.StatusMessage); // no stale "needs mount" warning
+    }
+
+    [Fact]
+    public void NoCheckpoint_And_NotMounted_BlocksBuild()
+    {
+        var state = ReadyState();
+        state.CurrentServicingWorkspace!.State = ServicingWorkspaceState.Prepared; // not mounted
+        var fs = new RecordingFileSystem(); // no durable checkpoint seeded
+        var vm = NewVm(state, new FakeAdkToolLocator(), fs);
+
+        Assert.False(vm.IsMounted);
+        Assert.False(vm.HasBuildCheckpoint);
+        Assert.False(vm.CanBuild);
+        Assert.Equal("Build.Status.NeedsMount", vm.StatusMessage);
     }
 
     /// <summary>

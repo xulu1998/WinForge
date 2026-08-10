@@ -33,4 +33,10 @@ public interface IFileSystem
 
     /// <summary>Combines path segments using the platform directory separator.</summary>
     string PathCombine(params string[] segments);
+
+    /// <summary>Returns the <see cref="FileAttributes"/> of the file or directory at <paramref name="path"/>.</summary>
+    FileAttributes GetAttributes(string path);
+
+    /// <summary>Sets the <see cref="FileAttributes"/> of the file or directory at <paramref name="path"/>.</summary>
+    void SetAttributes(string path, FileAttributes attributes);
 }

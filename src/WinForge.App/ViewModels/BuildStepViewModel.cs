@@ -88,6 +88,32 @@ public sealed class BuildStepViewModel : ViewModelBase
     public bool IsMounted =>
         _appState.CurrentServicingWorkspace?.State == ServicingWorkspaceState.Mounted;
 
+    /// <summary>
+    /// True when a durable committed/exported build artifact exists from a prior run
+    /// (the exported <c>install.wim</c> in the build workspace). After a successful
+    /// Commit the working image is unmounted, so <see cref="IsMounted"/> is no longer
+    /// true — but the build can still be resumed from that checkpoint without
+    /// re-applying or re-committing. This keeps <see cref="CanBuild"/> usable after a
+    /// post-commit PreparingMedia failure.
+    /// </summary>
+    public bool HasBuildCheckpoint
+    {
+        get
+        {
+            var ws = _appState.CurrentServicingWorkspace;
+            if (ws is null)
+            {
+                return false;
+            }
+
+            var buildWs = !string.IsNullOrWhiteSpace(ws.WorkingDirectory)
+                ? _fileSystem.PathCombine(ws.WorkingDirectory, "build")
+                : _fileSystem.PathCombine(_fileSystem.GetTempPath(), "WinForge", "Build");
+            var finalWim = _fileSystem.PathCombine(buildWs, "install.wim");
+            return _fileSystem.FileExists(finalWim);
+        }
+    }
+
     public string SourceEdition
     {
         get => _sourceEdition;
@@ -193,7 +219,7 @@ public sealed class BuildStepViewModel : ViewModelBase
     }
 
     public bool CanBuild =>
-        HasApplied && IsMounted && !IsBuilding && !AdkMissing &&
+        HasApplied && (IsMounted || HasBuildCheckpoint) && !IsBuilding && !AdkMissing &&
         !string.IsNullOrWhiteSpace(OutputDirectory) &&
         !string.IsNullOrWhiteSpace(OutputFileName) &&
         _appState.CurrentServicingWorkspace is not null;
@@ -263,7 +289,7 @@ public sealed class BuildStepViewModel : ViewModelBase
         {
             StatusMessage = _loc["Build.Status.NeedsApply"];
         }
-        else if (!IsMounted)
+        else if (!IsMounted && !HasBuildCheckpoint)
         {
             StatusMessage = _loc["Build.Status.NeedsMount"];
         }
@@ -387,15 +413,9 @@ public sealed class BuildStepViewModel : ViewModelBase
 
         try
         {
-            // Detect and clean any interrupted build left from a previous crash so
-            // a stale workspace never blocks or corrupts the new run.
-            var interrupted = await _buildService.DetectInterruptedBuildAsync(buildWs, _cts.Token);
-            if (interrupted is not null && interrupted.IsInterrupted)
-            {
-                _logger.Warning("Build: detected an interrupted previous build; cleaning its workspace.");
-                await _buildService.CleanupInterruptedBuildAsync(buildWs, _cts.Token);
-            }
-
+            // The build service owns all resume/cleanup decisions (durable committed
+            // and exported checkpoints, deterministic media-tree cleanup). The
+            // ViewModel must not delete a durable checkpoint before the service runs.
             var result = await _buildService.BuildAsync(request, progress, _cts.Token);
 
             // The terminal state is the authority: never derive success from a flag.

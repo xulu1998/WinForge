@@ -63,6 +63,12 @@ public sealed class ImageBuildService : IBuildService
         string? finalOutputPath = null;
         string? partialPath = null;
         var phase = BuildState.NotStarted;
+        // Declared outside the try so the catch/finally blocks can use them.
+        BuildRecoveryState? recovery = null;
+        bool committed = false;
+        bool exported = false;
+        string? finalWim = null;
+        string? mediaRoot = null;
 
         void Report(BuildState p, string message, int percent)
         {
@@ -161,55 +167,104 @@ public sealed class ImageBuildService : IBuildService
             }
 
             partialPath = finalOutputPath + ".partial";
-            WriteRecovery(BuildState.Preflight);
+
+            // ---- Resumable checkpoint detection ----
+            // A prior run may have already committed and/or exported the working
+            // image. Those artifacts are durable (the committed WIM lives outside
+            // the build workspace; the exported final WIM lives inside it). If a
+            // checkpoint exists we RESUME from the latest completed step instead of
+            // re-committing an already-unmounted image or re-exporting — and we keep
+            // the artifacts on failure so the user can retry without re-applying.
+            recovery = await DetectInterruptedBuildAsync(buildWs, cancellationToken);
+            committed = recovery is not null && recovery.State >= BuildState.CommittingImage
+                && _fileSystem.FileExists(request.WorkingImagePath);
+            finalWim = _fileSystem.PathCombine(buildWs, "install.wim");
+            exported = committed && _fileSystem.FileExists(finalWim);
+
+            if (!committed && !exported)
+            {
+                // Genuinely fresh (or pre-commit) run: start from a clean workspace so
+                // a stale partial or crashed media tree never blocks the new run.
+                _fileSystem.DeleteDirectory(buildWs, recursive: true);
+                _fileSystem.CreateDirectory(buildWs);
+                WriteRecovery(BuildState.Preflight);
+            }
+            else
+            {
+                _logger.Info($"Build: resuming from checkpoint (committed={committed}, exported={exported}); " +
+                             "skipping already-completed steps.");
+            }
+
             log.Add("Preflight passed");
             _logger.Info("Build: preflight passed.");
 
             // ---- Commit ----
             Report(BuildState.CommittingImage, "Committing working image", 20);
-            var commitWs = new ImageServicingWorkspace
+            if (committed)
             {
-                WorkingImagePath = request.WorkingImagePath,
-                MountDirectory = request.MountDirectory,
-                State = ServicingWorkspaceState.Mounted
-            };
-            var commit = await _servicing.CommitUnmountAsync(commitWs, cancellationToken);
-            if (!commit.Success)
-            {
-                // Stop here. No ISO build begins; the workspace is left recoverable.
-                CleanupWorkspace();
-                return BuildResult.Fail(BuildState.CommittingImage,
-                    commit.ErrorMessage ?? "Committing the working image failed.", log);
+                // Resuming past a successful commit: the working image is already
+                // committed and unmounted, so re-committing would target a
+                // non-mounted image and fail. The durable artifact is reused.
+                _logger.Info("Build: image already committed (resume); skipping Commit step.");
             }
+            else
+            {
+                var commitWs = new ImageServicingWorkspace
+                {
+                    WorkingImagePath = request.WorkingImagePath,
+                    MountDirectory = request.MountDirectory,
+                    State = ServicingWorkspaceState.Mounted
+                };
+                var commit = await _servicing.CommitUnmountAsync(commitWs, cancellationToken);
+                if (!commit.Success)
+                {
+                    // Stop here. No ISO build begins; the workspace is left recoverable.
+                    CleanupWorkspace();
+                    return BuildResult.Fail(BuildState.CommittingImage,
+                        commit.ErrorMessage ?? "Committing the working image failed.", log);
+                }
 
-            log.Add("Working image committed");
-            _logger.Info("Build: working image committed.");
-            WriteRecovery(BuildState.CommittingImage);
+                committed = true;
+                log.Add("Working image committed");
+                _logger.Info("Build: working image committed.");
+                WriteRecovery(BuildState.CommittingImage);
+            }
 
             // ---- Export ----
             Report(BuildState.ExportingImage, "Exporting final image", 40);
-            var finalWim = _fileSystem.PathCombine(buildWs, "install.wim");
-            var export = await _exporter.ExportAsync(new WimExportRequest
+            if (exported)
             {
-                SourceImagePath = request.WorkingImagePath,
-                SourceIndex = request.WorkingIndex,
-                DestinationImagePath = finalWim
-            }, cancellationToken);
-
-            if (!export.Success)
-            {
-                DeletePartial();
-                CleanupWorkspace();
-                return BuildResult.Fail(BuildState.ExportingImage, export.ErrorMessage ?? "Final image export failed.", log, export.ExitCode);
+                // Resuming past a successful export: the final WIM already exists in
+                // the build workspace; reuse it instead of re-exporting.
+                _logger.Info("Build: final WIM already exported (resume); skipping Export step.");
             }
+            else
+            {
+                var export = await _exporter.ExportAsync(new WimExportRequest
+                {
+                    SourceImagePath = request.WorkingImagePath,
+                    SourceIndex = request.WorkingIndex,
+                    DestinationImagePath = finalWim
+                }, cancellationToken);
 
-            log.Add("Final WIM exported");
-            _logger.Info("Build: final WIM exported.");
-            WriteRecovery(BuildState.ExportingImage);
+                if (!export.Success)
+                {
+                    // Keep the workspace: the committed working image + recovery file
+                    // let a retry resume directly from Export. Do NOT discard the
+                    // durable committed artifact.
+                    DeletePartial();
+                    return BuildResult.Fail(BuildState.ExportingImage, export.ErrorMessage ?? "Final image export failed.", log, export.ExitCode);
+                }
+
+                exported = true;
+                log.Add("Final WIM exported");
+                _logger.Info("Build: final WIM exported.");
+                WriteRecovery(BuildState.ExportingImage);
+            }
 
             // ---- Prepare media ----
             Report(BuildState.PreparingMedia, "Preparing media tree", 60);
-            var mediaRoot = _fileSystem.PathCombine(buildWs, "media");
+            mediaRoot = _fileSystem.PathCombine(buildWs, "media");
             var media = await _media.PrepareAsync(new MediaPrepareRequest
             {
                 SourceIsoPath = request.SourceIsoPath,
@@ -221,15 +276,18 @@ public sealed class ImageBuildService : IBuildService
 
             if (!media.Success)
             {
+                // Retain the committed/exported artifact so the build can be retried
+                // from PrepareMedia without re-committing or re-applying. Only discard
+                // the (potentially dirty) media tree.
                 DeletePartial();
-                CleanupWorkspace();
+                DeleteMediaTree(mediaRoot);
                 return BuildResult.Fail(BuildState.PreparingMedia, media.ErrorMessage ?? "Media preparation failed.", log);
             }
 
             if (!media.BootFilesPresent)
             {
                 DeletePartial();
-                CleanupWorkspace();
+                DeleteMediaTree(mediaRoot);
                 return BuildResult.Fail(BuildState.PreparingMedia,
                     "Required boot files (boot\\etfsboot.com / efi\\microsoft\\boot\\efisys.bin) are missing from the source media.", log);
             }
@@ -264,13 +322,15 @@ public sealed class ImageBuildService : IBuildService
             {
                 if (iso.ToolMissing)
                 {
-                    CleanupWorkspace();
+                    // Keep the committed/exported artifact so the build can be retried
+                    // once the ADK is available; do not discard it.
+                    DeletePartial();
                     return BuildResult.Fail(BuildState.BuildingIso,
                         "Windows ADK Deployment Tools (oscdimg.exe) is required to build the final bootable ISO.", log, iso.ExitCode);
                 }
 
+                // Keep the committed/exported artifact; only the produced ISO is lost.
                 DeletePartial();
-                CleanupWorkspace();
                 return BuildResult.Fail(BuildState.BuildingIso, iso.ErrorMessage ?? "ISO creation failed.", log, iso.ExitCode);
             }
 
@@ -286,8 +346,8 @@ public sealed class ImageBuildService : IBuildService
 
             if (!verify.Success)
             {
+                // Keep the committed/exported artifact; the produced ISO is discarded.
                 DeletePartial();
-                CleanupWorkspace();
                 return BuildResult.Fail(BuildState.Verifying, verify.ErrorMessage ?? "ISO verification failed.", log);
             }
 
@@ -315,7 +375,17 @@ public sealed class ImageBuildService : IBuildService
             log.Add("Build cancelled");
             _logger.Info("Build: cancelled.");
             DeletePartial();
-            CleanupWorkspace();
+            // If a durable committed/exported checkpoint exists, keep it so the build
+            // can be resumed; otherwise discard the workspace.
+            if (committed)
+            {
+                DeleteMediaTree(mediaRoot);
+            }
+            else
+            {
+                CleanupWorkspace();
+            }
+
             return BuildResult.Fail(phase, "Build cancelled.", log, finalState: BuildState.Cancelled);
         }
         catch (Exception ex)
@@ -323,8 +393,24 @@ public sealed class ImageBuildService : IBuildService
             log.Add($"Build failed: {ex.Message}");
             _logger.Error($"Build: failed: {ex.Message}");
             DeletePartial();
-            CleanupWorkspace();
+            if (committed)
+            {
+                DeleteMediaTree(mediaRoot);
+            }
+            else
+            {
+                CleanupWorkspace();
+            }
+
             return BuildResult.Fail(phase, ex.Message, log);
+        }
+    }
+
+    private void DeleteMediaTree(string? mediaRoot)
+    {
+        if (!string.IsNullOrEmpty(mediaRoot) && _fileSystem.DirectoryExists(mediaRoot))
+        {
+            _fileSystem.DeleteDirectory(mediaRoot, recursive: true);
         }
     }
 

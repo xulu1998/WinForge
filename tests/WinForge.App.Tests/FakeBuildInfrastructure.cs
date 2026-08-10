@@ -47,6 +47,8 @@ internal sealed class FakeFileSystem : IFileSystem
     public IEnumerable<string> EnumerateDirectories(string directory) => System.Array.Empty<string>();
     public string GetTempPath() => Path.GetTempPath();
     public string PathCombine(params string[] segments) => Path.Combine(segments);
+    public System.IO.FileAttributes GetAttributes(string path) => System.IO.FileAttributes.Normal;
+    public void SetAttributes(string path, System.IO.FileAttributes attributes) { }
 }
 
 internal sealed class FakeAdkToolLocator : IAdkToolLocator

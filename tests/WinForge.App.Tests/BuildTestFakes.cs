@@ -22,6 +22,8 @@ internal sealed class RecordingFileSystem : IFileSystem
     private readonly HashSet<string> _files = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _dirs = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, long> _sizes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, System.IO.FileAttributes> _attrs = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _text = new(StringComparer.OrdinalIgnoreCase);
 
     public readonly List<string> CreatedDirectories = new();
     public readonly List<string> DeletedDirectories = new();
@@ -29,16 +31,20 @@ internal sealed class RecordingFileSystem : IFileSystem
 
     private string _temp = Path.Combine(Path.GetTempPath(), "WinForgeTest");
 
-    public void SeedFile(string path, long size = 0)
+    public void SeedFile(string path, long size = 0, System.IO.FileAttributes attributes = System.IO.FileAttributes.Normal)
     {
-        _files.Add(Norm(path));
+        var n = Norm(path);
+        _files.Add(n);
         if (size > 0)
         {
-            _sizes[Norm(path)] = size;
+            _sizes[n] = size;
         }
+
+        _attrs[n] = attributes;
     }
 
-    public void SeedDir(string path) => _dirs.Add(Norm(path));
+    public void SeedDir(string path, System.IO.FileAttributes attributes = System.IO.FileAttributes.Normal)
+        => _attrs[Norm(path)] = attributes;
 
     public void SetTemp(string path) => _temp = path;
 
@@ -63,7 +69,17 @@ internal sealed class RecordingFileSystem : IFileSystem
         CreatedDirectories.Add(Norm(path));
     }
 
-    public void CopyFile(string source, string destination, bool overwrite) => _files.Add(Norm(destination));
+    public void CopyFile(string source, string destination, bool overwrite)
+    {
+        var nd = Norm(destination);
+        _files.Add(nd);
+        // Emulate File.Copy preserving the source's attributes (e.g. ReadOnly from a
+        // mounted ISO) so the preparer's explicit normalization is observable.
+        if (_attrs.TryGetValue(Norm(source), out var a))
+        {
+            _attrs[nd] = a;
+        }
+    }
 
     public void MoveFile(string source, string destination)
     {
@@ -75,6 +91,11 @@ internal sealed class RecordingFileSystem : IFileSystem
         {
             _sizes[nd] = sz;
         }
+
+        if (_attrs.Remove(ns, out var a))
+        {
+            _attrs[nd] = a;
+        }
     }
 
     public long GetFileSize(string path) => _sizes.TryGetValue(Norm(path), out var sz) ? sz : 0;
@@ -84,6 +105,7 @@ internal sealed class RecordingFileSystem : IFileSystem
         var n = Norm(path);
         _files.Remove(n);
         _sizes.Remove(n);
+        _attrs.Remove(n);
         DeletedFiles.Add(n);
     }
 
@@ -91,12 +113,19 @@ internal sealed class RecordingFileSystem : IFileSystem
     {
         var n = Norm(path);
         _dirs.Remove(n);
+        _attrs.Remove(n);
         DeletedDirectories.Add(n);
     }
 
-    public string ReadAllText(string path) => string.Empty;
+    public string ReadAllText(string path)
+        => _text.TryGetValue(Norm(path), out var t) ? t : string.Empty;
 
-    public void WriteAllText(string path, string contents) => _files.Add(Norm(path));
+    public void WriteAllText(string path, string contents)
+    {
+        var n = Norm(path);
+        _files.Add(n);
+        _text[n] = contents;
+    }
 
     public IEnumerable<string> EnumerateFiles(string directory, string searchPattern, SearchOption option)
     {
@@ -133,6 +162,11 @@ internal sealed class RecordingFileSystem : IFileSystem
     public string GetTempPath() => _temp;
 
     public string PathCombine(params string[] segments) => Path.Combine(segments);
+
+    public System.IO.FileAttributes GetAttributes(string path)
+        => _attrs.TryGetValue(Norm(path), out var a) ? a : System.IO.FileAttributes.Normal;
+
+    public void SetAttributes(string path, System.IO.FileAttributes attributes) => _attrs[Norm(path)] = attributes;
 
     private static IEnumerable<string> Ancestors(string path)
     {
@@ -196,13 +230,22 @@ internal sealed class ConfigurableWimExporter : IWimExporter
     public WimExportRequest? LastRequest { get; private set; }
     public int Calls { get; private set; }
 
+    /// <summary>When set, the exported final WIM is materialized in the fake so the
+    /// pipeline's durable-checkpoint detection (resume after a post-commit failure)
+    /// behaves like the real exporter.</summary>
+    public RecordingFileSystem? FileSystem { get; set; }
+
     public Task<WimExportResult> ExportAsync(WimExportRequest request, CancellationToken ct = default)
     {
         LastRequest = request;
         Calls++;
-        return Succeeds
-            ? Task.FromResult(WimExportResult.Ok(request.DestinationImagePath, request.SourceIndex))
-            : Task.FromResult(WimExportResult.Fail("export failed", ExitCode));
+        if (!Succeeds)
+        {
+            return Task.FromResult(WimExportResult.Fail("export failed", ExitCode));
+        }
+
+        FileSystem?.SeedFile(request.DestinationImagePath, 100);
+        return Task.FromResult(WimExportResult.Ok(request.DestinationImagePath, request.SourceIndex));
     }
 }
 

@@ -48,6 +48,16 @@ public sealed class IsoMediaPreparer : IIsoMediaPreparer
             return MediaPrepareResult.Fail("The final install.wim to embed was not found.");
         }
 
+        // A previous (interrupted/failed) attempt may have left a partial media tree
+        // carrying ReadOnly files. Reusing it silently would re-trigger the
+        // "Access to the path 'autorun.inf' is denied" failure, so start from a
+        // deterministic, clean slate. The SOURCE ISO is never touched by this.
+        if (_fileSystem.DirectoryExists(request.BuildMediaRoot))
+        {
+            _logger.Info("Build: removing any prior media tree before recopy.");
+            _fileSystem.DeleteDirectory(request.BuildMediaRoot, recursive: true);
+        }
+
         _fileSystem.CreateDirectory(request.BuildMediaRoot);
 
         string? isoRoot = null;
@@ -87,7 +97,7 @@ public sealed class IsoMediaPreparer : IIsoMediaPreparer
         }
         catch (Exception ex)
         {
-            _logger.Error($"Build: media preparation failed: {ex.Message}");
+            _logger.Error($"Build: media preparation failed: {ex.GetType().Name}: {ex.Message}");
             return MediaPrepareResult.Fail("Media preparation failed unexpectedly.");
         }
         finally
@@ -109,17 +119,74 @@ public sealed class IsoMediaPreparer : IIsoMediaPreparer
     private void CopyTree(string source, string destination)
     {
         _fileSystem.CreateDirectory(destination);
+        // The build copy must be manageable by WinForge (overwrite payload, clean up),
+        // so clear any protected attributes the mounted source carries (ReadOnly etc.).
+        NormalizeWritable(destination);
 
         foreach (var file in _fileSystem.EnumerateFiles(source, "*", SearchOption.TopDirectoryOnly))
         {
             var name = Path.GetFileName(file);
-            _fileSystem.CopyFile(file, _fileSystem.PathCombine(destination, name), overwrite: true);
+            var dest = _fileSystem.PathCombine(destination, name);
+            try
+            {
+                _fileSystem.CopyFile(file, dest, overwrite: true);
+                // Explicitly clear ReadOnly/System/Hidden on the destination copy so
+                // later payload replacement and cleanup cannot fail on a protected file.
+                NormalizeWritable(dest);
+            }
+            catch (Exception ex)
+            {
+                // Surface a precise, actionable error instead of a bare
+                // "Access to the path 'autorun.inf' is denied.": include source/dest,
+                // their attributes, the operation, and the exception type.
+                var srcAttrs = SafeGetAttributes(file);
+                var dstAttrs = _fileSystem.FileExists(dest) ? SafeGetAttributes(dest) : "(does not exist)";
+                _logger.Error(
+                    $"Build: media copy failed | op=CopyFile | source='{file}' ({srcAttrs}) | " +
+                    $"dest='{dest}' ({dstAttrs}) | {ex.GetType().Name}: {ex.Message}");
+                throw;
+            }
         }
 
         foreach (var dir in _fileSystem.EnumerateDirectories(source))
         {
             var name = Path.GetFileName(dir.TrimEnd('\\', '/'));
             CopyTree(dir, _fileSystem.PathCombine(destination, name));
+        }
+    }
+
+    // Attributes that block WinForge from overwriting/replacing/deleting its own
+    // build copy. Cleared on destination copies only; the mounted source is never
+    // modified.
+    private const System.IO.FileAttributes BlockingAttributes =
+        System.IO.FileAttributes.ReadOnly | System.IO.FileAttributes.System | System.IO.FileAttributes.Hidden;
+
+    private void NormalizeWritable(string path)
+    {
+        try
+        {
+            var attrs = _fileSystem.GetAttributes(path);
+            if ((attrs & BlockingAttributes) != 0)
+            {
+                _fileSystem.SetAttributes(path, attrs & ~BlockingAttributes);
+            }
+        }
+        catch
+        {
+            // Best effort — WindowsFileSystem already normalizes on its own; this is
+            // the explicit, testable policy layer for fake filesystems.
+        }
+    }
+
+    private string SafeGetAttributes(string path)
+    {
+        try
+        {
+            return _fileSystem.GetAttributes(path).ToString();
+        }
+        catch
+        {
+            return "(unreadable)";
         }
     }
 
