@@ -304,7 +304,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 ## Phase 10 — Build Engine
 
 - **Status:** **COMPLETED** — real-desktop validation PASSED 2026-08-10 on Windows 11 25H2 (Chinese
-  Simplified, x64, Consumer Editions, `install.wim`); PENDING closeout merge to `main` via `--no-ff`. Replaces the
+  Simplified, x64, Consumer Editions, `install.wim`); merged to `main` via `--no-ff` on 2026-08-10. Replaces the
   honest placeholder Build step (ADR-032) with a real, safe ISO-rebuild pipeline. Key safety/UX
   properties delivered: resumable post-commit build checkpoint (skip Commit/Export when the durable
   `install.wim` already exists; the committed/exported artifact is retained on a post-commit failure

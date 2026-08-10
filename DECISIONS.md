@@ -1038,5 +1038,5 @@ All decisions are `ACCEPTED` unless noted.
   dismount/remount occurs). Failed/Cancelled builds cannot Finish; zh-CN and en-US behavior is
   identical. The wizard and utility navigation are unified under one coordinator, eliminating the
   class of "navigated but nothing changed" desync defect. Status: **IMPLEMENTED / REAL DESKTOP
-  VALIDATED / COMPLETED** (2026-08-10); PENDING closeout merge to `main` via `--no-ff`.
+  VALIDATED / COMPLETED** (2026-08-10); merged to `main` via `--no-ff` on 2026-08-10.
 

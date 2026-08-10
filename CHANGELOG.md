@@ -50,7 +50,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Status (Phase 10 — Build / ISO Export — COMPLETED)
 - **COMPLETED / REAL DESKTOP VALIDATION PASSED** (2026-08-10). Built on Step 3.2/3.3 — the pipeline
   contains no UI-side DISM/oscdimg calls (coordination only; the actual tools live behind Core
-  interfaces in Infrastructure). ADR-038…ADR-044. PENDING closeout merge to `main` via `--no-ff` on 2026-08-10.
+  interfaces in Infrastructure). ADR-038…ADR-044. Merged to `main` via `--no-ff` on 2026-08-10.
 - **Automated suite: 440 pass (Core 37, App 403), 0 errors, 0 warnings (Release).** Real-desktop
   validation PASSED on Windows 11 25H2 (Chinese Simplified, x64, Consumer Editions, `install.wim`):
   Build entered after Apply; working image committed + automatically unmounted; clean install.wim
