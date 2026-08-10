@@ -158,6 +158,7 @@ public class IsoViewModelTests
     {
         public string? NextPath { get; set; }
         public string? PickIsoFile() => NextPath;
+        public string? PickFolder() => null;
     }
 
     private sealed class FakeInspection : IIsoInspectionService

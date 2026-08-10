@@ -13,7 +13,7 @@ public class AppStateTests
 
         Assert.Null(state.SourceImagePath);
         Assert.Null(state.SelectedEdition);
-        Assert.Equal(BuildStatus.NotStarted, state.BuildStatus);
+        Assert.Equal(BuildState.NotStarted, state.BuildStatus);
         Assert.NotNull(state.Configuration);
         Assert.Equal("Default", state.ConfigurationLabel);
     }
@@ -52,9 +52,9 @@ public class AppStateTests
             }
         };
 
-        state.BuildStatus = BuildStatus.InProgress;
+        state.BuildStatus = BuildState.Preflight;
 
         Assert.True(raised);
-        Assert.Equal(BuildStatus.InProgress, state.BuildStatus);
+        Assert.Equal(BuildState.Preflight, state.BuildStatus);
     }
 }

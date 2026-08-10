@@ -29,8 +29,10 @@ public class AppBootTests
         Assert.IsType<WorkflowViewModel>(main.ActiveView);
         Assert.IsType<WorkflowViewModel>(main.Workflow);
 
-        // The logger starts empty until something logs.
-        Assert.Empty(logger.Entries);
+        // Startup shows the wizard by navigating through the single coordinator,
+        // which is logged. The logger is therefore no longer empty at startup — it
+        // reflects the initial navigation to the workflow surface.
+        Assert.Contains(logger.Entries, e => e.Message.Contains("Navigation changed"));
     }
 
     [Fact]

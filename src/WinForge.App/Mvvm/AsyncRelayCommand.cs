@@ -34,14 +34,29 @@ public sealed class AsyncRelayCommand : ICommand
 
     public async void Execute(object? parameter)
     {
+        await ExecuteAsync(parameter);
+    }
+
+    /// <summary>
+    /// Awaitable variant of <see cref="Execute"/>. Lets callers (e.g. tests and
+    /// callers that need completion signaling) await the underlying operation
+    /// instead of relying on the fire-and-forget <c>async void</c> path.
+    /// </summary>
+    public Task ExecuteAsync(object? parameter)
+    {
         if (!CanExecute(parameter))
         {
-            return;
+            return Task.CompletedTask;
         }
 
         _isExecuting = true;
         RaiseCanExecuteChanged();
 
+        return ExecuteCoreAsync(parameter);
+    }
+
+    private async Task ExecuteCoreAsync(object? parameter)
+    {
         try
         {
             await _execute(parameter);

@@ -51,20 +51,25 @@ public sealed class MainViewModel : ViewModelBase
         _navigation.CurrentPageChanged += OnNavigated;
 
         // Titles are localization keys; the XAML binds them through the Loc service.
+        // Every rail entry funnels through the single navigation coordinator so the
+        // service's CurrentPage always matches the visible surface.
         UtilityItems = new ObservableCollection<NavItem>
         {
-            new(PageKey.Home, "Nav.Home", new RelayCommand(_ => ShowUtility(PageKey.Home))),
-            new(PageKey.Logs, "Nav.Logs", new RelayCommand(_ => ShowUtility(PageKey.Logs))),
-            new(PageKey.Settings, "Nav.Settings", new RelayCommand(_ => ShowUtility(PageKey.Settings))),
-            new(PageKey.About, "Nav.About", new RelayCommand(_ => ShowUtility(PageKey.About))),
+            new(PageKey.Home, "Nav.Home", new RelayCommand(_ => _navigation.NavigateTo(PageKey.Home))),
+            new(PageKey.Logs, "Nav.Logs", new RelayCommand(_ => _navigation.NavigateTo(PageKey.Logs))),
+            new(PageKey.Settings, "Nav.Settings", new RelayCommand(_ => _navigation.NavigateTo(PageKey.Settings))),
+            new(PageKey.About, "Nav.About", new RelayCommand(_ => _navigation.NavigateTo(PageKey.About))),
         };
 
-        ShowWorkflowCommand = new RelayCommand(_ => ShowWorkflow());
-        ShowUtilityCommand = new RelayCommand(p => ShowUtility((PageKey)p!));
+        ShowWorkflowCommand = new RelayCommand(_ => _navigation.NavigateTo(PageKey.Workflow));
+        ShowUtilityCommand = new RelayCommand(p => _navigation.NavigateTo((PageKey)p!));
 
-        IsWorkflowActive = true;
-        ActiveView = _workflow;
-        SyncActive();
+        // Show the wizard by navigating through the coordinator. This keeps
+        // INavigationService.CurrentPage in sync with the visible surface — without
+        // it, the wizard was displayed directly while CurrentPage stayed at its
+        // initial "Home", so a later Finish() -> NavigateTo(Home) was a no-op and
+        // the wizard never disappeared.
+        _navigation.NavigateTo(PageKey.Workflow);
     }
 
     public WorkflowViewModel Workflow => _workflow;
@@ -136,6 +141,11 @@ public sealed class MainViewModel : ViewModelBase
             case PageKey.Settings:
             case PageKey.About:
                 ShowUtility(page);
+                break;
+            case PageKey.Workflow:
+                // The wizard surface. Do NOT reset the active step here — this is the
+                // "show the wizard" entry point, not a deep link to a specific step.
+                ShowWorkflow();
                 break;
             default:
                 ShowWorkflow();

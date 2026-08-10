@@ -303,15 +303,78 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 10 — Build Engine
 
-- **Status:** NOT STARTED
-- **Goal:** Rebuild a customized Windows ISO.
-- **Scope:** Apply plan to mounted image, unmount, rebuild ISO preserving original
-  structure.
+- **Status:** **COMPLETED** — real-desktop validation PASSED 2026-08-10 on Windows 11 25H2 (Chinese
+  Simplified, x64, Consumer Editions, `install.wim`); PENDING closeout merge to `main` via `--no-ff`. Replaces the
+  honest placeholder Build step (ADR-032) with a real, safe ISO-rebuild pipeline. Key safety/UX
+  properties delivered: resumable post-commit build checkpoint (skip Commit/Export when the durable
+  `install.wim` already exists; the committed/exported artifact is retained on a post-commit failure
+  so the next run resumes without re-Apply); destination-only ReadOnly/System/Hidden attribute
+  normalization (the build copy clears those attributes, never the source) with deterministic
+  media-tree cleanup; automatic Commit + unmount semantics (`/Unmount-Image /Commit`, then the image
+  is gone); and a completion-gated final-step **Finish → Home** navigation that preserves the ISO
+  (ADR-044). Phase 10 added ≈48 automated tests (orchestrator + component unit + ViewModel +
+  shell-level navigation integration); total suite **440 pass (Core 37, App 403), 0 errors, 0
+  warnings (Release)**, all CI-safe (no ISO / admin / internet).
+- **Goal:** Rebuild a customized Windows ISO from the isolated, customized working image.
+- **Scope:** Commit the working image, export a clean install.wim, copy the original media tree and
+  replace the payload, build a dual-boot (BIOS+UEFI) ISO with oscdimg, verify independently, and
+  surface the full lifecycle in the Build UI. The source ISO is never modified.
 - **Deliverables:**
-  - `IBuildService` (Core) + Infrastructure implementation
+  - `IBuildService` (Core) + `ImageBuildService` (Infrastructure) — 6-phase state machine
+    (Preflight → CommittingImage → ExportingImage → PreparingMedia → BuildingIso → Verifying →
+    Completed/Failed/Cancelled), writing an atomic `build.recovery.json` for crash recovery.
+  - `IImageServicingService.CommitUnmountAsync` (DISM `/Unmount-Image /Commit`) — the build commits
+    the working image; `/Discard` is never used on the build path (ADR-039).
+  - `IWimExporter` + `DismWimExporter` (DISM `/Export-Image`, `/Compress:max /CheckIntegrity`) —
+    clean install.wim; ESD sources normalized to a WIM at index 1 (ADR-040).
+  - `IIsoMediaPreparer` + `IsoMediaPreparer` — read-only copy of the original media tree; replaces
+    `sources\install.wim` (WIM) or deletes `sources\install.esd` and writes `sources\install.wim`
+    (ESD); validates the dual-boot files exist (ADR-040).
+  - `IBootableIsoBuilder` + `OscdimgIsoBuilder` + `OscdimgArgumentBuilder` — Windows ADK `oscdimg.exe`,
+    dual-boot args `-bootdata:2#p0,e,b"<etfsboot.com>"#pEF,e,b"<efisys.bin>" -m -o -u2 -udfver102`;
+    fails fast and clearly when the ADK is missing or a boot file is absent — never fakes an ISO
+    (ADR-041).
+  - `IBuildVerifier` + `BuildVerifier` — independent re-check (output exists + size, install.wim
+    present, no mounted WIM, expected edition/index present); a failed verification makes the build
+    fail (ADR-043).
+  - `IAdkToolLocator` + `FakeAdkToolLocator`/`MissingAdkToolLocator` — ADK detection; UI surfaces
+    `AdkMissing` before build.
+  - `BuildStepViewModel` (App) — gated (`CanBuild` requires Applied + Mounted + ADK + non-empty
+    paths), default file name `WinForge_<Edition>_<yyyyMMdd-HHmm>.iso` (spaces→`_`), explicit
+    overwrite policy (default `GenerateUniqueName`), cancellable command, terminal state + log +
+    output path/size surfaced from `BuildResult`; success transitions the workspace Mounted→Prepared
+    (ADR-042).
+  - Core request/result DTOs: `BuildRequest`, `BuildResult`, `BuildState`, `BuildProgress`,
+    `BuildFileName`, `WimExport*`, `MediaPrepare*`, `IsoBuild*`, `BuildVerification*`,
+    `BuildRecoveryState`.
 - **Acceptance Criteria:**
-  - Produces a bootable ISO whose structure matches the source except for the
-    intended customizations.
+  - Produces a bootable ISO whose structure matches the source except for the intended
+    customizations.
+  - The original source ISO / `install.wim` / `install.esd` is never modified.
+  - Commit failure stops the build (no ISO, workspace recoverable).
+  - Missing ADK or missing boot files fail fast and clearly; no fake ISO.
+  - ESD and WIM sources both yield a WIM payload at index 1.
+  - A crashed build is detected and cleaned before the next run.
+  - **Final-step UX:** when Build is the current final step, a completed build shows a localized,
+    completion-gated **Finish** (enabled on `BuildState == Completed`, hidden otherwise); Failed /
+    Cancelled builds stay on Build and never present a successful Finish; Finish navigates Workflow →
+    Home, preserves the generated ISO and logs, and never calls `Application.Shutdown()` (ADR-044).
+  - **Resumable post-commit checkpoint:** a failure after Commit/Export retains the durable
+    `install.wim` and the export artifact so the next run resumes without re-Apply; only the dirty
+    media tree + partial output are discarded.
+  - **Destination-only attribute normalization:** the build copy clears ReadOnly/System/Hidden on
+    files it writes (notably `autorun.inf`) and cleans the media tree deterministically, while the
+    source media is untouched.
+- **Real-desktop validation (PASSED, 2026-08-10):** run on Windows 11 25H2 (Chinese Simplified, x64,
+  Consumer Editions, `install.wim`): (1) Build entered correctly after Apply; (2) the working image
+  was committed and the WIM automatically unmounted; (3) a clean `install.wim` was exported; (4)
+  `PreparingMedia` copied the original media tree and replaced the payload; (5) the ReadOnly/System/
+  Hidden `autorun.inf` defect was fixed (no `UnauthorizedAccessException`); (6) `oscdimg.exe` built a
+  dual-boot ISO; (7) `BuildVerifier` confirmed the output ISO + `sources\install.wim` + expected
+  edition/index and that no WIM remained mounted; (8) the build reached 100% / Completed; (9) the
+  Finish button was visible + enabled and **navigated Workflow → Home**; (10) the application
+  remained running, the generated ISO stayed intact, no extra manual dismount was required, and no
+  stale mounted WIM remained. Phase 10 is therefore marked **COMPLETED**.
 
 ---
 

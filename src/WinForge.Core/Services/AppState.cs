@@ -16,7 +16,7 @@ public sealed class AppState : IAppState
     private CustomizationPlan? _currentCustomizationPlan;
     private CustomizationExecutionState _customizationExecutionState = CustomizationExecutionState.Idle;
     private DiscoveryInventory? _discoveredInventory;
-    private BuildStatus _buildStatus = BuildStatus.NotStarted;
+    private BuildState _buildStatus = BuildState.NotStarted;
     private readonly BuildPlan _configuration = new();
 
     public string? SourceImagePath
@@ -125,7 +125,7 @@ public sealed class AppState : IAppState
 
     public string ConfigurationLabel => "Default";
 
-    public BuildStatus BuildStatus
+    public BuildState BuildStatus
     {
         get => _buildStatus;
         set => SetField(ref _buildStatus, value);

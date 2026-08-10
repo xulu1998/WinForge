@@ -83,6 +83,7 @@
   <!-- 导航 / 按钮 -->
   <data name="Nav.Back" xml:space="preserve"><value>上一步</value></data>
   <data name="Nav.Next" xml:space="preserve"><value>下一步</value></data>
+  <data name="Nav.Finish" xml:space="preserve"><value>完成</value></data>
   <data name="Nav.Home" xml:space="preserve"><value>主页</value></data>
   <data name="Nav.Logs" xml:space="preserve"><value>日志</value></data>
   <data name="Nav.Settings" xml:space="preserve"><value>设置</value></data>
@@ -199,11 +200,45 @@
 
   <!-- 构建 -->
   <data name="Build.Title" xml:space="preserve"><value>构建镜像</value></data>
-  <data name="Build.Intro" xml:space="preserve"><value>此步骤将生成你最终的自定义 Windows 镜像。</value></data>
+  <data name="Build.Intro" xml:space="preserve"><value>此步骤将生成你最终的、可启动的自定义 Windows ISO。</value></data>
   <data name="Build.Placeholder" xml:space="preserve"><value>镜像导出与 ISO 重建计划在后续阶段实现，目前尚未实现。</value></data>
   <data name="Build.Note" xml:space="preserve"><value>此处不会写入任何更改。构建步骤是一个诚实的占位符，使整个工作流端到端完整。</value></data>
   <data name="Build.Applied" xml:space="preserve"><value>应用已完成——更改已写入已挂载的工作镜像。</value></data>
   <data name="Build.NotApplied" xml:space="preserve"><value>应用尚未完成。请使用“应用”步骤将计划写入已挂载的镜像。</value></data>
+  <data name="Build.Mode.Single" xml:space="preserve"><value>单一定制版本</value></data>
+  <data name="Build.BuildMode" xml:space="preserve"><value>构建模式</value></data>
+  <data name="Build.SourceEdition" xml:space="preserve"><value>源版本</value></data>
+  <data name="Build.FinalEdition" xml:space="preserve"><value>最终版本名称</value></data>
+  <data name="Build.OutputDir" xml:space="preserve"><value>输出文件夹</value></data>
+  <data name="Build.OutputFile" xml:space="preserve"><value>文件名</value></data>
+  <data name="Build.Browse" xml:space="preserve"><value>浏览…</value></data>
+  <data name="Build.Start" xml:space="preserve"><value>构建 ISO</value></data>
+  <data name="Build.Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Build.Stage" xml:space="preserve"><value>阶段</value></data>
+  <data name="Build.Progress" xml:space="preserve"><value>进度</value></data>
+  <data name="Build.Log" xml:space="preserve"><value>日志</value></data>
+  <data name="Build.Output" xml:space="preserve"><value>输出</value></data>
+  <data name="Build.OutputPath" xml:space="preserve"><value>输出文件</value></data>
+  <data name="Build.OutputSize" xml:space="preserve"><value>大小</value></data>
+  <data name="Build.Stage.NotStarted" xml:space="preserve"><value>未开始</value></data>
+  <data name="Build.Stage.Preflight" xml:space="preserve"><value>预检</value></data>
+  <data name="Build.Stage.CommittingImage" xml:space="preserve"><value>提交镜像</value></data>
+  <data name="Build.Stage.ExportingImage" xml:space="preserve"><value>导出镜像</value></data>
+  <data name="Build.Stage.PreparingMedia" xml:space="preserve"><value>准备媒体</value></data>
+  <data name="Build.Stage.BuildingIso" xml:space="preserve"><value>构建 ISO</value></data>
+  <data name="Build.Stage.Verifying" xml:space="preserve"><value>校验</value></data>
+  <data name="Build.Stage.Completed" xml:space="preserve"><value>已完成</value></data>
+  <data name="Build.Stage.Failed" xml:space="preserve"><value>失败</value></data>
+  <data name="Build.Stage.Cancelled" xml:space="preserve"><value>已取消</value></data>
+  <data name="Build.Status.Starting" xml:space="preserve"><value>构建已开始…</value></data>
+  <data name="Build.Status.Completed" xml:space="preserve"><value>构建完成。最终的 ISO 已生成。</value></data>
+  <data name="Build.Status.Failed" xml:space="preserve"><value>构建失败</value></data>
+  <data name="Build.Status.Cancelled" xml:space="preserve"><value>构建已取消</value></data>
+  <data name="Build.Status.Cancelling" xml:space="preserve"><value>正在取消…</value></data>
+  <data name="Build.Status.NeedsApply" xml:space="preserve"><value>请先执行“应用”步骤，将修改写入工作镜像。</value></data>
+  <data name="Build.Status.NeedsMount" xml:space="preserve"><value>构建要求工作镜像处于挂载状态。请从“准备”步骤挂载它。</value></data>
+  <data name="Build.Status.AdapterMissing" xml:space="preserve"><value>构建 ISO 需要 Windows ADK 部署工具（oscdimg.exe）。请安装 ADK 后重试。</value></data>
+  <data name="Build.OpenOutputFolder" xml:space="preserve"><value>打开输出文件夹</value></data>
 
   <!-- 日志 -->
   <data name="Logs.Title" xml:space="preserve"><value>日志</value></data>

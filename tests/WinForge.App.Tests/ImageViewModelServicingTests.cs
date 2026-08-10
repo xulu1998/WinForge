@@ -51,6 +51,7 @@ public class ImageViewModelServicingTests
         public string? NextPath { get; set; }
 
         public string? PickIsoFile() => NextPath;
+        public string? PickFolder() => null;
     }
 
     [Fact]

@@ -27,4 +27,8 @@ internal sealed class FakeImageServicingService : IImageServicingService
     public Task<ServicingResult> ValidateServicingWorkspaceAsync(
         ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
         => Task.FromResult(ServicingResult.Ok(workspace, ServicingHealth.Prepared));
+
+    public Task<ServicingResult> CommitUnmountAsync(
+        ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
+        => Task.FromResult(ServicingResult.Ok(workspace, ServicingHealth.Prepared));
 }

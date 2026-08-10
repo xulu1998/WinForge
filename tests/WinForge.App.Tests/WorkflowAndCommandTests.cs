@@ -32,6 +32,7 @@ public class WorkflowAndCommandTests
     internal sealed class FakeFilePicker : IFilePicker
     {
         public string? PickIsoFile() => null;
+        public string? PickFolder() => null;
     }
 
     internal sealed class FakeWorkspaceFactory : IImageWorkspaceFactory
@@ -61,7 +62,9 @@ public class WorkflowAndCommandTests
         var comingSoon = new ComingSoonViewModel();
         var customize = new CustomizeStepViewModel(components, privacy, system, comingSoon);
         var plan = new PlanReviewViewModel(state, logger, new FakeCustomizationExecutionService());
-        var build = new BuildStepViewModel(state);
+        var build = new BuildStepViewModel(
+            state, new FakeBuildService(), new FakeFileSystem(), new FakeFilePicker(),
+            new FakeAdkToolLocator(), logger, new FakeLocalizationService());
         return (new WorkflowViewModel(state, image, customize, plan, build), state);
     }
 
@@ -91,7 +94,7 @@ public class WorkflowAndCommandTests
         Assert.Equal(WorkflowStepState.NotAvailable, wf.Steps[2].State); // Customize
         Assert.Equal(WorkflowStepState.NotAvailable, wf.Steps[3].State); // Review
         Assert.Equal(WorkflowStepState.NotAvailable, wf.Steps[4].State); // Apply
-        Assert.Equal(WorkflowStepState.Available, wf.Steps[5].State);    // Build placeholder always reachable
+        Assert.Equal(WorkflowStepState.NotAvailable, wf.Steps[5].State);    // Build requires Apply success
         Assert.Single(wf.Steps.Where(s => s.State == WorkflowStepState.Current));
     }
 
@@ -145,10 +148,18 @@ public class WorkflowAndCommandTests
     }
 
     [Fact]
-    public void Workflow_Build_Step_Is_Always_Available_Placeholder()
+    public void Workflow_Build_Step_Available_Only_After_Apply()
     {
-        var (wf, _) = Build();
-        Assert.Equal(WorkflowStepState.Available, wf.Steps[5].State); // Build reachable end to end
+        var (wf, state) = Build();
+        // The Build step is locked until the customization plan has actually been
+        // applied (execution succeeded) — it is no longer an always-open placeholder.
+        Assert.Equal(WorkflowStepState.NotAvailable, wf.Steps[5].State);
+
+        // After execution succeeds (and the working image is mounted), it unlocks.
+        state.CurrentImageWorkspace = new ImageWorkspace();
+        state.CurrentServicingWorkspace = new ImageServicingWorkspace { State = ServicingWorkspaceState.Mounted };
+        state.CustomizationExecutionState = CustomizationExecutionState.Completed;
+        Assert.Equal(WorkflowStepState.Available, wf.Steps[5].State);
     }
 
     // ---- WORKFLOW: navigation ----

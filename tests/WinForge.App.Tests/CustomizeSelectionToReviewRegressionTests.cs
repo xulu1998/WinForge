@@ -94,7 +94,9 @@ public class CustomizeSelectionToReviewRegressionTests
             var comingSoon = new ComingSoonViewModel();
             var customize = new CustomizeStepViewModel(Components, Privacy, System, comingSoon);
             var plan = new PlanReviewViewModel(State, logger, new FakeCustomizationExecutionService());
-            var build = new BuildStepViewModel(State);
+            var build = new BuildStepViewModel(
+                State, new FakeBuildService(), new FakeFileSystem(), new WorkflowAndCommandTests.FakeFilePicker(),
+                new FakeAdkToolLocator(), logger, new FakeLocalizationService());
             Wf = new WorkflowViewModel(State, image, customize, plan, build);
         }
 

@@ -65,6 +65,6 @@ public interface IAppState : INotifyPropertyChanged
     /// <summary>Human-readable label for the active configuration preset.</summary>
     string ConfigurationLabel { get; }
 
-    /// <summary>Current build status.</summary>
-    BuildStatus BuildStatus { get; set; }
+    /// <summary>Current build status (durable Build / ISO export lifecycle state).</summary>
+    BuildState BuildStatus { get; set; }
 }
