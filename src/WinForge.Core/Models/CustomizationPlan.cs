@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace WinForge.Core.Models;
 
@@ -25,14 +27,44 @@ namespace WinForge.Core.Models;
 /// - Once execution begins the plan is frozen (no further edits).
 /// </para>
 /// </summary>
-public sealed class CustomizationPlan
+public sealed class CustomizationPlan : INotifyPropertyChanged
 {
     public string Id { get; init; } = "plan-" + Guid.NewGuid().ToString("N").Substring(0, 12);
 
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
     public DateTime? ValidatedAt { get; private set; }
 
-    public CustomizationPlanStatus Status { get; private set; } = CustomizationPlanStatus.Draft;
+    private CustomizationPlanStatus _status = CustomizationPlanStatus.Draft;
+
+    public CustomizationPlanStatus Status
+    {
+        get => _status;
+        private set
+        {
+            if (_status == value) return;
+            _status = value;
+            OnPropertyChanged(nameof(Status));
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+    /// <summary>
+    /// Selection count and validity are aggregate, computed properties. Whenever an
+    /// operation is added, removed, or its selection is toggled, surface the change
+    /// so subscribers (the workflow coordinator and the review view) can react live.
+    /// Without this, the in-place plan mutation performed by <see cref="PlanSync"/>
+    /// would never reach <see cref="IAppState"/> listeners and the Review/Next gating
+    /// would stay frozen at its last recomputed value.
+    /// </summary>
+    private void RaiseSelectionChanged()
+    {
+        OnPropertyChanged(nameof(SelectedOperations));
+        OnPropertyChanged(nameof(IsValid));
+    }
 
     private readonly List<CustomizationOperation> _operations = new();
     public IReadOnlyList<CustomizationOperation> Operations => _operations;
@@ -52,6 +84,7 @@ public sealed class CustomizationPlan
         }
 
         _operations.Add(operation);
+        RaiseSelectionChanged();
     }
 
     public void RemoveOperation(string operationId)
@@ -64,6 +97,7 @@ public sealed class CustomizationPlan
         }
 
         _operations.RemoveAll(o => o.OperationId == operationId);
+        RaiseSelectionChanged();
     }
 
     public void SetSelected(string operationId, bool selected)
@@ -79,6 +113,7 @@ public sealed class CustomizationPlan
         if (op is not null)
         {
             op.IsSelected = selected;
+            RaiseSelectionChanged();
         }
     }
 
@@ -139,6 +174,7 @@ public sealed class CustomizationPlan
             }
         }
 
+        OnPropertyChanged(nameof(IsValid));
         return issues;
     }
 

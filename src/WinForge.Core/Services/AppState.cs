@@ -79,7 +79,34 @@ public sealed class AppState : IAppState
     public CustomizationPlan? CurrentCustomizationPlan
     {
         get => _currentCustomizationPlan;
-        set => SetField(ref _currentCustomizationPlan, value);
+        set
+        {
+            // The customization plan is mutated IN PLACE by the tab view models
+            // (see PlanSync.Toggle), so a same-reference reassignment needs NO
+            // synthetic notification — but a reference change must (re)subscribe so
+            // the in-place selection/validation/status edits surface as a
+            // CurrentCustomizationPlan change. A synthetic event on same-reference
+            // would risk a notification feedback loop (the 0xc00000fd class when
+            // entering Customize), so we only fire when the reference actually moves.
+            if (ReferenceEquals(_currentCustomizationPlan, value))
+            {
+                return;
+            }
+
+            if (_currentCustomizationPlan is INotifyPropertyChanged oldPlan)
+            {
+                oldPlan.PropertyChanged -= OnNestedPlanChanged;
+            }
+
+            _currentCustomizationPlan = value;
+
+            if (value is INotifyPropertyChanged newPlan)
+            {
+                newPlan.PropertyChanged += OnNestedPlanChanged;
+            }
+
+            OnPropertyChanged(nameof(CurrentCustomizationPlan));
+        }
     }
 
     public CustomizationExecutionState CustomizationExecutionState
@@ -133,5 +160,19 @@ public sealed class AppState : IAppState
         {
             OnPropertyChanged(nameof(CurrentServicingWorkspace));
         }
+    }
+
+    /// <summary>
+    /// Forwards nested <see cref="CustomizationPlan"/> changes (selection toggles,
+    /// validation, status) to <see cref="IAppState"/> listeners as a
+    /// CurrentCustomizationPlan change. The workflow coordinator derives Review/Next
+    /// availability from the plan's selected-operation count, so an in-place edit
+    /// must surface here or the gating would stay frozen. Convergence is guaranteed:
+    /// no handler reassigns CurrentCustomizationPlan in response to a selection
+    /// notification, so the forward cannot re-enter the setter and loop.
+    /// </summary>
+    private void OnNestedPlanChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(CurrentCustomizationPlan));
     }
 }
