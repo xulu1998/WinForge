@@ -18,6 +18,8 @@
                     <conv:LocKeyMultiConverter x:Key="locKey"/>
                     <conv:StateToCaptionConverter x:Key="stateCaption"/>
                     <conv:StepBadgeConverter x:Key="stepBadge"/>
+                    <conv:RecommendationToColorConverter x:Key="recColor"/>
+                    <conv:RiskToColorConverter x:Key="riskColor"/>
 
                     <Style x:Key="StatusTile" TargetType="Border">
                         <Setter Property="Background" Value="#F5F7FA"/>
@@ -122,6 +124,9 @@
             </DataTemplate>
             <DataTemplate DataType="{x:Type vm:AboutViewModel}">
                 <views:AboutView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ComponentIntelligenceViewModel}">
+                <views:ComponentIntelligenceView/>
             </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>

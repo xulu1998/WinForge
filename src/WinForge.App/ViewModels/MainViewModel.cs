@@ -22,6 +22,7 @@ public sealed class MainViewModel : ViewModelBase
     private readonly AboutViewModel _about;
     private readonly ComingSoonViewModel _comingSoon;
     private readonly WorkflowViewModel _workflow;
+    private readonly ComponentIntelligenceViewModel _componentIntelligence;
     private readonly INavigationService _navigation;
 
     private object? _activeView;
@@ -35,7 +36,8 @@ public sealed class MainViewModel : ViewModelBase
         SettingsViewModel settings,
         AboutViewModel about,
         ComingSoonViewModel comingSoon,
-        WorkflowViewModel workflow)
+        WorkflowViewModel workflow,
+        ComponentIntelligenceViewModel componentIntelligence)
     {
         _home = home;
         _logs = logs;
@@ -43,6 +45,7 @@ public sealed class MainViewModel : ViewModelBase
         _about = about;
         _comingSoon = comingSoon;
         _workflow = workflow;
+        _componentIntelligence = componentIntelligence;
         _navigation = navigation;
 
         // Legacy pages (Home's "Select image", etc.) navigate through INavigationService.
@@ -59,6 +62,7 @@ public sealed class MainViewModel : ViewModelBase
             new(PageKey.Logs, "Nav.Logs", new RelayCommand(_ => _navigation.NavigateTo(PageKey.Logs))),
             new(PageKey.Settings, "Nav.Settings", new RelayCommand(_ => _navigation.NavigateTo(PageKey.Settings))),
             new(PageKey.About, "Nav.About", new RelayCommand(_ => _navigation.NavigateTo(PageKey.About))),
+            new(PageKey.ComponentIntelligence, "Nav.ComponentIntelligence", new RelayCommand(_ => _navigation.NavigateTo(PageKey.ComponentIntelligence))),
         };
 
         ShowWorkflowCommand = new RelayCommand(_ => _navigation.NavigateTo(PageKey.Workflow));
@@ -113,6 +117,7 @@ public sealed class MainViewModel : ViewModelBase
         PageKey.Logs => _logs,
         PageKey.Settings => _settings,
         PageKey.About => _about,
+        PageKey.ComponentIntelligence => _componentIntelligence,
         _ => _comingSoon
     };
 
@@ -140,6 +145,7 @@ public sealed class MainViewModel : ViewModelBase
             case PageKey.Logs:
             case PageKey.Settings:
             case PageKey.About:
+            case PageKey.ComponentIntelligence:
                 ShowUtility(page);
                 break;
             case PageKey.Workflow:

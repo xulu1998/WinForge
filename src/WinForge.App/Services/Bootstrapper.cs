@@ -15,6 +15,7 @@ using WinForge.Infrastructure.Execution;
 using WinForge.Infrastructure.Logging;
 using WinForge.Infrastructure.Servicing;
 using WinForge.Infrastructure.Build;
+using WinForge.Infrastructure.ComponentIntelligence;
 
 namespace WinForge.App.Services;
 
@@ -79,11 +80,16 @@ public static class Bootstrapper
         services.AddSingleton<IBuildVerifier, BuildVerifier>();
         services.AddSingleton<IBuildService, ImageBuildService>();
 
+        // Phase 11 — Component Intelligence (Stage 11.1, read-only discovery + catalog)
+        services.AddSingleton<IComponentCatalogProvider, CuratedComponentCatalog>();
+        services.AddSingleton<IComponentIntelligenceService, WindowsComponentIntelligenceService>();
+
         // View models (singletons, shared across navigation)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<HomeViewModel>();
         services.AddSingleton<ImageViewModel>();
         services.AddSingleton<ComponentsViewModel>();
+        services.AddSingleton<ComponentIntelligenceViewModel>();
         services.AddSingleton<PrivacyViewModel>();
         services.AddSingleton<SystemViewModel>();
         services.AddSingleton<PlanReviewViewModel>();

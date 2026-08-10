@@ -321,4 +321,173 @@
   <data name="Servicing.Msg.PrepareFailedUnexpected" xml:space="preserve"><value>准备时发生意外错误。</value></data>
   <data name="Servicing.Msg.MountFailedUnexpected" xml:space="preserve"><value>挂载时发生意外错误。</value></data>
   <data name="Servicing.Msg.UnmountFailedUnexpected" xml:space="preserve"><value>卸载时发生意外错误。</value></data>
+  <data name="Nav.ComponentIntelligence" xml:space="preserve"><value>组件智能</value></data>
+  <data name="ComponentIntelligence.Title" xml:space="preserve"><value>组件智能</value></data>
+  <data name="ComponentIntelligence.Intro" xml:space="preserve"><value>了解每个 Windows 组件的作用、是否需要，以及移除后会发生什么。只读分析原型。</value></data>
+  <data name="ComponentIntelligence.Discover" xml:space="preserve"><value>从已挂载映像发现</value></data>
+  <data name="ComponentIntelligence.Discovering" xml:space="preserve"><value>正在发现…</value></data>
+  <data name="ComponentIntelligence.StandardMode" xml:space="preserve"><value>标准（仅策展）</value></data>
+  <data name="ComponentIntelligence.AdvancedMode" xml:space="preserve"><value>高级（全部已发现）</value></data>
+  <data name="ComponentIntelligence.NoImage" xml:space="preserve"><value>请挂载工作映像以清点真实组件。当前仅显示策展目录。</value></data>
+  <data name="ComponentIntelligence.StatusEmpty" xml:space="preserve"><value>未发现组件。</value></data>
+  <data name="ComponentIntelligence.Summary" xml:space="preserve"><value>已发现 {0} 个 AppX、{1} 个功能、{2} 个可选功能、{3} 个程序包。</value></data>
+  <data name="ComponentIntelligence.Counts" xml:space="preserve"><value>已策展: {0} · 未分类: {1} · 受保护: {2} · 不支持: {3}</value></data>
+  <data name="Recommendation.RecommendedRemove" xml:space="preserve"><value>建议移除</value></data>
+  <data name="Recommendation.OptionalRemove" xml:space="preserve"><value>可选移除</value></data>
+  <data name="Recommendation.UsuallyKeep" xml:space="preserve"><value>通常保留</value></data>
+  <data name="Recommendation.AdvancedOnly" xml:space="preserve"><value>仅限高级用户</value></data>
+  <data name="Recommendation.NeverRemove" xml:space="preserve"><value>切勿移除</value></data>
+  <data name="Recommendation.Unknown" xml:space="preserve"><value>尚未确认</value></data>
+  <data name="Risk.Low" xml:space="preserve"><value>低</value></data>
+  <data name="Risk.Medium" xml:space="preserve"><value>中</value></data>
+  <data name="Risk.High" xml:space="preserve"><value>高</value></data>
+  <data name="Risk.Critical" xml:space="preserve"><value>严重</value></data>
+  <data name="Risk.Unknown" xml:space="preserve"><value>尚未确认</value></data>
+  <data name="Removal.Supported" xml:space="preserve"><value>支持</value></data>
+  <data name="Removal.Conditional" xml:space="preserve"><value>有条件</value></data>
+  <data name="Removal.Experimental" xml:space="preserve"><value>实验性</value></data>
+  <data name="Removal.Blocked" xml:space="preserve"><value>已阻止</value></data>
+  <data name="Removal.Unknown" xml:space="preserve"><value>尚未确认</value></data>
+  <data name="Restore.Easy" xml:space="preserve"><value>容易（重装/重新启用）</value></data>
+  <data name="Restore.RequiresSource" xml:space="preserve"><value>需要 Windows 安装源</value></data>
+  <data name="Restore.RequiresWindowsUpdate" xml:space="preserve"><value>需要 Windows 更新</value></data>
+  <data name="Restore.ReinstallWindows" xml:space="preserve"><value>需要重装 Windows</value></data>
+  <data name="Restore.Unknown" xml:space="preserve"><value>尚未确认</value></data>
+  <data name="Classification.Curated" xml:space="preserve"><value>已策展</value></data>
+  <data name="Classification.DiscoveredUnclassified" xml:space="preserve"><value>未分类</value></data>
+  <data name="Classification.Protected" xml:space="preserve"><value>受保护</value></data>
+  <data name="Classification.Unsupported" xml:space="preserve"><value>不支持</value></data>
+  <data name="Category.AppX" xml:space="preserve"><value>预置 AppX</value></data>
+  <data name="Category.Capability" xml:space="preserve"><value>功能能力</value></data>
+  <data name="Category.OptionalFeature" xml:space="preserve"><value>可选功能</value></data>
+  <data name="Category.CbsPackage" xml:space="preserve"><value>Windows 程序包</value></data>
+  <data name="Category.Service" xml:space="preserve"><value>服务</value></data>
+  <data name="Category.ScheduledTask" xml:space="preserve"><value>计划任务</value></data>
+  <data name="Category.Driver" xml:space="preserve"><value>驱动</value></data>
+  <data name="Category.Language" xml:space="preserve"><value>语言</value></data>
+  <data name="Category.WinRecovery" xml:space="preserve"><value>Windows 恢复</value></data>
+  <data name="Category.SystemApp" xml:space="preserve"><value>系统应用</value></data>
+  <data name="Category.Protected" xml:space="preserve"><value>受保护</value></data>
+  <data name="Category.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Classification.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Component.WhatIsThis" xml:space="preserve"><value>这是什么？</value></data>
+  <data name="Component.ShortDescription" xml:space="preserve"><value>说明</value></data>
+  <data name="Component.Recommendation" xml:space="preserve"><value>建议</value></data>
+  <data name="Component.Risk" xml:space="preserve"><value>移除风险</value></data>
+  <data name="Component.Scenarios" xml:space="preserve"><value>相关场景</value></data>
+  <data name="Component.KeepIf" xml:space="preserve"><value>保留条件</value></data>
+  <data name="Component.RemoveIf" xml:space="preserve"><value>可移除条件</value></data>
+  <data name="Component.Impact" xml:space="preserve"><value>移除后受影响</value></data>
+  <data name="Component.Restoration" xml:space="preserve"><value>恢复方式</value></data>
+  <data name="Component.Savings" xml:space="preserve"><value>可节省空间</value></data>
+  <data name="Component.TechnicalDetails" xml:space="preserve"><value>技术详情</value></data>
+  <data name="Component.RawCategory" xml:space="preserve"><value>原始类别</value></data>
+  <data name="Component.RawIdentity" xml:space="preserve"><value>Windows 标识</value></data>
+  <data name="Component.RawState" xml:space="preserve"><value>状态</value></data>
+  <data name="Component.RawVersion" xml:space="preserve"><value>版本</value></data>
+  <data name="Component.MatchRule" xml:space="preserve"><value>匹配规则</value></data>
+  <data name="Component.Unknown" xml:space="preserve"><value>尚未确认</value></data>
+  <data name="Component.NotInventoried" xml:space="preserve"><value>尚未清点</value></data>
+  <data name="Component.Present" xml:space="preserve"><value>映像中存在</value></data>
+  <data name="Component.ListHeader" xml:space="preserve"><value>组件</value></data>
+  <data name="ComponentScenario.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="ComponentScenario.Gaming" xml:space="preserve"><value>游戏</value></data>
+  <data name="ComponentScenario.Office" xml:space="preserve"><value>办公</value></data>
+  <data name="ComponentScenario.Developer" xml:space="preserve"><value>开发</value></data>
+  <data name="ComponentScenario.Laptop" xml:space="preserve"><value>笔记本</value></data>
+  <data name="ComponentScenario.TouchPen" xml:space="preserve"><value>触控 / 手写笔</value></data>
+  <data name="ComponentScenario.PrintingScanning" xml:space="preserve"><value>打印与扫描</value></data>
+  <data name="ComponentScenario.Wsl" xml:space="preserve"><value>WSL</value></data>
+  <data name="ComponentScenario.Docker" xml:space="preserve"><value>Docker</value></data>
+  <data name="ComponentScenario.HyperV" xml:space="preserve"><value>Hyper-V</value></data>
+  <data name="ComponentScenario.WindowsSandbox" xml:space="preserve"><value>Windows 沙盒</value></data>
+  <data name="ComponentScenario.XboxGamePass" xml:space="preserve"><value>Xbox Game Pass</value></data>
+  <data name="ComponentScenario.MixedReality" xml:space="preserve"><value>混合现实</value></data>
+  <data name="ComponentScenario.Accessibility" xml:space="preserve"><value>辅助功能</value></data>
+  <data name="ComponentScenario.EnterpriseDomain" xml:space="preserve"><value>企业 / 域</value></data>
+  <data name="ComponentScenario.RemoteDesktop" xml:space="preserve"><value>远程桌面</value></data>
+  <data name="ComponentScenario.Bluetooth" xml:space="preserve"><value>蓝牙</value></data>
+  <data name="ComponentScenario.WiFi" xml:space="preserve"><value>Wi-Fi</value></data>
+  <data name="ComponentScenario.Biometrics" xml:space="preserve"><value>生物识别</value></data>
+  <data name="ComponentScenario.WindowsHello" xml:space="preserve"><value>Windows Hello</value></data>
+  <data name="Comp.Weather.DisplayName" xml:space="preserve"><value>微软天气</value></data>
+  <data name="Comp.Weather.Short" xml:space="preserve"><value>微软天气应用，为新用户预置。</value></data>
+  <data name="Comp.Weather.Long" xml:space="preserve"><value>内置的天气应用。移除仅影响该应用本身，不会禁用 Windows 网络或系统使用的天气 API。</value></data>
+  <data name="Comp.Weather.KeepIf" xml:space="preserve"><value>你经常使用微软天气应用。</value></data>
+  <data name="Comp.Weather.RemoveIf" xml:space="preserve"><value>你从不在内置应用查看天气，改用网站或其他应用。</value></data>
+  <data name="Comp.Weather.Impact" xml:space="preserve"><value>新创建的用户将无法使用天气应用；不影响任何核心 Windows 功能。</value></data>
+  <data name="Comp.Clipchamp.DisplayName" xml:space="preserve"><value>Clipchamp</value></data>
+  <data name="Comp.Clipchamp.Short" xml:space="preserve"><value>微软视频编辑器，为新用户预置。</value></data>
+  <data name="Comp.Clipchamp.Long" xml:space="preserve"><value>面向消费者的视频编辑与录制工具。移除仅影响该应用，可从 Microsoft Store 重新安装。</value></data>
+  <data name="Comp.Clipchamp.KeepIf" xml:space="preserve"><value>你使用 Clipchamp 编辑或录制视频。</value></data>
+  <data name="Comp.Clipchamp.RemoveIf" xml:space="preserve"><value>你从不用 Clipchamp，改用其他编辑器。</value></data>
+  <data name="Comp.Clipchamp.Impact" xml:space="preserve"><value>新用户将无法使用 Clipchamp；不影响系统视频能力。</value></data>
+  <data name="Comp.GetHelp.DisplayName" xml:space="preserve"><value>获取帮助</value></data>
+  <data name="Comp.GetHelp.Short" xml:space="preserve"><value>微软帮助查看器 / 联系支持应用。</value></data>
+  <data name="Comp.GetHelp.Long" xml:space="preserve"><value>用于打开帮助文章并可发起支持联系。移除它不会禁用 Windows 故障排除或设置搜索。</value></data>
+  <data name="Comp.GetHelp.KeepIf" xml:space="preserve"><value>你使用内置“帮助”应用联系微软支持。</value></data>
+  <data name="Comp.GetHelp.RemoveIf" xml:space="preserve"><value>你从不用“帮助”应用，而是直接上网搜索。</value></data>
+  <data name="Comp.GetHelp.Impact" xml:space="preserve"><value>“获取帮助”应用不可用；Windows 设置与故障排除仍然可用。</value></data>
+  <data name="Comp.XboxApp.DisplayName" xml:space="preserve"><value>Xbox</value></data>
+  <data name="Comp.XboxApp.Short" xml:space="preserve"><value>Xbox 应用及相关的游戏覆盖层/提供程序。</value></data>
+  <data name="Comp.XboxApp.Long" xml:space="preserve"><value>Xbox 应用及其游戏覆盖层与身份提供程序。与 Xbox Game Pass 和 PC 游戏相关。不玩 Xbox 的用户可安全移除。</value></data>
+  <data name="Comp.XboxApp.KeepIf" xml:space="preserve"><value>你使用 Xbox Game Pass 或在此电脑上游玩 Xbox 游戏。</value></data>
+  <data name="Comp.XboxApp.RemoveIf" xml:space="preserve"><value>你不使用 Xbox 应用或 PC 游戏。</value></data>
+  <data name="Comp.XboxApp.Impact" xml:space="preserve"><value>Xbox 应用、游戏覆盖层与 Xbox 登录提供程序被移除；非游戏应用不受影响。</value></data>
+  <data name="Comp.Photos.DisplayName" xml:space="preserve"><value>照片</value></data>
+  <data name="Comp.Photos.Short" xml:space="preserve"><value>微软默认的照片查看器/编辑器。</value></data>
+  <data name="Comp.Photos.Long" xml:space="preserve"><value>默认的照片应用。许多用户将其作为系统图片查看器；移除后系统将没有内置照片查看器（文件仍可由其他应用打开）。</value></data>
+  <data name="Comp.Photos.KeepIf" xml:space="preserve"><value>你将“照片”用作默认图片查看器。</value></data>
+  <data name="Comp.Photos.RemoveIf" xml:space="preserve"><value>你使用其他照片应用，从不用内置应用。</value></data>
+  <data name="Comp.Photos.Impact" xml:space="preserve"><value>内置“照片”查看器被移除；图片文件仍保留，可由其他应用打开。</value></data>
+  <data name="Comp.FeedbackHub.DisplayName" xml:space="preserve"><value>反馈中心</value></data>
+  <data name="Comp.FeedbackHub.Short" xml:space="preserve"><value>微软 Windows 反馈应用。</value></data>
+  <data name="Comp.FeedbackHub.Long" xml:space="preserve"><value>用于向微软发送反馈。任何 Windows 功能都不依赖它。</value></data>
+  <data name="Comp.FeedbackHub.KeepIf" xml:space="preserve"><value>你通过该应用向微软提交反馈。</value></data>
+  <data name="Comp.FeedbackHub.RemoveIf" xml:space="preserve"><value>你从不用反馈中心。</value></data>
+  <data name="Comp.FeedbackHub.Impact" xml:space="preserve"><value>反馈中心不可用；没有任何 Windows 功能依赖它。</value></data>
+  <data name="Comp.Maps.DisplayName" xml:space="preserve"><value>地图</value></data>
+  <data name="Comp.Maps.Short" xml:space="preserve"><value>微软地图应用。</value></data>
+  <data name="Comp.Maps.Long" xml:space="preserve"><value>内置的地图应用。其他应用使用的离线地图与位置 API 是独立的 Windows 功能，不会随此应用一起移除。</value></data>
+  <data name="Comp.Maps.KeepIf" xml:space="preserve"><value>你使用内置地图应用进行导航。</value></data>
+  <data name="Comp.Maps.RemoveIf" xml:space="preserve"><value>你使用网页地图或其他地图应用。</value></data>
+  <data name="Comp.Maps.Impact" xml:space="preserve"><value>地图应用被移除；位置服务及其他应用的地图仍可用。</value></data>
+  <data name="Comp.PhoneLink.DisplayName" xml:space="preserve"><value>手机连接</value></data>
+  <data name="Comp.PhoneLink.Short" xml:space="preserve"><value>微软将手机与电脑连接的应。</value></data>
+  <data name="Comp.PhoneLink.Long" xml:space="preserve"><value>手机连接（Your Phone）可将 Android 手机的通知、照片和通话同步到电脑。移除仅影响该集成。</value></data>
+  <data name="Comp.PhoneLink.KeepIf" xml:space="preserve"><value>你使用“手机连接”连接 Android 手机。</value></data>
+  <data name="Comp.PhoneLink.RemoveIf" xml:space="preserve"><value>你不将此电脑与手机连接。</value></data>
+  <data name="Comp.PhoneLink.Impact" xml:space="preserve"><value>手机连接集成被移除；手机与电脑其他功能正常。</value></data>
+  <data name="Comp.Solitaire.DisplayName" xml:space="preserve"><value>纸牌合集</value></data>
+  <data name="Comp.Solitaire.Short" xml:space="preserve"><value>微软纸牌 / 休闲游戏应用。</value></data>
+  <data name="Comp.Solitaire.Long" xml:space="preserve"><value>休闲游戏合集。纯可选的娱乐应用，无系统依赖。</value></data>
+  <data name="Comp.Solitaire.KeepIf" xml:space="preserve"><value>你玩内置纸牌或休闲游戏。</value></data>
+  <data name="Comp.Solitaire.RemoveIf" xml:space="preserve"><value>你从不玩内置游戏。</value></data>
+  <data name="Comp.Solitaire.Impact" xml:space="preserve"><value>纸牌合集被移除；没有任何 Windows 功能依赖它。</value></data>
+  <data name="Comp.Teams.DisplayName" xml:space="preserve"><value>Microsoft Teams</value></data>
+  <data name="Comp.Teams.Short" xml:space="preserve"><value>微软消费/工作版聊天与会议应用。</value></data>
+  <data name="Comp.Teams.Long" xml:space="preserve"><value>用于个人与工作沟通的 Teams。Teams 中共享的文件存储在 OneDrive 中；移除 OneDrive 前请参见依赖说明。</value></data>
+  <data name="Comp.Teams.KeepIf" xml:space="preserve"><value>你使用 Teams 进行聊天、通话或会议。</value></data>
+  <data name="Comp.Teams.RemoveIf" xml:space="preserve"><value>你在此电脑上不使用 Teams。</value></data>
+  <data name="Comp.Teams.Impact" xml:space="preserve"><value>Teams 应用被移除；网页版 Teams 仍可在浏览器中使用。</value></data>
+  <data name="Comp.OneDrive.DisplayName" xml:space="preserve"><value>OneDrive</value></data>
+  <data name="Comp.OneDrive.Short" xml:space="preserve"><value>微软文件同步客户端。</value></data>
+  <data name="Comp.OneDrive.Long" xml:space="preserve"><value>OneDrive 将文件同步到云端，并与 Office 和文件资源管理器深度集成。可以移除，但可能影响文件同步以及 Teams/Office 存储；视为“有条件”，移除前请确认。</value></data>
+  <data name="Comp.OneDrive.KeepIf" xml:space="preserve"><value>你依赖 OneDrive 同步或备份文件。</value></data>
+  <data name="Comp.OneDrive.RemoveIf" xml:space="preserve"><value>你不使用云文件同步，仅保留本地文件。</value></data>
+  <data name="Comp.OneDrive.Impact" xml:space="preserve"><value>OneDrive 同步停止；本地缓存的文件可能需要重新下载。Office 与文件资源管理器集成减弱。</value></data>
+
+  <data name="ComponentIntelligence.StatusCancelled" xml:space="preserve"><value>发现已取消。</value></data>
+
+  <data name="Dependency.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Dependency.Requires" xml:space="preserve"><value>需要</value></data>
+  <data name="Dependency.RequiredBy" xml:space="preserve"><value>被依赖</value></data>
+  <data name="Dependency.RelatedTo" xml:space="preserve"><value>相关</value></data>
+  <data name="Dependency.ConflictsWith" xml:space="preserve"><value>冲突</value></data>
+  <data name="Dependency.RecommendsKeeping" xml:space="preserve"><value>建议保留</value></data>
+
+  <data name="Savings.None" xml:space="preserve"><value>未知</value></data>
+  <data name="Savings.Low" xml:space="preserve"><value>低</value></data>
+  <data name="Savings.Medium" xml:space="preserve"><value>中</value></data>
+  <data name="Savings.High" xml:space="preserve"><value>高</value></data>
 </root>

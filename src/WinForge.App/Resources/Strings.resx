@@ -321,4 +321,173 @@
   <data name="Servicing.Msg.PrepareFailedUnexpected" xml:space="preserve"><value>Preparation failed unexpectedly.</value></data>
   <data name="Servicing.Msg.MountFailedUnexpected" xml:space="preserve"><value>Mount failed unexpectedly.</value></data>
   <data name="Servicing.Msg.UnmountFailedUnexpected" xml:space="preserve"><value>Unmount failed unexpectedly.</value></data>
+  <data name="Nav.ComponentIntelligence" xml:space="preserve"><value>Component Intelligence</value></data>
+  <data name="ComponentIntelligence.Title" xml:space="preserve"><value>Component Intelligence</value></data>
+  <data name="ComponentIntelligence.Intro" xml:space="preserve"><value>Understand what each Windows component does, whether you need it, and what happens if you remove it. Read-only analysis prototype.</value></data>
+  <data name="ComponentIntelligence.Discover" xml:space="preserve"><value>Discover from mounted image</value></data>
+  <data name="ComponentIntelligence.Discovering" xml:space="preserve"><value>Discovering…</value></data>
+  <data name="ComponentIntelligence.StandardMode" xml:space="preserve"><value>Standard (curated only)</value></data>
+  <data name="ComponentIntelligence.AdvancedMode" xml:space="preserve"><value>Advanced (all discovered)</value></data>
+  <data name="ComponentIntelligence.NoImage" xml:space="preserve"><value>Mount a working image to inventory real components. Showing the curated catalog only.</value></data>
+  <data name="ComponentIntelligence.StatusEmpty" xml:space="preserve"><value>No components discovered.</value></data>
+  <data name="ComponentIntelligence.Summary" xml:space="preserve"><value>Discovered {0} AppX, {1} capabilities, {2} optional features, {3} packages.</value></data>
+  <data name="ComponentIntelligence.Counts" xml:space="preserve"><value>Curated: {0} · Unclassified: {1} · Protected: {2} · Unsupported: {3}</value></data>
+  <data name="Recommendation.RecommendedRemove" xml:space="preserve"><value>Recommended to remove</value></data>
+  <data name="Recommendation.OptionalRemove" xml:space="preserve"><value>Optional to remove</value></data>
+  <data name="Recommendation.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
+  <data name="Recommendation.AdvancedOnly" xml:space="preserve"><value>Advanced users only</value></data>
+  <data name="Recommendation.NeverRemove" xml:space="preserve"><value>Never remove</value></data>
+  <data name="Recommendation.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Risk.Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Risk.Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="Risk.High" xml:space="preserve"><value>High</value></data>
+  <data name="Risk.Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="Risk.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Removal.Supported" xml:space="preserve"><value>Supported</value></data>
+  <data name="Removal.Conditional" xml:space="preserve"><value>Conditional</value></data>
+  <data name="Removal.Experimental" xml:space="preserve"><value>Experimental</value></data>
+  <data name="Removal.Blocked" xml:space="preserve"><value>Blocked</value></data>
+  <data name="Removal.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Restore.Easy" xml:space="preserve"><value>Easy (reinstall / re-enable)</value></data>
+  <data name="Restore.RequiresSource" xml:space="preserve"><value>Requires Windows install source</value></data>
+  <data name="Restore.RequiresWindowsUpdate" xml:space="preserve"><value>Requires Windows Update</value></data>
+  <data name="Restore.ReinstallWindows" xml:space="preserve"><value>Requires reinstalling Windows</value></data>
+  <data name="Restore.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Classification.Curated" xml:space="preserve"><value>Curated</value></data>
+  <data name="Classification.DiscoveredUnclassified" xml:space="preserve"><value>Unclassified</value></data>
+  <data name="Classification.Protected" xml:space="preserve"><value>Protected</value></data>
+  <data name="Classification.Unsupported" xml:space="preserve"><value>Unsupported</value></data>
+  <data name="Category.AppX" xml:space="preserve"><value>Provisioned AppX</value></data>
+  <data name="Category.Capability" xml:space="preserve"><value>Capability</value></data>
+  <data name="Category.OptionalFeature" xml:space="preserve"><value>Optional Feature</value></data>
+  <data name="Category.CbsPackage" xml:space="preserve"><value>Windows Package</value></data>
+  <data name="Category.Service" xml:space="preserve"><value>Service</value></data>
+  <data name="Category.ScheduledTask" xml:space="preserve"><value>Scheduled Task</value></data>
+  <data name="Category.Driver" xml:space="preserve"><value>Driver</value></data>
+  <data name="Category.Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Category.WinRecovery" xml:space="preserve"><value>Windows Recovery</value></data>
+  <data name="Category.SystemApp" xml:space="preserve"><value>System App</value></data>
+  <data name="Category.Protected" xml:space="preserve"><value>Protected</value></data>
+  <data name="Category.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Classification.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Component.WhatIsThis" xml:space="preserve"><value>What is this?</value></data>
+  <data name="Component.ShortDescription" xml:space="preserve"><value>Description</value></data>
+  <data name="Component.Recommendation" xml:space="preserve"><value>Recommendation</value></data>
+  <data name="Component.Risk" xml:space="preserve"><value>Risk if removed</value></data>
+  <data name="Component.Scenarios" xml:space="preserve"><value>Relevant if you…</value></data>
+  <data name="Component.KeepIf" xml:space="preserve"><value>Keep it if</value></data>
+  <data name="Component.RemoveIf" xml:space="preserve"><value>You can remove it if</value></data>
+  <data name="Component.Impact" xml:space="preserve"><value>What stops working</value></data>
+  <data name="Component.Restoration" xml:space="preserve"><value>Restoration</value></data>
+  <data name="Component.Savings" xml:space="preserve"><value>Space saved</value></data>
+  <data name="Component.TechnicalDetails" xml:space="preserve"><value>Technical details</value></data>
+  <data name="Component.RawCategory" xml:space="preserve"><value>Raw category</value></data>
+  <data name="Component.RawIdentity" xml:space="preserve"><value>Windows identity</value></data>
+  <data name="Component.RawState" xml:space="preserve"><value>State</value></data>
+  <data name="Component.RawVersion" xml:space="preserve"><value>Version</value></data>
+  <data name="Component.MatchRule" xml:space="preserve"><value>Matching rule</value></data>
+  <data name="Component.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Component.NotInventoried" xml:space="preserve"><value>Not yet inventoried</value></data>
+  <data name="Component.Present" xml:space="preserve"><value>Present in image</value></data>
+  <data name="Component.ListHeader" xml:space="preserve"><value>Components</value></data>
+  <data name="ComponentScenario.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="ComponentScenario.Gaming" xml:space="preserve"><value>Gaming</value></data>
+  <data name="ComponentScenario.Office" xml:space="preserve"><value>Office</value></data>
+  <data name="ComponentScenario.Developer" xml:space="preserve"><value>Developer</value></data>
+  <data name="ComponentScenario.Laptop" xml:space="preserve"><value>Laptop</value></data>
+  <data name="ComponentScenario.TouchPen" xml:space="preserve"><value>Touch / Pen</value></data>
+  <data name="ComponentScenario.PrintingScanning" xml:space="preserve"><value>Printing &amp; Scanning</value></data>
+  <data name="ComponentScenario.Wsl" xml:space="preserve"><value>WSL</value></data>
+  <data name="ComponentScenario.Docker" xml:space="preserve"><value>Docker</value></data>
+  <data name="ComponentScenario.HyperV" xml:space="preserve"><value>Hyper-V</value></data>
+  <data name="ComponentScenario.WindowsSandbox" xml:space="preserve"><value>Windows Sandbox</value></data>
+  <data name="ComponentScenario.XboxGamePass" xml:space="preserve"><value>Xbox Game Pass</value></data>
+  <data name="ComponentScenario.MixedReality" xml:space="preserve"><value>Mixed Reality</value></data>
+  <data name="ComponentScenario.Accessibility" xml:space="preserve"><value>Accessibility</value></data>
+  <data name="ComponentScenario.EnterpriseDomain" xml:space="preserve"><value>Enterprise / Domain</value></data>
+  <data name="ComponentScenario.RemoteDesktop" xml:space="preserve"><value>Remote Desktop</value></data>
+  <data name="ComponentScenario.Bluetooth" xml:space="preserve"><value>Bluetooth</value></data>
+  <data name="ComponentScenario.WiFi" xml:space="preserve"><value>Wi-Fi</value></data>
+  <data name="ComponentScenario.Biometrics" xml:space="preserve"><value>Biometrics</value></data>
+  <data name="ComponentScenario.WindowsHello" xml:space="preserve"><value>Windows Hello</value></data>
+  <data name="Comp.Weather.DisplayName" xml:space="preserve"><value>Microsoft Weather</value></data>
+  <data name="Comp.Weather.Short" xml:space="preserve"><value>Microsoft's weather application, provisioned for new users.</value></data>
+  <data name="Comp.Weather.Long" xml:space="preserve"><value>The built-in Weather app. Its removal only affects the app itself; it does not disable Windows networking or any weather APIs used by the OS.</value></data>
+  <data name="Comp.Weather.KeepIf" xml:space="preserve"><value>You actively use the Microsoft Weather app.</value></data>
+  <data name="Comp.Weather.RemoveIf" xml:space="preserve"><value>You never check weather in the built-in app and use a website or another app.</value></data>
+  <data name="Comp.Weather.Impact" xml:space="preserve"><value>The Weather app is unavailable for newly created users. No core Windows feature is removed.</value></data>
+  <data name="Comp.Clipchamp.DisplayName" xml:space="preserve"><value>Clipchamp</value></data>
+  <data name="Comp.Clipchamp.Short" xml:space="preserve"><value>Microsoft's video editor, provisioned for new users.</value></data>
+  <data name="Comp.Clipchamp.Long" xml:space="preserve"><value>A consumer video-editing and capture tool. Removal only affects the app; it is reinstallable from the Microsoft Store.</value></data>
+  <data name="Comp.Clipchamp.KeepIf" xml:space="preserve"><value>You edit or record video with Clipchamp.</value></data>
+  <data name="Comp.Clipchamp.RemoveIf" xml:space="preserve"><value>You never use Clipchamp and prefer another editor.</value></data>
+  <data name="Comp.Clipchamp.Impact" xml:space="preserve"><value>Clipchamp is unavailable for new users. No system video capability is removed.</value></data>
+  <data name="Comp.GetHelp.DisplayName" xml:space="preserve"><value>Get Help</value></data>
+  <data name="Comp.GetHelp.Short" xml:space="preserve"><value>Microsoft's help viewer / contact-support app.</value></data>
+  <data name="Comp.GetHelp.Long" xml:space="preserve"><value>Launches help articles and can open a support contact flow. Removing it does not disable Windows troubleshooting or Settings search.</value></data>
+  <data name="Comp.GetHelp.KeepIf" xml:space="preserve"><value>You use the built-in Help app to reach Microsoft support.</value></data>
+  <data name="Comp.GetHelp.RemoveIf" xml:space="preserve"><value>You never use the Help app and search the web instead.</value></data>
+  <data name="Comp.GetHelp.Impact" xml:space="preserve"><value>The Get Help app is unavailable. Windows Settings and troubleshooting remain.</value></data>
+  <data name="Comp.XboxApp.DisplayName" xml:space="preserve"><value>Xbox</value></data>
+  <data name="Comp.XboxApp.Short" xml:space="preserve"><value>Xbox app and related gaming overlays/providers.</value></data>
+  <data name="Comp.XboxApp.Long" xml:space="preserve"><value>The Xbox app plus its gaming overlay and identity provider. Relevant to Xbox Game Pass and PC gaming. Removal is safe for users who do not game on Xbox.</value></data>
+  <data name="Comp.XboxApp.KeepIf" xml:space="preserve"><value>You use Xbox Game Pass or play Xbox titles on this PC.</value></data>
+  <data name="Comp.XboxApp.RemoveIf" xml:space="preserve"><value>You do not use Xbox apps or PC gaming.</value></data>
+  <data name="Comp.XboxApp.Impact" xml:space="preserve"><value>Xbox app, game overlay and Xbox sign-in provider are removed. Non-gaming apps are unaffected.</value></data>
+  <data name="Comp.Photos.DisplayName" xml:space="preserve"><value>Photos</value></data>
+  <data name="Comp.Photos.Short" xml:space="preserve"><value>Microsoft's default photo viewer/editor.</value></data>
+  <data name="Comp.Photos.Long" xml:space="preserve"><value>The default Photos app. Many users rely on it as the shell image viewer; removing it leaves the OS without a built-in photo viewer (files still open via other apps).</value></data>
+  <data name="Comp.Photos.KeepIf" xml:space="preserve"><value>You use Photos as your default image viewer.</value></data>
+  <data name="Comp.Photos.RemoveIf" xml:space="preserve"><value>You use a different photo app and never the built-in one.</value></data>
+  <data name="Comp.Photos.Impact" xml:space="preserve"><value>The built-in Photos viewer is removed. Image files remain on disk and open via other apps.</value></data>
+  <data name="Comp.FeedbackHub.DisplayName" xml:space="preserve"><value>Feedback Hub</value></data>
+  <data name="Comp.FeedbackHub.Short" xml:space="preserve"><value>Microsoft's Windows feedback app.</value></data>
+  <data name="Comp.FeedbackHub.Long" xml:space="preserve"><value>Used to send feedback to Microsoft. Not required by any Windows feature.</value></data>
+  <data name="Comp.FeedbackHub.KeepIf" xml:space="preserve"><value>You submit feedback to Microsoft through the app.</value></data>
+  <data name="Comp.FeedbackHub.RemoveIf" xml:space="preserve"><value>You never use the Feedback Hub.</value></data>
+  <data name="Comp.FeedbackHub.Impact" xml:space="preserve"><value>The Feedback Hub is unavailable. No Windows function depends on it.</value></data>
+  <data name="Comp.Maps.DisplayName" xml:space="preserve"><value>Maps</value></data>
+  <data name="Comp.Maps.Short" xml:space="preserve"><value>Microsoft's Maps application.</value></data>
+  <data name="Comp.Maps.Long" xml:space="preserve"><value>The built-in Maps app. Offline maps and location APIs used by other apps are separate Windows features and are NOT removed with this app.</value></data>
+  <data name="Comp.Maps.KeepIf" xml:space="preserve"><value>You use the built-in Maps app for navigation.</value></data>
+  <data name="Comp.Maps.RemoveIf" xml:space="preserve"><value>You use a web map or another maps app.</value></data>
+  <data name="Comp.Maps.Impact" xml:space="preserve"><value>The Maps app is removed. Location services and other apps' maps still work.</value></data>
+  <data name="Comp.PhoneLink.DisplayName" xml:space="preserve"><value>Phone Link</value></data>
+  <data name="Comp.PhoneLink.Short" xml:space="preserve"><value>Microsoft's app that links your phone to your PC.</value></data>
+  <data name="Comp.PhoneLink.Long" xml:space="preserve"><value>Phone Link (Your Phone) mirrors notifications, photos and calls from an Android phone. Removing it only affects that integration.</value></data>
+  <data name="Comp.PhoneLink.KeepIf" xml:space="preserve"><value>You use Phone Link to connect an Android phone.</value></data>
+  <data name="Comp.PhoneLink.RemoveIf" xml:space="preserve"><value>You do not link a phone to this PC.</value></data>
+  <data name="Comp.PhoneLink.Impact" xml:space="preserve"><value>Phone Link integration is removed. Your phone and PC otherwise work normally.</value></data>
+  <data name="Comp.Solitaire.DisplayName" xml:space="preserve"><value>Solitaire Collection</value></data>
+  <data name="Comp.Solitaire.Short" xml:space="preserve"><value>Microsoft's Solitaire / Casual Games app.</value></data>
+  <data name="Comp.Solitaire.Long" xml:space="preserve"><value>A casual games bundle. Purely optional entertainment; no system dependency.</value></data>
+  <data name="Comp.Solitaire.KeepIf" xml:space="preserve"><value>You play the built-in Solitaire or casual games.</value></data>
+  <data name="Comp.Solitaire.RemoveIf" xml:space="preserve"><value>You never play the bundled games.</value></data>
+  <data name="Comp.Solitaire.Impact" xml:space="preserve"><value>The Solitaire Collection is removed. No Windows function depends on it.</value></data>
+  <data name="Comp.Teams.DisplayName" xml:space="preserve"><value>Microsoft Teams</value></data>
+  <data name="Comp.Teams.Short" xml:space="preserve"><value>Microsoft's consumer/work chat and meetings app.</value></data>
+  <data name="Comp.Teams.Long" xml:space="preserve"><value>Teams for personal and work communication. Files shared in Teams are stored in OneDrive; see the dependency note before removing OneDrive.</value></data>
+  <data name="Comp.Teams.KeepIf" xml:space="preserve"><value>You use Teams for chat, calls or meetings.</value></data>
+  <data name="Comp.Teams.RemoveIf" xml:space="preserve"><value>You do not use Teams on this PC.</value></data>
+  <data name="Comp.Teams.Impact" xml:space="preserve"><value>The Teams app is removed. Web Teams still works in a browser.</value></data>
+  <data name="Comp.OneDrive.DisplayName" xml:space="preserve"><value>OneDrive</value></data>
+  <data name="Comp.OneDrive.Short" xml:space="preserve"><value>Microsoft's file-sync client.</value></data>
+  <data name="Comp.OneDrive.Long" xml:space="preserve"><value>OneDrive syncs your files to the cloud and is deeply integrated with Office and the shell. Removal is possible but can affect file sync and Teams/Office storage; treat as Conditional and verify before removing.</value></data>
+  <data name="Comp.OneDrive.KeepIf" xml:space="preserve"><value>You rely on OneDrive to sync or back up your files.</value></data>
+  <data name="Comp.OneDrive.RemoveIf" xml:space="preserve"><value>You do not use cloud file sync and keep files local only.</value></data>
+  <data name="Comp.OneDrive.Impact" xml:space="preserve"><value>OneDrive sync stops; locally cached files may need re-downloading. Office and shell integration are reduced.</value></data>
+
+  <data name="ComponentIntelligence.StatusCancelled" xml:space="preserve"><value>Discovery was cancelled.</value></data>
+
+  <data name="Dependency.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Dependency.Requires" xml:space="preserve"><value>Requires</value></data>
+  <data name="Dependency.RequiredBy" xml:space="preserve"><value>Required by</value></data>
+  <data name="Dependency.RelatedTo" xml:space="preserve"><value>Related to</value></data>
+  <data name="Dependency.ConflictsWith" xml:space="preserve"><value>Conflicts with</value></data>
+  <data name="Dependency.RecommendsKeeping" xml:space="preserve"><value>Recommends keeping</value></data>
+
+  <data name="Savings.None" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Savings.Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Savings.Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="Savings.High" xml:space="preserve"><value>High</value></data>
 </root>

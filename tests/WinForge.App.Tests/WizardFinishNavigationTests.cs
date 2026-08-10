@@ -13,6 +13,7 @@ using WinForge.App.ViewModels;
 using WinForge.App.Workflow;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
+using WinForge.Infrastructure.ComponentIntelligence;
 using WinForge.Infrastructure.Logging;
 using Xunit;
 
@@ -152,8 +153,11 @@ public sealed class WizardFinishNavigationTests
         var settings = new SettingsViewModel(loc, new NullLanguageSettingsStore());
         var about = new AboutViewModel();
 
+        var ci = new ComponentIntelligenceViewModel(
+            state, logger, new NotDiscoveredComponentIntelligenceService(), new CuratedComponentCatalog(), loc);
+
         // The real shell, wired through the single navigation coordinator.
-        var main = new MainViewModel(nav, home, logs, settings, about, comingSoon, wf);
+        var main = new MainViewModel(nav, home, logs, settings, about, comingSoon, wf, ci);
         return (main, nav, wf, state, build, fs, servicing, logger);
     }
 
@@ -444,4 +448,12 @@ public sealed class WizardFinishNavigationTests
         Assert.True(main.IsWorkflowActive);
         Assert.IsType<WorkflowViewModel>(main.ActiveView);
     }
+}
+
+/// <summary>Minimal <see cref="IComponentIntelligenceService"/> stub for shell wiring tests.</summary>
+internal sealed class NotDiscoveredComponentIntelligenceService : IComponentIntelligenceService
+{
+    public Task<ComponentInventory> DiscoverAsync(
+        ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
+        => Task.FromResult(new ComponentInventory { Discovered = false });
 }
