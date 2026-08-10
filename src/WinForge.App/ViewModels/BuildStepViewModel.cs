@@ -73,8 +73,7 @@ public sealed class BuildStepViewModel : ViewModelBase
 
         _appState.PropertyChanged += OnAppStateChanged;
         InitializeDefaultsFromState();
-        StatusMessage = _adkMissing ? _loc["Build.Status.AdapterMissing"]
-            : HasApplied ? string.Empty : _loc["Build.Status.NeedsApply"];
+        UpdateStatusBanner();
         Refresh();
     }
 
@@ -234,16 +233,48 @@ public sealed class BuildStepViewModel : ViewModelBase
             or nameof(IAppState.CurrentServicingWorkspace))
         {
             InitializeDefaultsFromState();
-            if (!HasApplied && !IsBuilding)
-            {
-                StatusMessage = _loc["Build.Status.NeedsApply"];
-            }
-            else if (!IsMounted && !IsBuilding && !_adkMissing)
-            {
-                StatusMessage = _loc["Build.Status.NeedsMount"];
-            }
-
+            UpdateStatusBanner();
             Refresh();
+        }
+    }
+
+    /// <summary>
+    /// Recomputes the prerequisite status banner from the live shared state. This
+    /// is the core fix for the real-desktop defect where the Build page kept showing
+    /// "please run Apply first" even after Apply completed successfully.
+    ///
+    /// <see cref="BuildStepViewModel"/> is a singleton: it is constructed once
+    /// (before Apply runs), so <see cref="StatusMessage"/> was frozen at construction
+    /// time. When Apply later flips <see cref="IAppState.CustomizationExecutionState"/>
+    /// to Completed, <see cref="OnAppStateChanged"/> fires and we must actively CLEAR
+    /// the stale warning — not merely set it when not-applied. Precedence: build in
+    /// flight &gt; not-applied &gt; not-mounted &gt; ADK missing &gt; prerequisite satisfied.
+    /// </summary>
+    private void UpdateStatusBanner()
+    {
+        // While a build is in flight (or finishing) BuildAsync owns StatusMessage;
+        // AppState changes must not clobber the live progress/result text.
+        if (IsBuilding)
+        {
+            return;
+        }
+
+        if (!HasApplied)
+        {
+            StatusMessage = _loc["Build.Status.NeedsApply"];
+        }
+        else if (!IsMounted)
+        {
+            StatusMessage = _loc["Build.Status.NeedsMount"];
+        }
+        else if (_adkMissing)
+        {
+            StatusMessage = _loc["Build.Status.AdapterMissing"];
+        }
+        else
+        {
+            // Apply prerequisite satisfied, image mounted, ADK present: no warning.
+            StatusMessage = string.Empty;
         }
     }
 

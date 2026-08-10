@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -140,6 +141,154 @@ public sealed class BuildStepViewModelTests
 
         Assert.False(vm.CanCancel);
         Assert.True(vm.CanBuild);
+    }
+
+    // ---- Phase 10 real-desktop defect: Build page keeps the "run Apply first"
+    // warning after Apply completed successfully. BuildStepViewModel is a singleton
+    // (constructed once, before Apply runs), so it must react live to the shared
+    // CustomizationExecutionState change and clear the stale banner. ----
+
+    private static BuildStepViewModel NewVm(AppState state, IAdkToolLocator adk)
+        => new BuildStepViewModel(state, new FakeBuildService(), new RecordingFileSystem(),
+            new FakeFilePicker(), adk, new InMemoryLoggerService(), new FakeLocalizationService());
+
+    /// <summary>
+    /// Minimal culture-aware <see cref="ILocalizationService"/> used to prove the
+    /// Build gating does not depend on the active UI culture. It tags nothing — the
+    /// resource KEY is returned verbatim — so the banner key (and thus the gate) is
+    /// identical regardless of the culture passed to <see cref="SetCulture"/>.
+    /// </summary>
+#pragma warning disable CS0067 // interface-required events are never raised by this fake
+    private sealed class CultureAwareLoc : ILocalizationService
+    {
+        public CultureInfo CurrentCulture { get; private set; } = CultureInfo.GetCultureInfo("en");
+        public event EventHandler? CultureChanged;
+        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+        public string this[string key] => key;
+        public bool Contains(string key) => true;
+        public void SetCulture(CultureInfo culture) => CurrentCulture = culture;
+    }
+#pragma warning restore CS0067
+
+    [Fact]
+    public void NotApplied_Shows_NeedsApply_And_CannotBuild()
+    {
+        var state = ReadyState();
+        state.CustomizationExecutionState = CustomizationExecutionState.Idle; // not applied yet
+        var vm = NewVm(state, new FakeAdkToolLocator()); // ADK present, mounted, output seeded
+
+        Assert.False(vm.HasApplied);
+        Assert.False(vm.CanBuild);
+        Assert.Equal("Build.Status.NeedsApply", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void ApplyCompleted_Live_ClearsWarning_And_EnablesBuild()
+    {
+        var state = ReadyState();
+        state.CustomizationExecutionState = CustomizationExecutionState.Idle; // start not applied
+        var vm = NewVm(state, new FakeAdkToolLocator()); // singleton VM already subscribed
+
+        Assert.Equal("Build.Status.NeedsApply", vm.StatusMessage);
+        Assert.False(vm.CanBuild);
+
+        // Apply finishes successfully on the shared AppState — no VM recreation.
+        state.CustomizationExecutionState = CustomizationExecutionState.Completed;
+
+        // The singleton VM must react to the change live: warning cleared, gate opens.
+        Assert.True(vm.HasApplied);
+        Assert.True(vm.CanBuild);
+        Assert.Equal(string.Empty, vm.StatusMessage); // stale "run Apply first" gone
+    }
+
+    [Fact]
+    public void CompletedWithErrors_Also_Satisfies_Apply_Prerequisite()
+    {
+        var state = ReadyState();
+        state.CustomizationExecutionState = CustomizationExecutionState.Idle;
+        var vm = NewVm(state, new FakeAdkToolLocator());
+
+        state.CustomizationExecutionState = CustomizationExecutionState.CompletedWithErrors;
+
+        Assert.True(vm.HasApplied);
+        Assert.True(vm.CanBuild);
+        Assert.Equal(string.Empty, vm.StatusMessage);
+    }
+
+    [Fact]
+    public void FailedApply_KeepsBuildDisabled_And_Warns()
+    {
+        var state = ReadyState();
+        state.CustomizationExecutionState = CustomizationExecutionState.Idle;
+        var vm = NewVm(state, new FakeAdkToolLocator());
+
+        state.CustomizationExecutionState = CustomizationExecutionState.Failed;
+
+        Assert.False(vm.HasApplied);
+        Assert.False(vm.CanBuild);
+        Assert.Equal("Build.Status.NeedsApply", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void SwitchingBackToNotApplied_Restores_Warning()
+    {
+        var state = ReadyState();
+        state.CustomizationExecutionState = CustomizationExecutionState.Idle;
+        var vm = NewVm(state, new FakeAdkToolLocator());
+
+        state.CustomizationExecutionState = CustomizationExecutionState.Completed;
+        Assert.True(vm.CanBuild);
+        Assert.Equal(string.Empty, vm.StatusMessage);
+
+        // Execution reverted (e.g. plan edited, re-apply pending): warning returns.
+        state.CustomizationExecutionState = CustomizationExecutionState.Idle;
+        Assert.False(vm.CanBuild);
+        Assert.Equal("Build.Status.NeedsApply", vm.StatusMessage);
+
+        // Re-complete: warning clears again — no stale/locked state.
+        state.CustomizationExecutionState = CustomizationExecutionState.Completed;
+        Assert.True(vm.CanBuild);
+        Assert.Equal(string.Empty, vm.StatusMessage);
+    }
+
+    [Fact]
+    public void AdkMissing_Shows_AdapterMissing_EvenAfterApply()
+    {
+        var state = ReadyState();
+        state.CustomizationExecutionState = CustomizationExecutionState.Completed;
+        var vm = NewVm(state, new MissingAdkToolLocator());
+
+        Assert.True(vm.HasApplied);
+        Assert.True(vm.AdkMissing);
+        Assert.False(vm.CanBuild);
+        Assert.Equal("Build.Status.AdapterMissing", vm.StatusMessage);
+    }
+
+    [Theory]
+    [InlineData("en")]
+    [InlineData("zh-CN")]
+    public void Gating_Is_CultureIndependent(string culture)
+    {
+        // The gating logic depends only on AppState + ADK, never on locale; the
+        // banner resolves to the SAME resource KEY in every culture, so the message
+        // and gate are identical across en-US and zh-CN. `culture` is consumed by the
+        // culture-aware FakeLoc to prove the key (and thus the gate) is locale-invariant.
+        var state = ReadyState();
+        state.CustomizationExecutionState = CustomizationExecutionState.Idle;
+        var loc = new CultureAwareLoc();
+        loc.SetCulture(CultureInfo.GetCultureInfo(culture));
+        var vm = new BuildStepViewModel(state, new FakeBuildService(), new RecordingFileSystem(),
+            new FakeFilePicker(), new FakeAdkToolLocator(), new InMemoryLoggerService(), loc);
+
+        Assert.Equal("Build.Status.NeedsApply", vm.StatusMessage);
+        Assert.False(vm.CanBuild);
+        Assert.False(vm.HasApplied);
+
+        state.CustomizationExecutionState = CustomizationExecutionState.Completed;
+
+        Assert.Equal(string.Empty, vm.StatusMessage); // cleared in every culture
+        Assert.True(vm.CanBuild);
+        Assert.True(vm.HasApplied);
     }
 
     /// <summary>
