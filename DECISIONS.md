@@ -764,7 +764,8 @@ All decisions are `ACCEPTED` unless noted.
   their prerequisites are met, and Customize is unreachable until the image is mounted. ~21 test
   facts across the WORKFLOW / COMMANDS suites pin the initial state, readiness transitions, the
   skip-guard, source-change invalidation, and the "never auto-advances Current" invariant. Status:
-  **IMPLEMENTED** / PENDING REAL DESKTOP VALIDATION on `feature/wizard-localization` (`wf-wizard`).
+  **IMPLEMENTED / REAL DESKTOP VALIDATED / COMPLETED** (2026-08-09); merged to `main` via `--no-ff`.
+  ADR-033…ADR-037 share this COMPLETED status.
 
 ## ADR-033: Utility navigation is separate from the workflow
 

@@ -168,9 +168,9 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 3.5 — UX Workflow Refactor + Localization Foundation
 
-- **Status:** IMPLEMENTED on `feature/wizard-localization` (branch `wf-wizard`); **PENDING REAL
-  DESKTOP VALIDATION**. Not merged to `main`. Built on top of the completed Step 3.3 customization
-  engine (no engine changes — workflow code contains no DISM).
+- **Status:** **COMPLETED** — real-desktop validation PASSED 2026-08-09 on Windows 11 25H2 (Chinese
+  Simplified, x64, Consumer Editions, `install.wim`); merged to `main` via `--no-ff`. Built on top of
+  the completed Step 3.3 customization engine (no engine changes — workflow code contains no DISM).
 - **Goal:** Provide a guided, gated primary workflow (Wizard/Stepper) over Step 3.3, plus an
   English / Simplified-Chinese localization foundation with runtime switching and persistence.
 - **Scope:**
@@ -209,10 +209,11 @@ Phased development plan for WinForge. Each phase records its **Status**,
   - Switching language in Settings applies instantly and persists across launches; zh-CN strings render.
   - Friendly service/app labels show the canonical technical id; unapproved services remain
     non-selectable.
-  - `dotnet build` / `dotnet test -c Release` clean: **312 pass (Core 37, App 275), 0 errors,
+  -   `dotnet build` / `dotnet test -c Release` clean: **362 pass (Core 37, App 325), 0 errors,
     0 warnings**.
-- **Out of scope:** Any ISO rebuild in Build (honest placeholder); new Phase 4 mount-engine work; new
-  customization categories beyond what Step 3.3 shipped.
+- **Out of scope:** Any ISO rebuild in Build (honest placeholder — Build/ISO export is the next
+  development phase, **NOT STARTED**); new Phase 4 mount-engine work; new customization categories
+  beyond what Step 3.3 shipped.
 
 ---
 

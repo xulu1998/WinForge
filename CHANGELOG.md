@@ -34,17 +34,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   after every state transition (no `CommandManager.RequerySuggested`).
 - **Customize tabs:** Apps / Windows Components / Services / Privacy / System / Experience. Review
   reshapes the Plan; Apply is the execution UX; Build is an honest placeholder (no fake ISO rebuild).
-- **49–50 new automated tests** (≥45 required) across WORKFLOW / COMMANDS / LOCALIZATION / SERVICE /
-  APP / REGRESSION. Total suite: **312 pass (Core 37, App 275), 0 errors, 0 warnings (Release)**, all
+- **≈100 new automated tests** across WORKFLOW / COMMANDS / LOCALIZATION / SERVICE / APP / REGRESSION
+  (the workflow + localization foundation added 49–50; the seven real-desktop defect fixes added the
+  rest as targeted regression suites). Total suite: **362 pass (Core 37, App 325), 0 errors, 0 warnings (Release)**, all
   CI-safe (no ISO / admin / internet). Covers: wizard initial state + readiness transitions + skip-guard;
   command can-execute without auto-requery (explicit raise); localization bootstrap init + zh-CN switch
   + parity; friendly service/app metadata + `ServiceConfigPolicy` gating; and regression
   (ImageViewModel falls back without localization, workflow never auto-advances, Apply hidden until
   Validated, source-change clears plan + discovery unless Executing).
 
-### Status (UX Workflow Refactor + Localization Foundation)
-- **IMPLEMENTED** on `feature/wizard-localization` (branch `wf-wizard`); **PENDING REAL DESKTOP
-  VALIDATION**. Not merged to `main`. Built on Step 3.3 — workflow code contains no DISM. ADR-032…ADR-037.
+### Status (UX Workflow Refactor + Localization Foundation — COMPLETED, real-desktop validation PASSED)
+- **IMPLEMENTED / REAL DESKTOP VALIDATED / COMPLETED** (2026-08-09). Built on Step 3.3 — workflow
+  code contains no DISM. ADR-032…ADR-037. Merged to `main` via `--no-ff` (feature history preserved,
+  no squash).
+- **Real-desktop acceptance chain (all PASS) on Windows 11 25H2 zh-CN x64 Consumer `install.wim`:** (1)
+  Source ISO selection + ISO inspection; (2) Prepare isolated working image; (3) Mount working WIM;
+  (4) Mounted → Next enables; (5) Customize page loads; (6) all Customize tabs load with no XAML/
+  binding crash; (7) runtime localization / zh-CN UI works; (8) discovery + selections work; (9)
+  selecting 1 valid customization enables Review/Next; (10) Review page loads; (11) plan validation
+  succeeds; (12) Apply to mounted image succeeds; (13) execution success advances Wizard state
+  (Review→Completed, Apply→Available, Next→enabled); (14) Build placeholder reachable; (15) Build/ISO
+  export intentionally NOT implemented (honest placeholder, not a validation failure); (16) working
+  image cleanly unmounted/discarded, no mounted WIM remains.
+- **Total suite: 362 pass (Core 37, App 325), 0 errors, 0 warnings (Release).** Feature branch carried
+  seven real-desktop defect fixes: ISO mount robustness / valid Get-Volume resolution (`7f90d48`/
+  `4360612`), servicing workspace nested notification (`28b8bb5`), `CustomizationPlan` nested
+  notification (`06de8f9`), `Run.Text` MultiBinding `Mode=OneWay` (`f1e4370`), read-only binding `OneWay`
+  audit (`9f68f97`), `ErrorDialogGuard` (`bed2e73`), Review/Apply gating on execution success (`7da38dd`).
+- **Next phase: Build/ISO Export — NOT STARTED.** Build/ISO export is intentionally NOT implemented
+  (the Build step is an honest placeholder; no ISO-rebuild engine exists yet — roadmap Phase 10).
 
 ### Added (Phase 3 Step 3.3 — offline customization plan & execution engine)
 - Declarative, platform-agnostic customization model in Core (no DISM/Win32):
