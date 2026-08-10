@@ -51,6 +51,19 @@ public interface IImageServicingService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Unmounts the working image and COMMITS the customization changes
+    /// (DISM <c>/Unmount-Image /Commit</c>). This is the Build pipeline's commit
+    /// path and MUST NOT use <c>/Discard</c>. On success the session returns to
+    /// <see cref="ServicingWorkspaceState.Prepared"/> with the working WIM retained
+    /// and committed (no longer mounted); on failure the session is
+    /// <see cref="ServicingWorkspaceState.Failed"/> and the mount is left
+    /// recoverable (the build must stop and must NOT proceed to ISO export).
+    /// </summary>
+    Task<ServicingResult> CommitUnmountAsync(
+        ImageServicingWorkspace workspace,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Validates an existing servicing workspace against reality (files on disk,
     /// mount registration) and classifies its health: Ready, Prepared, Mounted,
     /// Stale, Invalid, or Failed. Used for crash recovery and for detecting

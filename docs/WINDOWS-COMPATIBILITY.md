@@ -17,12 +17,17 @@ Track which Windows releases WinForge supports for each operation.
 | Windows 11 24H2 | 26100 | x64  | en-US | — | Untested | Untested | Untested | Untested | Untested | Untested | Not yet verified |
 | Windows 11 23H2 | 22631 | x64  | en-US | — | Untested | Untested | Untested | Untested | Untested | Untested | Not yet verified |
 | Windows 11 22H2 | 22621 | x64  | en-US | — | Untested | Untested | Untested | Untested | Untested | Untested | Not yet verified |
-| Windows 11 25H2 | 26200 | x64 | zh-CN | Consumer (install.wim) | Tested | Untested | Tested | Untested | Untested | Untested | ISO layout (Step 2.1) + WIM metadata inspection (Step 2.2) **Tested** on real desktop 2026-08-08: two-stage `/Get-ImageInfo` flow validated (6 indexes 家庭版/家庭单语言版/教育版/专业版/专业教育版/专业工作站版, version 10.0.26200, build 26200, x64, localized zh-CN edition names, guaranteed dismount, Language `zh-CN` with footer prose correctly rejected). Both real-desktop findings fixed and revalidated: DISM exit 87 (`/Get-WimInfo`→`/Get-ImageInfo`) and language footer `The` (`TryNormalizeLanguageTag`). |
+| Windows 11 25H2 | 26200 | x64 | zh-CN | Consumer (install.wim) | Tested | Untested | Tested | Untested | Implemented (unvalidated) | Untested | ISO layout (Step 2.1) + WIM metadata inspection (Step 2.2) **Tested** on real desktop 2026-08-08: two-stage `/Get-ImageInfo` flow validated (6 indexes 家庭版/家庭单语言版/教育版/专业版/专业教育版/专业工作站版, version 10.0.26200, build 26200, x64, localized zh-CN edition names, guaranteed dismount, Language `zh-CN` with footer prose correctly rejected). Both real-desktop findings fixed and revalidated: DISM exit 87 (`/Get-WimInfo`→`/Get-ImageInfo`) and language footer `The` (`TryNormalizeLanguageTag`). Build / ISO Export engine **Implemented** (Phase 10, ADR-038…ADR-043, 397 CI-safe automated tests pass) but the real `oscdimg`/`DISM` ISO-rebuild path is **Untested** on a real desktop (pending validation 2026-08-10). |
 
 > No Windows version is claimed as `Supported` yet. All rows above are
 > `Untested` for columns not yet validated through the testing strategy in
 > docs/TESTING.md. Windows 11 25H2 `Inspection` is `Tested` for **ISO-layout
 > inspection (Step 2.1)** and for the **two-stage WIM metadata read (Step 2.2)**:
+> Windows 11 25H2 `Build` is **Implemented (unvalidated)** — the Phase 10
+> ISO-rebuild engine is coded and covered by 397 CI-safe automated tests
+> (ADR-038…ADR-043), but the actual `oscdimg.exe` + `DISM` ISO-rebuild has not
+> yet been exercised on a real Windows 11 25H2 desktop, so it is not marked
+> `Supported`/`Tested`.
 > on a real Windows 11 25H2 (zh-CN, x64, Consumer ISO, `install.wim`) desktop on
 > 2026-08-08 the app mounted the ISO read-only, ran `dism.exe /Get-ImageInfo` to
 > enumerate 6 indexes (家庭版/家庭单语言版/教育版/专业版/专业教育版/专业工作站版),

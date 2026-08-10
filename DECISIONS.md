@@ -878,3 +878,121 @@ All decisions are `ACCEPTED` unless noted.
   self-cancels; source-change resets still reflect in the UI; the Discover button enables/disables
   on the live `CanDiscover` predicate via an explicit raise.
 
+## ADR-038: Build / ISO Export pipeline — one orchestrator with an explicit terminal-state machine
+
+- **Status:** ACCEPTED
+- **Context:** Phase 10 must turn the isolated, customized working image (produced by Step 3.2/3.3)
+  into a bootable Windows ISO. The Build Wizard step was an honest placeholder (ADR-032), so no ISO-
+  rebuild engine existed. The pipeline must be cancellable, must **never** modify the source ISO, and
+  must report a single authoritative terminal state (Completed / Failed / Cancelled) — success must
+  never be derived from a per-stage flag or from a non-zero exit code that was "close enough".
+- **Decision:** `IBuildService` (Core) + `ImageBuildService` (Infrastructure) is the single
+  orchestrator. It drives an explicit state machine through
+  `Preflight → CommittingImage → ExportingImage → PreparingMedia → BuildingIso → Verifying →
+  Completed / Failed / Cancelled`, delegating to focused sub-services behind Core interfaces:
+  `IImageServicingService.CommitUnmountAsync` (commit the customized working image), `IWimExporter`
+  (export to a clean install.wim), `IIsoMediaPreparer` (copy the original media tree and replace the
+  payload), `IBootableIsoBuilder` (oscdimg), and `IBuildVerifier` (independent verification). The
+  terminal `BuildState` is the **authority** for success: `BuildResult.Success` is true **only** when
+  the ISO was produced, verified, and (if needed) moved to the final path. The orchestrator records
+  the in-flight phase + key paths to `build.recovery.json` via a `.partial` file that is atomically
+  renamed into place, so a crash leaves a detectable recovery record.
+- **Consequences:** The pipeline is unit-testable end-to-end via fakes; cancellation can stop at any
+  `await`; the source ISO is read-only (ADR-004/ADR-019); the UI can never show success for a
+  failed/cancelled build. The orchestrator contains no DISM/oscdimg calls itself — only coordination.
+
+## ADR-039: Build commits the working image — it never discards
+
+- **Status:** ACCEPTED
+- **Context:** Step 3.3 applied customizations to the mounted working image and **left it mounted**
+  (ADR-025); Step 3.2 unmounts with `/Discard`. Build is the moment those customizations must be
+  persisted into the final ISO. An unmount/discard at build time would silently throw away the user's
+  customizations — exactly the data loss ADR-008 forbids.
+- **Decision:** The build path calls `IImageServicingService.CommitUnmountAsync` (DISM
+  `/Unmount-Image /Commit`). If the commit fails, the build **stops immediately** — no ISO is produced
+  and the workspace is left recoverable (the working image and log remain for diagnosis). `/Discard`
+  is **never** used on the build path. Because the commit targets only the WinForge-owned working
+  image, ADR-019 (the source ISO is never modified) still holds.
+- **Consequences:** User customizations are never silently lost; a commit failure is a hard stop with
+  a clear error rather than a silent discarding; the working image lifecycle is owned by the build
+  orchestrator at this one boundary (Step 3.2 still owns prepare/mount/unmount/discard during
+  servicing).
+
+## ADR-040: Export to a clean install.wim; ESD sources normalized to WIM at index 1
+
+- **Status:** ACCEPTED
+- **Context:** The committed working image must become the media payload. A working WIM produced by
+  Step 3.2 already sits at index 1, but the final `install.wim` should be a fresh, optimized image
+  rather than a reused servicing WIM. For an **ESD** source the original `install.esd` must be
+  replaced by a WIM so Windows Setup reads the payload correctly.
+- **Decision:** `DismWimExporter` runs
+  `DISM /Export-Image /SourceImageFile:<working> /SourceIndex:<workingIndex> /DestinationImageFile:<clean.wim> /Compress:max /CheckIntegrity`.
+  The pipeline then passes the clean WIM to `IIsoMediaPreparer`, which copies the original ISO media
+  tree **read-only** and replaces the payload: for a WIM source it overwrites `sources\install.wim`;
+  for an ESD source it **deletes** `sources\install.esd` and writes `sources\install.wim`. The final
+  install.wim is always at index 1. The export verifies the destination file exists before reporting
+  success.
+- **Consequences:** The rebuilt ISO is structurally faithful to the source; both WIM and ESD sources
+  yield a WIM payload at index 1; the original `install.esd` is never carried into the output. The
+  source ISO is untouched (the media tree copy is written to a WinForge-owned build workspace).
+
+## ADR-041: ISO creation uses oscdimg (Windows ADK); dual-boot, never faked
+
+- **Status:** ACCEPTED
+- **Context:** The output must be a bootable ISO supporting both legacy BIOS and UEFI. The Windows
+  ADK `oscdimg.exe` is the documented Microsoft tool for building a UDF/ISO-9660 image with a
+  boot catalog. When the ADK is missing the build must **clearly report the requirement** rather than
+  fabricate a non-bootable ISO.
+- **Decision:** `IBootableIsoBuilder` (Core) + `OscdimgIsoBuilder` (Infrastructure). `IAdkToolLocator
+  .FindOscdimg()` resolves the ADK path; if it is missing, `OscdimgIsoBuilder` returns `ToolMissing`
+  and the pipeline aborts the build with a clear "ADK required" message (the UI surfaces `AdkMissing`
+  up front, before the user can start). The dual-boot command is assembled by
+  `OscdimgArgumentBuilder.Build`:
+  `-bootdata:2#p0,e,b"<etfsboot.com>"#pEF,e,b"<efisys.bin>" -m -o -u2 -udfver102 "<mediaRoot>" "<outputIso>"`.
+  The builder verifies `boot\etfsboot.com` and `efi\microsoft\boot\efisys.bin` exist in the media
+  tree **before** invoking oscdimg; if either is missing the build fails with a clear error and never
+  produces a non-bootable ISO. The output file's existence is re-checked after the tool runs.
+- **Consequences:** The bootable output is real and verifiable; there is no fake/placeholder ISO; a
+  missing ADK or a missing boot file fails fast and clearly; Core stays testable via a fake builder.
+
+## ADR-042: Build UI — gated, stateful, never silently overwrites
+
+- **Status:** ACCEPTED
+- **Context:** The user picks the output directory and file name and must see live progress, the
+  terminal state, the log, and the final path/size. An accidental overwrite of an existing ISO (or a
+  previous build's output) must never happen silently, and the build must be cancellable.
+- **Decision:** `BuildStepViewModel` derives every input from `IAppState` (working image, mount dir,
+  source edition). `CanBuild` requires Applied + Mounted + not building + ADK present + non-empty
+  output dir **and** file name. The default file name is
+  `WinForge_<Edition>_<yyyyMMdd-HHmm>.iso` with the edition segment's spaces normalized to `_` and
+  illegal filename characters sanitized (ADR-safe, never a silent overwrite). Overwrite behavior is
+  explicit via `BuildOverwritePolicy` (Fail / GenerateUniqueName / Overwrite; default
+  `GenerateUniqueName`). A cancellable `AsyncRelayCommand` drives `IBuildService`; `CancelCommand`
+  cancels the `CancellationTokenSource`. The terminal `BuildState` and `OutputPath` /
+  `OutputSizeBytes` / `LogText` flow from `BuildResult`, and the final stage is pinned explicitly
+  (progress events are delivered asynchronously via `Progress<T>`, so the last one can arrive after
+  the result). On success the servicing workspace transitions `Mounted → Prepared` (the image is now
+  committed/unmounted); on cancel/ failure it reports the matching terminal state and discards any
+  partial output.
+- **Consequences:** The UI is always truthful about state; the user controls overwrite behavior;
+  cancellation is deterministic; success/failure/cancel are mutually exclusive and never misreported.
+
+## ADR-043: Independent build verification + interrupted-build recovery
+
+- **Status:** ACCEPTED
+- **Context:** A build that reports success must be independently trustworthy, not merely "the tool
+  exited 0". And a crashed build must not leave a stale workspace that blocks or corrupts the next
+  run.
+- **Decision:** `IBuildVerifier` (Core) + `BuildVerifier` (Infrastructure) re-checks the output
+  **independently of the builder**: the output ISO exists with non-zero size; `sources\install.wim`
+  is present in the media tree; no WIM is still mounted (`dism /Get-MountedImageInfo` reports no mount
+  directory); and the expected edition/index is present (`dism /Get-ImageInfo`). If verification
+  fails, `BuildResult.Success = false` and the terminal state is `Failed` — the orchestrator never
+  reports success on a failed verification. `ImageBuildService` also writes `build.recovery.json`
+  (atomic `.partial` rename) recording the in-flight phase + key paths; `DetectInterruptedBuildAsync`
+  + `CleanupInterruptedBuildAsync` let the next run detect and clean a leftover workspace before
+  starting, so a crash never blocks or corrupts a subsequent build.
+- **Consequences:** "Success" means a genuinely valid ISO; crash recovery is automatic and observable.
+  Verification uses the real DISM tooling (not the builder's own memory), so a tool-level mismatch is
+  caught. The recovery file is written atomically so it is never observed half-written.
+

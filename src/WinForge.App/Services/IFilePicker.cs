@@ -12,4 +12,10 @@ public interface IFilePicker
     /// user cancels.
     /// </summary>
     string? PickIsoFile();
+
+    /// <summary>
+    /// Shows a folder picker for choosing an output directory. Returns the selected
+    /// folder path, or null when the user cancels.
+    /// </summary>
+    string? PickFolder();
 }

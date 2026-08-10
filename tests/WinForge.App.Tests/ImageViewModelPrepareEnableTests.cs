@@ -61,6 +61,7 @@ public class ImageViewModelPrepareEnableTests
         public string? NextPath { get; set; }
 
         public string? PickIsoFile() => NextPath;
+        public string? PickFolder() => null;
     }
 
     /// <summary>A successful ISO inspection returning metadata with two editions.</summary>
@@ -130,6 +131,10 @@ public class ImageViewModelPrepareEnableTests
             => Task.FromResult(ServicingResult.Ok(workspace, ServicingHealth.Mounted));
 
         public Task<ServicingResult> UnmountDiscardAsync(
+            ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
+            => Task.FromResult(ServicingResult.Ok(workspace, ServicingHealth.Prepared));
+
+        public Task<ServicingResult> CommitUnmountAsync(
             ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
             => Task.FromResult(ServicingResult.Ok(workspace, ServicingHealth.Prepared));
 

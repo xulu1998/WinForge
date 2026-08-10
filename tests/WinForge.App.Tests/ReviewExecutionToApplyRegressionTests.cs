@@ -81,7 +81,9 @@ public class ReviewExecutionToApplyRegressionTests
             var comingSoon = new ComingSoonViewModel();
             var customize = new CustomizeStepViewModel(Components, Privacy, System, comingSoon);
             Plan = new PlanReviewViewModel(State, logger, Execution);
-            var build = new BuildStepViewModel(State);
+            var build = new BuildStepViewModel(
+                State, new FakeBuildService(), new FakeFileSystem(), new WorkflowAndCommandTests.FakeFilePicker(),
+                new FakeAdkToolLocator(), logger, new FakeLocalizationService());
             Wf = new WorkflowViewModel(State, image, customize, Plan, build);
         }
 

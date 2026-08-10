@@ -275,6 +275,70 @@ public sealed class ImageServicingService : IImageServicingService
         }
     }
 
+    public async Task<ServicingResult> CommitUnmountAsync(
+        ImageServicingWorkspace workspace,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.Info("Servicing: unmount (commit) started.");
+
+        // A repeated commit on an already-unmounted session is a safe no-op:
+        // there is nothing to commit and the working image is retained.
+        if (workspace.State != ServicingWorkspaceState.Mounted)
+        {
+            workspace.State = ServicingWorkspaceState.Prepared;
+            return ServicingResult.Ok(workspace, ServicingHealth.Prepared);
+        }
+
+        workspace.State = ServicingWorkspaceState.Unmounting;
+        try
+        {
+            // The Build pipeline's commit path. MUST use /Commit, never /Discard:
+            // this writes the customization changes into the working WIM.
+            var unmount = await _processRunner.RunAsync(new ProcessRequest
+            {
+                FileName = "dism.exe",
+                Arguments = $"/English /Unmount-Image /MountDir:\"{workspace.MountDirectory}\" /Commit"
+            }, cancellationToken);
+
+            if (unmount.ExitCode != 0)
+            {
+                _logger.Warning($"Servicing: DISM commit unmount exited with code {unmount.ExitCode}.");
+                // The mount may still be attached; leave it recoverable and STOP.
+                // The build must not proceed to ISO export from a half-committed state.
+                workspace.State = ServicingWorkspaceState.Failed;
+                workspace.LastError = $"Commit failed (DISM exit {unmount.ExitCode}).";
+                return ServicingResult.Fail(workspace, workspace.LastError, ServicingHealth.Failed);
+            }
+
+            // Verify the mount is actually gone before declaring Prepared.
+            var verify = await GetMountedImagesAsync(cancellationToken);
+            if (verify.Contains(workspace.MountDirectory!, StringComparer.OrdinalIgnoreCase))
+            {
+                workspace.State = ServicingWorkspaceState.Failed;
+                workspace.LastError = "Commit reported success but the mount is still registered.";
+                return ServicingResult.Fail(workspace, workspace.LastError, ServicingHealth.Failed);
+            }
+
+            workspace.State = ServicingWorkspaceState.Prepared;
+            workspace.LastError = null;
+            _logger.Info("Servicing: working image committed and unmounted; working image retained.");
+            return ServicingResult.Ok(workspace, ServicingHealth.Prepared);
+        }
+        catch (OperationCanceledException)
+        {
+            workspace.State = ServicingWorkspaceState.Failed;
+            workspace.LastError = "Commit was cancelled.";
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Servicing: commit failed: {ex.Message}");
+            workspace.State = ServicingWorkspaceState.Failed;
+            workspace.LastError = "Working image commit failed unexpectedly.";
+            return ServicingResult.Fail(workspace, workspace.LastError, ServicingHealth.Failed);
+        }
+    }
+
     public async Task<ServicingResult> ValidateServicingWorkspaceAsync(
         ImageServicingWorkspace workspace,
         CancellationToken cancellationToken = default)

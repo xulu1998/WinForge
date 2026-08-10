@@ -425,6 +425,7 @@ public class ImageWorkspaceTests
     {
         public string? NextPath { get; set; }
         public string? PickIsoFile() => NextPath;
+        public string? PickFolder() => null;
     }
 
     private sealed class FakeNavigationService : INavigationService

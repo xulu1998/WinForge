@@ -7,7 +7,7 @@
              xmlns:conv="clr-namespace:WinForge.App.Converters"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:BuildStepViewModel}">
-    <ScrollViewer Padding="32">
+    <ScrollViewer Padding="32" VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="820">
             <TextBlock FontSize="24" FontWeight="Bold" Foreground="#1F2933">
                 <TextBlock.Text>
@@ -16,8 +16,7 @@
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>
-            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap"
-                       MaxWidth="820">
+            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="820">
                 <TextBlock.Text>
                     <MultiBinding Converter="{StaticResource locKey}">
                         <Binding Source="Build.Intro"/><Binding Source="{StaticResource Loc}"/>
@@ -25,43 +24,207 @@
                 </TextBlock.Text>
             </TextBlock>
 
-            <Border Style="{StaticResource StatusTile}" Margin="0,16,0,0">
-                <StackPanel>
-                    <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="#1F2933" TextWrapping="Wrap">
-                        <TextBlock.Text>
-                            <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Source="Build.Placeholder"/><Binding Source="{StaticResource Loc}"/>
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
+            <!-- ADK prerequisite banner (red) -->
+            <Border Background="#FDECEA" BorderBrush="#F5C6C2" BorderThickness="1" CornerRadius="6"
+                    Padding="12" Margin="0,16,0,0"
+                    Visibility="{Binding AdkMissing, Converter={StaticResource BoolToVis}}">
+                <TextBlock FontSize="13" Foreground="#9B1C1C" TextWrapping="Wrap">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Build.Status.AdapterMissing"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </Border>
 
-                    <TextBlock FontSize="13" Foreground="#2F855A" Margin="0,12,0,0" TextWrapping="Wrap"
-                               Visibility="{Binding ApplyCompleted, Converter={StaticResource BoolToVis}}">
-                        <TextBlock.Text>
-                            <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Source="Build.Applied"/><Binding Source="{StaticResource Loc}"/>
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
-                    <TextBlock FontSize="13" Foreground="#9B1C1C" Margin="0,12,0,0" TextWrapping="Wrap"
-                               Visibility="{Binding ApplyCompleted, Converter={StaticResource BoolToVisInv}}">
-                        <TextBlock.Text>
-                            <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Source="Build.NotApplied"/><Binding Source="{StaticResource Loc}"/>
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
+            <!-- Build settings -->
+            <Border Style="{StaticResource StatusTile}" Margin="0,16,0,0" Width="Auto" Padding="16">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource FieldLabel}">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Build.BuildMode"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Grid.Row="0" Grid.Column="1" FontSize="13" Foreground="#1F2933" VerticalAlignment="Center"
+                                   Text="{Binding BuildModeText}"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource FieldLabel}">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Build.SourceEdition"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Grid.Row="1" Grid.Column="1" FontSize="13" Foreground="#1F2933" VerticalAlignment="Center"
+                                   Text="{Binding SourceEdition, TargetNullValue='—'}"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource FieldLabel}">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Build.FinalEdition"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4,0,4" Padding="6"
+                                 Text="{Binding FinalEditionName, UpdateSourceTrigger=PropertyChanged}"/>
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource FieldLabel}">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Build.OutputDir"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <Grid Grid.Row="3" Grid.Column="1" Margin="0,4,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Padding="6" Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button Grid.Column="1" Margin="8,0,0,0" Padding="10,6" MinWidth="90"
+                                    Command="{Binding BrowseOutputCommand}">
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource locKey}">
+                                            <Binding Source="Build.Browse"/><Binding Source="{StaticResource Loc}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </Button>
+                        </Grid>
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Style="{StaticResource FieldLabel}">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Build.OutputFile"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBox Grid.Row="4" Grid.Column="1" Margin="0,4,0,4" Padding="6"
+                                 Text="{Binding OutputFileName, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
                 </StackPanel>
             </Border>
 
-            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,16,0,0" TextWrapping="Wrap"
-                       MaxWidth="820">
-                <TextBlock.Text>
-                    <MultiBinding Converter="{StaticResource locKey}">
-                        <Binding Source="Build.Note"/><Binding Source="{StaticResource Loc}"/>
-                    </MultiBinding>
-                </TextBlock.Text>
-            </TextBlock>
+            <!-- Action buttons -->
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                <Button Style="{StaticResource PrimaryButton}" MinWidth="140" Command="{Binding BuildCommand}"
+                        IsEnabled="{Binding CanBuild}">
+                    <TextBlock>
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{StaticResource locKey}">
+                                <Binding Source="Build.Start"/><Binding Source="{StaticResource Loc}"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </Button>
+                <Button Margin="12,0,0,0" MinWidth="120" Padding="12,8"
+                        Command="{Binding CancelCommand}" IsEnabled="{Binding CanCancel}">
+                    <TextBlock>
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{StaticResource locKey}">
+                                <Binding Source="Build.Cancel"/><Binding Source="{StaticResource Loc}"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </Button>
+            </StackPanel>
+
+            <!-- Status banner -->
+            <Border Margin="0,16,0,0" Padding="12" CornerRadius="6" BorderThickness="1"
+                    BorderBrush="#E4E7EB" Background="#F5F7FA">
+                <TextBlock FontSize="13" TextWrapping="Wrap" Foreground="#1F2933" Text="{Binding StatusMessage}"/>
+            </Border>
+
+            <!-- Stage + progress -->
+            <StackPanel Margin="0,16,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" FontSize="13" FontWeight="SemiBold" Foreground="#1F2933">
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{StaticResource locKey}">
+                                <Binding Source="Build.Stage"/><Binding Source="{StaticResource Loc}"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <TextBlock Grid.Column="1" FontSize="13" Foreground="#3B82F6" Margin="8,0,0,0"
+                               Text="{Binding CurrentStageText}"/>
+                    <TextBlock Grid.Column="2" FontSize="13" Foreground="#7B8794"
+                               Text="{Binding ProgressPercent, StringFormat={}{0}%}"
+                               Visibility="{Binding IsIndeterminate, Converter={StaticResource BoolToVisInv}}"/>
+                </Grid>
+                <ProgressBar Height="10" Margin="0,8,0,0" Value="{Binding ProgressPercent}" Minimum="0" Maximum="100"
+                             IsIndeterminate="{Binding IsIndeterminate}" Foreground="#3B82F6"/>
+            </StackPanel>
+
+            <!-- Output summary -->
+            <Border Style="{StaticResource StatusTile}" Margin="0,16,0,0" Width="Auto" Padding="16"
+                    Visibility="{Binding HasOutput, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#2F855A">
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{StaticResource locKey}">
+                                <Binding Source="Build.Output"/><Binding Source="{StaticResource Loc}"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBlock FontSize="12" Foreground="#1F2933">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Build.OutputPath"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock FontSize="12" Foreground="#1F2933" Text=": " />
+                        <TextBlock FontSize="12" Foreground="#1F2933" TextWrapping="Wrap" Text="{Binding OutputPath}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <TextBlock FontSize="12" Foreground="#1F2933">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Build.OutputSize"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock FontSize="12" Foreground="#1F2933" Text=": " />
+                        <TextBlock FontSize="12" Foreground="#1F2933" Text="{Binding OutputSizeText}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Log -->
+            <StackPanel Margin="0,16,0,0">
+                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,0,0,6">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Build.Log"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBox Height="180" IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
+                         AcceptsReturn="True" FontFamily="Consolas" FontSize="12" Foreground="#1F2933"
+                         Text="{Binding LogText, Mode=OneWay}"/>
+            </StackPanel>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

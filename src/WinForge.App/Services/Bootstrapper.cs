@@ -14,6 +14,7 @@ using WinForge.Infrastructure.IsoInspection;
 using WinForge.Infrastructure.Execution;
 using WinForge.Infrastructure.Logging;
 using WinForge.Infrastructure.Servicing;
+using WinForge.Infrastructure.Build;
 
 namespace WinForge.App.Services;
 
@@ -67,6 +68,15 @@ public static class Bootstrapper
         services.AddSingleton<IMountIdentityValidator, MountIdentityValidator>();
         services.AddSingleton<ICustomizationDiscoveryService, WindowsCustomizationDiscoveryService>();
         services.AddSingleton<ICustomizationExecutionService, WindowsCustomizationExecutionService>();
+
+        // Phase 10 — Build / ISO export pipeline (orchestrator + fakeable sub-services).
+        services.AddSingleton<IFileSystem, WindowsFileSystem>();
+        services.AddSingleton<IAdkToolLocator, AdkToolLocator>();
+        services.AddSingleton<IWimExporter, DismWimExporter>();
+        services.AddSingleton<IIsoMediaPreparer, IsoMediaPreparer>();
+        services.AddSingleton<IBootableIsoBuilder, OscdimgIsoBuilder>();
+        services.AddSingleton<IBuildVerifier, BuildVerifier>();
+        services.AddSingleton<IBuildService, ImageBuildService>();
 
         // View models (singletons, shared across navigation)
         services.AddSingleton<MainViewModel>();

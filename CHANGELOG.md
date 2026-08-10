@@ -5,6 +5,59 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added (Phase 10 — Build / ISO Export — feature/iso-build)
+- **Build / ISO Export pipeline (ADR-038):** replaces the honest placeholder Build step with a real,
+  safe ISO-rebuild engine. `IBuildService` (Core) + `ImageBuildService` (Infrastructure) orchestrate
+  an explicit state machine `Preflight → CommittingImage → ExportingImage → PreparingMedia →
+  BuildingIso → Verifying → Completed/Failed/Cancelled`; the terminal `BuildState` is the single
+  authority for success. An atomic `build.recovery.json` (written via a `.partial` file renamed into
+  place) records the in-flight phase + paths for crash recovery.
+- **Commit (not discard) on build (ADR-039):** the pipeline calls `IImageServicingService
+  .CommitUnmountAsync` (DISM `/Unmount-Image /Commit`) so the customized working image is persisted
+  into the final ISO; `/Discard` is never used on the build path, and a commit failure stops the build
+  (no ISO, workspace left recoverable).
+- **Clean WIM export + ESD normalization (ADR-040):** `IWimExporter`/`DismWimExporter` run
+  `DISM /Export-Image /Compress:max /CheckIntegrity` to a clean `install.wim`; `IIsoMediaPreparer`/
+  `IsoMediaPreparer` copy the original ISO media tree read-only and replace the payload — overwriting
+  `sources\install.wim` for a WIM source, or deleting `sources\install.esd` and writing
+  `sources\install.wim` for an ESD source (always index 1).
+- **Bootable ISO via oscdimg, never faked (ADR-041):** `IBootableIsoBuilder`/`OscdimgIsoBuilder`/
+  `OscdimgArgumentBuilder` use the Windows ADK `oscdimg.exe` with dual-boot args
+  `-bootdata:2#p0,e,b"<etfsboot.com>"#pEF,e,b"<efisys.bin>" -m -o -u2 -udfver102`. The builder fails
+  fast and clearly when the ADK is missing (`IAdkToolLocator`) or a boot file is absent — it never
+  fabricates a non-bootable ISO; the UI surfaces `AdkMissing` before build.
+- **Independent verification + recovery (ADR-043):** `IBuildVerifier`/`BuildVerifier` re-check the
+  output independently (ISO exists + size, `sources\install.wim` present, no WIM mounted via
+  `dism /Get-MountedImageInfo`, expected edition/index via `dism /Get-ImageInfo`); a failed
+  verification makes the build fail. `DetectInterruptedBuildAsync`/`CleanupInterruptedBuildAsync` let
+  the next run clean a crashed workspace before starting.
+- **Build UI (ADR-042):** `BuildStepViewModel` derives every input from `IAppState`, gates `CanBuild`
+  (Applied + Mounted + ADK + non-empty output dir/file), defaults the file name to
+  `WinForge_<Edition>_<yyyyMMdd-HHmm>.iso` (edition spaces normalized to `_`, illegal chars
+  sanitized), uses an explicit overwrite policy (default `GenerateUniqueName`), runs a cancellable
+  `AsyncRelayCommand`, and surfaces the terminal state + output path/size + log from `BuildResult`
+  (the final stage/log are pinned from the result so async progress delivery cannot leave the UI
+  mid-state). Success transitions the workspace Mounted → Prepared.
+- **≈35 new automated tests** for Phase 10 (pipeline orchestrator, component unit tests for
+  `OscdimgArgumentBuilder`/`OscdimgIsoBuilder`/`IsoMediaPreparer`/`DismWimExporter`/`BuildVerifier`,
+  and `BuildStepViewModel`). Total suite: **397 pass (Core 37, App 360), 0 errors, 0 warnings
+  (Release)**, all CI-safe (no ISO / admin / internet). Covers: success path + source-untouched +
+  workspace-cleaned; ADK-missing preflight; missing source ISO / working image; empty required field;
+  commit/export/media/ISO-tool/verify failures; cancellation → Cancelled; output conflict (Fail vs
+  GenerateUniqueName); ESD-source coverage; dual-boot arg assembly; missing-boot-file and
+  missing-ADK ToolMissing; ViewModel defaults/gating/success/cancel.
+
+### Status (Phase 10 — Build / ISO Export — IMPLEMENTED / PENDING REAL DESKTOP VALIDATION)
+- **IMPLEMENTED / PENDING REAL DESKTOP VALIDATION** (2026-08-10). Built on Step 3.2/3.3 — the
+  pipeline contains no UI-side DISM/oscdimg calls (coordination only; the actual tools live behind
+  Core interfaces in Infrastructure). ADR-038…ADR-043. Not merged to `main`.
+- **Automated suite: 397 pass (Core 37, App 360), 0 errors, 0 warnings (Release).** Real-desktop
+  validation plan (PENDING): run on Windows 11 25H2 zh-CN x64 Consumer `install.wim` — commit +
+  export the customized working image; copy the original media tree and replace the payload; build a
+  dual-boot ISO with `oscdimg.exe` (Windows ADK installed); `BuildVerifier` confirms the output ISO +
+  `sources\install.wim` + expected edition/index and that no WIM remains mounted; boot/inspect the
+  output; interrupted-build recovery. Until that passes, Phase 10 is not marked COMPLETED.
+
 ### Added (UX Workflow Refactor + Localization Foundation — feature/wizard-localization)
 - **Wizard/Stepper primary workflow (ADR-032):** the left feature-list nav is replaced by a gated
   6-step Stepper — Source → Prepare → Customize → Review → Apply → Build (zh: 选择镜像 → 准备镜像 →

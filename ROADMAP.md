@@ -303,15 +303,59 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 10 — Build Engine
 
-- **Status:** NOT STARTED
-- **Goal:** Rebuild a customized Windows ISO.
-- **Scope:** Apply plan to mounted image, unmount, rebuild ISO preserving original
-  structure.
+- **Status:** IMPLEMENTED / PENDING REAL DESKTOP VALIDATION (on `feature/iso-build`; not yet merged
+  to `main`). Replaces the honest placeholder Build step (ADR-032) with a real, safe ISO-rebuild
+  pipeline. 35 new automated tests (Build pipeline orchestrator + component unit tests + ViewModel)
+  added; total suite **397 pass (Core 37, App 360), 0 errors, 0 warnings (Release)**, all CI-safe
+  (no ISO / admin / internet).
+- **Goal:** Rebuild a customized Windows ISO from the isolated, customized working image.
+- **Scope:** Commit the working image, export a clean install.wim, copy the original media tree and
+  replace the payload, build a dual-boot (BIOS+UEFI) ISO with oscdimg, verify independently, and
+  surface the full lifecycle in the Build UI. The source ISO is never modified.
 - **Deliverables:**
-  - `IBuildService` (Core) + Infrastructure implementation
+  - `IBuildService` (Core) + `ImageBuildService` (Infrastructure) — 6-phase state machine
+    (Preflight → CommittingImage → ExportingImage → PreparingMedia → BuildingIso → Verifying →
+    Completed/Failed/Cancelled), writing an atomic `build.recovery.json` for crash recovery.
+  - `IImageServicingService.CommitUnmountAsync` (DISM `/Unmount-Image /Commit`) — the build commits
+    the working image; `/Discard` is never used on the build path (ADR-039).
+  - `IWimExporter` + `DismWimExporter` (DISM `/Export-Image`, `/Compress:max /CheckIntegrity`) —
+    clean install.wim; ESD sources normalized to a WIM at index 1 (ADR-040).
+  - `IIsoMediaPreparer` + `IsoMediaPreparer` — read-only copy of the original media tree; replaces
+    `sources\install.wim` (WIM) or deletes `sources\install.esd` and writes `sources\install.wim`
+    (ESD); validates the dual-boot files exist (ADR-040).
+  - `IBootableIsoBuilder` + `OscdimgIsoBuilder` + `OscdimgArgumentBuilder` — Windows ADK `oscdimg.exe`,
+    dual-boot args `-bootdata:2#p0,e,b"<etfsboot.com>"#pEF,e,b"<efisys.bin>" -m -o -u2 -udfver102`;
+    fails fast and clearly when the ADK is missing or a boot file is absent — never fakes an ISO
+    (ADR-041).
+  - `IBuildVerifier` + `BuildVerifier` — independent re-check (output exists + size, install.wim
+    present, no mounted WIM, expected edition/index present); a failed verification makes the build
+    fail (ADR-043).
+  - `IAdkToolLocator` + `FakeAdkToolLocator`/`MissingAdkToolLocator` — ADK detection; UI surfaces
+    `AdkMissing` before build.
+  - `BuildStepViewModel` (App) — gated (`CanBuild` requires Applied + Mounted + ADK + non-empty
+    paths), default file name `WinForge_<Edition>_<yyyyMMdd-HHmm>.iso` (spaces→`_`), explicit
+    overwrite policy (default `GenerateUniqueName`), cancellable command, terminal state + log +
+    output path/size surfaced from `BuildResult`; success transitions the workspace Mounted→Prepared
+    (ADR-042).
+  - Core request/result DTOs: `BuildRequest`, `BuildResult`, `BuildState`, `BuildProgress`,
+    `BuildFileName`, `WimExport*`, `MediaPrepare*`, `IsoBuild*`, `BuildVerification*`,
+    `BuildRecoveryState`.
 - **Acceptance Criteria:**
-  - Produces a bootable ISO whose structure matches the source except for the
-    intended customizations.
+  - Produces a bootable ISO whose structure matches the source except for the intended
+    customizations.
+  - The original source ISO / `install.wim` / `install.esd` is never modified.
+  - Commit failure stops the build (no ISO, workspace recoverable).
+  - Missing ADK or missing boot files fail fast and clearly; no fake ISO.
+  - ESD and WIM sources both yield a WIM payload at index 1.
+  - A crashed build is detected and cleaned before the next run.
+- **Real-desktop validation plan (PENDING):** run on the same Windows 11 25H2 (Chinese Simplified,
+  x64, Consumer Editions, `install.wim`) used for prior phases: (1) a customized working image
+  (Step 3.2/3.3) is committed and exported; (2) the original ISO media tree is copied and the payload
+  replaced; (3) `oscdimg.exe` (Windows ADK installed) builds a dual-boot ISO; (4) `BuildVerifier`
+  confirms the output ISO + `sources\install.wim` + the expected edition/index and that no WIM
+  remains mounted; (5) the resulting ISO boots in a VM / mounts and shows the customized edition; (6)
+  an interrupted build leaves a recoverable workspace and the next run cleans it. Until this passes,
+  Phase 10 is marked IMPLEMENTED / PENDING REAL DESKTOP VALIDATION (not COMPLETED).
 
 ---
 

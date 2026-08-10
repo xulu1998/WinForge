@@ -199,8 +199,13 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
                     : execSucceeded ? WorkflowStepState.Available
                     : WorkflowStepState.NotAvailable,
 
-                // Honest placeholder: always reachable so the workflow is complete end to end.
-                WorkflowStep.Build => isCurrent ? WorkflowStepState.Current : WorkflowStepState.Available,
+                // Build (Phase 10) is reachable only after the customization plan was
+                // actually applied (execution succeeded), never as an always-open
+                // placeholder. The step's own CanBuild (mounted + ADK present) further
+                // gates the actual build command; this gate controls navigation only.
+                WorkflowStep.Build => !execSucceeded
+                    ? WorkflowStepState.NotAvailable
+                    : isCurrent ? WorkflowStepState.Current : WorkflowStepState.Available,
 
                 _ => WorkflowStepState.Available
             };

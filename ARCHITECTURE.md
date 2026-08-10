@@ -169,3 +169,52 @@ customization engine without adding any DISM/Win32 code.
   are configurable (ADR-036).
 
 See DECISIONS.md ADR-032 through ADR-037 for the full rationale.
+
+## Build / ISO Export Engine (Phase 10)
+
+Phase 10 turns the isolated, customized working image (produced by Step 3.2/3.3) into a bootable
+Windows ISO. The Build step is no longer an honest placeholder: a single orchestrator coordinates
+commit → export → media copy → ISO build → verification, and the Build UI reflects the full
+lifecycle.
+
+### Layering
+
+```
+WinForge.App
+  └─ ViewModels:  BuildStepViewModel (derives inputs from IAppState, gates CanBuild,
+                  cancellable AsyncRelayCommand, surfaces terminal state + log + output)
+
+WinForge.Core  (platform-agnostic — no DISM, no oscdimg, no WPF)
+  ├─ Models:      BuildRequest, BuildResult, BuildState, BuildProgress, BuildFileName,
+  │               WimExport*, MediaPrepare*, IsoBuild*, BuildVerification*, BuildRecoveryState
+  └─ Services:    IBuildService, IWimExporter, IIsoMediaPreparer, IBootableIsoBuilder,
+                  IBuildVerifier, IAdkToolLocator, IImageServicingService (CommitUnmountAsync)
+
+WinForge.Infrastructure  (Windows only)
+  ├─ ImageBuildService       (6-phase state machine; atomic build.recovery.json)
+  ├─ DismWimExporter         (DISM /Export-Image, /Compress:max /CheckIntegrity)
+  ├─ IsoMediaPreparer        (read-only media-tree copy + payload replace, dual-boot validate)
+  ├─ OscdimgIsoBuilder       (Windows ADK oscdimg.exe; dual-boot args)
+  ├─ OscdimgArgumentBuilder  (pure dual-boot command assembler)
+  ├─ BuildVerifier           (independent DISM re-check)
+  └─ ImageServicingService   (CommitUnmountAsync — DISM /Unmount-Image /Commit)
+```
+
+### Safety boundaries
+
+- **Source is never modified.** The original ISO is read (a transient read-only mount), and the
+  final `install.wim` is written into a WinForge-owned build workspace; the committed working image
+  is the only thing DISM mutates (ADR-019/ADR-039).
+- **Commit, never discard.** The build commits the working image (`/Unmount-Image /Commit`); a commit
+  failure stops the build with no ISO and leaves the workspace recoverable (ADR-039).
+- **ESD → WIM normalization.** For an ESD source the original `install.esd` is removed and a WIM is
+  written at index 1, so Windows Setup reads the payload correctly (ADR-040).
+- **No fake ISO.** `oscdimg.exe` is required; a missing ADK or a missing boot file (`boot\etfsboot.com`,
+  `efi\microsoft\boot\efisys.bin`) fails the build fast and clearly — the builder never emits a
+  non-bootable ISO (ADR-041).
+- **Independent verification.** `BuildVerifier` re-checks the output with the real DISM tooling; a
+  failed verification makes the build fail, so "success" means a genuinely valid ISO (ADR-043).
+- **Crash recovery.** `ImageBuildService` writes `build.recovery.json` atomically; the next run
+  detects and cleans a leftover workspace before starting (ADR-043).
+
+See DECISIONS.md ADR-038 through ADR-043 for the full rationale.
