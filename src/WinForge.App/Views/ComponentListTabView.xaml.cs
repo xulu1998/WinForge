@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -28,13 +27,16 @@ public partial class ComponentListTabView : UserControl
     {
         if (e.NewValue is ComponentListTabViewModel vm)
         {
-            var items = new ObservableCollection<object>();
-            foreach (var item in vm.Items)
-            {
-                items.Add(item);
-            }
-
-            _view = new ListCollectionView(items) { Filter = Filter };
+            // Bind to the LIVE discovery collection (not a snapshot copy). The
+            // shared ComponentsViewModel mutates its ObservableCollection in place
+            // when discovery completes (Clear + Add), and ListCollectionView
+            // subscribes to INotifyCollectionChanged on that exact instance, so
+            // the ListView refreshes immediately — without requiring the user to
+            // switch tabs and force a view recreation. Snapshotting into a
+            // separate ObservableCollection here was Defect 1: the copy never
+            // received the post-discovery CollectionChanged, so the active Apps
+            // tab stayed empty until navigated away and back.
+            _view = new ListCollectionView(vm.Items) { Filter = Filter };
             ListView.ItemsSource = _view;
             ShowProtectedCheck.Visibility = vm.ShowProtectedVisible ? Visibility.Visible : Visibility.Collapsed;
         }

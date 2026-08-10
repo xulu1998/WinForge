@@ -25,9 +25,9 @@
             </TextBlock>
 
             <!-- ADK prerequisite banner (red) -->
-            <Border Background="#FDECEA" BorderBrush="#F5C6C2" BorderThickness="1" CornerRadius="6"
+                    <Border Background="#FDECEA" BorderBrush="#F5C6C2" BorderThickness="1" CornerRadius="6"
                     Padding="12" Margin="0,16,0,0"
-                    Visibility="{Binding AdkMissing, Converter={StaticResource BoolToVis}}">
+                    Visibility="{Binding AdkMissing, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                 <TextBlock FontSize="13" Foreground="#9B1C1C" TextWrapping="Wrap">
                     <TextBlock.Text>
                         <MultiBinding Converter="{StaticResource locKey}">
@@ -61,7 +61,7 @@
                             </TextBlock.Text>
                         </TextBlock>
                         <TextBlock Grid.Row="0" Grid.Column="1" FontSize="13" Foreground="#1F2933" VerticalAlignment="Center"
-                                   Text="{Binding BuildModeText}"/>
+                                   Text="{Binding BuildModeText, Mode=OneWay}"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource FieldLabel}">
                             <TextBlock.Text>
@@ -71,7 +71,7 @@
                             </TextBlock.Text>
                         </TextBlock>
                         <TextBlock Grid.Row="1" Grid.Column="1" FontSize="13" Foreground="#1F2933" VerticalAlignment="Center"
-                                   Text="{Binding SourceEdition, TargetNullValue='—'}"/>
+                                   Text="{Binding SourceEdition, Mode=OneWay, TargetNullValue='—'}"/>
 
                         <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource FieldLabel}">
                             <TextBlock.Text>
@@ -148,7 +148,7 @@
             <!-- Status banner -->
             <Border Margin="0,16,0,0" Padding="12" CornerRadius="6" BorderThickness="1"
                     BorderBrush="#E4E7EB" Background="#F5F7FA">
-                <TextBlock FontSize="13" TextWrapping="Wrap" Foreground="#1F2933" Text="{Binding StatusMessage}"/>
+                <TextBlock FontSize="13" TextWrapping="Wrap" Foreground="#1F2933" Text="{Binding StatusMessage, Mode=OneWay}"/>
             </Border>
 
             <!-- Stage + progress -->
@@ -167,18 +167,18 @@
                         </TextBlock.Text>
                     </TextBlock>
                     <TextBlock Grid.Column="1" FontSize="13" Foreground="#3B82F6" Margin="8,0,0,0"
-                               Text="{Binding CurrentStageText}"/>
+                               Text="{Binding CurrentStageText, Mode=OneWay}"/>
                     <TextBlock Grid.Column="2" FontSize="13" Foreground="#7B8794"
-                               Text="{Binding ProgressPercent, StringFormat={}{0}%}"
-                               Visibility="{Binding IsIndeterminate, Converter={StaticResource BoolToVisInv}}"/>
+                               Text="{Binding ProgressPercent, Mode=OneWay, StringFormat={}{0}%}"
+                               Visibility="{Binding IsIndeterminate, Mode=OneWay, Converter={StaticResource BoolToVisInv}}"/>
                 </Grid>
-                <ProgressBar Height="10" Margin="0,8,0,0" Value="{Binding ProgressPercent}" Minimum="0" Maximum="100"
-                             IsIndeterminate="{Binding IsIndeterminate}" Foreground="#3B82F6"/>
+                <ProgressBar x:Name="BuildProgressBar" Height="10" Margin="0,8,0,0" Value="{Binding ProgressPercent, Mode=OneWay}" Minimum="0" Maximum="100"
+                             IsIndeterminate="{Binding IsIndeterminate, Mode=OneWay}" Foreground="#3B82F6"/>
             </StackPanel>
 
             <!-- Output summary -->
             <Border Style="{StaticResource StatusTile}" Margin="0,16,0,0" Width="Auto" Padding="16"
-                    Visibility="{Binding HasOutput, Converter={StaticResource BoolToVis}}">
+                    Visibility="{Binding HasOutput, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
                     <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#2F855A">
                         <TextBlock.Text>
@@ -196,7 +196,7 @@
                             </TextBlock.Text>
                         </TextBlock>
                         <TextBlock FontSize="12" Foreground="#1F2933" Text=": " />
-                        <TextBlock FontSize="12" Foreground="#1F2933" TextWrapping="Wrap" Text="{Binding OutputPath}"/>
+                        <TextBlock FontSize="12" Foreground="#1F2933" TextWrapping="Wrap" Text="{Binding OutputPath, Mode=OneWay}"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                         <TextBlock FontSize="12" Foreground="#1F2933">
@@ -207,7 +207,7 @@
                             </TextBlock.Text>
                         </TextBlock>
                         <TextBlock FontSize="12" Foreground="#1F2933" Text=": " />
-                        <TextBlock FontSize="12" Foreground="#1F2933" Text="{Binding OutputSizeText}"/>
+                        <TextBlock FontSize="12" Foreground="#1F2933" Text="{Binding OutputSizeText, Mode=OneWay}"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

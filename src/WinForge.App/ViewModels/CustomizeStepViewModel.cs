@@ -55,7 +55,11 @@ public sealed class ComponentListTabViewModel : ViewModelBase
 
     public string HeaderKey { get; }
 
-    public System.Collections.IEnumerable Items => Kind switch
+    // IList (not IEnumerable) so the view can build a ListCollectionView over the
+    // LIVE ObservableCollection. The three backing collections are all
+    // ObservableCollection<T>, which implement IList and raise INotifyCollectionChanged
+    // in place — so post-discovery Clear()/Add() flows straight into the visible list.
+    public System.Collections.IList Items => Kind switch
     {
         ComponentListKind.Apps => Components.AppxPackages,
         ComponentListKind.Components => Components.WindowsPackages,
