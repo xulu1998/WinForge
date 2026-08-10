@@ -25,7 +25,7 @@
             </TextBlock>
 
             <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                <Button Style="{StaticResource PrimaryButton}" Background="#2F855A" Command="{Binding DiscoverCommand}">
+                <Button Style="{StaticResource PrimaryButton}" Background="#2F855A" Command="{Binding DiscoverCommand, Mode=OneWay}">
                     <TextBlock>
                         <TextBlock.Text>
                             <MultiBinding Converter="{StaticResource locKey}">
@@ -35,7 +35,7 @@
                     </TextBlock>
                 </Button>
                 <TextBlock Foreground="#3B82F6" VerticalAlignment="Center" Margin="12,0,0,0"
-                           Visibility="{Binding IsDiscovering, Converter={StaticResource BoolToVis}}">
+                           Visibility="{Binding IsDiscovering, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                     <TextBlock.Text>
                         <MultiBinding Converter="{StaticResource locKey}">
                             <Binding Source="Customize.Discovering"/><Binding Source="{StaticResource Loc}"/>
@@ -43,9 +43,9 @@
                     </TextBlock.Text>
                 </TextBlock>
             </StackPanel>
-            <TextBlock Text="{Binding StatusMessage}" FontSize="13" Foreground="#52606D" Margin="0,8,0,0" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding StatusMessage, Mode=OneWay}" FontSize="13" Foreground="#52606D" Margin="0,8,0,0" TextWrapping="Wrap"/>
             <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,4,0,0"
-                       Visibility="{Binding HasInventory, Converter={StaticResource BoolToVis}}">
+                       Visibility="{Binding HasInventory, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                 <Run>
                     <Run.Text>
                         <MultiBinding Converter="{StaticResource locKey}">
@@ -54,10 +54,10 @@
                     </Run.Text>
                 </Run>
                 <Run Text=": "/>
-                <Run Text="{Binding SelectedTotal}"/>
+                <Run Text="{Binding SelectedTotal, Mode=OneWay}"/>
             </TextBlock>
 
-            <StackPanel Visibility="{Binding HasInventory, Converter={StaticResource BoolToVis}}">
+            <StackPanel Visibility="{Binding HasInventory, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                 <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,20,0,0">
                     <TextBlock.Text>
                         <MultiBinding Converter="{StaticResource locKey}">

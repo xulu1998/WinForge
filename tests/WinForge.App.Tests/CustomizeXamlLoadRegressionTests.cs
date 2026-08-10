@@ -32,6 +32,7 @@ namespace WinForge.App.Tests;
 /// <c>Run.Text</c>.
 /// </para>
 /// </summary>
+[Collection("WpfSta")]
 public class CustomizeXamlLoadRegressionTests
 {
     // Fake localization service standing in for ResourceManagerLocalizationService.

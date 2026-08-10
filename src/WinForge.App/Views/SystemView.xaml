@@ -32,7 +32,7 @@
                     </Run.Text>
                 </Run>
                 <Run Text=": "/>
-                <Run Text="{Binding SelectedTotal}"/>
+                <Run Text="{Binding SelectedTotal, Mode=OneWay}"/>
             </TextBlock>
 
             <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,16,0,0">
