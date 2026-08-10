@@ -35,14 +35,39 @@ public static class ComponentMatcher
         ComponentCategory.SystemApp
     };
 
-    // Identity substrings that mark a discovered object as Protected regardless of
-    // category: servicing stack, core-shell, recovery, setup, language, drivers.
+    // Identity substrings that mark a discovered object as Protected. These are
+    // intentionally NARROW, fully-qualified family strings — NOT bare words like
+    // "Driver", "Language", "Setup", "Recovery", "Foundation", "Client-Desktop", or
+    // the parent family "Microsoft-Windows-Client". Per the Stage 11.1 read-only
+    // audit (ADR-046): a generic substring must never auto-protect a broad family of
+    // unrelated CBS packages; when in doubt an object stays DiscoveredUnclassified
+    // rather than falsely Protected. Each marker below is a specific, reviewable
+    // package/capability family that is genuinely unsafe to remove in any servicing
+    // scenario, so protecting it is defensible.
     private static readonly string[] ProtectedMarkers =
     {
-        "ServicingStack", "Foundation", "WinPE", "Setup", "LanguagePack",
-        "Language", "Driver", "WinRE", "Recovery", "Microsoft-Windows-Edition",
-        "Microsoft-Windows-Client", "Microsoft-Windows-Foundation",
-        "Microsoft-Windows-ServicingStack", "Windows-Recovery", "Client-Desktop"
+        // Servicing stack — core update engine; removing it breaks all future servicing.
+        "Microsoft-Windows-ServicingStack",
+        // Client foundation package — minimal OS core; removing it breaks the OS.
+        "Microsoft-Windows-Foundation",
+        // WinPE boot packages — recovery/setup boot environment.
+        "WinPE",
+        // Setup engine + shell setup (answer-file / unattend processing).
+        "Microsoft-Windows-Setup",
+        "Microsoft-Windows-Shell-Setup",
+        // Language packs / features on demand / overlays / LXPs.
+        "Microsoft-Windows-LanguagePack",
+        "Microsoft-Windows-LanguageFeatures",
+        "Microsoft-Windows-LanguageOverlay",
+        "Microsoft-Windows-LanguageExperiencePack",
+        // Driver packages (trailing dash keeps the match on the driver family only).
+        "Microsoft-Windows-Driver-",
+        // Windows Recovery Environment + recovery packages.
+        "Microsoft-Windows-WinRE",
+        "Microsoft-Windows-Recovery",
+        "Windows-Recovery",
+        // Edition-definition packages — removing breaks edition identity / licensing.
+        "Microsoft-Windows-Edition",
     };
 
     /// <summary>

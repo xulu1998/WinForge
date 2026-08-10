@@ -217,4 +217,18 @@ Release Type : Feature Pack
         Assert.True(result.Cancelled);
         Assert.True(result.Discovered);
     }
+
+    [Fact]
+    public void CuratedCatalog_TeamsDependsOnOneDrive_AsRelatedTo()
+    {
+        // Stage 11.1 audit (ADR-046): the curated catalog must NOT claim Teams
+        // *Requires* OneDrive. The edge is RelatedTo — a soft association, not a hard
+        // runtime dependency. This locks the generator/catalog against regressions.
+        var catalog = new CuratedComponentCatalog().GetDefinitions();
+        var teams = Assert.Single(catalog.Where(d => d.Id == "Teams"));
+        var dep = Assert.Single(teams.Dependencies);
+
+        Assert.Equal("OneDrive", dep.ToId);
+        Assert.Equal(DependencyRelation.RelatedTo, dep.Relation);
+    }
 }

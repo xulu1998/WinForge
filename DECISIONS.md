@@ -1100,7 +1100,8 @@ All decisions are `ACCEPTED` unless noted.
   🔴 never-remove), a risk level, relevant scenarios, keep-if / remove-if / impact guidance,
   restoration info, and (collapsed) technical details — while NEVER hiding uncertainty. The 11
   initial curated components (Weather, Clipchamp, GetHelp, XboxApp, Photos, FeedbackHub, Maps,
-  PhoneLink, Solitaire, Teams, OneDrive; Teams `Requires` OneDrive) are well-understood inbox AppX.
+  PhoneLink, Solitaire, Teams, OneDrive; Teams `RelatedTo` OneDrive — downgraded from `Requires`
+  by ADR-046) are well-understood inbox AppX.
   The architecture (Core pure matcher + Infrastructure DISM parsers + App ViewModel/View, no DISM in
   ViewModels) preserves the layering rules. **473 automated tests pass (Core 46, App 427), 0 errors,
   0 warnings (Release)** — including Core matcher facts, Infrastructure parser/orchestrator tests
@@ -1112,4 +1113,50 @@ All decisions are `ACCEPTED` unless noted.
   Windows 11 25H2 zh-CN x64 Consumer ground-truth enumeration (exact AppX/Capability/Feature/Package
   totals + Curated/Unclassified/Protected/Unsupported breakdown) is deferred to real-desktop
   validation, mirroring Phase 10's ISO-rebuild step.
+
+---
+
+## ADR-046: Stage 11.1 read-only audit — tighten Protected classifier & downgrade Teams→OneDrive
+
+- **Status:** **IMPLEMENTED / PENDING REVIEW** (2026-08-10); on branch `phase/11-component-intelligence`;
+  **NOT merged to `main`**.
+- **Context:** Stage 11.1 passed architecture/build/tests, but the read-only audit of the two
+  knowledge rules surfaced defects in `ComponentMatcher.ProtectedMarkers` and the curated
+  `Teams → OneDrive` edge. The audit's governing rule: a generic substring must never auto-protect a
+  broad family of unrelated CBS packages, and dependency edges must not be invented — "Requires" means
+  removing the target breaks the dependent's supported core scenario.
+- **Decision A — Teams → OneDrive downgraded `Requires` → `RelatedTo`:**
+  - Evidence: modern Teams (`MicrosoftTeams_8wekyb3d8bbwe`) core chat / calls / meetings operate
+    independently of OneDrive; OneDrive is used only for file storage/sharing of chat attachments.
+    Removing OneDrive does NOT make Teams unable to operate its core scenario, so a hard `Requires`
+    edge is unsupported and would wrongly block Teams removal at plan-validation time in Stage 11.2.
+  - Action: `CuratedComponentCatalog.cs` and the generator `.tmp/phase11/gen_catalog.py` now declare
+    the edge as `RelatedTo` with a reason stating it is NOT a hard runtime dependency.
+- **Decision B — Protected classifier tightened to narrow, reviewable markers:**
+  - Removed broad bare-word / parent-family markers that over-protected unrelated CBS packages:
+    `ServicingStack` (bare), `Foundation` (bare), `Setup` (bare), `LanguagePack`, `Language` (bare),
+    `Driver` (bare), `WinRE`, `Recovery` (bare), `Microsoft-Windows-Client`, `Client-Desktop`.
+  - Kept only fully-qualified family strings, each tied to a specific, defensible protected family:
+    `Microsoft-Windows-ServicingStack`, `Microsoft-Windows-Foundation`, `WinPE`,
+    `Microsoft-Windows-Setup`, `Microsoft-Windows-Shell-Setup`, `Microsoft-Windows-LanguagePack`,
+    `Microsoft-Windows-LanguageFeatures`, `Microsoft-Windows-LanguageOverlay`,
+    `Microsoft-Windows-LanguageExperiencePack`, `Microsoft-Windows-Driver-`, `Microsoft-Windows-WinRE`,
+    `Microsoft-Windows-Recovery`, `Windows-Recovery`, `Microsoft-Windows-Edition`.
+  - Rationale: `Microsoft-Windows-Client` previously swept in EVERY `Microsoft-Windows-Client-*`
+    package (Core, Desktop, Features, Professional, …) as Protected; `Client-Desktop` is a substring
+    inside that same family. Per the audit, such objects must stay `DiscoveredUnclassified` rather
+    than be falsely Protected — and in Stage 11.1/11.2 they are never offered as removable anyway
+    (removal UI applies only to Curated AppX), so tightening is safe. If real-desktop validation
+    proves a specific client sub-family is genuinely critical and currently slips through, add a
+    narrow, evidence-backed marker rather than re-broadening.
+  - Regression coverage added: `Protected_NarrowRule_BareFoundationNoLongerMatches`,
+    `Protected_NarrowRule_ClientFamilyIsNotProtected` (Core/Desktop/Features theory),
+    `Protected_NarrowRule_DriverFamilyStillProtected`, `Protected_NarrowRule_SetupFamilyStillProtected`,
+    `Protected_NarrowRule_ServicingStackStillProtected`, plus `CuratedCatalog_TeamsDependsOnOneDrive_AsRelatedTo`.
+- **Consequences:** 8 net-new tests (Core 53, App 428 → 481 total, 0 fail). **Build 0 errors / 0
+  warnings (Release).** The classifier now protects only narrowly-scoped, reviewable families; the
+  curated Teams relationship is honestly `RelatedTo`. Real-image numeric ground-truth (Protected
+  rule match counts, unclassified examples) remains deferred to real-desktop validation — see
+  `.tmp/phase11/real-25h2-inventory-report.md`. Status: **IMPLEMENTED / PENDING REVIEW**; Stage 11.1
+  remains PENDING REVIEW until the real inventory is executed and reviewed.
 

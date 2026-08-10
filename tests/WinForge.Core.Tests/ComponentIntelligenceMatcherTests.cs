@@ -169,12 +169,15 @@ public class ComponentIntelligenceMatcherTests
     }
 
     [Fact]
-    public void Dependency_Requires_IsPreserved()
+    public void Dependency_RelatedTo_IsPreserved()
     {
+        // Stage 11.1 audit (ADR-046): Teams is NOT hard-dependent on OneDrive — its
+        // core chat/calls/meetings run without OneDrive, so the edge is RelatedTo,
+        // not Requires. The matcher must preserve whatever relation the catalog sets.
         var teams = CatalogDef("Teams", ComponentCategory.AppX,
             new List<ComponentDependency>
             {
-                new ComponentDependency { ToId = "OneDrive", Relation = DependencyRelation.Requires, Reason = "Teams files live in OneDrive." }
+                new ComponentDependency { ToId = "OneDrive", Relation = DependencyRelation.RelatedTo, Reason = "Teams files live in OneDrive." }
             },
             (ComponentCategory.AppX, MatchMethod.Prefix, "MicrosoftTeams"));
         var raw = new ComponentInventory
@@ -191,7 +194,137 @@ public class ComponentIntelligenceMatcherTests
         var dep = Assert.Single(entry.Definition!.Dependencies);
 
         Assert.Equal("OneDrive", dep.ToId);
-        Assert.Equal(DependencyRelation.Requires, dep.Relation);
+        Assert.Equal(DependencyRelation.RelatedTo, dep.Relation);
+    }
+
+    [Fact]
+    public void Protected_NarrowRule_BareFoundationNoLongerMatches()
+    {
+        // Regression: a bare "Foundation" substring used to over-protect unrelated
+        // packages. Only the fully-qualified "Microsoft-Windows-Foundation" family is
+        // protected now, so "Contoso.Foundation.Package" must stay unclassified.
+        var raw = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new List<CategoryDiscoveryResult>
+            {
+                RawCategory(ComponentCategory.CbsPackage, new RawCbsPackage
+                {
+                    Category = ComponentCategory.CbsPackage,
+                    RawIdentity = "Contoso.Foundation.Package~31bf3856ad364e35~amd64~~10.0.26100.1",
+                    State = "Installed"
+                })
+            }
+        };
+
+        var result = ComponentMatcher.BuildInventoryEntries(raw, new List<ComponentDefinition>());
+        var entry = Assert.Single(result.Entries);
+
+        Assert.Equal(ComponentClassification.DiscoveredUnclassified, entry.Classification);
+    }
+
+    [Theory]
+    [InlineData("Microsoft-Windows-Client-Core-Package~31bf3856ad364e35~amd64~~10.0.26100.1")]
+    [InlineData("Microsoft-Windows-Client-Desktop-Package~31bf3856ad364e35~amd64~~10.0.26100.1")]
+    [InlineData("Microsoft-Windows-Client-Features-Package~31bf3856ad364e35~amd64~~10.0.26100.1")]
+    public void Protected_NarrowRule_ClientFamilyIsNotProtected(string identity)
+    {
+        // Regression (audit concern): the parent family "Microsoft-Windows-Client" and
+        // the "Client-Desktop" substring used to auto-protect every client CBS package.
+        // Now those broad markers are gone; such packages stay DiscoveredUnclassified
+        // (never falsely Protected) until a narrow, evidence-backed rule is added.
+        var raw = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new List<CategoryDiscoveryResult>
+            {
+                RawCategory(ComponentCategory.CbsPackage, new RawCbsPackage
+                {
+                    Category = ComponentCategory.CbsPackage,
+                    RawIdentity = identity,
+                    State = "Installed"
+                })
+            }
+        };
+
+        var result = ComponentMatcher.BuildInventoryEntries(raw, new List<ComponentDefinition>());
+        var entry = Assert.Single(result.Entries);
+
+        Assert.Equal(ComponentClassification.DiscoveredUnclassified, entry.Classification);
+    }
+
+    [Fact]
+    public void Protected_NarrowRule_DriverFamilyStillProtected()
+    {
+        // The narrow "Microsoft-Windows-Driver-" marker must still protect genuine
+        // driver packages.
+        var raw = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new List<CategoryDiscoveryResult>
+            {
+                RawCategory(ComponentCategory.CbsPackage, new RawCbsPackage
+                {
+                    Category = ComponentCategory.CbsPackage,
+                    RawIdentity = "Microsoft-Windows-Driver-Foundation-Package~31bf3856ad364e35~amd64~~10.0.26100.1",
+                    State = "Installed"
+                })
+            }
+        };
+
+        var result = ComponentMatcher.BuildInventoryEntries(raw, new List<ComponentDefinition>());
+        var entry = Assert.Single(result.Entries);
+
+        Assert.Equal(ComponentClassification.Protected, entry.Classification);
+    }
+
+    [Fact]
+    public void Protected_NarrowRule_SetupFamilyStillProtected()
+    {
+        // The narrow "Microsoft-Windows-Setup" marker must still protect the setup engine.
+        var raw = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new List<CategoryDiscoveryResult>
+            {
+                RawCategory(ComponentCategory.CbsPackage, new RawCbsPackage
+                {
+                    Category = ComponentCategory.CbsPackage,
+                    RawIdentity = "Microsoft-Windows-Setup-Package~31bf3856ad364e35~amd64~~10.0.26100.1",
+                    State = "Installed"
+                })
+            }
+        };
+
+        var result = ComponentMatcher.BuildInventoryEntries(raw, new List<ComponentDefinition>());
+        var entry = Assert.Single(result.Entries);
+
+        Assert.Equal(ComponentClassification.Protected, entry.Classification);
+    }
+
+    [Fact]
+    public void Protected_NarrowRule_ServicingStackStillProtected()
+    {
+        // The original protected-marker regression (ServicingStack) must keep passing
+        // under the tightened, fully-qualified marker set.
+        var raw = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new List<CategoryDiscoveryResult>
+            {
+                RawCategory(ComponentCategory.CbsPackage, new RawCbsPackage
+                {
+                    Category = ComponentCategory.CbsPackage,
+                    RawIdentity = "Microsoft-Windows-ServicingStack-Package~31bf3856ad364e35~amd64~~10.0.26100.1",
+                    State = "Installed"
+                })
+            }
+        };
+
+        var result = ComponentMatcher.BuildInventoryEntries(raw, new List<ComponentDefinition>());
+        var entry = Assert.Single(result.Entries);
+
+        Assert.Equal(ComponentClassification.Protected, entry.Classification);
     }
 
     [Fact]

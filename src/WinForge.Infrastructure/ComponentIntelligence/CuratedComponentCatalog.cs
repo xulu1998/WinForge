@@ -287,7 +287,7 @@ public sealed class CuratedComponentCatalog : IComponentCatalogProvider
                 KeepIf = new[] { "Comp.Teams.KeepIf" },
                 RemoveIf = new[] { "Comp.Teams.RemoveIf" },
                 KnownImpact = new[] { "Comp.Teams.Impact" },
-                Dependencies = new[] { new ComponentDependency { ToId = "OneDrive", Relation = DependencyRelation.Requires, Reason = "Teams chat files and attachments are stored in OneDrive; removing OneDrive can affect Teams file access." } },
+                Dependencies = new[] { new ComponentDependency { ToId = "OneDrive", Relation = DependencyRelation.RelatedTo, Reason = "Teams stores shared chat files and attachments in OneDrive; the two are associated, but Teams core chat/calls/meetings work without OneDrive. This is NOT a hard runtime dependency." } },
                 Conflicts = new string[0],
                 TechnicalTargets = new[] { new TechnicalTarget { Category = ComponentCategory.AppX, Match = MatchMethod.Prefix, Pattern = "MicrosoftTeams" } },
                 CompatibilityRules = new[] { new CompatibilityRule
