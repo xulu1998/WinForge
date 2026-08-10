@@ -209,6 +209,16 @@
                         <TextBlock FontSize="12" Foreground="#1F2933" Text=": " />
                         <TextBlock FontSize="12" Foreground="#1F2933" Text="{Binding OutputSizeText, Mode=OneWay}"/>
                     </StackPanel>
+                    <Button Margin="0,8,0,0" Padding="10,6" MinWidth="160" HorizontalAlignment="Left"
+                            Command="{Binding OpenOutputFolderCommand}">
+                        <TextBlock>
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Build.OpenOutputFolder"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Button>
                 </StackPanel>
             </Border>
 

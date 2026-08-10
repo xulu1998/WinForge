@@ -80,15 +80,26 @@
             </ContentControl.ContentTemplateSelector>
         </ContentControl>
 
-        <!-- Back / Next navigation -->
+        <!-- Back / Next / Finish navigation -->
         <Border Grid.Row="2" BorderBrush="#E4E7EB" BorderThickness="0,1,0,0" Padding="20,12">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Style="{StaticResource PrimaryButton}" Background="#7B8794"
                         Content="{Binding Source={StaticResource Loc}, Path=[Nav.Back]}"
                         Command="{Binding BackCommand}" Margin="0,0,8,0"/>
+
+                <!-- Next only applies before the final step; hide it on Build (the
+                     last step) so a disabled, misleading "Next" never appears. -->
                 <Button Style="{StaticResource PrimaryButton}"
                         Content="{Binding Source={StaticResource Loc}, Path=[Nav.Next]}"
-                        Command="{Binding NextCommand}"/>
+                        Command="{Binding NextCommand}"
+                        Visibility="{Binding IsFinalStep, Converter={StaticResource BoolToVisInv}}"/>
+
+                <!-- Finish appears only on the final step and is enabled once the
+                     build completes (never for Failed/Cancelled). -->
+                <Button Style="{StaticResource PrimaryButton}"
+                        Content="{Binding Source={StaticResource Loc}, Path=[Nav.Finish]}"
+                        Command="{Binding FinishCommand}"
+                        Visibility="{Binding IsFinalStep, Converter={StaticResource BoolToVis}}"/>
             </StackPanel>
         </Border>
     </Grid>

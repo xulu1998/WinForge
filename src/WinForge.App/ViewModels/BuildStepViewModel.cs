@@ -29,6 +29,7 @@ public sealed class BuildStepViewModel : ViewModelBase
     private readonly IAdkToolLocator _adk;
     private readonly ILoggerService _logger;
     private readonly ILocalizationService _loc;
+    private readonly IFileLauncher? _launcher;
 
     private CancellationTokenSource? _cts;
     private bool _isBuilding;
@@ -53,7 +54,8 @@ public sealed class BuildStepViewModel : ViewModelBase
         IFilePicker filePicker,
         IAdkToolLocator adk,
         ILoggerService logger,
-        ILocalizationService loc)
+        ILocalizationService loc,
+        IFileLauncher? launcher = null)
     {
         _appState = appState;
         _buildService = buildService;
@@ -62,10 +64,12 @@ public sealed class BuildStepViewModel : ViewModelBase
         _adk = adk;
         _logger = logger;
         _loc = loc;
+        _launcher = launcher;
 
         BuildCommand = new AsyncRelayCommand(_ => BuildAsync(), _ => CanBuild);
         CancelCommand = new RelayCommand(_ => CancelBuild(), _ => CanCancel);
         BrowseOutputCommand = new RelayCommand(_ => BrowseOutput(), _ => CanBrowse);
+        OpenOutputFolderCommand = new RelayCommand(_ => OpenOutputFolder(), _ => CanOpenOutputFolder);
 
         // Proactive ADK detection so the UI can clearly tell the user when the
         // Windows ADK Deployment Tools are required, instead of failing mid-build.
@@ -80,6 +84,7 @@ public sealed class BuildStepViewModel : ViewModelBase
     public ICommand BuildCommand { get; }
     public ICommand CancelCommand { get; }
     public ICommand BrowseOutputCommand { get; }
+    public ICommand OpenOutputFolderCommand { get; }
 
     /// <summary>True when the Apply step finished (successfully or with errors).</summary>
     public bool HasApplied => _appState.CustomizationExecutionState is
@@ -171,7 +176,19 @@ public sealed class BuildStepViewModel : ViewModelBase
     public string OutputPath
     {
         get => _outputPath;
-        private set => SetField(ref _outputPath, value);
+        private set
+        {
+            if (!SetField(ref _outputPath, value))
+            {
+                return;
+            }
+
+            // Output existence (and thus the Open-folder affordance) depends on it.
+            if (OpenOutputFolderCommand is RelayCommand open)
+            {
+                open.RaiseCanExecuteChanged();
+            }
+        }
     }
 
     public long OutputSizeBytes
@@ -196,6 +213,12 @@ public sealed class BuildStepViewModel : ViewModelBase
 
     /// <summary>True once a final ISO path has been produced (for output-panel visibility).</summary>
     public bool HasOutput => !string.IsNullOrEmpty(_outputPath);
+
+    /// <summary>
+    /// True only when a final ISO actually exists on disk, so the "Open output
+    /// folder" affordance is never offered for a missing/partial artifact.
+    /// </summary>
+    public bool CanOpenOutputFolder => HasOutput && _fileSystem.FileExists(_outputPath);
 
     public bool AdkMissing
     {
@@ -311,6 +334,7 @@ public sealed class BuildStepViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanBuild));
         OnPropertyChanged(nameof(CanCancel));
         OnPropertyChanged(nameof(CanBrowse));
+        OnPropertyChanged(nameof(CanOpenOutputFolder));
         OnPropertyChanged(nameof(CurrentStageText));
         OnPropertyChanged(nameof(IsIndeterminate));
         OnPropertyChanged(nameof(OutputSizeText));
@@ -335,6 +359,11 @@ public sealed class BuildStepViewModel : ViewModelBase
         {
             br.RaiseCanExecuteChanged();
         }
+
+        if (OpenOutputFolderCommand is RelayCommand open)
+        {
+            open.RaiseCanExecuteChanged();
+        }
     }
 
     private void BrowseOutput()
@@ -343,6 +372,21 @@ public sealed class BuildStepViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(picked))
         {
             OutputDirectory = picked;
+        }
+    }
+
+    private void OpenOutputFolder()
+    {
+        if (_launcher is null || string.IsNullOrEmpty(_outputPath))
+        {
+            return;
+        }
+
+        // Open the folder that contains the produced ISO; never the ISO itself.
+        var dir = System.IO.Path.GetDirectoryName(_outputPath);
+        if (!string.IsNullOrEmpty(dir))
+        {
+            _launcher.OpenFolder(dir);
         }
     }
 

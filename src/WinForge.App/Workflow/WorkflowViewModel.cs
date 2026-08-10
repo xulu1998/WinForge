@@ -21,6 +21,8 @@ namespace WinForge.App.Workflow;
 public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
 {
     private readonly IAppState _appState;
+    private readonly BuildStepViewModel _build;
+    private readonly INavigationService? _navigation;
     private readonly List<WorkflowStepViewModel> _steps = new();
     private int _currentIndex;
 
@@ -29,9 +31,12 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
         ImageViewModel image,
         CustomizeStepViewModel customize,
         PlanReviewViewModel plan,
-        BuildStepViewModel build)
+        BuildStepViewModel build,
+        INavigationService? navigation = null)
     {
         _appState = appState;
+        _build = build;
+        _navigation = navigation;
 
         _steps.Add(new WorkflowStepViewModel(WorkflowStep.Source, "Step.Source.Title", "Step.Source.Description", image, 0));
         _steps.Add(new WorkflowStepViewModel(WorkflowStep.Prepare, "Step.Prepare.Title", "Step.Prepare.Description", image, 1));
@@ -45,8 +50,10 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
         NextCommand = new RelayCommand(_ => GoNext(), _ => CanGoNext);
         BackCommand = new RelayCommand(_ => GoBack(), _ => CanGoBack);
         SelectStepCommand = new RelayCommand(p => GoToStep((WorkflowStep)p!), p => p is WorkflowStep s && CanGoToStep(s));
+        FinishCommand = new RelayCommand(_ => Finish(), _ => CanFinish);
 
         _appState.PropertyChanged += OnAppStateChanged;
+        _build.PropertyChanged += OnBuildChanged;
         RecomputeStates();
     }
 
@@ -62,6 +69,23 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
     public ICommand BackCommand { get; }
 
     public ICommand SelectStepCommand { get; }
+
+    /// <summary>
+    /// Ends the wizard cleanly. Only meaningful on the final (Build) step once the
+    /// build has actually completed — it navigates to the Home / summary page and
+    /// never deletes the produced ISO or any build artifact.
+    /// </summary>
+    public ICommand FinishCommand { get; }
+
+    /// <summary>True when the active step is the last step (Build).</summary>
+    public bool IsFinalStep => _currentIndex == _steps.Count - 1;
+
+    /// <summary>
+    /// True only on the final step AND after the build reached
+    /// <see cref="BuildState.Completed"/>. A Failed or Cancelled build must not
+    /// present a successful "Finish".
+    /// </summary>
+    public bool CanFinish => IsFinalStep && _build.CurrentStage == BuildState.Completed;
 
     public bool CanGoNext =>
         CurrentStep is not null
@@ -130,6 +154,22 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
         _currentIndex--;
         RaiseCurrentStepChanged();
         RecomputeStates();
+    }
+
+    /// <summary>
+    /// Completes the workflow. Called by <see cref="FinishCommand"/> only when
+    /// <see cref="CanFinish"/> is true (final step + build completed). It returns
+    /// the user to the Home / summary page. This is a clean navigation — it does
+    /// not delete the generated ISO or any completed build artifact.
+    /// </summary>
+    public void Finish()
+    {
+        if (!CanFinish)
+        {
+            return;
+        }
+
+        _navigation?.NavigateTo(PageKey.Home);
     }
 
     private void RaiseCurrentStepChanged()
@@ -213,9 +253,26 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
 
         OnPropertyChanged(nameof(CanGoNext));
         OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(IsFinalStep));
+        OnPropertyChanged(nameof(CanFinish));
         if (NextCommand is RelayCommand next) next.RaiseCanExecuteChanged();
         if (BackCommand is RelayCommand back) back.RaiseCanExecuteChanged();
         if (SelectStepCommand is RelayCommand select) select.RaiseCanExecuteChanged();
+        if (FinishCommand is RelayCommand finish) finish.RaiseCanExecuteChanged();
+    }
+
+    /// <summary>
+    /// The Build step's completion state lives on <see cref="_build"/>, not on
+    /// <see cref="IAppState"/>, so the wizard must react to its property changes
+    /// to enable "Finish" the moment a build completes.
+    /// </summary>
+    private void OnBuildChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(BuildStepViewModel.CurrentStage))
+        {
+            OnPropertyChanged(nameof(CanFinish));
+            if (FinishCommand is RelayCommand finish) finish.RaiseCanExecuteChanged();
+        }
     }
 
     private void OnAppStateChanged(object? sender, PropertyChangedEventArgs e)

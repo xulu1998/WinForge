@@ -83,6 +83,7 @@
   <!-- 导航 / 按钮 -->
   <data name="Nav.Back" xml:space="preserve"><value>上一步</value></data>
   <data name="Nav.Next" xml:space="preserve"><value>下一步</value></data>
+  <data name="Nav.Finish" xml:space="preserve"><value>完成</value></data>
   <data name="Nav.Home" xml:space="preserve"><value>主页</value></data>
   <data name="Nav.Logs" xml:space="preserve"><value>日志</value></data>
   <data name="Nav.Settings" xml:space="preserve"><value>设置</value></data>
@@ -237,6 +238,7 @@
   <data name="Build.Status.NeedsApply" xml:space="preserve"><value>请先执行“应用”步骤，将修改写入工作镜像。</value></data>
   <data name="Build.Status.NeedsMount" xml:space="preserve"><value>构建要求工作镜像处于挂载状态。请从“准备”步骤挂载它。</value></data>
   <data name="Build.Status.AdapterMissing" xml:space="preserve"><value>构建 ISO 需要 Windows ADK 部署工具（oscdimg.exe）。请安装 ADK 后重试。</value></data>
+  <data name="Build.OpenOutputFolder" xml:space="preserve"><value>打开输出文件夹</value></data>
 
   <!-- 日志 -->
   <data name="Logs.Title" xml:space="preserve"><value>日志</value></data>

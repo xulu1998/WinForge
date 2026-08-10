@@ -52,6 +52,7 @@ public static class Bootstrapper
         services.AddSingleton<IProcessRunner, WindowsProcessRunner>();
         services.AddSingleton<IIsoInspectionService, WindowsIsoInspectionService>();
         services.AddSingleton<IFilePicker, WindowsFilePicker>();
+        services.AddSingleton<IFileLauncher, WindowsFileLauncher>();
 
         // Phase 3 — WIM Engine (Step 3.1, read-only durable workspace)
         services.AddSingleton<IImageWorkspaceFactory, ImageWorkspaceFactory>();
