@@ -67,7 +67,13 @@ public partial class App : Application
     private static void HandleFatal(ILoggerService logger, Exception? ex, string source)
     {
         var message = ex?.Message ?? "Unknown error";
+
+        // Log the full diagnostic chain (type, message, every inner exception,
+        // stack trace, and XAML line/position when present) so a XamlParseException
+        // reports its true root cause instead of only the outer wrapper. The
+        // user-facing dialog intentionally shows only the top-level message.
         logger.Error($"Fatal error ({source}): {message}");
+        logger.Error(BuildDetailedDiagnostics(ex, source));
 
         // Coalesce repeated fatal errors into at most one user-visible dialog. A single
         // root cause (e.g. a binding/render that keeps throwing after entering a step)
@@ -82,5 +88,34 @@ public partial class App : Application
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    /// <summary>
+    /// Walks the entire exception chain and renders type / message / inner / stack,
+    /// surfacing <see cref="System.Windows.Markup.XamlParseException"/> line and
+    /// position when available. Used for log-only diagnostics.
+    /// </summary>
+    private static string BuildDetailedDiagnostics(Exception? ex, string source, int depth = 0)
+    {
+        if (ex is null)
+        {
+            return string.Empty;
+        }
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"[diag:{source}] depth={depth} type={ex.GetType().FullName}");
+        sb.AppendLine($"  message: {ex.Message}");
+        if (ex is System.Windows.Markup.XamlParseException xamlEx)
+        {
+            sb.AppendLine($"  xaml: line={xamlEx.LineNumber} pos={xamlEx.LinePosition}");
+        }
+        sb.AppendLine($"  stack: {ex.StackTrace}");
+
+        if (ex.InnerException is not null)
+        {
+            sb.Append(BuildDetailedDiagnostics(ex.InnerException, source, depth + 1));
+        }
+
+        return sb.ToString();
     }
 }

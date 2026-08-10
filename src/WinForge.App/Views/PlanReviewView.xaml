@@ -12,14 +12,14 @@
             <TextBlock FontSize="24" FontWeight="Bold" Foreground="#1F2933">
                 <TextBlock.Text>
                     <MultiBinding Converter="{StaticResource locKey}">
-                        <Binding Source="Review.PageTitle"/><Binding Source="{StaticResource Loc}"/>
+                        <Binding Mode="OneWay" Source="Review.PageTitle"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>
             <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap">
                 <TextBlock.Text>
                     <MultiBinding Converter="{StaticResource locKey}">
-                        <Binding Source="Review.Intro"/><Binding Source="{StaticResource Loc}"/>
+                        <Binding Mode="OneWay" Source="Review.Intro"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>
@@ -30,7 +30,7 @@
                         <Run>
                             <Run.Text>
                                 <MultiBinding Converter="{StaticResource locKey}">
-                                    <Binding Source="Review.Total"/><Binding Source="{StaticResource Loc}"/>
+                                    <Binding Mode="OneWay" Source="Review.Total"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                                 </MultiBinding>
                             </Run.Text>
                         </Run>
@@ -42,7 +42,7 @@
                             <Run>
                                 <Run.Text>
                                     <MultiBinding Converter="{StaticResource locKey}">
-                                        <Binding Source="Review.Apps"/><Binding Source="{StaticResource Loc}"/>
+                                        <Binding Mode="OneWay" Source="Review.Apps"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                                     </MultiBinding>
                                 </Run.Text>
                             </Run>
@@ -53,7 +53,7 @@
                             <Run>
                                 <Run.Text>
                                     <MultiBinding Converter="{StaticResource locKey}">
-                                        <Binding Source="Review.Packages"/><Binding Source="{StaticResource Loc}"/>
+                                        <Binding Mode="OneWay" Source="Review.Packages"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                                     </MultiBinding>
                                 </Run.Text>
                             </Run>
@@ -64,7 +64,7 @@
                             <Run>
                                 <Run.Text>
                                     <MultiBinding Converter="{StaticResource locKey}">
-                                        <Binding Source="Review.Registry"/><Binding Source="{StaticResource Loc}"/>
+                                        <Binding Mode="OneWay" Source="Review.Registry"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                                     </MultiBinding>
                                 </Run.Text>
                             </Run>
@@ -75,7 +75,7 @@
                             <Run>
                                 <Run.Text>
                                     <MultiBinding Converter="{StaticResource locKey}">
-                                        <Binding Source="Review.Services"/><Binding Source="{StaticResource Loc}"/>
+                                        <Binding Mode="OneWay" Source="Review.Services"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                                     </MultiBinding>
                                 </Run.Text>
                             </Run>
@@ -90,7 +90,7 @@
                        Visibility="{Binding HasWarnings, Converter={StaticResource BoolToVis}}">
                 <TextBlock.Text>
                     <MultiBinding Converter="{StaticResource locKey}">
-                        <Binding Source="Review.Warnings"/><Binding Source="{StaticResource Loc}"/>
+                        <Binding Mode="OneWay" Source="Review.Warnings"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>
@@ -106,7 +106,7 @@
                        Visibility="{Binding HasWarnings, Converter={StaticResource BoolToVisInv}}">
                 <TextBlock.Text>
                     <MultiBinding Converter="{StaticResource locKey}">
-                        <Binding Source="Review.NoWarnings"/><Binding Source="{StaticResource Loc}"/>
+                        <Binding Mode="OneWay" Source="Review.NoWarnings"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>
@@ -116,7 +116,7 @@
                     <TextBlock>
                         <TextBlock.Text>
                             <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Source="Review.Validate"/><Binding Source="{StaticResource Loc}"/>
+                                <Binding Mode="OneWay" Source="Review.Validate"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                             </MultiBinding>
                         </TextBlock.Text>
                     </TextBlock>
@@ -125,7 +125,7 @@
                     <TextBlock>
                         <TextBlock.Text>
                             <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Source="Review.Apply"/><Binding Source="{StaticResource Loc}"/>
+                                <Binding Mode="OneWay" Source="Review.Apply"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                             </MultiBinding>
                         </TextBlock.Text>
                     </TextBlock>
@@ -142,7 +142,7 @@
             <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,16,0,0" TextWrapping="Wrap">
                 <TextBlock.Text>
                     <MultiBinding Converter="{StaticResource locKey}">
-                        <Binding Source="Review.Note"/><Binding Source="{StaticResource Loc}"/>
+                        <Binding Mode="OneWay" Source="Review.Note"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>

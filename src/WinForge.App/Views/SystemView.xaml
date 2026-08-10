@@ -27,7 +27,7 @@
                 <Run>
                     <Run.Text>
                         <MultiBinding Converter="{StaticResource locKey}">
-                            <Binding Source="System.Selected"/><Binding Source="{StaticResource Loc}"/>
+                            <Binding Mode="OneWay" Source="System.Selected"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
                         </MultiBinding>
                     </Run.Text>
                 </Run>
