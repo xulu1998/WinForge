@@ -154,6 +154,17 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
         var planValidated = plan?.Status == CustomizationPlanStatus.Validated;
         var exec = _appState.CustomizationExecutionState;
 
+        // Execution success means the validated plan was actually applied to the
+        // mounted image. That — not merely being Validated — is what completes
+        // Review and unlocks the Apply (commit) step. A Validated plan whose
+        // "Apply to mounted image" was never run has nothing to commit, so Apply
+        // and Next must stay unavailable (this is the corrected contract; it also
+        // fixes the real-desktop defect where a successful execution left Review
+        // incomplete and Apply unreachable, because execution flips the plan from
+        // Validated to Completed and the old gate keyed solely on Validated).
+        var execSucceeded = exec is CustomizationExecutionState.Completed
+            or CustomizationExecutionState.CompletedWithErrors;
+
         for (var i = 0; i < _steps.Count; i++)
         {
             var step = _steps[i];
@@ -177,16 +188,16 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
 
                 WorkflowStep.Review => !isMounted || !planSelected
                     ? WorkflowStepState.NotAvailable
-                    : isCurrent ? WorkflowStepState.Current
-                    : planValidated ? WorkflowStepState.Completed : WorkflowStepState.Available,
+                    : isCurrent
+                        ? (execSucceeded ? WorkflowStepState.Completed : WorkflowStepState.Current)
+                        : (planValidated || execSucceeded) ? WorkflowStepState.Completed
+                    : WorkflowStepState.Available,
 
-                WorkflowStep.Apply => !isMounted || !planValidated
+                WorkflowStep.Apply => !isMounted
                     ? WorkflowStepState.NotAvailable
                     : isCurrent ? WorkflowStepState.Current
-                    : exec is CustomizationExecutionState.Completed or CustomizationExecutionState.CompletedWithErrors
-                        or CustomizationExecutionState.Failed or CustomizationExecutionState.Cancelled
-                        ? WorkflowStepState.Completed
-                    : WorkflowStepState.Available,
+                    : execSucceeded ? WorkflowStepState.Available
+                    : WorkflowStepState.NotAvailable,
 
                 // Honest placeholder: always reachable so the workflow is complete end to end.
                 WorkflowStep.Build => isCurrent ? WorkflowStepState.Current : WorkflowStepState.Available,

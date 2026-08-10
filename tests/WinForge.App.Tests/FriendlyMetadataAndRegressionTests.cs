@@ -170,7 +170,7 @@ public class FriendlyMetadataAndRegressionTests
     }
 
     [Fact]
-    public void Regression_Workflow_Apply_Step_Hidden_Until_Plan_Validated()
+    public void Regression_Workflow_Apply_Step_Hidden_Until_Plan_Executed()
     {
         var (wf, state) = WorkflowAndCommandTests.Build();
         state.CurrentImageWorkspace = new ImageWorkspace();
@@ -180,10 +180,15 @@ public class FriendlyMetadataAndRegressionTests
         state.CurrentCustomizationPlan = WorkflowAndCommandTests.SelectedPlan();
         Assert.Equal(WorkflowStepState.NotAvailable, wf.Steps[4].State);
 
-        // Only a validated plan unlocks Apply.
+        // A validated plan that has NOT been executed still does not unlock Apply.
         var plan = WorkflowAndCommandTests.SelectedPlan();
         plan.Validate();
         state.CurrentCustomizationPlan = plan;
+        Assert.Equal(CustomizationPlanStatus.Validated, plan.Status);
+        Assert.Equal(WorkflowStepState.NotAvailable, wf.Steps[4].State);
+
+        // Only after the plan is actually executed does Apply become available.
+        state.CustomizationExecutionState = CustomizationExecutionState.Completed;
         Assert.Equal(WorkflowStepState.Available, wf.Steps[4].State);
     }
 

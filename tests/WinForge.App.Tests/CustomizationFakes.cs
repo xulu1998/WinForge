@@ -158,6 +158,34 @@ internal sealed class FakeCustomizationExecutionService : ICustomizationExecutio
         ExecuteCalls++;
         LastPlan = plan;
         LastWorkspace = workspace;
+
+        // Mirror WindowsCustomizationExecutionService's plan lifecycle so the
+        // workflow gating (which keys off the plan's post-execution status) is
+        // exercised exactly as on the real desktop:
+        //  - a plan that is not Validated (e.g. a guard failure) is NOT mutated;
+        //  - a critical failure returns without freezing/marking the plan;
+        //  - otherwise the live plan is frozen then marked Completed/Failed,
+        //    which is what makes the nested (in-place) notification fire.
+        if (plan.Status != CustomizationPlanStatus.Validated)
+        {
+            return Task.FromResult(Result);
+        }
+
+        if (Result.CriticalFailure)
+        {
+            return Task.FromResult(Result);
+        }
+
+        plan.FreezeForExecution();
+        if (!Result.Success && Result.FailedOperations == 0)
+        {
+            plan.MarkFailed();
+        }
+        else
+        {
+            plan.MarkCompleted(Result.FailedOperations > 0);
+        }
+
         return Task.FromResult(Result);
     }
 }

@@ -127,7 +127,7 @@ public class WorkflowAndCommandTests
     }
 
     [Fact]
-    public void Workflow_ValidatedPlan_Makes_Apply_Available()
+    public void Workflow_ValidatedPlan_DoesNotUnlockApply_UntilExecuted()
     {
         var (wf, state) = Build();
         state.CurrentImageWorkspace = new ImageWorkspace();
@@ -136,7 +136,12 @@ public class WorkflowAndCommandTests
         plan.Validate();
         state.CurrentCustomizationPlan = plan;
         Assert.Equal(CustomizationPlanStatus.Validated, plan.Status);
-        Assert.Equal(WorkflowStepState.Available, wf.Steps[4].State); // Apply
+        // A validated plan whose "Apply to mounted image" was never run has
+        // nothing to commit, so the Apply (commit) step stays hidden.
+        Assert.Equal(WorkflowStepState.NotAvailable, wf.Steps[4].State); // Apply
+        // Only a successful execution unlocks it.
+        state.CustomizationExecutionState = CustomizationExecutionState.Completed;
+        Assert.Equal(WorkflowStepState.Available, wf.Steps[4].State);
     }
 
     [Fact]
@@ -188,7 +193,7 @@ public class WorkflowAndCommandTests
     }
 
     [Fact]
-    public void Workflow_CanGoToStep_Build_Open_When_Prerequisites_Met()
+    public void Workflow_CanGoToStep_Build_Open_Only_After_Execution()
     {
         var (wf, state) = Build();
         state.CurrentImageWorkspace = new ImageWorkspace();
@@ -196,7 +201,11 @@ public class WorkflowAndCommandTests
         var plan = SelectedPlan();
         plan.Validate();
         state.CurrentCustomizationPlan = plan;
-        // Every step up to Build is now Available/Completed, so a direct jump is allowed.
+        // A validated-but-not-executed plan leaves Apply hidden, so a direct jump
+        // to Build is still refused (the Apply/commit step is a prerequisite).
+        Assert.False(wf.CanGoToStep(WorkflowStep.Build));
+        // After the plan is actually executed, Apply unlocks and Build is reachable.
+        state.CustomizationExecutionState = CustomizationExecutionState.Completed;
         Assert.True(wf.CanGoToStep(WorkflowStep.Build));
     }
 
