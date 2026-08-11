@@ -271,5 +271,15 @@ WinForge.Infrastructure  (Windows only)
   no DISM write, no image mutation.
 - **No Phase-10 regression.** Navigation is a single additive `PageKey.ComponentIntelligence` rail
   entry; the Build/ISO Export behavior is untouched.
+- **Real-desktop validation (2026-08-10, Windows 11 25H2 zh-CN x64 Consumer `install.wim`).** The
+  architecture goal is confirmed: raw Windows identities are discovered independently from curated
+  WinForge logical components. Real classification counts: **Curated 11 · DiscoveredUnclassified 734 ·
+  Protected 13 · Unsupported 0**. **PRODUCT CONCLUSION — the 734 discovered objects must NOT become
+  734 normal removal checkboxes.** The `DiscoveredUnclassified` raw objects remain exactly that — raw
+  Windows identities, surfaced read-only in Advanced mode and never presented as trusted/removable.
+  Stage 11.2 (Component Catalog Expansion) will progressively turn *representative* families into
+  user-understandable logical components with evidence-backed purpose / risk / keep-if / remove-if /
+  impact / restore; Unknown stays Unknown until evidence-backed. No deep CBS removal; Protected never
+  exposed for removal; no inferred dependencies.
 
 See DECISIONS.md ADR-045 for the full rationale.

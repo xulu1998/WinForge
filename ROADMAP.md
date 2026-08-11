@@ -380,7 +380,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 11 — Component Intelligence Foundation
 
-- **Status:** IN PROGRESS (Stage 11.1 IMPLEMENTED / PENDING REVIEW 2026-08-10; branch `phase/11-component-intelligence`)
+- **Status:** IN PROGRESS (Stage 11.1 **REAL DESKTOP VALIDATED** 2026-08-10; Stage 11.2 **NOT STARTED**; branch `phase/11-component-intelligence`, NOT merged to `main`)
 - **Goal:** Teach WinForge to *explain* Windows components to ordinary users — WHAT a
   component is, WHETHER they need it, WHAT breaks if removed, HOW risky, and whether it is
   restorable — without ever offering a destructive removal in Stage 11.1. Separate the
@@ -400,17 +400,24 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - **Deliverables (Stage 11.1):** `ComponentMatcher` + `ComponentInventory`/`ComponentDefinition`
   models + 4 parsers + `WindowsComponentIntelligenceService` + `CuratedComponentCatalog` +
   `ComponentIntelligenceViewModel`/`ComponentListItem`/`ComponentIntelligenceView` + color
-  converters + localization keys + STA XAML regression. **473 tests pass, 0 errors/warnings.**
+  converters + localization keys + STA XAML regression. **491 tests pass (Core 53, App 438), 0 errors/warnings.**
 - **Acceptance Criteria (Stage 11.1):** Ordinary-user view shows human name + short description +
   recommendation + risk + scenarios + keep-if/remove-if/impact + restoration + collapsed technical
   details; missing knowledge visibly says "Unknown / 尚未确认"; Standard mode hides raw objects;
   no image mutation; Phase-10 behavior unchanged; build 0/0; all tests green.
-- **Next (Stage 11.2 — RECOMMENDED):** Wire the curated `Removal`/`Restore` metadata into the
-  existing safe customization engine (Phase 3.3): present curated removals as reviewable plan
-  operations, enforce dependency edges (`Requires`/`RequiredBy`/`ConflictsWith`) at plan-validation
-  time, and gate Protected/Unsupported components out of any removal UI. Then run the real Windows
-  11 25H2 zh-CN x64 Consumer ground-truth enumeration and a real-desktop validation pass before
-  marking Phase 11 COMPLETE.
+- **Next (Stage 11.2 — NOT STARTED — Component Catalog Expansion):** Turn representative real
+  discovered objects (the 734 raw Windows identities found in the real inventory) into
+  user-understandable *logical human component groups* with user-facing purpose / risk / keep-if /
+  remove-if / impact / restore metadata. Raw Windows identities are discovered independently from
+  curated WinForge logical components; **Unknown stays Unknown until evidence-backed** — do NOT
+  infer descriptions, risks, or dependencies without evidence. Start with high-value, low-risk
+  families: video codecs/extensions, news & search consumer apps, gaming/Xbox family, Desktop App
+  Installer / package-management related items, Quick Assist, Paint, Notepad, Calculator, Terminal,
+  To Do, media-related AppX, and other optional consumer apps. **Do NOT start with deep CBS
+  removal. Do NOT expose Protected items for removal. Do NOT infer dependencies without evidence.**
+  After catalog expansion, re-run the real Windows 11 25H2 zh-CN x64 Consumer enumeration and a
+  real-desktop validation pass before marking Phase 11 COMPLETE. Phase 11 remains IN PROGRESS; NOT
+  merged to `main`.
 
 ---
 

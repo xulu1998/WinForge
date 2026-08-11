@@ -1042,7 +1042,7 @@ All decisions are `ACCEPTED` unless noted.
 
 ## ADR-045: Component Intelligence — separate the DISCOVERED WINDOWS OBJECT from the COMPONENT DEFINITION
 
-- **Status:** ACCEPTED (implemented in Stage 11.1; PENDING REVIEW — not yet merged to `main`)
+- **Status:** ACCEPTED (implemented in Stage 11.1; **REAL DESKTOP VALIDATED** 2026-08-10; not yet merged to `main`)
 - **Context:** WinForge today shows package/app names (TechnicalTarget identities) to advanced
   users. Ordinary users cannot answer the four questions that matter: **WHAT is this component,
   WHETHER I need it, WHAT breaks if I remove it, HOW risky is removal, and whether it is
@@ -1103,16 +1103,24 @@ All decisions are `ACCEPTED` unless noted.
   PhoneLink, Solitaire, Teams, OneDrive; Teams `RelatedTo` OneDrive — downgraded from `Requires`
   by ADR-046) are well-understood inbox AppX.
   The architecture (Core pure matcher + Infrastructure DISM parsers + App ViewModel/View, no DISM in
-  ViewModels) preserves the layering rules. **473 automated tests pass (Core 46, App 427), 0 errors,
+  ViewModels) preserves the layering rules. **491 automated tests pass (Core 53, App 438), 0 errors,
   0 warnings (Release)** — including Core matcher facts, Infrastructure parser/orchestrator tests
   (FakeProcessRunner / FakeMountIdentityValidator), ViewModel tests (discovery populates/filters,
   CanDiscover gating, culture-switch rebuild), and STA XAML-load regression tests for
-  `ComponentIntelligenceView` (en + zh-CN + real-DataContext). Status: **IMPLEMENTED / PENDING
-  REVIEW** (2026-08-10); on branch `phase/11-component-intelligence`; **NOT merged to `main`**;
-  **Phase 11 is IN PROGRESS** (do not mark Phase 11 complete until Stage 11.2 lands). The real
-  Windows 11 25H2 zh-CN x64 Consumer ground-truth enumeration (exact AppX/Capability/Feature/Package
-  totals + Curated/Unclassified/Protected/Unsupported breakdown) is deferred to real-desktop
-  validation, mirroring Phase 10's ISO-rebuild step.
+  `ComponentIntelligenceView` (en + zh-CN + real-DataContext). Status: **REAL DESKTOP VALIDATED**
+  (2026-08-10); on branch `phase/11-component-intelligence`; **NOT merged to `main`**; **Phase 11 is
+  IN PROGRESS** (do not mark Phase 11 complete until Stage 11.2 lands). **Real Windows 11 25H2 zh-CN
+  x64 Consumer ground-truth enumeration PASSED** (the blank-page defect is fixed; the page renders
+  correctly): Curated **11**, DiscoveredUnclassified **734**, Protected **13**, Unsupported **0**.
+  Representative real unclassified objects observed: `Microsoft.ApplicationCompatibilityEnhancements`,
+  `Microsoft.AV1VideoExtension`, `Microsoft.AVCEncoderVideoExtension`, `Microsoft.BingNews`,
+  `Microsoft.BingSearch`, `Microsoft.DesktopAppInstaller`, `Microsoft.GamingApp`. **PRODUCT
+  CONCLUSION: the 734 discovered raw objects must NOT become 734 normal removal checkboxes** — they
+  remain raw Windows identities, surfaced read-only in Advanced mode; Stage 11.2 (Component Catalog
+  Expansion, NOT STARTED) turns representative families into user-understandable logical components
+  with evidence-backed purpose/risk/keep-if/remove-if/impact/restore, Unknown staying Unknown until
+  evidence-backed; no deep CBS removal; Protected never exposed for removal; no inferred
+  dependencies.
 
 ---
 
@@ -1155,8 +1163,10 @@ All decisions are `ACCEPTED` unless noted.
     `Protected_NarrowRule_ServicingStackStillProtected`, plus `CuratedCatalog_TeamsDependsOnOneDrive_AsRelatedTo`.
 - **Consequences:** 8 net-new tests (Core 53, App 428 → 481 total, 0 fail). **Build 0 errors / 0
   warnings (Release).** The classifier now protects only narrowly-scoped, reviewable families; the
-  curated Teams relationship is honestly `RelatedTo`. Real-image numeric ground-truth (Protected
-  rule match counts, unclassified examples) remains deferred to real-desktop validation — see
-  `.tmp/phase11/real-25h2-inventory-report.md`. Status: **IMPLEMENTED / PENDING REVIEW**; Stage 11.1
-  remains PENDING REVIEW until the real inventory is executed and reviewed.
+  curated Teams relationship is honestly `RelatedTo`. Real-image numeric ground-truth is now
+  **RECORDED** (Protected rule match counts + unclassified examples) — see
+  `.tmp/phase11/real-25h2-inventory-report.md`: Curated **11**, DiscoveredUnclassified **734**,
+  Protected **13**, Unsupported **0**; the 734 raw objects stay raw Windows identities, never removal
+  checkboxes. Status: **REAL DESKTOP VALIDATED**; Stage 11.1 is REAL DESKTOP VALIDATED; Phase 11
+  remains IN PROGRESS (Stage 11.2 NOT STARTED, not merged to `main`).
 
