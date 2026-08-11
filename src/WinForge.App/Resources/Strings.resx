@@ -420,6 +420,8 @@
   <data name="Knowledge.SortNote" xml:space="preserve"><value>Sorted by recommendation, then risk.</value></data>
   <data name="Knowledge.PresentInImage" xml:space="preserve"><value>Present in this image</value></data>
   <data name="Knowledge.CatalogOnly" xml:space="preserve"><value>Catalog entry (not detected in this image)</value></data>
+  <data name="Knowledge.EmptyAwaitDiscovery" xml:space="preserve"><value>Discover the components in this image first.</value></data>
+  <data name="Knowledge.EmptyNoCurated" xml:space="preserve"><value>No reviewed components to show in this image yet.</value></data>
   <data name="ComponentIntelligence.StatusCancelled" xml:space="preserve"><value>Discovery was cancelled.</value></data>
   <data name="Dependency.Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Dependency.Requires" xml:space="preserve"><value>Requires</value></data>

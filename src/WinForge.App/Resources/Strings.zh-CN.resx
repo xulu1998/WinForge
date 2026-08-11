@@ -420,6 +420,8 @@
   <data name="Knowledge.SortNote" xml:space="preserve"><value>按建议排序，再按风险排序。</value></data>
   <data name="Knowledge.PresentInImage" xml:space="preserve"><value>存在于此映像</value></data>
   <data name="Knowledge.CatalogOnly" xml:space="preserve"><value>目录条目（此映像未检测到）</value></data>
+  <data name="Knowledge.EmptyAwaitDiscovery" xml:space="preserve"><value>请先发现当前映像中的组件。</value></data>
+  <data name="Knowledge.EmptyNoCurated" xml:space="preserve"><value>尚未发现可展示的已审核组件。</value></data>
   <data name="ComponentIntelligence.StatusCancelled" xml:space="preserve"><value>发现已取消。</value></data>
   <data name="Dependency.Unknown" xml:space="preserve"><value>未知</value></data>
   <data name="Dependency.Requires" xml:space="preserve"><value>需要</value></data>

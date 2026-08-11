@@ -128,8 +128,26 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
     public bool HasInventory
     {
         get => _hasInventory;
-        private set => SetField(ref _hasInventory, value);
+        private set
+        {
+            if (SetField(ref _hasInventory, value))
+            {
+                OnPropertyChanged(nameof(EmptyStateText));
+            }
+        }
     }
+
+    /// <summary>True when there are no rows to display (drives the empty-state panel).</summary>
+    public bool IsEmpty => Items.Count == 0;
+
+    /// <summary>
+    /// Localized empty-state caption. Before discovery it prompts the user to
+    /// discover; after discovery with no curated-present components it states that
+    /// explicitly. Never an unexplained empty detail card.
+    /// </summary>
+    public string EmptyStateText => HasInventory
+        ? _loc["Knowledge.EmptyNoCurated"]
+        : _loc["Knowledge.EmptyAwaitDiscovery"];
 
     public bool IsMounted =>
         _appState.CurrentServicingWorkspace?.State == ServicingWorkspaceState.Mounted;
@@ -166,10 +184,14 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
         {
             foreach (var entry in inventory.Entries)
             {
-                // Only CURATED components are offered as selectable removal items
-                // in the Customize primary surface. Raw unclassified / Protected
-                // objects stay in the Component Intelligence inspection surface.
-                if (entry.Classification != ComponentClassification.Curated)
+                // ADR-049 (real-desktop fix): only CURATED components actually
+                // PRESENT in the image are offered as removable rows. Catalog-only
+                // definitions (no matching raw item) are NOT shown — the user must
+                // never be offered removal of something absent from the image, and
+                // before discovery the list shows the empty-await-discovery state.
+                // Raw unclassified / Protected objects stay in the Component
+                // Intelligence inspection surface.
+                if (entry.Classification != ComponentClassification.Curated || entry.RawItems.Count == 0)
                 {
                     continue;
                 }
@@ -199,6 +221,11 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
                 Items.Add(it);
             }
         }
+
+        // Empty-state is derived from Items.Count; EmptyStateText also depends on
+        // HasInventory, so re-raise both whenever the visible list is rebuilt.
+        OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(EmptyStateText));
     }
 
     public int CuratedCount => _all.Count;

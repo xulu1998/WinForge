@@ -1260,3 +1260,50 @@ All decisions are `ACCEPTED` unless noted.
   0 errors, 0 warnings (Release)**. Stage 11.2 UX REWORK IMPLEMENTED; PENDING REAL DESKTOP REVIEW; Phase 11
   remains IN PROGRESS; NOT merged to `main`.
 
+## ADR-049: Stage 11.2 real-desktop defect — Apps tab shows only PRESENT-in-image curated; detail panel collapses when no selection; ONE unified discovery
+
+- **Status:** **IMPLEMENTED** (2026-08-11); on branch `phase/11-component-intelligence`; **NOT merged
+  to `main`**; Stage 11.2 — PENDING REAL DESKTOP REVIEW (re-validation).
+- **Context:** Real-desktop validation of the ADR-048 rework (commit `c341926`) found the Customize →
+  Apps tab rendered incorrectly: the decision list was invisible and a large, mostly-empty detail
+  panel (with a stray "×" and labels but no values) occupied the page. Three root causes:
+  (1) **Data** — `ComponentMatcher.BuildInventoryEntries` marks catalog-only definitions as `Curated`
+  even with `raw=null`, so `ComponentKnowledgeViewModel.Rebuild()` (filtered to `Curated`) listed all
+  22 catalog definitions including ones absent from the image — violating "only curated PRESENT in the
+  real image". (2) **Layout** — the detail `ContentControl` had a `ContentTemplate` but `Content=null`
+  (no `ActiveDetail`); WPF still renders the template with a null DataContext, and the tall empty
+  template (Row `Auto`) squeezed the ListView (Row `*`) to zero height — the "×" was the detail's
+  close button rendering with no detail. (3) **Discovery UX** — the Customize top "发现组件" button was
+  bound to `components.DiscoverCommand` (Components discovery only); it did NOT trigger Component
+  Intelligence discovery, so the Apps knowledge VM stayed empty even after the obvious Discover click.
+  The in-tab Discover button was a separate, second discovery system — the user had to discover twice.
+- **Decision A — Apps tab shows only curated components PRESENT in the image.** `ComponentKnowledgeViewModel
+  .Rebuild()` now filters to `Classification == Curated && entry.RawItems.Count > 0`. Before discovery
+  (raw=null) the list is empty (empty-state); after discovery only matched curated (present) appear.
+  The matcher itself is unchanged — the Component Intelligence inspection surface (Stage 11.1) still
+  seeds catalog-only rows so users can see what WinForge understands.
+- **Decision B — detail panel collapses entirely when no detail is selected.** `ComponentKnowledgeView`
+  is restructured to a two-column layout: Col 0 (`*`) = the decision list + an empty-state overlay;
+  Col 1 (`Auto`) = the detail **side panel**, with `Visibility="{Binding ActiveDetail, NullToVis}"`
+  so it is `Collapsed` (zero width) when `ActiveDetail == null`. The list is never squeezed. Opening
+  detail (ⓘ) shows the side panel; closing (✕) collapses it. The detail never toggles removal.
+- **Decision C — explicit empty state, never an empty detail card.** New `IsEmpty` + `EmptyStateText`
+  VM properties + `Knowledge.EmptyAwaitDiscovery` ("请先发现当前映像中的组件。") /
+  `Knowledge.EmptyNoCurated` ("尚未发现可展示的已审核组件。") resx keys. The empty-state overlay shows
+  when `Items.Count == 0`.
+- **Decision D — ONE unified, read-only discovery.** `CustomizeStepViewModel.DiscoverCommand` is now a
+  unified `AsyncRelayCommand` that runs `Components.DiscoverAsync()` (Apps/Windows components/Services)
+  AND `_knowledge.DiscoverAsync()` (CI knowledge discovery + Rebuild). The duplicate in-tab Discover
+  button is removed — one button at the Customize level populates every tab. Both passes are read-only;
+  no destructive servicing is duplicated (discovery never adds plan operations).
+- **Decision E — color/visibility was a symptom, not a separate bug.** The "white/invisible"
+  recommendation/risk labels were the null-DataContext detail panel (converter returned Gray, captions
+  empty). Collapsing the detail when null eliminates the symptom; for real items the badges render
+  colored backgrounds + localized captions (white text on saturated color = visible).
+- **Consequences:** 8 new ADR-049 regression tests + 7 updated tests (unified discovery populates both
+  & is non-destructive; present-curated visible / absent excluded; empty-state after no curated
+  matches; clear-detail; Component Inspector still shows catalog-only; 6 tabs unchanged; STA list
+  non-zero height + detail Collapsed when null + Visible when opened; zh-CN captions resolve). Full
+  suite **542 pass (Core 53, App 489), 0 errors, 0 warnings (Release)**. Stage 11.2 PENDING REAL
+  DESKTOP REVIEW; Phase 11 remains IN PROGRESS; NOT merged to `main`.
+

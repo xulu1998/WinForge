@@ -6,8 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using WinForge.App.Converters;
 using WinForge.App.Localization;
+using WinForge.App.Mvvm;
 using WinForge.App.ViewModels;
 using WinForge.App.Views;
 using WinForge.Core.Models;
@@ -84,6 +86,36 @@ public class ComponentKnowledgeStage11p2Tests
             RawItems = new List<IRawInventoryItem>(),
             Classification = ComponentClassification.Curated
         };
+
+    /// <summary>A raw inventory whose AppX identities match Weather / Clipchamp /
+    /// Maps (RecommendedRemove) and AV1 (OptionalRemove) catalog definitions. Shared by
+    /// the Customize and Phase-regression test classes (ADR-049 present-only semantics).</summary>
+    private static ComponentInventory MakeMatchingRawInventory()
+    {
+        var items = new List<IRawInventoryItem>
+        {
+            Appx("Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe", "Weather"),
+            Appx("Clipchamp.Clipchamp_2.0_neutral_~_8wekyb3d8bbwe", "Clipchamp"),
+            Appx("Microsoft.WindowsMaps_1.0_neutral_~_8wekyb3d8bbwe", "Maps"),
+            Appx("Microsoft.AV1VideoExtension_2.0.6.0_neutral_~_8wekyb3d8bbwe", "AV1"),
+        };
+        return new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new List<CategoryDiscoveryResult>
+            {
+                new() { Category = ComponentCategory.AppX, Status = InventoryStatus.Success, Items = items }
+            }
+        };
+    }
+
+    private static RawAppxPackage Appx(string identity, string display) => new()
+    {
+        Category = ComponentCategory.AppX,
+        RawIdentity = identity,
+        DisplayName = display,
+        State = "Provisioned"
+    };
 
     // ============================================================
     // Part A — Knowledge provenance model
@@ -457,18 +489,38 @@ public class ComponentKnowledgeStage11p2Tests
             var state = new AppState();
             var logger = new InMemoryLoggerService();
             var loc = new ResolvingLoc();
-            var ciVm = new ComponentIntelligenceViewModel(state, logger, new NoDiscoveryCiService(),
+            var svc = new RawInventoryCiService(MakeMatchingRawInventory());
+            var ciVm = new ComponentIntelligenceViewModel(state, logger, svc,
                 new CuratedComponentCatalog(), loc);
+            state.CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C:\wf\mount"
+            };
+            // ADR-049 real-desktop semantics: only curated components PRESENT in the
+            // image appear, so seed a discovery pass that matches several catalog defs.
+            ciVm.DiscoverAsync().GetAwaiter().GetResult();
             return new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
         }
 
         [Fact]
-        public void Knowledge_Tab_Seeded_With_All_Curated_No_Raw()
+        public void Apps_Tab_Empty_Before_Discovery_No_Raw()
         {
-            var vm = BuildSeeded();
-            Assert.Equal(22, vm.CuratedCount);
-            Assert.Equal(22, vm.Items.Count);
-            Assert.All(vm.Items, i => Assert.NotNull(i.Entry.Definition));
+            // ADR-049 real-desktop fix: before discovery the Apps tab must NOT show
+            // catalog-only definitions (they may be absent from the image). It shows
+            // the empty-await-discovery state instead of an empty detail card.
+            var state = new AppState();
+            var logger = new InMemoryLoggerService();
+            var loc = new ResolvingLoc();
+            var ciVm = new ComponentIntelligenceViewModel(state, logger, new NoDiscoveryCiService(),
+                new CuratedComponentCatalog(), loc);
+            var vm = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
+
+            Assert.Empty(vm.Items);
+            Assert.Equal(0, vm.CuratedCount);
+            Assert.True(vm.IsEmpty);
+            Assert.False(vm.HasInventory);
+            Assert.False(string.IsNullOrEmpty(vm.EmptyStateText));
         }
 
         [Fact]
@@ -598,10 +650,12 @@ public class ComponentKnowledgeStage11p2Tests
             await ciVm.DiscoverAsync();
 
             var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
-            // Only curated (well-understood) components are offered; raw unclassified
-            // and protected objects stay hidden in the Customize primary surface.
+            // ADR-049: only curated components PRESENT in the image appear. Weather is
+            // the single matched curated entry; Contoso (unclassified) and the servicing
+            // stack (protected) stay out of the Customize primary surface.
             Assert.All(knowledge.Items, i => Assert.NotNull(i.Entry.Definition));
-            Assert.Equal(22, knowledge.Items.Count);
+            var onlyCurated = Assert.Single(knowledge.Items);
+            Assert.Equal("Weather", onlyCurated.Entry.Definition?.Id);
             Assert.DoesNotContain(knowledge.Items, i => i.Entry.RepresentativeRaw?.RawIdentity.Contains("Contoso") == true);
         }
 
@@ -741,7 +795,7 @@ public class ComponentKnowledgeStage11p2Tests
         }
 
         [Fact]
-        public void Apps_Tab_Raw_Identity_Hidden_From_Curated_DisplayName()
+        public async Task Apps_Tab_Raw_Identity_Hidden_From_Curated_DisplayName()
         {
             var state = new AppState();
             var logger = new InMemoryLoggerService();
@@ -770,6 +824,7 @@ public class ComponentKnowledgeStage11p2Tests
                 State = ServicingWorkspaceState.Mounted,
                 MountDirectory = @"C:\wf\mount"
             };
+            await ciVm.DiscoverAsync();
             var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
 
             var weather = knowledge.Items.Single(i => i.Entry.Definition?.Id == "Weather");
@@ -927,6 +982,268 @@ public class ComponentKnowledgeStage11p2Tests
             });
         }
 
+        // ============================================================
+        // ADR-049 — real-desktop defect regression (Apps decision surface)
+        // ============================================================
+
+        [Fact]
+        public async Task Unified_Discovery_Populates_Apps_Knowledge_And_Components_NonDestructive()
+        {
+            var state = new AppState();
+            var logger = new InMemoryLoggerService();
+            var loc = new ResolvingLoc();
+
+            var components = new ComponentsViewModel(state, logger,
+                new FakeCustomizationDiscoveryService
+                {
+                    Inventory = new DiscoveryInventory
+                    {
+                        Discovered = true,
+                        AppxPackages = new List<DiscoveredAppxPackage>
+                        {
+                            new()
+                            {
+                                PackageName = "Microsoft.BingWeather_4.53_neutral_~_8wekyb3d8bbwe",
+                                DisplayName = "Weather",
+                                Risk = RiskClass.Removable
+                            }
+                        }
+                    }
+                },
+                new FakeCustomizationDefinitionProvider());
+
+            var ciVm = new ComponentIntelligenceViewModel(state, logger,
+                new RawInventoryCiService(MakeMatchingRawInventory()),
+                new CuratedComponentCatalog(), loc);
+            var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
+
+            var customize = new CustomizeStepViewModel(components,
+                new PrivacyViewModel(state, logger, new FakeCustomizationDefinitionProvider()),
+                new SystemViewModel(state, logger, new FakeCustomizationDefinitionProvider()),
+                new ComingSoonViewModel(), knowledge);
+
+            state.CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C:\wf\mount"
+            };
+
+            // ONE Discover button drives BOTH the Components discovery and the CI
+            // knowledge discovery (ADR-049). The user never discovers twice.
+            Assert.True(customize.CanDiscover);
+            await ((AsyncRelayCommand)customize.DiscoverCommand).ExecuteAsync(null);
+
+            Assert.NotEmpty(components.AppxPackages);   // Components discovery worked
+            Assert.NotEmpty(knowledge.Items);           // Knowledge discovery worked
+            Assert.Contains(knowledge.Items, i => i.Entry.Definition?.Id == "Weather");
+            // Read-only: discovery alone adds NO plan operations (no destructive servicing).
+            Assert.True(state.CurrentCustomizationPlan is null
+                || state.CurrentCustomizationPlan.Operations.Count == 0);
+        }
+
+        [Fact]
+        public async Task Curated_Present_Components_Visible_Absent_Excluded()
+        {
+            var state = new AppState();
+            var logger = new InMemoryLoggerService();
+            var loc = new ResolvingLoc();
+            var ciVm = new ComponentIntelligenceViewModel(state, logger,
+                new RawInventoryCiService(MakeMatchingRawInventory()),
+                new CuratedComponentCatalog(), loc);
+            state.CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C:\wf\mount"
+            };
+            await ciVm.DiscoverAsync();
+            var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
+
+            // Only the 4 curated components PRESENT in the image appear (Weather,
+            // Clipchamp, Maps, AV1). Catalog definitions absent from the image
+            // (e.g. Calculator) are NOT shown as removable rows.
+            Assert.Equal(4, knowledge.Items.Count);
+            Assert.Contains(knowledge.Items, i => i.Entry.Definition?.Id == "Weather");
+            Assert.Contains(knowledge.Items, i => i.Entry.Definition?.Id == "Clipchamp");
+            Assert.Contains(knowledge.Items, i => i.Entry.Definition?.Id == "Maps");
+            Assert.Contains(knowledge.Items, i => i.Entry.Definition?.Id == "AV1VideoExtension");
+            Assert.DoesNotContain(knowledge.Items, i => i.Entry.Definition?.Id == "Calculator");
+            Assert.False(knowledge.IsEmpty);
+        }
+
+        [Fact]
+        public async Task Empty_State_After_Discovery_No_Curated_Matches()
+        {
+            var state = new AppState();
+            var logger = new InMemoryLoggerService();
+            var loc = new ResolvingLoc();
+            var raw = new ComponentInventory
+            {
+                Discovered = true,
+                Categories = new List<CategoryDiscoveryResult>
+                {
+                    new()
+                    {
+                        Category = ComponentCategory.AppX,
+                        Status = InventoryStatus.Success,
+                        Items = new List<IRawInventoryItem>
+                        {
+                            new RawAppxPackage
+                            {
+                                Category = ComponentCategory.AppX,
+                                RawIdentity = "Microsoft.Contoso_1.0_neutral_~_8wekyb3d8bbwe",
+                                DisplayName = "Contoso",
+                                State = "Provisioned"
+                            }
+                        }
+                    }
+                }
+            };
+            var ciVm = new ComponentIntelligenceViewModel(state, logger,
+                new RawInventoryCiService(raw), new CuratedComponentCatalog(), loc);
+            state.CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C:\wf\mount"
+            };
+            await ciVm.DiscoverAsync();
+            var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
+
+            // Discovery happened but no curated-present components → empty state, NOT
+            // an empty detail card.
+            Assert.True(knowledge.HasInventory);
+            Assert.True(knowledge.IsEmpty);
+            Assert.Empty(knowledge.Items);
+            Assert.False(string.IsNullOrEmpty(knowledge.EmptyStateText));
+        }
+
+        [Fact]
+        public void ClearDetail_Hides_Detail_Without_Changing_Selection()
+        {
+            var parent = ComponentKnowledgeTestFactory.Make(new AppState(), new InMemoryLoggerService());
+            var def = Catalog().Single(d => d.Id == "Weather");
+            var item = new ComponentKnowledgeItem(CuratedEntry(def), new ResolvingLoc(), new AppState(), parent);
+
+            parent.ShowDetailCommand.Execute(item);
+            Assert.Same(item, parent.ActiveDetail);
+            parent.ClearDetailCommand.Execute(null);
+            Assert.Null(parent.ActiveDetail);
+        }
+
+        [Fact]
+        public void Component_Inspector_Still_Shows_Catalog_Only_Rows()
+        {
+            // ADR-049 did NOT change the matcher: the Component Intelligence inspection
+            // surface (Stage 11.1) still seeds catalog-only rows so users can see what
+            // WinForge understands, even before discovery. Only the Customize Apps tab
+            // filters to present-in-image curated.
+            var ciVm = new ComponentIntelligenceViewModel(new AppState(), new InMemoryLoggerService(),
+                new NoDiscoveryCiService(), new CuratedComponentCatalog(), new ResolvingLoc());
+            Assert.Equal(22, ciVm.Entries.Count);
+            Assert.All(ciVm.Entries, e => Assert.Equal(ComponentClassification.Curated, e.Entry.Classification));
+        }
+
+        [Fact]
+        public void Other_Customize_Tabs_Unchanged_Six_Tabs()
+        {
+            var knowledge = ComponentKnowledgeTestFactory.Make(new AppState(), new InMemoryLoggerService());
+            var components = new ComponentsViewModel(new AppState(), new InMemoryLoggerService(),
+                new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider());
+            var customize = new CustomizeStepViewModel(components,
+                new PrivacyViewModel(new AppState(), new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider()),
+                new SystemViewModel(new AppState(), new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider()),
+                new ComingSoonViewModel(), knowledge);
+
+            Assert.Equal(6, customize.Tabs.Count);
+            Assert.Equal("Customize.Tab.Apps", customize.Tabs[0].HeaderKey);
+            Assert.Equal("Customize.Tab.Components", customize.Tabs[1].HeaderKey);
+            Assert.Equal("Customize.Tab.Services", customize.Tabs[2].HeaderKey);
+            Assert.Equal("Customize.Tab.Privacy", customize.Tabs[3].HeaderKey);
+            Assert.Equal("Customize.Tab.System", customize.Tabs[4].HeaderKey);
+            Assert.Equal("Customize.Tab.Experience", customize.Tabs[5].HeaderKey);
+        }
+
+        [Fact]
+        public void View_List_NonZero_Height_And_Detail_Collapsed_When_No_ActiveDetail()
+        {
+            RunSta(() =>
+            {
+                var loc = new FakeLocalizationService();
+                InstallAppResources(loc);
+
+                var state = new AppState();
+                var ciVm = new ComponentIntelligenceViewModel(state, new InMemoryLoggerService(),
+                    new RawInventoryCiService(MakeMatchingRawInventory()),
+                    new CuratedComponentCatalog(), loc);
+                state.CurrentServicingWorkspace = new ImageServicingWorkspace
+                {
+                    State = ServicingWorkspaceState.Mounted,
+                    MountDirectory = @"C:\wf\mount"
+                };
+                ciVm.DiscoverAsync().GetAwaiter().GetResult();
+                var knowledge = new ComponentKnowledgeViewModel(ciVm, state, new InMemoryLoggerService(), loc);
+
+                var view = new ComponentKnowledgeView { DataContext = knowledge };
+                view.Measure(new Size(1200, 700));
+                view.Arrange(new Rect(0, 0, 1200, 700));
+                view.UpdateLayout();
+
+                // The list is the primary surface and must have real height + items.
+                var list = FindVisual<ListView>(view);
+                Assert.NotNull(list);
+                Assert.True(list!.ActualHeight > 0, $"list height {list.ActualHeight}");
+                Assert.NotEmpty(list.Items);
+
+                // No detail selected → the detail side panel ContentControl must be
+                // Collapsed (NullToVis), never an empty panel squeezing the list.
+                Assert.Null(knowledge.ActiveDetail);
+                var detail = FindVisual<ContentControl>(view,
+                    cc => cc.GetType() == typeof(ContentControl) && cc.ContentTemplate is not null);
+                Assert.NotNull(detail);
+                Assert.Equal(Visibility.Collapsed, detail!.Visibility);
+
+                // Opening detail makes the side panel visible; closing collapses it again.
+                knowledge.ActiveDetail = knowledge.Items[0];
+                view.UpdateLayout();
+                Assert.Equal(Visibility.Visible, detail.Visibility);
+                knowledge.ActiveDetail = null;
+                view.UpdateLayout();
+                Assert.Equal(Visibility.Collapsed, detail.Visibility);
+            });
+        }
+
+        [Fact]
+        public void Recommendation_Risk_Captions_Resolve_Under_ZhCn()
+        {
+            RunSta(() =>
+            {
+                var loc = new ResourceManagerLocalizationService(
+                    new System.Resources.ResourceManager("WinForge.App.Resources.Strings",
+                        typeof(ComponentKnowledgeView).Assembly),
+                    CultureInfo.GetCultureInfo("zh-CN"));
+                InstallAppResources(loc);
+
+                var state = new AppState();
+                var ciVm = new ComponentIntelligenceViewModel(state, new InMemoryLoggerService(),
+                    new RawInventoryCiService(MakeMatchingRawInventory()),
+                    new CuratedComponentCatalog(), loc);
+                state.CurrentServicingWorkspace = new ImageServicingWorkspace
+                {
+                    State = ServicingWorkspaceState.Mounted,
+                    MountDirectory = @"C:\wf\mount"
+                };
+                ciVm.DiscoverAsync().GetAwaiter().GetResult();
+                var knowledge = new ComponentKnowledgeViewModel(ciVm, state, new InMemoryLoggerService(), loc);
+
+                var weather = knowledge.Items.Single(i => i.Entry.Definition?.Id == "Weather");
+                // Captions resolve to real zh-CN text (not the raw key) — the badges
+                // render visible text, never blank/white-on-empty.
+                Assert.False(string.IsNullOrEmpty(weather.RecommendationCaption));
+                Assert.False(string.IsNullOrEmpty(weather.RiskCaption));
+                Assert.NotEqual("Recommendation.RecommendedRemove", weather.RecommendationCaption);
+                Assert.NotEqual("Risk.Low", weather.RiskCaption);
+            });
+        }
+
         // ---- STA + resource helpers (mirrors ComponentIntelligenceXamlLoadRegressionTests) ----
 
         private static void RunSta(Action action)
@@ -944,6 +1261,27 @@ public class ComponentKnowledgeStage11p2Tests
             {
                 throw new Exception("STA load failed — see inner exception for the full WPF chain.", captured);
             }
+        }
+
+        private static T? FindVisual<T>(DependencyObject root, Predicate<T>? match = null) where T : DependencyObject
+        {
+            var count = VisualTreeHelper.GetChildrenCount(root);
+            for (var i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                if (child is T t && (match is null || match(t)))
+                {
+                    return t;
+                }
+
+                var found = FindVisual<T>(child, match);
+                if (found is not null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         private static void InstallAppResources(ILocalizationService loc)

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using WinForge.App.Mvvm;
 using WinForge.Core.Models;
@@ -105,6 +106,18 @@ public sealed class CustomizeStepViewModel : ViewModelBase
 
     public ICommand DiscoverCommand { get; }
 
+    private bool _isDiscovering;
+
+    /// <summary>True while the unified discovery pass is running (Components + knowledge).</summary>
+    public bool IsDiscovering
+    {
+        get => _isDiscovering;
+        private set => SetField(ref _isDiscovering, value);
+    }
+
+    /// <summary>One mounted image → one coherent discovery (Components + Component Intelligence).</summary>
+    public bool CanDiscover => !IsDiscovering && Components.IsMounted;
+
     private readonly ComponentKnowledgeViewModel _knowledge;
 
     private CustomizeTabViewModel? _selectedTab;
@@ -127,7 +140,22 @@ public sealed class CustomizeStepViewModel : ViewModelBase
         System = system;
         Experience = experience;
         _knowledge = knowledge ?? throw new ArgumentNullException(nameof(knowledge));
-        DiscoverCommand = components.DiscoverCommand;
+        // ADR-049: ONE Discover button drives a single coherent, read-only discovery
+        // pass — the existing Components discovery (Apps/Windows components/Services)
+        // AND the Component Intelligence knowledge discovery (curated classification).
+        // The user never has to discover twice for two different systems.
+        DiscoverCommand = new AsyncRelayCommand(_ => DiscoverAllAsync(), _ => CanDiscover);
+        components.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ComponentsViewModel.IsMounted))
+            {
+                OnPropertyChanged(nameof(CanDiscover));
+                if (DiscoverCommand is AsyncRelayCommand cmd)
+                {
+                    cmd.RaiseCanExecuteChanged();
+                }
+            }
+        };
 
         Tabs = new ObservableCollection<CustomizeTabViewModel>
         {
@@ -145,5 +173,42 @@ public sealed class CustomizeStepViewModel : ViewModelBase
         };
 
         SelectedTab = Tabs[0];
+    }
+
+    /// <summary>
+    /// One coherent, read-only discovery pass: runs the existing Components discovery
+    /// (Apps / Windows components / Services) AND the Component Intelligence knowledge
+    /// discovery (curated classification) so a single Discover button populates every
+    /// Customize tab. Both passes are read-only — no destructive servicing is performed
+    /// (ADR-049). The Apps knowledge tab rebuilds from the shared classified inventory.
+    /// </summary>
+    private async Task DiscoverAllAsync()
+    {
+        if (!CanDiscover)
+        {
+            return;
+        }
+
+        IsDiscovering = true;
+        OnPropertyChanged(nameof(CanDiscover));
+        if (DiscoverCommand is AsyncRelayCommand cmd)
+        {
+            cmd.RaiseCanExecuteChanged();
+        }
+
+        try
+        {
+            await Components.DiscoverAsync();
+            await _knowledge.DiscoverAsync();
+        }
+        finally
+        {
+            IsDiscovering = false;
+            OnPropertyChanged(nameof(CanDiscover));
+            if (DiscoverCommand is AsyncRelayCommand c)
+            {
+                c.RaiseCanExecuteChanged();
+            }
+        }
     }
 }

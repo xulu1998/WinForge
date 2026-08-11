@@ -187,25 +187,10 @@
     <DockPanel>
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource PrimaryButton}" Background="#2F855A"
-                        Command="{Binding DiscoverCommand, Mode=OneWay}">
-                    <TextBlock>
-                        <TextBlock.Text>
-                            <MultiBinding Converter="{StaticResource locKey}" Mode="OneWay">
-                                <Binding Source="Customize.Discover"/><Binding Source="{StaticResource Loc}"/>
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
-                </Button>
-                <TextBlock VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#3B82F6"
-                           Visibility="{Binding IsDiscovering, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                    <TextBlock.Text>
-                        <MultiBinding Converter="{StaticResource locKey}" Mode="OneWay">
-                            <Binding Source="Customize.Discovering"/><Binding Source="{StaticResource Loc}"/>
-                        </MultiBinding>
-                    </TextBlock.Text>
-                </TextBlock>
-                <ComboBox Margin="16,0,0,0" Width="150" VerticalAlignment="Center"
+                <!-- Discovery is unified at the Customize step level (one button, one
+                     coherent read-only pass) — there is no separate in-tab Discover
+                     button here (ADR-049). Only the recommendation filter remains. -->
+                <ComboBox Width="170" VerticalAlignment="Center"
                           ItemsSource="{Binding FilterOptions}" SelectedValuePath="Value"
                           SelectedValue="{Binding Filter, Mode=TwoWay}">
                     <ComboBox.ItemTemplate>
@@ -231,12 +216,14 @@
         </StackPanel>
 
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-            <ListView Grid.Row="0" ItemsSource="{Binding Items}" BorderBrush="#CBD2D9" BorderThickness="1"
+            <!-- Primary decision list occupies the main content area (never squeezed). -->
+            <Grid Grid.Column="0">
+            <ListView ItemsSource="{Binding Items}" BorderBrush="#CBD2D9" BorderThickness="1"
                       ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:ComponentKnowledgeItem}">
@@ -313,8 +300,20 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <ContentControl Grid.Row="1" Content="{Binding ActiveDetail, Mode=OneWay}"
-                            ContentTemplate="{StaticResource KnowledgeDetailTemplate}"/>
+                <!-- Empty state: shown ONLY when there are no rows (never an empty detail card). -->
+                <Border Background="#F8FAFC" BorderBrush="#CBD2D9" BorderThickness="1" CornerRadius="6"
+                        Padding="24" Visibility="{Binding IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <TextBlock FontSize="14" Foreground="#3E4C59" TextWrapping="Wrap" HorizontalAlignment="Center"
+                               Text="{Binding EmptyStateText}"/>
+                </Border>
+            </Grid>
+
+            <!-- Secondary detail side panel: fully collapsed when no detail is selected, so it
+                 can never squeeze the list to zero height. Opens via ⓘ, closes via ✕. -->
+            <ContentControl Grid.Column="1" Content="{Binding ActiveDetail, Mode=OneWay}"
+                            ContentTemplate="{StaticResource KnowledgeDetailTemplate}"
+                            Visibility="{Binding ActiveDetail, Mode=OneWay, Converter={StaticResource NullToVis}}"
+                            Width="400" Margin="12,0,0,0" VerticalAlignment="Stretch"/>
         </Grid>
     </DockPanel>
 </UserControl>

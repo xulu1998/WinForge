@@ -380,7 +380,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 11 — Component Intelligence Foundation
 
-- **Status:** IN PROGRESS (Stage 11.1 **REAL DESKTOP VALIDATED** 2026-08-10; Stage 11.2 **IMPLEMENTED** 2026-08-10 (UX REWORK **IMPLEMENTED**), **PENDING REAL DESKTOP REVIEW**; branch `phase/11-component-intelligence`, NOT merged to `main`)
+- **Status:** IN PROGRESS (Stage 11.1 **REAL DESKTOP VALIDATED** 2026-08-10; Stage 11.2 **IMPLEMENTED** 2026-08-10 (UX REWORK + real-desktop DEFECT FIX **IMPLEMENTED** 2026-08-11, ADR-049), **PENDING REAL DESKTOP REVIEW**; branch `phase/11-component-intelligence`, NOT merged to `main`)
 - **Goal:** Teach WinForge to *explain* Windows components to ordinary users — WHAT a
   component is, WHETHER they need it, WHAT breaks if removed, HOW risky, and whether it is
   restorable — without ever offering a destructive removal in Stage 11.1. Separate the
@@ -425,8 +425,8 @@ Phased development plan for WinForge. Each phase records its **Status**,
   evidence, deterministic "why" captions, **no automatic destructive selection**. The former separate
   "Component Knowledge" tab is **removed** (ADR-048). The left-rail 组件智能/Component Intelligence page
   is repositioned as the advanced **高级组件检查器 / Component Inspector** inspection surface (raw
-  identities shown only there / in detail / Advanced). **534 automated tests pass (Core 53, App 481),
-  0 errors, 0 warnings (Release).** ADR-045/ADR-046/ADR-047/ADR-048.
+  identities shown only there / in detail / Advanced). **542 automated tests pass (Core 53, App 489),
+  0 errors, 0 warnings (Release).** ADR-045/ADR-046/ADR-047/ADR-048/ADR-049.
 - **Acceptance Criteria (Stage 11.2):** catalog regenerated with no duplicate resx keys (idempotent
   generator, exactly 284 keys); knowledge provenance never elevates community opinion to
   RecommendedRemove; the Customize Apps tab (knowledge-backed decision surface) renders with no

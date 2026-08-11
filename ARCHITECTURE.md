@@ -318,8 +318,17 @@ WinForge.Infrastructure  (Windows only)
   changes happen through the existing selection→plan flow (the same `appx|` op-ids `ComponentsViewModel`
   uses). The left-rail 组件智能/Component Intelligence page is repositioned as the advanced **高级组件检查器
   / Component Inspector** inspection surface (raw identities shown only there / in detail / Advanced).
+  **ADR-049 real-desktop fix:** `Rebuild()` filters to `Curated && RawItems.Count > 0` (only
+  present-in-image curated appear; catalog-only/absent excluded; empty before discovery); the view is a
+  two-column layout (list + empty-state in Col 0, detail side panel in Col 1) with the detail
+  `ContentControl` collapsed (`NullToVis` on `ActiveDetail`) when no detail is selected, so the list is
+  never squeezed; an explicit empty-state replaces any empty detail card; `CustomizeStepViewModel
+  .DiscoverCommand` is a unified read-only pass running BOTH Components and CI knowledge discovery (one
+  button, no duplicate destructive servicing).
 - **Tests.** Stage 11.2 added 39 `ComponentKnowledgeStage11p2Tests` (Parts A–M); the UX rework
-  (ADR-048) added/updated 25 regression tests guarding the repurposed Apps tab and the removed
-  Knowledge tab; full suite **534 pass (Core 53, App 481), 0 errors, 0 warnings (Release)**.
+  (ADR-048) added/updated 25 regression tests; the real-desktop defect fix (ADR-049) added 8 + updated
+  7 (unified non-destructive discovery, present-only curated, empty-state, detail-collapse, zh-CN
+  captions, CI inspector unchanged); full suite **542 pass (Core 53, App 489), 0 errors, 0 warnings
+  (Release)**.
 
-See DECISIONS.md ADR-045 / ADR-047 / ADR-048 for the full rationale.
+See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 for the full rationale.
