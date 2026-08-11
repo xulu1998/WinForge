@@ -282,8 +282,8 @@
                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBlock Width="170" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
                                            FontWeight="SemiBold" Text="{Binding DisplayName}"/>
-                                <TextBlock Width="90" Foreground="#7B8794" VerticalAlignment="Center"
-                                           Text="{Binding CategoryCaption}"/>
+                                <TextBlock Width="220" TextTrimming="CharacterEllipsis" Foreground="#52606D"
+                                           VerticalAlignment="Center" Text="{Binding ShortPurpose}"/>
                                 <Border Background="{Binding RecommendationLevel, Converter={StaticResource recColor}}"
                                         Padding="6,2" CornerRadius="3" Margin="6,0" VerticalAlignment="Center">
                                     <TextBlock Foreground="White" FontSize="11" Text="{Binding RecommendationCaption}"/>
@@ -292,8 +292,6 @@
                                         Padding="6,2" CornerRadius="3" Margin="0,0,6,0" VerticalAlignment="Center">
                                     <TextBlock Foreground="White" FontSize="11" Text="{Binding RiskCaption}"/>
                                 </Border>
-                                <TextBlock Width="220" TextTrimming="CharacterEllipsis" Foreground="#52606D"
-                                           VerticalAlignment="Center" Text="{Binding ShortPurpose}"/>
                                 <Button Margin="8,0,0,0" Padding="8,2"
                                         Command="{Binding DataContext.ShowDetailCommand,
                                                 RelativeSource={RelativeSource AncestorType=ListView}}"

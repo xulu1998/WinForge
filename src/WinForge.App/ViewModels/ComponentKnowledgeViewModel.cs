@@ -13,7 +13,7 @@ using WinForge.Core.Services;
 
 namespace WinForge.App.ViewModels;
 
-/// <summary>Filter for the Component Knowledge tab (mirrors the recommendation order).</summary>
+/// <summary>Filter for the knowledge-backed Customize Apps view (mirrors the recommendation order).</summary>
 public enum ComponentKnowledgeFilter
 {
     All,
@@ -32,9 +32,10 @@ public sealed class ComponentKnowledgeFilterItem
 }
 
 /// <summary>
-/// Knowledge engine behind the Customize "Component Knowledge" tab (Stage 11.2).
-/// It reuses the already-discovered, classified inventory held by
-/// <see cref="ComponentIntelligenceViewModel"/> (so Component Intelligence is the
+/// Knowledge engine behind the Customize **Apps tab** (Stage 11.2 UX rework, ADR-048 —
+/// the former separate "Component Knowledge" tab was removed and this engine
+/// repurposed as the Apps tab). It reuses the already-discovered, classified inventory
+/// held by <see cref="ComponentIntelligenceViewModel"/> (so Component Intelligence is the
 /// backing knowledge model, not a second workflow) and presents curated components
 /// with human names, recommendation/risk badges, default decision-useful sorting,
 /// filtering, a hover quick card, and a click-for-detail panel. Selection toggles

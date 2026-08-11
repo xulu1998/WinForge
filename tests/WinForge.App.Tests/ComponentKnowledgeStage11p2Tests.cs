@@ -714,7 +714,7 @@ public class ComponentKnowledgeStage11p2Tests
     public class PhaseRegression11p2Tests
     {
         [Fact]
-        public void Customize_Step_Exposes_Knowledge_Tab()
+        public void Customize_Step_Has_No_Knowledge_Tab_And_Apps_Is_Knowledge()
         {
             var knowledge = ComponentKnowledgeTestFactory.Make(new AppState(), new InMemoryLoggerService());
             var components = new ComponentsViewModel(new AppState(), new InMemoryLoggerService(),
@@ -725,9 +725,154 @@ public class ComponentKnowledgeStage11p2Tests
 
             var customize = new CustomizeStepViewModel(components, privacy, system, comingSoon, knowledge);
 
-            Assert.Same(knowledge, customize.Knowledge);
-            var tab = Assert.Single(customize.Tabs.Where(t => t.Kind == CustomizeTabKind.Knowledge));
-            Assert.Same(knowledge, tab.Content);
+            // ADR-048: the separate "Component Knowledge" tab is REMOVED. The
+            // knowledge engine is surfaced as the Apps tab content instead, so the
+            // removal decision is made where the component lives.
+            Assert.DoesNotContain(customize.Tabs, t => t.HeaderKey == "Customize.Tab.Knowledge");
+            Assert.DoesNotContain(customize.Tabs,
+                t => t.Content is ComponentKnowledgeViewModel && t.HeaderKey != "Customize.Tab.Apps");
+
+            // Apps tab (index 0) reuses the SAME ComponentKnowledgeViewModel instance
+            // — knowledge is the decision surface, not a duplicated ViewModel.
+            var appsTab = customize.Tabs[0];
+            Assert.Equal("Customize.Tab.Apps", appsTab.HeaderKey);
+            var appsContent = Assert.IsType<ComponentKnowledgeViewModel>(appsTab.Content);
+            Assert.Same(knowledge, appsContent);
+        }
+
+        [Fact]
+        public void Apps_Tab_Raw_Identity_Hidden_From_Curated_DisplayName()
+        {
+            var state = new AppState();
+            var logger = new InMemoryLoggerService();
+            var loc = new ResolvingLoc();
+            var svc = new RawInventoryCiService(new ComponentInventory
+            {
+                Discovered = true,
+                Categories = new List<CategoryDiscoveryResult>
+                {
+                    new CategoryDiscoveryResult
+                    {
+                        Category = ComponentCategory.AppX,
+                        Status = InventoryStatus.Success,
+                        Items = new List<IRawInventoryItem>
+                        {
+                            new RawAppxPackage { Category = ComponentCategory.AppX,
+                                RawIdentity = "Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe",
+                                DisplayName = "Weather", State = "Provisioned" }
+                        }
+                    }
+                }
+            });
+            var ciVm = new ComponentIntelligenceViewModel(state, logger, svc, new CuratedComponentCatalog(), loc);
+            state.CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C:\wf\mount"
+            };
+            var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
+
+            var weather = knowledge.Items.Single(i => i.Entry.Definition?.Id == "Weather");
+            // The human name is shown, NOT the raw AppX identity (standard mode hides it).
+            Assert.NotEqual("Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe", weather.DisplayName);
+            Assert.DoesNotContain("8wekyb3d8bbwe", weather.DisplayName);
+            Assert.Equal("Weather.DisplayName", weather.DisplayName); // ResolvingLoc strips the "Comp." prefix
+        }
+
+        [Fact]
+        public void ShowDetailCommand_Sets_ActiveDetail_Without_Changing_Selection()
+        {
+            var parent = ComponentKnowledgeTestFactory.Make(new AppState(), new InMemoryLoggerService());
+            var def = Catalog().Single(d => d.Id == "Weather");
+            var item = new ComponentKnowledgeItem(CuratedEntry(def), new ResolvingLoc(), new AppState(), parent);
+
+            Assert.False(item.IsSelected);
+            // Command path (mouse / keyboard / touch via CommandParameter) — not hover-only.
+            parent.ShowDetailCommand.Execute(item);
+            Assert.Same(item, parent.ActiveDetail);
+            Assert.False(item.IsSelected); // opening detail never toggles the plan
+        }
+
+        [Fact]
+        public async Task App_Selection_Toggles_Plan_Operation()
+        {
+            var state = new AppState();
+            var logger = new InMemoryLoggerService();
+            var loc = new ResolvingLoc();
+            var svc = new RawInventoryCiService(new ComponentInventory
+            {
+                Discovered = true,
+                Categories = new List<CategoryDiscoveryResult>
+                {
+                    new CategoryDiscoveryResult
+                    {
+                        Category = ComponentCategory.AppX,
+                        Status = InventoryStatus.Success,
+                        Items = new List<IRawInventoryItem>
+                        {
+                            new RawAppxPackage { Category = ComponentCategory.AppX,
+                                RawIdentity = "Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe",
+                                DisplayName = "Weather", State = "Provisioned" }
+                        }
+                    }
+                }
+            });
+            var ciVm = new ComponentIntelligenceViewModel(state, logger, svc, new CuratedComponentCatalog(), loc);
+            state.CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C:\wf\mount"
+            };
+            await ciVm.DiscoverAsync();
+            var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
+
+            var weather = knowledge.Items.Single(i => i.Entry.Definition?.Id == "Weather");
+            Assert.True(weather.IsSelectable);
+            weather.IsSelected = true;
+
+            var op = state.CurrentCustomizationPlan!.Operations
+                .Single(o => o.OperationId.StartsWith("appx|") && o.IsSelected);
+            Assert.Equal(CustomizationCategory.App, op.Category);
+            Assert.Equal(CustomizationOperationType.RemoveProvisionedAppx, op.OperationType);
+        }
+
+        [Fact]
+        public async Task WindowsComponent_Selection_Toggles_Pkg_Operation()
+        {
+            var state = new AppState();
+            var discovery = new FakeCustomizationDiscoveryService
+            {
+                Inventory = new DiscoveryInventory
+                {
+                    Discovered = true,
+                    WindowsPackages = new List<DiscoveredWindowsPackage>
+                    {
+                        new DiscoveredWindowsPackage
+                        {
+                            PackageIdentity = "Microsoft-Windows-TestComponent~31bf3856ad364e35",
+                            DisplayName = "Test Component",
+                            Risk = RiskClass.Removable
+                        }
+                    }
+                }
+            };
+            var components = new ComponentsViewModel(state, new InMemoryLoggerService(),
+                discovery, new FakeCustomizationDefinitionProvider());
+            state.CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C:\wf\mount"
+            };
+            await components.DiscoverAsync();
+
+            var pkg = Assert.Single(components.WindowsPackages);
+            Assert.True(pkg.CanSelect);
+            pkg.IsSelected = true;
+
+            var op = state.CurrentCustomizationPlan!.Operations
+                .Single(o => o.OperationId == "pkg|Microsoft-Windows-TestComponent~31bf3856ad364e35" && o.IsSelected);
+            Assert.Equal(CustomizationCategory.Package, op.Category);
+            Assert.Equal(CustomizationOperationType.RemovePackage, op.OperationType);
         }
 
         [Fact]

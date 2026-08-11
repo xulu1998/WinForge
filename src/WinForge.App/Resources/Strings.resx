@@ -325,8 +325,8 @@
 
 
 <!-- WINFORGE_CATALOG_BLOCK_START -->
-  <data name="Nav.ComponentIntelligence" xml:space="preserve"><value>Component Intelligence</value></data>
-  <data name="ComponentIntelligence.Title" xml:space="preserve"><value>Component Intelligence</value></data>
+  <data name="Nav.ComponentIntelligence" xml:space="preserve"><value>Component Inspector</value></data>
+  <data name="ComponentIntelligence.Title" xml:space="preserve"><value>Component Inspector</value></data>
   <data name="ComponentIntelligence.Intro" xml:space="preserve"><value>Understand what each Windows component does, whether you need it, and what happens if you remove it. Read-only analysis prototype.</value></data>
   <data name="ComponentIntelligence.Discover" xml:space="preserve"><value>Discover from mounted image</value></data>
   <data name="ComponentIntelligence.Discovering" xml:space="preserve"><value>Discovering…</value></data>
@@ -336,11 +336,11 @@
   <data name="ComponentIntelligence.StatusEmpty" xml:space="preserve"><value>No components discovered.</value></data>
   <data name="ComponentIntelligence.Summary" xml:space="preserve"><value>Discovered {0} AppX, {1} capabilities, {2} optional features, {3} packages.</value></data>
   <data name="ComponentIntelligence.Counts" xml:space="preserve"><value>Curated: {0} · Unclassified: {1} · Protected: {2} · Unsupported: {3}</value></data>
-  <data name="Recommendation.RecommendedRemove" xml:space="preserve"><value>Recommended to remove</value></data>
-  <data name="Recommendation.OptionalRemove" xml:space="preserve"><value>Optional to remove</value></data>
-  <data name="Recommendation.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
-  <data name="Recommendation.AdvancedOnly" xml:space="preserve"><value>Advanced users only</value></data>
-  <data name="Recommendation.NeverRemove" xml:space="preserve"><value>Never remove</value></data>
+  <data name="Recommendation.RecommendedRemove" xml:space="preserve"><value>Recommended trim</value></data>
+  <data name="Recommendation.OptionalRemove" xml:space="preserve"><value>Trim if wanted</value></data>
+  <data name="Recommendation.UsuallyKeep" xml:space="preserve"><value>Recommended keep</value></data>
+  <data name="Recommendation.AdvancedOnly" xml:space="preserve"><value>Advanced only</value></data>
+  <data name="Recommendation.NeverRemove" xml:space="preserve"><value>Do not remove</value></data>
   <data name="Recommendation.Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Risk.Low" xml:space="preserve"><value>Low</value></data>
   <data name="Risk.Medium" xml:space="preserve"><value>Medium</value></data>
@@ -409,12 +409,11 @@
   <data name="Confidence.Medium" xml:space="preserve"><value>Medium</value></data>
   <data name="Confidence.High" xml:space="preserve"><value>High</value></data>
   <data name="Confidence.Verified" xml:space="preserve"><value>Verified</value></data>
-  <data name="Customize.Tab.Knowledge" xml:space="preserve"><value>Component Knowledge</value></data>
   <data name="Knowledge.Filter.All" xml:space="preserve"><value>All</value></data>
   <data name="Knowledge.Filter.RecommendedRemove" xml:space="preserve"><value>Recommended remove</value></data>
-  <data name="Knowledge.Filter.OptionalRemove" xml:space="preserve"><value>Optional remove</value></data>
+  <data name="Knowledge.Filter.OptionalRemove" xml:space="preserve"><value>Trim if wanted</value></data>
   <data name="Knowledge.Filter.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
-  <data name="Knowledge.Filter.AdvancedOnly" xml:space="preserve"><value>Advanced</value></data>
+  <data name="Knowledge.Filter.AdvancedOnly" xml:space="preserve"><value>Advanced only</value></data>
   <data name="Knowledge.Filter.NeverRemove" xml:space="preserve"><value>Do not remove</value></data>
   <data name="Knowledge.Detail" xml:space="preserve"><value>Details</value></data>
   <data name="Knowledge.WhyRecommended" xml:space="preserve"><value>Why is this recommended?</value></data>

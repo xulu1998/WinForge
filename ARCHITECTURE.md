@@ -304,14 +304,22 @@ WinForge.Infrastructure  (Windows only)
   also raw) is the single discovery + classification engine; `ComponentKnowledgeViewModel` reuses its
   already-classified `Inventory` (single discovery — no double work). `ComponentKnowledgeItem` is the
   presentational wrapper for the Customize tab.
-- **Customize "Component Knowledge" tab (App).** `ComponentKnowledgeView` presents human
-  name/category/recommendation/risk badges, a default **usefulness sort** (RecommendedRemove first,
-  then by risk/name), filters, a compact hover quick card, click-for-detail **without changing
-  selection**, conservative Protected/Unknown UX with explicit block reasons, official-vs-community
-  evidence, and deterministic "why" captions. **No automatic destructive selection** — the tab informs
-  only; the user's actual plan changes happen through the existing selection→plan flow. Component
-  Intelligence remains the advanced inspection surface.
-- **Tests.** 39 new `ComponentKnowledgeStage11p2Tests` (Parts A–M) plus the curated-count updates to
-  the Stage 11.1 suite; full suite **530 pass (Core 53, App 477), 0 errors, 0 warnings (Release)**.
+- **Customize **Apps tab** = knowledge-backed decision surface (App).** The `ComponentKnowledgeView`
+  engine is **repurposed as the Apps tab** (passed as the tab `Content`; App.xaml's implicit `DataType`
+  DataTemplate renders it — no duplicate View/ViewModel); the former separate "Component Knowledge" tab
+  is **removed** (ADR-048). The Apps row shows 选择 | 名称 | 作用 | 建议 | 风险 + ⓘ 详情 + 阻塞原因
+  (category dropped from the row, kept in hover/detail); raw Windows package identity is hidden from the
+  row and hover card and shown **only** in the collapsed detail / Advanced / the CI page. The view
+  presents a default **decision-oriented sort** (RecommendedRemove→OptionalRemove→UsuallyKeep→
+  AdvancedOnly→NeverRemove, then risk/category/name), filters, a compact hover quick card, an explicit
+  ⓘ 详情 detail action (keyboard/touch accessible, **without changing selection**), conservative
+  Protected/Unknown UX with explicit block reasons, official-vs-community evidence, and deterministic
+  "why" captions. **No automatic destructive selection** — the tab informs only; the user's actual plan
+  changes happen through the existing selection→plan flow (the same `appx|` op-ids `ComponentsViewModel`
+  uses). The left-rail 组件智能/Component Intelligence page is repositioned as the advanced **高级组件检查器
+  / Component Inspector** inspection surface (raw identities shown only there / in detail / Advanced).
+- **Tests.** Stage 11.2 added 39 `ComponentKnowledgeStage11p2Tests` (Parts A–M); the UX rework
+  (ADR-048) added/updated 25 regression tests guarding the repurposed Apps tab and the removed
+  Knowledge tab; full suite **534 pass (Core 53, App 481), 0 errors, 0 warnings (Release)**.
 
-See DECISIONS.md ADR-045 for the full rationale.
+See DECISIONS.md ADR-045 / ADR-047 / ADR-048 for the full rationale.

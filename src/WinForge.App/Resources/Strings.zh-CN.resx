@@ -325,8 +325,8 @@
 
 
 <!-- WINFORGE_CATALOG_BLOCK_START -->
-  <data name="Nav.ComponentIntelligence" xml:space="preserve"><value>组件智能</value></data>
-  <data name="ComponentIntelligence.Title" xml:space="preserve"><value>组件智能</value></data>
+  <data name="Nav.ComponentIntelligence" xml:space="preserve"><value>高级组件检查器</value></data>
+  <data name="ComponentIntelligence.Title" xml:space="preserve"><value>高级组件检查器</value></data>
   <data name="ComponentIntelligence.Intro" xml:space="preserve"><value>了解每个 Windows 组件的作用、是否需要，以及移除后会发生什么。只读分析原型。</value></data>
   <data name="ComponentIntelligence.Discover" xml:space="preserve"><value>从已挂载映像发现</value></data>
   <data name="ComponentIntelligence.Discovering" xml:space="preserve"><value>正在发现…</value></data>
@@ -336,11 +336,11 @@
   <data name="ComponentIntelligence.StatusEmpty" xml:space="preserve"><value>未发现组件。</value></data>
   <data name="ComponentIntelligence.Summary" xml:space="preserve"><value>已发现 {0} 个 AppX、{1} 个功能、{2} 个可选功能、{3} 个程序包。</value></data>
   <data name="ComponentIntelligence.Counts" xml:space="preserve"><value>已策展: {0} · 未分类: {1} · 受保护: {2} · 不支持: {3}</value></data>
-  <data name="Recommendation.RecommendedRemove" xml:space="preserve"><value>建议移除</value></data>
-  <data name="Recommendation.OptionalRemove" xml:space="preserve"><value>可选移除</value></data>
-  <data name="Recommendation.UsuallyKeep" xml:space="preserve"><value>通常保留</value></data>
-  <data name="Recommendation.AdvancedOnly" xml:space="preserve"><value>仅限高级用户</value></data>
-  <data name="Recommendation.NeverRemove" xml:space="preserve"><value>切勿移除</value></data>
+  <data name="Recommendation.RecommendedRemove" xml:space="preserve"><value>推荐精简</value></data>
+  <data name="Recommendation.OptionalRemove" xml:space="preserve"><value>按需精简</value></data>
+  <data name="Recommendation.UsuallyKeep" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Recommendation.AdvancedOnly" xml:space="preserve"><value>高级选项</value></data>
+  <data name="Recommendation.NeverRemove" xml:space="preserve"><value>不可移除</value></data>
   <data name="Recommendation.Unknown" xml:space="preserve"><value>尚未确认</value></data>
   <data name="Risk.Low" xml:space="preserve"><value>低</value></data>
   <data name="Risk.Medium" xml:space="preserve"><value>中</value></data>
@@ -409,12 +409,11 @@
   <data name="Confidence.Medium" xml:space="preserve"><value>中</value></data>
   <data name="Confidence.High" xml:space="preserve"><value>高</value></data>
   <data name="Confidence.Verified" xml:space="preserve"><value>已核实</value></data>
-  <data name="Customize.Tab.Knowledge" xml:space="preserve"><value>组件知识</value></data>
   <data name="Knowledge.Filter.All" xml:space="preserve"><value>全部</value></data>
   <data name="Knowledge.Filter.RecommendedRemove" xml:space="preserve"><value>推荐精简</value></data>
-  <data name="Knowledge.Filter.OptionalRemove" xml:space="preserve"><value>可精简</value></data>
+  <data name="Knowledge.Filter.OptionalRemove" xml:space="preserve"><value>按需精简</value></data>
   <data name="Knowledge.Filter.UsuallyKeep" xml:space="preserve"><value>建议保留</value></data>
-  <data name="Knowledge.Filter.AdvancedOnly" xml:space="preserve"><value>高级</value></data>
+  <data name="Knowledge.Filter.AdvancedOnly" xml:space="preserve"><value>高级选项</value></data>
   <data name="Knowledge.Filter.NeverRemove" xml:space="preserve"><value>不可移除</value></data>
   <data name="Knowledge.Detail" xml:space="preserve"><value>详情</value></data>
   <data name="Knowledge.WhyRecommended" xml:space="preserve"><value>为什么这样建议？</value></data>

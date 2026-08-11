@@ -1207,3 +1207,56 @@ All decisions are `ACCEPTED` unless noted.
   Stage 11.2 PENDING REAL DESKTOP REVIEW; Phase 11 remains IN PROGRESS; NOT merged to `main`.
   remains IN PROGRESS (Stage 11.2 NOT STARTED, not merged to `main`).
 
+## ADR-048: Stage 11.2 UX rework — Component Intelligence is the BACKEND; the Apps tab is the PRIMARY decision surface; separate "Component Knowledge" tab removed
+
+- **Status:** **IMPLEMENTED** (2026-08-10); on branch `phase/11-component-intelligence`; **NOT merged
+  to `main`**; Stage 11.2 UX REWORK IMPLEMENTED; PENDING REAL DESKTOP REVIEW.
+- **Context:** Real-desktop review of Stage 11.2 found the separate Customize "组件知识 / Component
+  Knowledge" tab redundant and poorly presented: it duplicated the Component Intelligence data in a
+  second, lower-quality surface and made the user leave the component list to decide whether to remove
+  something. The requirements instead are: (1) keep Component Intelligence / knowledge as the **backend
+  intelligence layer** for Customize, not a second tab; (2) the Apps tab must be the decision surface
+  with columns 名称 | 作用 | 建议 | 风险, a hover quick card, and an explicit ⓘ 详情 detail
+  view — the user makes the removal decision **without leaving the list**; (3) **hide raw Windows
+  package identity** (e.g. `Microsoft.AV1VideoExtension_2.0.6.0_neutral_...8wekyb3d8bbwe`) in STANDARD
+  mode (only hover card / detail panel / Advanced / the CI page may show it); (4) STANDARD mode shows
+  only `Curated` logical components — never expose `DiscoveredUnclassified` / `Protected` / `Unsupported`
+  / `Unknown` as removable rows, and never convert the 734 raw objects into 734 checkboxes; (5) reuse
+  the existing knowledge engine rather than throw it away; (6) decision-oriented relabeling and sort.
+- **Decision A — the knowledge engine is reused, not deleted.** `ComponentKnowledgeViewModel` /
+  `ComponentKnowledgeView` / `ComponentKnowledgeItem` (the knowledge-backed curated table: sort, filter,
+  hover card, detail panel) are the **single source of the curated UX**. They are repurposed as the
+  Customize **Apps tab** by passing the shared `ComponentKnowledgeViewModel` singleton as the tab's
+  `Content`. App.xaml already maps that VM → `ComponentKnowledgeView` via an implicit `DataType`
+  DataTemplate, so no duplicate View/ViewModel is created. The former `CustomizeTabKind.Knowledge` enum
+  value and the `CustomizeStepViewModel.Knowledge` property are removed; the Apps tab is index 0.
+- **Decision B — the Apps row is 选择 | 名称 | 作用 | 建议 | 风险 + 详情 + 阻塞原因.** `ComponentKnowledgeView`
+  row reordered accordingly; the standalone `Category` column is dropped from the row (category still
+  appears in the hover card and the detail panel). Raw identity is absent from the row and hover card;
+  it appears **only** in the collapsed `RawIdentities` detail section — satisfying "hide raw identity in
+  standard mode". Selection flows to the plan via the same `appx|` op-ids `ComponentsViewModel` uses, so
+  App selection drives the same `RemoveProvisionedAppx` plan operation.
+- **Decision C — the left-rail "组件智能 / Component Intelligence" page is repositioned as
+  "高级组件检查器 / Component Inspector"** (`Nav.ComponentIntelligence` + `ComponentIntelligence.Title`
+  relabeled; `PageKey.ComponentIntelligence` unchanged to preserve navigation tests). It is the
+  **advanced** inspection surface (raw, Advanced-only) that still shows raw identities in its collapsed
+  Expander — consistent with "CI = raw/Advanced inspection". It is no longer framed as the primary
+  ordinary-user decision surface.
+- **Decision D — decision-oriented recommendation relabeling + sort.** `Recommendation.*` captions:
+  `RecommendedRemove`→**推荐精简 / Recommended trim**, `OptionalRemove`→**按需精简 / Trim if wanted**,
+  `UsuallyKeep`→**建议保留 / Recommended keep**, `AdvancedOnly`→**高级选项 / Advanced only**,
+  `NeverRemove`→**不可移除 / Do not remove** (Unknown unchanged). Compact filter captions align
+  (全部 / 推荐精简 / 按需精简 / 建议保留 / 高级选项 / 不可移除). Default sort = recommendation → risk →
+  category → name; badges carry color **and** text so meaning never relies on color alone.
+- **Decision E — progressive integration, no fake intelligence, foundation preserved.** Knowledge is
+  integrated first for 应用 / Windows 组件 where the catalog is modeled; tabs not yet modeled (Windows
+  components / Services) keep their current discovery-backed behavior and are **not** faked as
+  intelligent. `ScenarioRecommendation` is preserved for future Profiles (not built now; no auto-select).
+- **Consequences:** 25 regression tests guard the rework (no `Customize.Tab.Knowledge` header; Apps tab
+  `Content` is the **same** `ComponentKnowledgeViewModel` instance via `Assert.Same`; raw identity hidden
+  from curated `DisplayName`; `ShowDetailCommand` sets `ActiveDetail` without changing `IsSelected`;
+  App selection toggles an `appx|` remove plan op; Windows-component selection toggles a `pkg|` remove
+  plan op; sort/filter/hover/blocked/evidence/localization). Full suite **534 pass (Core 53, App 481),
+  0 errors, 0 warnings (Release)**. Stage 11.2 UX REWORK IMPLEMENTED; PENDING REAL DESKTOP REVIEW; Phase 11
+  remains IN PROGRESS; NOT merged to `main`.
+

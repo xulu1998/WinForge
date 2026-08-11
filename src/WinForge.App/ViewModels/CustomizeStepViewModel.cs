@@ -19,8 +19,7 @@ public enum CustomizeTabKind
     ComponentList,
     Privacy,
     System,
-    Experience,
-    Knowledge
+    Experience
 }
 
 /// <summary>
@@ -80,9 +79,17 @@ public sealed class ComponentListTabViewModel : ViewModelBase
 
 /// <summary>
 /// Customize step coordinator. Hosts the six tabs (Apps / Windows components /
-/// Services / Privacy / System / Experience) and reuses the existing
-/// Components / Privacy / System view models plus the ComingSoon placeholder for
-/// Experience — no discovery or execution logic is duplicated here.
+/// Services / Privacy / System / Experience).
+///
+/// The <b>Apps</b> tab is the knowledge-backed decision surface: its content is
+/// the shared ComponentKnowledgeViewModel (which reuses the Component Intelligence
+/// engine). It shows curated, human-facing components with recommendation/risk
+/// badges, a hover quick card, a detail panel, and decision-useful sort/filter,
+/// and hides raw Windows package identity in standard mode. This replaces the
+/// former separate "Component Knowledge" tab so the removal decision is made where
+/// the component lives (ADR-048). Windows components / Services tabs keep the
+/// discovery-backed raw lists (not yet knowledge-modeled). All view models are
+/// reused singletons from Bootstrapper; no discovery or execution logic is duplicated.
 /// </summary>
 public sealed class CustomizeStepViewModel : ViewModelBase
 {
@@ -97,6 +104,8 @@ public sealed class CustomizeStepViewModel : ViewModelBase
     public ObservableCollection<CustomizeTabViewModel> Tabs { get; }
 
     public ICommand DiscoverCommand { get; }
+
+    private readonly ComponentKnowledgeViewModel _knowledge;
 
     private CustomizeTabViewModel? _selectedTab;
 
@@ -117,21 +126,19 @@ public sealed class CustomizeStepViewModel : ViewModelBase
         Privacy = privacy;
         System = system;
         Experience = experience;
-        Knowledge = knowledge;
+        _knowledge = knowledge ?? throw new ArgumentNullException(nameof(knowledge));
         DiscoverCommand = components.DiscoverCommand;
 
         Tabs = new ObservableCollection<CustomizeTabViewModel>
         {
-            new CustomizeTabViewModel("Customize.Tab.Apps",
-                new ComponentListTabViewModel(components, ComponentListKind.Apps, "Customize.Tab.Apps"),
-                CustomizeTabKind.ComponentList),
+            // Apps = knowledge-backed decision surface (reuses CI engine; curated only).
+            new CustomizeTabViewModel("Customize.Tab.Apps", _knowledge, CustomizeTabKind.ComponentList),
             new CustomizeTabViewModel("Customize.Tab.Components",
                 new ComponentListTabViewModel(components, ComponentListKind.Components, "Customize.Tab.Components"),
                 CustomizeTabKind.ComponentList),
             new CustomizeTabViewModel("Customize.Tab.Services",
                 new ComponentListTabViewModel(components, ComponentListKind.Services, "Customize.Tab.Services"),
                 CustomizeTabKind.ComponentList),
-            new CustomizeTabViewModel("Customize.Tab.Knowledge", knowledge, CustomizeTabKind.Knowledge),
             new CustomizeTabViewModel("Customize.Tab.Privacy", privacy, CustomizeTabKind.Privacy),
             new CustomizeTabViewModel("Customize.Tab.System", system, CustomizeTabKind.System),
             new CustomizeTabViewModel("Customize.Tab.Experience", experience, CustomizeTabKind.Experience),
@@ -139,8 +146,4 @@ public sealed class CustomizeStepViewModel : ViewModelBase
 
         SelectedTab = Tabs[0];
     }
-
-    /// <summary>The Component Knowledge tab (Stage 11.2): the Component Intelligence
-    /// knowledge engine surfaced inside Customize as the primary end-user decision aid.</summary>
-    public ComponentKnowledgeViewModel Knowledge { get; }
 }

@@ -492,8 +492,8 @@ public class ComponentIntelligenceNavigationTests
     {
         var cases = new[]
         {
-            ("zh-CN", "组件智能"),
-            ("en", "Component Intelligence"),
+            ("zh-CN", "高级组件检查器"),
+            ("en", "Component Inspector"),
         };
 
         foreach (var (culture, expectedTitle) in cases)
