@@ -340,10 +340,14 @@ public class ServiceInventorySafetyTests
             .Select(s => s.ServiceName)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        Assert.Equal(trusted.Count, ServiceConfigPolicy.AllowedServiceMarkers.Count);
-        foreach (var marker in ServiceConfigPolicy.AllowedServiceMarkers)
+        // ADR-030 core pinning: the ORIGINAL Step 3.3 trusted set stays allowed.
+        // Stage 11.3 extends the allowlist with reviewed catalog services; the
+        // catalog-to-policy pinning lives in Stage11p3CatalogTests.
+        Assert.Equal(3, trusted.Count);
+        foreach (var marker in trusted)
         {
-            Assert.Contains(trusted, t => string.Equals(t, marker, StringComparison.OrdinalIgnoreCase));
+            Assert.True(ServiceConfigPolicy.IsConfigurable(marker),
+                $"Trusted definition service '{marker}' must stay on the allowlist.");
         }
     }
 }

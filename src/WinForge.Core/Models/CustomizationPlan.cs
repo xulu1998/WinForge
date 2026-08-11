@@ -195,7 +195,9 @@ public sealed class CustomizationPlan : INotifyPropertyChanged
         }
 
         if (op.OperationType is CustomizationOperationType.RemoveProvisionedAppx or CustomizationOperationType.RemovePackage
-            or CustomizationOperationType.RemoveOfflineFile)
+            or CustomizationOperationType.RemoveOfflineFile
+            or CustomizationOperationType.DisableOptionalFeature
+            or CustomizationOperationType.RemoveCapability)
         {
             if (string.IsNullOrWhiteSpace(op.TargetIdentifier))
             {
@@ -301,7 +303,12 @@ public sealed class CustomizationPlan : INotifyPropertyChanged
                 RegistryValueKind = op.RegistryValueKind,
                 RegistryValueData = op.RegistryValueData,
                 ServiceName = op.ServiceName,
-                ServiceStartType = op.ServiceStartType
+                ServiceStartType = op.ServiceStartType,
+                ActionKind = op.ActionKind,
+                Mechanism = op.Mechanism,
+                Scope = op.Scope,
+                ReversalKey = op.ReversalKey,
+                RestoreValueData = op.RestoreValueData
             });
         }
 

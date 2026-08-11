@@ -55,6 +55,7 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
     private readonly ComponentIntelligenceViewModel _ciVm;
 
     private readonly List<ComponentKnowledgeItem> _all = new();
+    private readonly ComponentCategory[]? _categoryFilter;
     private ComponentKnowledgeFilter _filter = ComponentKnowledgeFilter.All;
     private ComponentKnowledgeItem? _activeDetail;
     private bool _isDiscovering;
@@ -64,12 +65,17 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
         ComponentIntelligenceViewModel ciVm,
         IAppState appState,
         ILoggerService logger,
-        ILocalizationService loc)
+        ILocalizationService loc,
+        ComponentCategory[]? categoryFilter = null)
     {
         _ciVm = ciVm ?? throw new ArgumentNullException(nameof(ciVm));
         _appState = appState ?? throw new ArgumentNullException(nameof(appState));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _loc = loc ?? throw new ArgumentNullException(nameof(loc));
+        // Default = provisioned AppX only (Apps tab). The Windows Components tab
+        // (Stage 11.3) passes { Capability, OptionalFeature } to reuse this exact
+        // knowledge engine for a different raw category (ADR-051).
+        _categoryFilter = categoryFilter ?? new[] { ComponentCategory.AppX };
 
         Items = new ObservableCollection<ComponentKnowledgeItem>();
         DiscoverCommand = new AsyncRelayCommand(_ => DiscoverAsync(), _ => CanDiscover);
@@ -211,6 +217,16 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
                 // Raw unclassified / Protected objects stay in the Component
                 // Intelligence inspection surface.
                 if (entry.Classification != ComponentClassification.Curated || entry.RawItems.Count == 0)
+                {
+                    continue;
+                }
+
+                // Stage 11.3: one knowledge engine serves multiple tabs — the Apps
+                // tab shows AppX only, the Windows Components tab shows capabilities
+                // / optional features. Catalog-only definitions from other
+                // categories never leak into this tab's list.
+                if (_categoryFilter is not null && entry.Definition is not null &&
+                    !_categoryFilter.Contains(entry.Definition.Category))
                 {
                     continue;
                 }

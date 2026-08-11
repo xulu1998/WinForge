@@ -336,4 +336,38 @@ WinForge.Infrastructure  (Windows only)
   captions, CI inspector unchanged); full suite **556 pass (Core 53, App 503), 0 errors, 0 warnings
   (Release)**.
 
-See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 for the full rationale.
+### Stage 11.3 — Customize coverage expansion + Personalization activation (ADR-051..054)
+
+- **Operation taxonomy (Core, ADR-051).** `OptimizationAction` (Remove / Disable / Configure / Service /
+  Feature), `OptimizationMechanism` (RemoveProvisionedAppx, DisableOptionalFeature, RemoveCapability,
+  ServiceStartup, RegistryPolicy, ExplorerPreference, StartPreference, TaskbarPreference, PrivacyPolicy,
+  SystemPolicy, VisualPreference, …) and `OptimizationScope` are carried as **data** on
+  `CustomizationOperation` (`ActionKind`/`Mechanism`/`Scope`/`ReversalKey`/`RestoreValueData`) — views
+  never branch on mechanism; the execution engine still branches on the concrete `OperationType`. New
+  `DisableOptionalFeature` + `RemoveCapability` types are validated by `CustomizationPlan.ClassifyBase`
+  and executed via DISM with a `FeatureConfigPolicy` allowlist guard (capabilities deliberately not
+  offered in the first tranche).
+- **Offline registry / Default-User targeting (ADR-052).** `OfflineHivePaths` maps `DEFAULT_USER` to
+  `<mount>\Users\Default\NTUSER.DAT` (loaded under `WinForge_DEFAULT_USER` via the existing `RegLoadKey`
+  service) so user-scope personalization targets **new users of the offline image**; machine-scope
+  entries use SOFTWARE/SYSTEM. The host user's HKCU is never touched. Every entry records its scope +
+  the Windows/default restore value.
+- **Shared knowledge surface (Part L).** The Windows Components tab reuses `ComponentKnowledgeViewModel`
+  with a capability/optional-feature category filter over the composite catalog
+  (`CompositeComponentCatalog` = `CuratedComponentCatalog` + generated `WindowsFeaturesCatalog`).
+  Services / Privacy / System / Personalization share ONE `OptimizationKnowledgeViewModel` +
+  `OptimizationKnowledgeView` (master–detail, checkbox isolation, action-appropriate captions) over the
+  generated `OptimizationCatalog`. First tranche: Windows Components 12 · Services 12 (11 reviewed +
+  RpcSs informational) · Privacy 11 · System 10 · Personalization 14 (Start/Search + Taskbar + Explorer +
+  Lock screen/Desktop + Appearance). The Personalization tab replaces the Experience / Coming Soon tab
+  (ADR-054).
+- **Review plan (Part S).** `PlanReviewViewModel` lists every selected change with its exact action type
+  (移除/禁用/配置/服务/功能), category, offline scope, and revert contract; per-action totals.
+- **Tests.** `Stage11p3Tests` covers content validation (name/purpose/recommendation/risk/provenance,
+  no Unknown/Experimental leak, community-never-promotes, service allowlist pin, feature-policy pin),
+  offline safety (host HKCU never targeted, DEFAULT_USER path), operation mapping per mechanism,
+  build/edition gating, post-install-only blocking, core-service blocking, Review action types, reversal
+  round-trip, DISM feature-disable execution, capability skip. Full suite **584 pass (Core 53, App 531),
+  0 errors, 0 warnings (Release)**.
+
+See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 for the full rationale.

@@ -95,11 +95,7 @@ public sealed class WizardFinishButtonTests
         var image = new ImageViewModel(state, logger, new NullInspection(), new NullFilePicker(),
             new NullWorkspaceFactory(), new NullWimService(), new FakeImageServicingService());
         var components = new ComponentsViewModel(state, logger, new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider());
-        var privacy = new PrivacyViewModel(state, logger, new FakeCustomizationDefinitionProvider());
-        var system = new SystemViewModel(state, logger, new FakeCustomizationDefinitionProvider());
-        var comingSoon = new ComingSoonViewModel();
-        var knowledge = ComponentKnowledgeTestFactory.Make(state, logger);
-        var customize = new CustomizeStepViewModel(components, privacy, system, comingSoon, knowledge);
+        var customize = ComponentKnowledgeTestFactory.MakeCustomize(state, logger);
         var plan = new PlanReviewViewModel(state, logger, new FakeCustomizationExecutionService());
         var build = new BuildStepViewModel(state, buildService, fs, new NullFilePicker(),
             new FakeAdkToolLocator(), logger, new FakeLocalizationService());

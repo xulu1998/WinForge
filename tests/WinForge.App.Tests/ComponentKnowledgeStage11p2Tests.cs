@@ -17,6 +17,7 @@ using WinForge.App.Views;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.ComponentIntelligence;
+using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.Logging;
 using Xunit;
 
@@ -887,28 +888,21 @@ public class ComponentKnowledgeStage11p2Tests
         [Fact]
         public void Customize_Step_Has_No_Knowledge_Tab_And_Apps_Is_Knowledge()
         {
-            var knowledge = ComponentKnowledgeTestFactory.Make(new AppState(), new InMemoryLoggerService());
-            var components = new ComponentsViewModel(new AppState(), new InMemoryLoggerService(),
-                new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider());
-            var privacy = new PrivacyViewModel(new AppState(), new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider());
-            var system = new SystemViewModel(new AppState(), new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider());
-            var comingSoon = new ComingSoonViewModel();
-
-            var customize = new CustomizeStepViewModel(components, privacy, system, comingSoon, knowledge);
+            var customize = ComponentKnowledgeTestFactory.MakeCustomize(new AppState(), new InMemoryLoggerService());
 
             // ADR-048: the separate "Component Knowledge" tab is REMOVED. The
             // knowledge engine is surfaced as the Apps tab content instead, so the
-            // removal decision is made where the component lives.
+            // removal decision is made where the component lives. Stage 11.3
+            // (ADR-051): the Windows Components tab reuses the SAME engine with a
+            // capability/optional-feature category filter — no third knowledge tab.
             Assert.DoesNotContain(customize.Tabs, t => t.HeaderKey == "Customize.Tab.Knowledge");
-            Assert.DoesNotContain(customize.Tabs,
-                t => t.Content is ComponentKnowledgeViewModel && t.HeaderKey != "Customize.Tab.Apps");
+            Assert.DoesNotContain(customize.Tabs, t => t.Content is ComponentKnowledgeViewModel
+                && t.HeaderKey is not ("Customize.Tab.Apps" or "Customize.Tab.Components"));
 
-            // Apps tab (index 0) reuses the SAME ComponentKnowledgeViewModel instance
-            // — knowledge is the decision surface, not a duplicated ViewModel.
+            // Apps tab (index 0) is the knowledge decision surface.
             var appsTab = customize.Tabs[0];
             Assert.Equal("Customize.Tab.Apps", appsTab.HeaderKey);
-            var appsContent = Assert.IsType<ComponentKnowledgeViewModel>(appsTab.Content);
-            Assert.Same(knowledge, appsContent);
+            Assert.IsType<ComponentKnowledgeViewModel>(appsTab.Content);
         }
 
         [Fact]
@@ -1133,11 +1127,14 @@ public class ComponentKnowledgeStage11p2Tests
                 new RawInventoryCiService(MakeMatchingRawInventory()),
                 new CuratedComponentCatalog(), loc);
             var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
+            var componentsKnowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+                new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability });
+            var optCatalog = new OptimizationCatalog();
+            OptimizationKnowledgeViewModel K(OptimizationTab t) => new(state, logger, loc, optCatalog, t);
 
-            var customize = new CustomizeStepViewModel(components,
-                new PrivacyViewModel(state, logger, new FakeCustomizationDefinitionProvider()),
-                new SystemViewModel(state, logger, new FakeCustomizationDefinitionProvider()),
-                new ComingSoonViewModel(), knowledge);
+            var customize = new CustomizeStepViewModel(components, knowledge, componentsKnowledge,
+                K(OptimizationTab.Services), K(OptimizationTab.Privacy), K(OptimizationTab.System),
+                K(OptimizationTab.Personalization));
 
             state.CurrentServicingWorkspace = new ImageServicingWorkspace
             {
@@ -1262,13 +1259,7 @@ public class ComponentKnowledgeStage11p2Tests
         [Fact]
         public void Other_Customize_Tabs_Unchanged_Six_Tabs()
         {
-            var knowledge = ComponentKnowledgeTestFactory.Make(new AppState(), new InMemoryLoggerService());
-            var components = new ComponentsViewModel(new AppState(), new InMemoryLoggerService(),
-                new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider());
-            var customize = new CustomizeStepViewModel(components,
-                new PrivacyViewModel(new AppState(), new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider()),
-                new SystemViewModel(new AppState(), new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider()),
-                new ComingSoonViewModel(), knowledge);
+            var customize = ComponentKnowledgeTestFactory.MakeCustomize(new AppState(), new InMemoryLoggerService());
 
             Assert.Equal(6, customize.Tabs.Count);
             Assert.Equal("Customize.Tab.Apps", customize.Tabs[0].HeaderKey);
@@ -1276,7 +1267,10 @@ public class ComponentKnowledgeStage11p2Tests
             Assert.Equal("Customize.Tab.Services", customize.Tabs[2].HeaderKey);
             Assert.Equal("Customize.Tab.Privacy", customize.Tabs[3].HeaderKey);
             Assert.Equal("Customize.Tab.System", customize.Tabs[4].HeaderKey);
-            Assert.Equal("Customize.Tab.Experience", customize.Tabs[5].HeaderKey);
+            Assert.Equal("Customize.Tab.Personalization", customize.Tabs[5].HeaderKey);
+            // Stage 11.3 (ADR-054): the former "Experience / Coming Soon" placeholder
+            // is replaced by the real Personalization knowledge surface.
+            Assert.IsType<OptimizationKnowledgeViewModel>(customize.Tabs[5].Content);
         }
 
         [Fact]

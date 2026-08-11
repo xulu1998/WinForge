@@ -1344,3 +1344,92 @@ All decisions are `ACCEPTED` unless noted.
   scroll). Full suite **556 pass (Core 53, App 503), 0 errors, 0 warnings (Release)**. Stage 11.2
   PENDING REAL DESKTOP REVIEW; Phase 11 remains IN PROGRESS; NOT merged to `main`.
 
+
+## ADR-051: Stage 11.3 optimization operation taxonomy (REMOVE / DISABLE / CONFIGURE / SERVICE / FEATURE)
+
+- **Context:** the plan model only expressed removal semantics, but Customize must cover three distinct
+  kinds of optimization (REMOVE, DISABLE/CONFIGURE, PERSONALIZE) that all share the same knowledge
+  surface (purpose/recommendation/risk/impact/restore/evidence/compatibility). Every non-removal change
+  was being forced through `RemoveProvisionedAppx`, so Review could not say what would actually happen.
+- **Decision:**
+  - Core `OptimizationAction` (Remove / Disable / Configure / Service / Feature), `OptimizationMechanism`
+    (RemoveProvisionedAppx, DisableOptionalFeature, RemoveCapability, ServiceStartup, ExplorerPreference,
+    StartPreference, TaskbarPreference, PrivacyPolicy, SystemPolicy, VisualPreference, …) and
+    `OptimizationScope` (Part J) are carried as DATA on `CustomizationOperation` (`ActionKind` /
+    `Mechanism` / `Scope` / `ReversalKey` / `RestoreValueData`) — views never branch on mechanism
+    specifics; the execution engine still branches on the concrete `OperationType`.
+  - Two new operation types: `DisableOptionalFeature` (DISM `/Disable-Feature`) and `RemoveCapability`
+    (DISM `/Remove-Capability`), validated in `CustomizationPlan.ClassifyBase` (TargetIdentifier
+    required) and executed with a `FeatureConfigPolicy` allowlist defense-in-depth guard (mirrors
+    `ServiceConfigPolicy` / `PackageRemovalPolicy`). Capabilities are intentionally NOT in the first
+    tranche allowlist.
+  - `CustomizationCategory.Personalization` added; `FreezeForExecution` clones the new fields.
+  - The Review step lists every selected change with its exact action type + scope + revert contract
+    (Part S); `PlanReviewViewModel.Operations` + per-action totals.
+  - The Windows Components tab reuses the Stage 11.2 knowledge engine
+    (`ComponentKnowledgeViewModel`) with a capability/optional-feature category filter; Services /
+    Privacy / System / Personalization share ONE catalog-driven engine
+    (`OptimizationKnowledgeViewModel` + `OptimizationCatalog`).
+- **Consequences:** `FeatureConfigPolicy` is pinned to the Windows Features catalog by a test; the
+  service allowlist grew (reviewed services only) and the ADR-030 pinning test now asserts the original
+  trusted set stays allowed; Review never says "remove" for a disable/configure (action-appropriate
+  captions `Opt.Recommendation.<Action>.<Level>`).
+
+## ADR-052: Offline registry / Default-User targeting — never the host HKCU
+
+- **Context:** user-level personalization (show file extensions, dark mode, taskbar prefs) lives in
+  HKCU, which does not exist in an offline image. Writing the HOST user's HKCU while intending to
+  customize the image is forbidden.
+- **Decision:**
+  - Every catalog entry states its `OptimizationScope` explicitly: `OfflineMachine` (SOFTWARE/SYSTEM
+    hives), `OfflineDefaultUser` (the offline Default User profile), `ProvisionedApp`, `MountedImageFeature`,
+    `PostInstallRequired` / `UnsupportedOffline` (never applied to the image — shown as not selectable
+    with a reason).
+  - `OfflineHivePaths` gains a `DEFAULT_USER` base mapping to `<mount>\Users\Default\NTUSER.DAT`,
+    loaded under the WinForge-owned `WinForge_DEFAULT_USER` name via the existing `RegLoadKey` service.
+    A test pins the file resolution and a catalog-wide test asserts every registry target hive is
+    SOFTWARE / SYSTEM / DEFAULT_USER (never a host HKCU / HKEY path).
+  - Reversibility is recorded per value (`RestoreValueData` = the Windows/default value WinForge would
+    restore; the generic revert contract is shown in Review/detail).
+- **Consequences:** Personalization user-scope controls target new users via the Default User profile;
+  post-install-only ideas are deferred in the coverage matrix instead of being silently claimed.
+
+## ADR-053: Customize coverage policy — VERIFIED / COMMUNITY_REFERENCE / UNKNOWN
+
+- **Context:** "coverage expansion" must not mean blindly copying registry tweaks from the web. A
+  tweak being used by another debloat script is not evidence.
+- **Decision:**
+  - Every catalog entry is one of: VERIFIED (officially documented mechanism or validated against the
+    real target image), COMMUNITY_REFERENCE (useful community evidence exists, informational only —
+    never promoted to RecommendedRemove / RecommendedDisable), or UNKNOWN (not offered). Unknown stays
+    Unknown.
+  - Standard mode shows only reviewed, standard-visible, evidence-backed entries; Unknown /
+    Experimental / DiscoveredUnclassified never appear beside safe options (Part M).
+  - Direction targets per tab are ceilings, not quotas: quality and correctness override quantity, and
+    a thin-but-defensible tab is reported honestly in the coverage matrix
+    (`.tmp/phase11/stage11.3-coverage-matrix.md` — every candidate with status Implemented / Deferred /
+    Rejected / Unsupported and a reason).
+  - Rejected up front: timer-resolution folklore, BCD hacks, memory myths, disabling Defender, placebo
+    perf tweaks (Part G).
+- **Consequences:** first tranche = 12 Windows Components, 12 Services (11 reviewed + 1 core-info),
+  11 Privacy, 10 System, 14 Personalization; weaker-evidence candidates are documented as Deferred.
+
+## ADR-054: Personalization activation — Coming Soon removed
+
+- **Context:** the Personalization surface was a "Coming Soon" placeholder; a Profile/Gaming/Office/
+  Developer recommendation engine has no value until Customize has a meaningful surface, and
+  Personalization is mandatory for Stage 11.3.
+- **Decision:**
+  - The Customize **Personalization** tab replaces the Experience / Coming Soon tab (sixth tab,
+  header `Customize.Tab.Personalization`). It is the shared catalog-driven knowledge surface
+  (`OptimizationKnowledgeViewModel` + `OptimizationCatalog`) — no duplicate knowledge implementation.
+  - First tranche ships 14 reviewed entries covering Start/Search (hide Recommended / recently added),
+  Taskbar (Widgets, search-as-icon, Task View), Explorer (file extensions, hidden files, open-to-This-PC,
+  Quick access recents/frequent), Lock screen/Desktop (Windows Spotlight), and Appearance (dark mode,
+  transparency, animations) — each with scope + revert in the detail panel.
+  - User-scope entries use the OfflineDefaultUser strategy (ADR-052); Spotlight uses the documented
+    machine policy. Unsupported/deferred personalization ideas (Phone Link in Start, Desktop Spotlight,
+    Start layout pinning) are recorded in the coverage matrix, not faked.
+- **Consequences:** Personalization no longer displays Coming Soon; tests assert the tab type, the
+  five required groups, and the DEFAULT_USER strategy of the show-file-extensions operation.
+

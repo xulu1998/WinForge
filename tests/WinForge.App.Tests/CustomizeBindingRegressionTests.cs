@@ -138,15 +138,31 @@ public class CustomizeBindingRegressionTests
         var cases = new List<Case>();
         foreach (var culture in new[] { CultureInfo.GetCultureInfo("en"), CultureInfo.GetCultureInfo("zh-CN") })
         {
-            cases.Add(new("PrivacyView", () => new PrivacyView { DataContext = c.Privacy }, culture));
-            cases.Add(new("SystemView", () => new SystemView { DataContext = c.System }, culture));
+            cases.Add(new("PrivacyView", () => new PrivacyView { DataContext = new PrivacyViewModel(state, new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider()) }, culture));
+            cases.Add(new("SystemView", () => new SystemView { DataContext = new SystemViewModel(state, new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider()) }, culture));
             cases.Add(new("ComponentsView", () => new ComponentsView { DataContext = c.Components }, culture));
             cases.Add(new("ComponentListTabView.Apps",
                 () => new ComponentListTabView { DataContext = new ComponentListTabViewModel(c.Components, ComponentListKind.Apps, "Customize.Tab.Apps") }, culture));
             cases.Add(new("ComponentListTabView.Services",
                 () => new ComponentListTabView { DataContext = new ComponentListTabViewModel(c.Components, ComponentListKind.Services, "Customize.Tab.Services") }, culture));
             cases.Add(new("PlanReviewView", () => new PlanReviewView { DataContext = plan }, culture));
-            cases.Add(new("ComingSoonView", () => new ComingSoonView { DataContext = c.Experience }, culture));
+            cases.Add(new("ComingSoonView", () => new ComingSoonView { DataContext = new ComingSoonViewModel() }, culture));
+            // Stage 11.3 knowledge surfaces: Apps + Windows components share
+            // ComponentKnowledgeView; Services/Privacy/System/Personalization share
+            // OptimizationKnowledgeView. Render each with the REAL tab view model so
+            // binding errors surface (Part T / Part L reuse).
+            cases.Add(new("ComponentKnowledgeView.Apps",
+                () => new ComponentKnowledgeView { DataContext = c.Tabs[0].Content }, culture));
+            cases.Add(new("ComponentKnowledgeView.Components",
+                () => new ComponentKnowledgeView { DataContext = c.Tabs[1].Content }, culture));
+            cases.Add(new("OptimizationKnowledgeView.Services",
+                () => new OptimizationKnowledgeView { DataContext = c.Tabs[2].Content }, culture));
+            cases.Add(new("OptimizationKnowledgeView.Privacy",
+                () => new OptimizationKnowledgeView { DataContext = c.Tabs[3].Content }, culture));
+            cases.Add(new("OptimizationKnowledgeView.System",
+                () => new OptimizationKnowledgeView { DataContext = c.Tabs[4].Content }, culture));
+            cases.Add(new("OptimizationKnowledgeView.Personalization",
+                () => new OptimizationKnowledgeView { DataContext = c.Tabs[5].Content }, culture));
             // Phase 10 Build page (Defect 2 audit): render BuildView with the
             // real BuildStepViewModel under both ADK-present and ADK-missing
             // states so the read-only binding audit catches any TwoWay/OneWayToSource
@@ -386,11 +402,13 @@ public class CustomizeBindingRegressionTests
 
     private static readonly HashSet<string> GetterOnlyProps = new(StringComparer.Ordinal)
     {
-        "SelectedTotal", "TotalSelected", "TotalApps", "TotalPackages",
+            "SelectedTotal", "TotalSelected", "TotalApps", "TotalPackages",
         "TotalRegistry", "TotalServices", "IsDiscovering", "HasInventory",
         "StatusMessage", "HasWarnings", "ProgressText", "ResultSummary",
         "IsMounted", "CanDiscover", "CanValidate", "CanApply",
         "ExecutionState", "ShowProtectedVisible", "Items", "Plan", "DiscoverCommand",
+        // Stage 11.3 OptimizationKnowledgeViewModel display-only getter-only properties.
+        "IsEmpty", "EmptyStateText", "FilterOptions", "ItemCount",
         // Phase 10 BuildStepViewModel display-only getter-only properties (Defect 2 audit).
         "ProgressPercent", "CurrentStageText", "BuildModeText", "OutputPath",
         "OutputSizeText", "IsIndeterminate", "HasOutput", "AdkMissing",
@@ -421,7 +439,7 @@ public class CustomizeBindingRegressionTests
         {
             "CustomizeView.xaml", "ComponentsView.xaml", "PrivacyView.xaml",
             "SystemView.xaml", "PlanReviewView.xaml", "ComponentListTabView.xaml",
-            "ComingSoonView.xaml", "BuildView.xaml"
+            "ComingSoonView.xaml", "BuildView.xaml", "OptimizationKnowledgeView.xaml"
         };
 
         // Matches {Binding <body>} capturing the body (path + optional Mode/Converter).

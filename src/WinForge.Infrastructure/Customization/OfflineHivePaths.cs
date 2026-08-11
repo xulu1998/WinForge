@@ -6,17 +6,20 @@ namespace WinForge.Infrastructure.Customization;
 
 /// <summary>
 /// Helpers that map a logical offline hive base name (<c>SOFTWARE</c>,
-/// <c>SYSTEM</c>, <c>DEFAULT</c>) to its on-disk file inside the mounted working
-/// image and to the WinForge-owned temporary load name used by
-/// <see cref="OfflineRegistryService"/>.
+/// <c>SYSTEM</c>, <c>DEFAULT</c>, <c>DEFAULT_USER</c>) to its on-disk file inside
+/// the mounted working image and to the WinForge-owned temporary load name used
+/// by <see cref="OfflineRegistryService"/>.
 ///
-/// <para>The file always lives under the mounted image's
-/// <c>Windows\System32\config</c> directory, i.e. strictly inside the mount — it
-/// can never be a host hive or the original ISO mount root.</para>
+/// <para>The file always lives inside the mounted image — it can never be a host
+/// hive or the original ISO mount root. <c>DEFAULT_USER</c> maps to the Default
+/// User profile (<c>Users\Default\NTUSER.DAT</c>), the template for NEW user
+/// accounts, which is how user-level personalization/privacy settings are applied
+/// to the offline image (Stage 11.3 ADR-052). The host user's HKCU is never
+/// touched.</para>
 /// </summary>
 public static class OfflineHivePaths
 {
-    private static readonly string[] KnownBases = { "SOFTWARE", "SYSTEM", "DEFAULT" };
+    private static readonly string[] KnownBases = { "SOFTWARE", "SYSTEM", "DEFAULT", "DEFAULT_USER" };
 
     /// <summary>
     /// Returns the on-disk hive file path for the given logical base inside the
@@ -33,6 +36,13 @@ public static class OfflineHivePaths
         if (!IsKnownBase(hiveBase))
         {
             return null;
+        }
+
+        // DEFAULT_USER is the Default User profile template (new users), NOT the
+        // system hive in Windows\System32\config.
+        if (string.Equals(hiveBase, "DEFAULT_USER", StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.Combine(workspace.MountDirectory!, "Users", "Default", "NTUSER.DAT");
         }
 
         return Path.Combine(

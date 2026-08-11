@@ -32,14 +32,26 @@ namespace WinForge.Core.Models;
 /// </summary>
 public static class ServiceConfigPolicy
 {
-    // The ONLY offline services Step 3.3 may reconfigure. Matching is a
+    // The ONLY offline services Step 3.3/11.3 may reconfigure. Matching is a
     // case-insensitive substring against the service name, so a version- or
-    // edition-suffixed name still matches the base marker.
+    // edition-suffixed name still matches the base marker. The first three are
+    // the Step 3.3 trusted set; the remainder are Stage 11.3 reviewed additions
+    // (Xbox/gaming accessories, retail demo, offline maps, media sharing, touch
+    // input, geolocation) — each has human purpose + risk + revert in the
+    // OptimizationCatalog and a unit test pins the catalog to this allowlist.
     public static IReadOnlyList<string> AllowedServiceMarkers { get; } = new[]
     {
         "DiagTrack",
         "WerSvc",
-        "PcaSvc"
+        "PcaSvc",
+        "XboxGipSvc",
+        "XboxNetApiSvc",
+        "XblAuthManager",
+        "RetailDemo",
+        "MapsBroker",
+        "WMPNetworkSvc",
+        "TabletInputService",
+        "lfsvc"
     };
 
     /// <summary>

@@ -75,6 +75,27 @@ public sealed partial class ComponentDefinition
     public IReadOnlyList<TechnicalTarget> TechnicalTargets { get; init; } = new List<TechnicalTarget>();
     public IReadOnlyList<CompatibilityRule> CompatibilityRules { get; init; } = new List<CompatibilityRule>();
 
+    // ---- Stage 11.3 optimization metadata (ADR-051) ----
+    // Lets a knowledge row build the correct strongly-typed plan operation
+    // (REMOVE / DISABLE / CONFIGURE / SERVICE / FEATURE) and state the offline
+    // scope + revert contract. Data only — the execution engine still branches on
+    // the concrete operation type.
+
+    /// <summary>User-visible kind of change for this component (defaults to Remove for AppX components).</summary>
+    public OptimizationAction Action { get; init; } = OptimizationAction.Remove;
+
+    /// <summary>Concrete technical mechanism (RemoveProvisionedAppx, DisableOptionalFeature, …).</summary>
+    public OptimizationMechanism Mechanism { get; init; } = OptimizationMechanism.RemoveProvisionedAppx;
+
+    /// <summary>Offline-image scope the change applies to.</summary>
+    public OptimizationScope Scope { get; init; } = OptimizationScope.ProvisionedApp;
+
+    /// <summary>Localization key describing how to revert this change (empty = generic restore text).</summary>
+    public string? ReversalKey { get; init; }
+
+    /// <summary>Windows/default registry value WinForge restores on revert (registry operations).</summary>
+    public string? RestoreValueData { get; init; }
+
     public long EstimatedSavingsBytes { get; init; }
     public SavingsConfidence SavingsConfidence { get; init; } = SavingsConfidence.None;
 

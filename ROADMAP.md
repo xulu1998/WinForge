@@ -380,7 +380,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 11 — Component Intelligence Foundation
 
-- **Status:** IN PROGRESS (Stage 11.1 **REAL DESKTOP VALIDATED** 2026-08-10; Stage 11.2 **IMPLEMENTED** 2026-08-10 (UX REWORK + real-desktop DEFECT FIX **IMPLEMENTED** 2026-08-11, ADR-049), **PENDING REAL DESKTOP REVIEW**; branch `phase/11-component-intelligence`, NOT merged to `main`)
+- **Status:** IN PROGRESS (Stage 11.1 **REAL DESKTOP VALIDATED** 2026-08-10; Stage 11.2 **REAL DESKTOP VALIDATED** 2026-08-11 by the user after the ADR-050 master–detail fix; Stage 11.3 **IMPLEMENTED** 2026-08-11, **PENDING REAL DESKTOP REVIEW**; branch `phase/11-component-intelligence`, NOT merged to `main`)
 - **Goal:** Teach WinForge to *explain* Windows components to ordinary users — WHAT a
   component is, WHETHER they need it, WHAT breaks if removed, HOW risky, and whether it is
   restorable — without ever offering a destructive removal in Stage 11.1. Separate the
@@ -450,6 +450,31 @@ Phased development plan for WinForge. Each phase records its **Status**,
   selection model so a user's keep/remove decision from the knowledge surface flows into the plan with
   explicit, provenance-backed confirmation — see DECISIONS ADR-047/ADR-048. Phase 11 remains IN
   PROGRESS; NOT merged to `main`.
+- **Deliverables (Stage 11.3 — Customize Coverage Expansion + Personalization Activation +
+  Optimization Knowledge Matrix, ADR-051/ADR-052/ADR-053/ADR-054):** coverage-first — the coverage
+  matrix `.tmp/phase11/stage11.3-coverage-matrix.md` records every candidate (Id / tab / name /
+  mechanism / target / applicability / provenance / reversibility / recommendation / risk /
+  compatibility / status Implemented/Deferred/Rejected/Unsupported). Operation taxonomy
+  (`OptimizationAction`/`OptimizationMechanism`/`OptimizationScope` carried as data on
+  `CustomizationOperation`; new `DisableOptionalFeature` + `RemoveCapability` operation types with a
+  `FeatureConfigPolicy` allowlist; `CustomizationCategory.Personalization`). Offline registry /
+  Default-User targeting (`OfflineHivePaths.DEFAULT_USER` → `<mount>\Users\Default\NTUSER.DAT`;
+  host HKCU never touched). Knowledge reuse: the Windows Components tab reuses the Stage 11.2
+  `ComponentKnowledgeViewModel` engine (capability/optional-feature category filter); Services /
+  Privacy / System / Personalization share ONE `OptimizationKnowledgeViewModel` engine over the
+  generated `OptimizationCatalog`. First tranche implemented counts: Windows Components **12**,
+  Services **12** (11 reviewed + 1 core informational), Privacy **11**, System **10**,
+  Personalization **14** (Coming Soon removed; Start/Search + Taskbar + Explorer + Lock screen/Desktop
+  + Appearance groups). Review lists every selected change with its exact action type + scope + revert
+  contract. **584 automated tests pass (Core 53, App 531), 0 errors, 0 warnings (Release).**
+  ADR-051/ADR-052/ADR-053/ADR-054.
+- **Next (Stage 11.3 — IMPLEMENTED / PENDING REAL DESKTOP REVIEW):** real Windows 11 25H2 zh-CN x64
+  Consumer validation of all six Customize tabs (record exact visible item counts; Personalization no
+  longer Coming Soon; Review lists action types; no host-system side effects; no binding/runtime
+  errors). First real-desktop pass may be Discovery + selection + Review only; if new offline operation
+  execution is exercised, run a second controlled Apply on a minimal safe subset. Do NOT mark Phase 11
+  complete and do NOT start the Profile engine until the expanded Customize coverage is reviewed and
+  accepted.
 
 ---
 

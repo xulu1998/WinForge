@@ -27,6 +27,12 @@ public enum CustomizationOperationType
     /// <summary>Disable an offline scheduled task (only when robust support exists).</summary>
     DisableOfflineScheduledTask,
 
+    /// <summary>Remove a Windows optional feature by its exact FeatureName (DISM /Disable-Feature /Remove).</summary>
+    DisableOptionalFeature,
+
+    /// <summary>Remove a Windows capability by its exact capability identity (DISM /Remove-Capability).</summary>
+    RemoveCapability,
+
     /// <summary>Remove a file/directory owned by WinForge or an explicitly sanctioned system target.</summary>
     RemoveOfflineFile
 }
@@ -51,6 +57,9 @@ public enum CustomizationCategory
 
     /// <summary>Offline Windows services (Components → System components).</summary>
     Service,
+
+    /// <summary>User-facing OS experience / personalization settings (Stage 11.3 Personalization tab).</summary>
+    Personalization,
 
     /// <summary>Explicitly sanctioned offline file removals.</summary>
     File

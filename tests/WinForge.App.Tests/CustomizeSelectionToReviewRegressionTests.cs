@@ -93,7 +93,12 @@ public class CustomizeSelectionToReviewRegressionTests
             System = new SystemViewModel(State, logger, defs);
             var comingSoon = new ComingSoonViewModel();
             var knowledge = ComponentKnowledgeTestFactory.Make(State, logger);
-            var customize = new CustomizeStepViewModel(Components, Privacy, System, comingSoon, knowledge);
+            var customize = new CustomizeStepViewModel(Components, knowledge,
+                ComponentKnowledgeTestFactory.MakeComponentsKnowledge(State, logger),
+                ComponentKnowledgeTestFactory.MakeOptimization(State, logger, OptimizationTab.Services),
+                ComponentKnowledgeTestFactory.MakeOptimization(State, logger, OptimizationTab.Privacy),
+                ComponentKnowledgeTestFactory.MakeOptimization(State, logger, OptimizationTab.System),
+                ComponentKnowledgeTestFactory.MakeOptimization(State, logger, OptimizationTab.Personalization));
             var plan = new PlanReviewViewModel(State, logger, new FakeCustomizationExecutionService());
             var build = new BuildStepViewModel(
                 State, new FakeBuildService(), new FakeFileSystem(), new WorkflowAndCommandTests.FakeFilePicker(),

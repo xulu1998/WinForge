@@ -58,6 +58,31 @@ public sealed class CustomizationOperation
     public string? ServiceName { get; init; }
     public ServiceStartType? ServiceStartType { get; init; }
 
+    // ---- Stage 11.3 optimization metadata (ADR-051) ----
+    // These describe WHAT KIND of change this is for the Review surface and the
+    // offline-image scope it targets. They are data, never behaviour: views and
+    // the plan display them, the execution engine still branches on the concrete
+    // OperationType.
+
+    /// <summary>User-visible kind of change (Remove / Disable / Configure / Service / Feature).</summary>
+    public OptimizationAction? ActionKind { get; init; }
+
+    /// <summary>Concrete technical mechanism (ServiceStartup, ExplorerPreference, …).</summary>
+    public OptimizationMechanism? Mechanism { get; init; }
+
+    /// <summary>Offline-image scope the change applies to (OfflineMachine / OfflineDefaultUser / …).</summary>
+    public OptimizationScope? Scope { get; init; }
+
+    /// <summary>Localization key describing how to revert this change (empty = generic restore text).</summary>
+    public string? ReversalKey { get; init; }
+
+    /// <summary>
+    /// The Windows/default value WinForge restores on revert (registry operations).
+    /// For a freshly-created offline image the "original" value may not exist, so
+    /// WinForge records the documented default it would restore instead (Part O).
+    /// </summary>
+    public string? RestoreValueData { get; init; }
+
     /// <summary>
     /// Returns the canonical conflict key used for duplicate/conflict detection.
     /// Two operations with the same key target the same concrete change.
@@ -70,6 +95,10 @@ public sealed class CustomizationOperation
             => $"svc|{ServiceName}",
         CustomizationOperationType.RemoveProvisionedAppx or CustomizationOperationType.RemovePackage
             => $"pkg|{TargetIdentifier}",
+        CustomizationOperationType.DisableOptionalFeature
+            => $"feat|{TargetIdentifier}",
+        CustomizationOperationType.RemoveCapability
+            => $"cap|{TargetIdentifier}",
         CustomizationOperationType.RemoveOfflineFile
             => $"file|{TargetIdentifier}",
         _ => OperationId

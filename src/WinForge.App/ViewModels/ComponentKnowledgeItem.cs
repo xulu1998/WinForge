@@ -282,15 +282,31 @@ public sealed class ComponentKnowledgeItem : ViewModelBase
         return $"{relation}: {target}{reason}";
     }
 
-    private IReadOnlyList<string> TargetOperationIds()
+    /// <summary>
+    /// The concrete plan operations this component maps to. Stage 11.3 (ADR-051):
+    /// the operation type follows the raw category — AppX → RemoveProvisionedAppx,
+    /// OptionalFeature → DisableOptionalFeature, Capability → RemoveCapability —
+    /// so the Windows Components tab builds strongly typed FEATURE operations
+    /// instead of pretending every change is an app removal.
+    /// </summary>
+    private IReadOnlyList<(string OpId, ComponentCategory Category, string Identity)> TargetOperations()
     {
-        var ids = new List<string>();
+        var ops = new List<(string, ComponentCategory, string)>();
         if (Entry.RawItems.Count > 0)
         {
-            // Prefer exact discovered identities (matches the Components page op-id scheme).
-            foreach (var raw in Entry.RawItems.Where(r => r.Category == ComponentCategory.AppX))
+            foreach (var raw in Entry.RawItems)
             {
-                ids.Add("appx|" + raw.RawIdentity);
+                var id = raw.Category switch
+                {
+                    ComponentCategory.AppX => "appx|" + raw.RawIdentity,
+                    ComponentCategory.OptionalFeature => "feat|" + raw.RawIdentity,
+                    ComponentCategory.Capability => "cap|" + raw.RawIdentity,
+                    _ => null,
+                };
+                if (id is not null)
+                {
+                    ops.Add((id, raw.Category, raw.RawIdentity));
+                }
             }
         }
         else if (Entry.Definition is not null)
@@ -298,28 +314,46 @@ public sealed class ComponentKnowledgeItem : ViewModelBase
             // Catalog-only: use the AppX technical-target patterns as best-effort ids.
             foreach (var t in Entry.Definition.TechnicalTargets.Where(t => t.Category == ComponentCategory.AppX))
             {
-                ids.Add("kcomp|" + Entry.Definition.Id + "|" + t.Pattern);
+                ops.Add(("kcomp|" + Entry.Definition.Id + "|" + t.Pattern, ComponentCategory.AppX, t.Pattern));
             }
         }
 
-        return ids;
+        return ops;
     }
+
+    private IReadOnlyList<string> TargetOperationIds()
+        => TargetOperations().Select(o => o.OpId).ToList();
 
     private void SyncPlan(bool selected)
     {
-        foreach (var opId in TargetOperationIds())
+        foreach (var (opId, category, identity) in TargetOperations())
         {
+            var (operationType, opCategory, risk) = category switch
+            {
+                ComponentCategory.AppX => (CustomizationOperationType.RemoveProvisionedAppx, CustomizationCategory.App,
+                    RiskLevel == RiskLevel.Low ? RiskClass.Safe : RiskClass.Removable),
+                ComponentCategory.OptionalFeature => (CustomizationOperationType.DisableOptionalFeature, CustomizationCategory.Package,
+                    RiskClass.Removable),
+                ComponentCategory.Capability => (CustomizationOperationType.RemoveCapability, CustomizationCategory.Package,
+                    RiskClass.Removable),
+                _ => (CustomizationOperationType.RemoveProvisionedAppx, CustomizationCategory.App, RiskClass.Removable),
+            };
+
             PlanSync.Toggle(_appState, opId, selected, () => new CustomizationOperation
             {
                 OperationId = opId,
-                Category = CustomizationCategory.App,
-                OperationType = CustomizationOperationType.RemoveProvisionedAppx,
+                Category = opCategory,
+                OperationType = operationType,
                 DisplayName = DisplayName,
-                Description = $"Remove provisioned AppX for {DisplayName} ({Entry.Definition?.Id}).",
-                TargetIdentifier = opId.StartsWith("appx|") ? opId.Substring(5) : Entry.Definition?.TechnicalTargets
-                    .FirstOrDefault(t => t.Category == ComponentCategory.AppX)?.Pattern,
-                Risk = RiskLevel == RiskLevel.Low ? RiskClass.Safe : RiskClass.Removable,
+                Description = $"Change for {DisplayName} ({Entry.Definition?.Id}).",
+                TargetIdentifier = identity,
+                Risk = risk,
                 ExecutionOrder = 0,
+                ActionKind = Entry.Definition?.Action,
+                Mechanism = Entry.Definition?.Mechanism,
+                Scope = Entry.Definition?.Scope,
+                ReversalKey = Entry.Definition?.ReversalKey,
+                RestoreValueData = Entry.Definition?.RestoreValueData,
             });
         }
 

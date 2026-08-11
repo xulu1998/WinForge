@@ -20,7 +20,7 @@ public enum CustomizeTabKind
     ComponentList,
     Privacy,
     System,
-    Experience
+    Personalization
 }
 
 /// <summary>
@@ -80,27 +80,23 @@ public sealed class ComponentListTabViewModel : ViewModelBase
 
 /// <summary>
 /// Customize step coordinator. Hosts the six tabs (Apps / Windows components /
-/// Services / Privacy / System / Experience).
+/// Services / Privacy / System / Personalization).
 ///
-/// The <b>Apps</b> tab is the knowledge-backed decision surface: its content is
-/// the shared ComponentKnowledgeViewModel (which reuses the Component Intelligence
-/// engine). It shows curated, human-facing components with recommendation/risk
-/// badges, a hover quick card, a detail panel, and decision-useful sort/filter,
-/// and hides raw Windows package identity in standard mode. This replaces the
-/// former separate "Component Knowledge" tab so the removal decision is made where
-/// the component lives (ADR-048). Windows components / Services tabs keep the
-/// discovery-backed raw lists (not yet knowledge-modeled). All view models are
-/// reused singletons from Bootstrapper; no discovery or execution logic is duplicated.
+/// <para>Stage 11.3 (ADR-051/ADR-052): every tab is now a knowledge-backed decision
+/// surface. The <b>Apps</b> and <b>Windows components</b> tabs reuse the shared
+/// <see cref="ComponentKnowledgeViewModel"/> engine over the Component Intelligence
+/// classified inventory (AppX vs capabilities/optional-features — one discovery,
+/// one engine, two category filters). <b>Services / Privacy / System /
+/// Personalization</b> share the catalog-driven <see cref="OptimizationKnowledgeViewModel"/>
+/// (one engine, four catalogs). The former "Experience / Coming Soon" placeholder
+/// is replaced by the real Personalization tab (ADR-054).</para>
+///
+/// All view models are reused singletons from Bootstrapper; no discovery or
+/// execution logic is duplicated.
 /// </summary>
 public sealed class CustomizeStepViewModel : ViewModelBase
 {
     public ComponentsViewModel Components { get; }
-
-    public PrivacyViewModel Privacy { get; }
-
-    public SystemViewModel System { get; }
-
-    public ComingSoonViewModel Experience { get; }
 
     public ObservableCollection<CustomizeTabViewModel> Tabs { get; }
 
@@ -130,16 +126,16 @@ public sealed class CustomizeStepViewModel : ViewModelBase
 
     public CustomizeStepViewModel(
         ComponentsViewModel components,
-        PrivacyViewModel privacy,
-        SystemViewModel system,
-        ComingSoonViewModel experience,
-        ComponentKnowledgeViewModel knowledge)
+        ComponentKnowledgeViewModel knowledge,
+        ComponentKnowledgeViewModel componentsKnowledge,
+        OptimizationKnowledgeViewModel servicesKnowledge,
+        OptimizationKnowledgeViewModel privacyKnowledge,
+        OptimizationKnowledgeViewModel systemKnowledge,
+        OptimizationKnowledgeViewModel personalizationKnowledge)
     {
-        Components = components;
-        Privacy = privacy;
-        System = system;
-        Experience = experience;
-        _knowledge = knowledge ?? throw new ArgumentNullException(nameof(knowledge));
+        Components = components ?? throw new System.ArgumentNullException(nameof(components));
+        _knowledge = knowledge ?? throw new System.ArgumentNullException(nameof(knowledge));
+
         // ADR-049: ONE Discover button drives a single coherent, read-only discovery
         // pass — the existing Components discovery (Apps/Windows components/Services)
         // AND the Component Intelligence knowledge discovery (curated classification).
@@ -159,17 +155,17 @@ public sealed class CustomizeStepViewModel : ViewModelBase
 
         Tabs = new ObservableCollection<CustomizeTabViewModel>
         {
-            // Apps = knowledge-backed decision surface (reuses CI engine; curated only).
-            new CustomizeTabViewModel("Customize.Tab.Apps", _knowledge, CustomizeTabKind.ComponentList),
-            new CustomizeTabViewModel("Customize.Tab.Components",
-                new ComponentListTabViewModel(components, ComponentListKind.Components, "Customize.Tab.Components"),
-                CustomizeTabKind.ComponentList),
-            new CustomizeTabViewModel("Customize.Tab.Services",
-                new ComponentListTabViewModel(components, ComponentListKind.Services, "Customize.Tab.Services"),
-                CustomizeTabKind.ComponentList),
-            new CustomizeTabViewModel("Customize.Tab.Privacy", privacy, CustomizeTabKind.Privacy),
-            new CustomizeTabViewModel("Customize.Tab.System", system, CustomizeTabKind.System),
-            new CustomizeTabViewModel("Customize.Tab.Experience", experience, CustomizeTabKind.Experience),
+            // Apps = knowledge-backed decision surface (CI engine, AppX category only).
+            new CustomizeTabViewModel("Customize.Tab.Apps", knowledge, CustomizeTabKind.ComponentList),
+            // Windows components = SAME knowledge engine, capability/optional-feature
+            // category only (Stage 11.3, ADR-051).
+            new CustomizeTabViewModel("Customize.Tab.Components", componentsKnowledge, CustomizeTabKind.ComponentList),
+            // Services / Privacy / System / Personalization = catalog-driven
+            // knowledge surfaces (one shared engine, four catalogs — ADR-051/ADR-052).
+            new CustomizeTabViewModel("Customize.Tab.Services", servicesKnowledge, CustomizeTabKind.ComponentList),
+            new CustomizeTabViewModel("Customize.Tab.Privacy", privacyKnowledge, CustomizeTabKind.Privacy),
+            new CustomizeTabViewModel("Customize.Tab.System", systemKnowledge, CustomizeTabKind.System),
+            new CustomizeTabViewModel("Customize.Tab.Personalization", personalizationKnowledge, CustomizeTabKind.Personalization),
         };
 
         SelectedTab = Tabs[0];
@@ -179,8 +175,10 @@ public sealed class CustomizeStepViewModel : ViewModelBase
     /// One coherent, read-only discovery pass: runs the existing Components discovery
     /// (Apps / Windows components / Services) AND the Component Intelligence knowledge
     /// discovery (curated classification) so a single Discover button populates every
-    /// Customize tab. Both passes are read-only — no destructive servicing is performed
-    /// (ADR-049). The Apps knowledge tab rebuilds from the shared classified inventory.
+    /// image-backed Customize tab. Both passes are read-only — no destructive
+    /// servicing is performed (ADR-049). The Apps + Windows components knowledge tabs
+    /// rebuild from the shared classified inventory. The catalog-driven tabs
+    /// (Services / Privacy / System / Personalization) are always populated.
     /// </summary>
     private async Task DiscoverAllAsync()
     {

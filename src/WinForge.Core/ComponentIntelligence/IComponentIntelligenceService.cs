@@ -17,6 +17,19 @@ public interface IComponentCatalogProvider
 }
 
 /// <summary>
+/// Supplies the reviewed, knowledge-backed optimization catalog for the
+/// non-AppX Customize tabs (Services / Privacy / System / Personalization —
+/// Stage 11.3). Entries are WinForge-curated only; every candidate records its
+/// provenance (MicrosoftOfficial / CommunityProject / WinForgeCurated) and a
+/// community opinion never auto-promotes to a trusted recommendation (Part P).
+/// </summary>
+public interface IOptimizationCatalogProvider
+{
+    /// <summary>All reviewed optimization entries (each carries its tab).</summary>
+    IReadOnlyList<OptimizationDefinition> GetEntries();
+}
+
+/// <summary>
 /// Inspects the mounted offline working image and returns structured component
 /// inventory (never raw DISM text). Must tolerate missing / renamed / edition /
 /// build differences, operate ONLY against the mounted workspace, and handle

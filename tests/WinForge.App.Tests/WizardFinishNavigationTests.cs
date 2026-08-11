@@ -139,11 +139,7 @@ public sealed class WizardFinishNavigationTests
         var image = new ImageViewModel(state, logger, new NullInspection(), new NullFilePicker(),
             new NullWorkspaceFactory(), new NullWimService(), servicing);
         var components = new ComponentsViewModel(state, logger, new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider());
-        var privacy = new PrivacyViewModel(state, logger, new FakeCustomizationDefinitionProvider());
-        var system = new SystemViewModel(state, logger, new FakeCustomizationDefinitionProvider());
-        var comingSoon = new ComingSoonViewModel();
-        var knowledge = ComponentKnowledgeTestFactory.Make(state, logger);
-        var customize = new CustomizeStepViewModel(components, privacy, system, comingSoon, knowledge);
+        var customize = ComponentKnowledgeTestFactory.MakeCustomize(state, logger);
         var plan = new PlanReviewViewModel(state, logger, new FakeCustomizationExecutionService());
         var build = new BuildStepViewModel(state, buildService, fs, new NullFilePicker(),
             new FakeAdkToolLocator(), logger, loc);
@@ -156,6 +152,9 @@ public sealed class WizardFinishNavigationTests
 
         var ci = new ComponentIntelligenceViewModel(
             state, logger, new NotDiscoveredComponentIntelligenceService(), new CuratedComponentCatalog(), loc);
+
+        // MainViewModel still hosts the (unused) Coming Soon page VM for the nav shell.
+        var comingSoon = new ComingSoonViewModel();
 
         // The real shell, wired through the single navigation coordinator.
         var main = new MainViewModel(nav, home, logs, settings, about, comingSoon, wf, ci);

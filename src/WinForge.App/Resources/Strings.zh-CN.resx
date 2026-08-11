@@ -611,4 +611,229 @@
   <data name="Comp.DesktopAppInstaller.Prov0" xml:space="preserve"><value>应用安装程序提供 winget 包管理器与 MSIX/AppX 安装程序。</value></data>
   <data name="Comp.DesktopAppInstaller.Prov1" xml:space="preserve"><value>通常保留；移除会破坏包管理。</value></data>
 <!-- WINFORGE_CATALOG_BLOCK_END -->
+
+
+
+
+
+
+
+
+
+<!-- WINFORGE_STAGE113_BLOCK_START -->
+  <data name="Customize.Tab.Personalization" xml:space="preserve"><value>个性化</value></data>
+  <data name="Feat.HyperV.DisplayName" xml:space="preserve"><value>Hyper-V</value></data>
+  <data name="Feat.HyperV.KeepIf" xml:space="preserve"><value>你使用Hyper-V</value></data>
+  <data name="Feat.HyperV.Short" xml:space="preserve"><value>运行 Windows/Linux 虚拟机的虚拟机平台</value></data>
+  <data name="Feat.HypervisorPlatform.DisplayName" xml:space="preserve"><value>Windows 虚拟机监控程序平台</value></data>
+  <data name="Feat.HypervisorPlatform.KeepIf" xml:space="preserve"><value>你使用Windows Hypervisor Platform</value></data>
+  <data name="Feat.HypervisorPlatform.Short" xml:space="preserve"><value>让第三方虚拟机使用 Windows 虚拟机监控程序</value></data>
+  <data name="Feat.InternetPrinting.DisplayName" xml:space="preserve"><value>Internet 打印客户端</value></data>
+  <data name="Feat.InternetPrinting.KeepIf" xml:space="preserve"><value>你使用Internet Printing Client</value></data>
+  <data name="Feat.InternetPrinting.Short" xml:space="preserve"><value>通过 Internet 打印协议 (IPP) 进行网络打印</value></data>
+  <data name="Feat.MediaPlayer.DisplayName" xml:space="preserve"><value>Windows Media Player（旧版）</value></data>
+  <data name="Feat.MediaPlayer.KeepIf" xml:space="preserve"><value>你使用Windows Media Player (legacy)</value></data>
+  <data name="Feat.MediaPlayer.Short" xml:space="preserve"><value>播放本地音视频文件的旧版媒体播放器</value></data>
+  <data name="Feat.OpenSshClient.DisplayName" xml:space="preserve"><value>OpenSSH 客户端</value></data>
+  <data name="Feat.OpenSshClient.KeepIf" xml:space="preserve"><value>你使用OpenSSH Client</value></data>
+  <data name="Feat.OpenSshClient.Short" xml:space="preserve"><value>在本机通过 SSH 连接远程服务器</value></data>
+  <data name="Feat.OpenSshServer.DisplayName" xml:space="preserve"><value>OpenSSH 服务器</value></data>
+  <data name="Feat.OpenSshServer.KeepIf" xml:space="preserve"><value>你使用OpenSSH Server</value></data>
+  <data name="Feat.OpenSshServer.Short" xml:space="preserve"><value>接受指向本机的 SSH 连接（会开放网络端口）</value></data>
+  <data name="Feat.PowerShell2.DisplayName" xml:space="preserve"><value>PowerShell 2.0 引擎（旧版）</value></data>
+  <data name="Feat.PowerShell2.KeepIf" xml:space="preserve"><value>你使用PowerShell 2.0 Engine (legacy)</value></data>
+  <data name="Feat.PowerShell2.Short" xml:space="preserve"><value>供极老脚本使用的已弃用引擎；新版 PowerShell 不需要它</value></data>
+  <data name="Feat.ScanManagement.DisplayName" xml:space="preserve"><value>扫描管理控制台</value></data>
+  <data name="Feat.ScanManagement.KeepIf" xml:space="preserve"><value>你使用Scan Management Console</value></data>
+  <data name="Feat.ScanManagement.Short" xml:space="preserve"><value>在 Windows 中管理扫描仪与扫描</value></data>
+  <data name="Feat.VirtualMachinePlatform.DisplayName" xml:space="preserve"><value>虚拟机平台</value></data>
+  <data name="Feat.VirtualMachinePlatform.KeepIf" xml:space="preserve"><value>你使用Virtual Machine Platform</value></data>
+  <data name="Feat.VirtualMachinePlatform.Short" xml:space="preserve"><value>WSL2、沙盒与 Android 应用共用的虚拟化平台</value></data>
+  <data name="Feat.WindowsSandbox.DisplayName" xml:space="preserve"><value>Windows 沙盒</value></data>
+  <data name="Feat.WindowsSandbox.KeepIf" xml:space="preserve"><value>你使用Windows Sandbox</value></data>
+  <data name="Feat.WindowsSandbox.Short" xml:space="preserve"><value>用于测试不受信任软件的临时隔离桌面</value></data>
+  <data name="Feat.Wsl.DisplayName" xml:space="preserve"><value>Linux / WSL 支持</value></data>
+  <data name="Feat.Wsl.KeepIf" xml:space="preserve"><value>你使用Linux / WSL support</value></data>
+  <data name="Feat.Wsl.Short" xml:space="preserve"><value>在 Windows 中运行 Linux 环境（适用于 Linux 的 Windows 子系统）</value></data>
+  <data name="Feat.XpsServices.DisplayName" xml:space="preserve"><value>XPS 服务</value></data>
+  <data name="Feat.XpsServices.KeepIf" xml:space="preserve"><value>你使用XPS Services</value></data>
+  <data name="Feat.XpsServices.Short" xml:space="preserve"><value>创建与打印 XPS 文档</value></data>
+  <data name="Opt.Action.Configure" xml:space="preserve"><value>配置</value></data>
+  <data name="Opt.Action.Disable" xml:space="preserve"><value>禁用</value></data>
+  <data name="Opt.Action.Feature" xml:space="preserve"><value>功能</value></data>
+  <data name="Opt.Action.Remove" xml:space="preserve"><value>移除</value></data>
+  <data name="Opt.Action.Service" xml:space="preserve"><value>服务</value></data>
+  <data name="Opt.Action.Unknown" xml:space="preserve"><value>更改</value></data>
+  <data name="Opt.Blocked" xml:space="preserve"><value>不可更改</value></data>
+  <data name="Opt.CoreNeverChange" xml:space="preserve"><value>核心基础组件——WinForge 绝不修改</value></data>
+  <data name="Opt.Dep.hvplatform-dep" xml:space="preserve"><value>共享虚拟化/平台依赖——请先确认再关闭。</value></data>
+  <data name="Opt.Dep.hyperv-dep" xml:space="preserve"><value>共享虚拟化/平台依赖——请先确认再关闭。</value></data>
+  <data name="Opt.Dep.print-dep" xml:space="preserve"><value>共享虚拟化/平台依赖——请先确认再关闭。</value></data>
+  <data name="Opt.Dep.ps2-dep" xml:space="preserve"><value>共享虚拟化/平台依赖——请先确认再关闭。</value></data>
+  <data name="Opt.Dep.sandbox-dep" xml:space="preserve"><value>共享虚拟化/平台依赖——请先确认再关闭。</value></data>
+  <data name="Opt.Dep.scan-dep" xml:space="preserve"><value>共享虚拟化/平台依赖——请先确认再关闭。</value></data>
+  <data name="Opt.Dep.wsl-dep" xml:space="preserve"><value>共享虚拟化/平台依赖——请先确认再关闭。</value></data>
+  <data name="Opt.Dep.xps-dep" xml:space="preserve"><value>共享虚拟化/平台依赖——请先确认再关闭。</value></data>
+  <data name="Opt.Detail.ProposedStart" xml:space="preserve"><value>建议启动类型</value></data>
+  <data name="Opt.Detail.Reversal" xml:space="preserve"><value>如何还原</value></data>
+  <data name="Opt.Detail.Scope" xml:space="preserve"><value>作用域</value></data>
+  <data name="Opt.Detail.Target" xml:space="preserve"><value>技术目标</value></data>
+  <data name="Opt.Empty" xml:space="preserve"><value>该类别暂无已审核的控制项。</value></data>
+  <data name="Opt.Mechanism.DisableOptionalFeature" xml:space="preserve"><value>可选功能（DISM）</value></data>
+  <data name="Opt.Mechanism.ExplorerPreference" xml:space="preserve"><value>资源管理器偏好</value></data>
+  <data name="Opt.Mechanism.PrivacyPolicy" xml:space="preserve"><value>隐私策略</value></data>
+  <data name="Opt.Mechanism.RegistryPolicy" xml:space="preserve"><value>注册表策略（整机）</value></data>
+  <data name="Opt.Mechanism.RemoveCapability" xml:space="preserve"><value>功能能力（DISM）</value></data>
+  <data name="Opt.Mechanism.ServiceStartup" xml:space="preserve"><value>服务启动类型</value></data>
+  <data name="Opt.Mechanism.StartPreference" xml:space="preserve"><value>开始菜单偏好</value></data>
+  <data name="Opt.Mechanism.SystemPolicy" xml:space="preserve"><value>系统策略</value></data>
+  <data name="Opt.Mechanism.TaskbarPreference" xml:space="preserve"><value>任务栏偏好</value></data>
+  <data name="Opt.Mechanism.VisualPreference" xml:space="preserve"><value>外观偏好</value></data>
+  <data name="Opt.NoChangeRecommended" xml:space="preserve"><value>不建议更改——保持 Windows 默认</value></data>
+  <data name="Opt.NotApplicable" xml:space="preserve"><value>不适用于当前所选映像</value></data>
+  <data name="Opt.Personalization.DarkMode.DisplayName" xml:space="preserve"><value>深色模式</value></data>
+  <data name="Opt.Personalization.DarkMode.Short" xml:space="preserve"><value>应用与系统使用深色主题</value></data>
+  <data name="Opt.Personalization.DisableAnimations.DisplayName" xml:space="preserve"><value>关闭动画效果</value></data>
+  <data name="Opt.Personalization.DisableAnimations.Short" xml:space="preserve"><value>关闭窗口与菜单动画效果</value></data>
+  <data name="Opt.Personalization.DisableSpotlight.DisplayName" xml:space="preserve"><value>Windows 聚焦（锁屏内容）</value></data>
+  <data name="Opt.Personalization.DisableSpotlight.Short" xml:space="preserve"><value>关闭锁屏的聚焦内容（使用普通图片）</value></data>
+  <data name="Opt.Personalization.DisableTransparency.DisplayName" xml:space="preserve"><value>关闭透明效果</value></data>
+  <data name="Opt.Personalization.DisableTransparency.Short" xml:space="preserve"><value>关闭窗口透明/模糊效果</value></data>
+  <data name="Opt.Personalization.HideFrequentQuickAccess.DisplayName" xml:space="preserve"><value>隐藏快速访问中的常用文件夹</value></data>
+  <data name="Opt.Personalization.HideFrequentQuickAccess.Short" xml:space="preserve"><value>不在快速访问中显示常用文件夹</value></data>
+  <data name="Opt.Personalization.HideRecentQuickAccess.DisplayName" xml:space="preserve"><value>隐藏快速访问中的最近文件</value></data>
+  <data name="Opt.Personalization.HideRecentQuickAccess.Short" xml:space="preserve"><value>不在快速访问中显示最近打开的文件</value></data>
+  <data name="Opt.Personalization.HideStartRecentlyAdded.DisplayName" xml:space="preserve"><value>隐藏开始菜单中的“最近添加”</value></data>
+  <data name="Opt.Personalization.HideStartRecentlyAdded.Short" xml:space="preserve"><value>不在开始菜单显示最近添加的应用</value></data>
+  <data name="Opt.Personalization.HideStartRecommended.DisplayName" xml:space="preserve"><value>隐藏开始菜单中的“推荐”</value></data>
+  <data name="Opt.Personalization.HideStartRecommended.Short" xml:space="preserve"><value>从开始菜单移除“推荐”区域</value></data>
+  <data name="Opt.Personalization.HideTaskbarTaskView.DisplayName" xml:space="preserve"><value>隐藏任务视图按钮</value></data>
+  <data name="Opt.Personalization.HideTaskbarTaskView.Short" xml:space="preserve"><value>从任务栏移除“任务视图”按钮</value></data>
+  <data name="Opt.Personalization.HideTaskbarWidgets.DisplayName" xml:space="preserve"><value>隐藏小组件按钮</value></data>
+  <data name="Opt.Personalization.HideTaskbarWidgets.Short" xml:space="preserve"><value>从任务栏移除“小组件”按钮</value></data>
+  <data name="Opt.Personalization.OpenToThisPC.DisplayName" xml:space="preserve"><value>文件资源管理器打开到“此电脑”</value></data>
+  <data name="Opt.Personalization.OpenToThisPC.Short" xml:space="preserve"><value>打开文件资源管理器时显示“此电脑”而非“主页”</value></data>
+  <data name="Opt.Personalization.ShowFileExtensions.DisplayName" xml:space="preserve"><value>显示文件扩展名</value></data>
+  <data name="Opt.Personalization.ShowFileExtensions.Short" xml:space="preserve"><value>在文件资源管理器中显示文件扩展名</value></data>
+  <data name="Opt.Personalization.ShowHiddenFiles.DisplayName" xml:space="preserve"><value>显示隐藏文件</value></data>
+  <data name="Opt.Personalization.ShowHiddenFiles.Short" xml:space="preserve"><value>在文件资源管理器中显示隐藏文件和文件夹</value></data>
+  <data name="Opt.Personalization.TaskbarSearchIcon.DisplayName" xml:space="preserve"><value>任务栏搜索仅显示图标</value></data>
+  <data name="Opt.Personalization.TaskbarSearchIcon.Short" xml:space="preserve"><value>任务栏搜索以图标而非搜索框显示</value></data>
+  <data name="Opt.Privacy.ActivityHistory.DisplayName" xml:space="preserve"><value>活动历史记录</value></data>
+  <data name="Opt.Privacy.ActivityHistory.Short" xml:space="preserve"><value>停止收集并上传本地活动历史记录到云端</value></data>
+  <data name="Opt.Privacy.AdvertisingId.DisplayName" xml:space="preserve"><value>广告 ID</value></data>
+  <data name="Opt.Privacy.AdvertisingId.Short" xml:space="preserve"><value>关闭用于定向广告的设备广告 ID</value></data>
+  <data name="Opt.Privacy.AppLaunchTracking.DisplayName" xml:space="preserve"><value>应用启动跟踪</value></data>
+  <data name="Opt.Privacy.AppLaunchTracking.Short" xml:space="preserve"><value>停止记录启动了哪些应用（开始菜单遥测）</value></data>
+  <data name="Opt.Privacy.FeedbackNotifications.DisplayName" xml:space="preserve"><value>反馈提示</value></data>
+  <data name="Opt.Privacy.FeedbackNotifications.Short" xml:space="preserve"><value>抑制 Windows 反馈通知提示</value></data>
+  <data name="Opt.Privacy.FindMyDevice.DisplayName" xml:space="preserve"><value>查找我的设备</value></data>
+  <data name="Opt.Privacy.FindMyDevice.Short" xml:space="preserve"><value>关闭“查找我的设备”（向账户报告设备位置）</value></data>
+  <data name="Opt.Privacy.InputPersonalization.DisplayName" xml:space="preserve"><value>输入个性化</value></data>
+  <data name="Opt.Privacy.InputPersonalization.Short" xml:space="preserve"><value>关闭基于云的键入见解（输入个性化）</value></data>
+  <data name="Opt.Privacy.Location.DisplayName" xml:space="preserve"><value>定位服务</value></data>
+  <data name="Opt.Privacy.Location.Short" xml:space="preserve"><value>关闭应用使用的定位平台（地图、天气等）</value></data>
+  <data name="Opt.Privacy.SpeechModelUpdates.DisplayName" xml:space="preserve"><value>语音模型更新</value></data>
+  <data name="Opt.Privacy.SpeechModelUpdates.Short" xml:space="preserve"><value>停止下载联机语音识别模型</value></data>
+  <data name="Opt.Privacy.SpotlightFeatures.DisplayName" xml:space="preserve"><value>Windows 聚焦内容</value></data>
+  <data name="Opt.Privacy.SpotlightFeatures.Short" xml:space="preserve"><value>关闭全部 Windows 聚焦功能（锁屏/桌面内容）</value></data>
+  <data name="Opt.Privacy.TailoredExperiences.DisplayName" xml:space="preserve"><value>定制体验</value></data>
+  <data name="Opt.Privacy.TailoredExperiences.Short" xml:space="preserve"><value>阻止 Windows 利用诊断数据个性化提示与建议</value></data>
+  <data name="Opt.Privacy.WebSearchStart.DisplayName" xml:space="preserve"><value>开始菜单搜索中的网页结果</value></data>
+  <data name="Opt.Privacy.WebSearchStart.Short" xml:space="preserve"><value>让开始菜单搜索保持本地，不查询 Bing/网页结果</value></data>
+  <data name="Opt.Recommendation.Configure.AdvancedOnly" xml:space="preserve"><value>仅限高级用户</value></data>
+  <data name="Opt.Recommendation.Configure.NeverRemove" xml:space="preserve"><value>不可修改</value></data>
+  <data name="Opt.Recommendation.Configure.OptionalRemove" xml:space="preserve"><value>按需开启</value></data>
+  <data name="Opt.Recommendation.Configure.RecommendedRemove" xml:space="preserve"><value>推荐开启</value></data>
+  <data name="Opt.Recommendation.Configure.UsuallyKeep" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Opt.Recommendation.Disable.AdvancedOnly" xml:space="preserve"><value>仅限高级用户</value></data>
+  <data name="Opt.Recommendation.Disable.NeverRemove" xml:space="preserve"><value>不可修改</value></data>
+  <data name="Opt.Recommendation.Disable.OptionalRemove" xml:space="preserve"><value>按需关闭</value></data>
+  <data name="Opt.Recommendation.Disable.RecommendedRemove" xml:space="preserve"><value>推荐关闭</value></data>
+  <data name="Opt.Recommendation.Disable.UsuallyKeep" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Opt.Recommendation.Feature.AdvancedOnly" xml:space="preserve"><value>仅限高级用户</value></data>
+  <data name="Opt.Recommendation.Feature.NeverRemove" xml:space="preserve"><value>不可修改</value></data>
+  <data name="Opt.Recommendation.Feature.OptionalRemove" xml:space="preserve"><value>按需禁用</value></data>
+  <data name="Opt.Recommendation.Feature.RecommendedRemove" xml:space="preserve"><value>推荐禁用</value></data>
+  <data name="Opt.Recommendation.Feature.UsuallyKeep" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Opt.Recommendation.Remove.AdvancedOnly" xml:space="preserve"><value>仅限高级用户</value></data>
+  <data name="Opt.Recommendation.Remove.NeverRemove" xml:space="preserve"><value>不可移除</value></data>
+  <data name="Opt.Recommendation.Remove.OptionalRemove" xml:space="preserve"><value>按需移除</value></data>
+  <data name="Opt.Recommendation.Remove.RecommendedRemove" xml:space="preserve"><value>推荐移除</value></data>
+  <data name="Opt.Recommendation.Remove.UsuallyKeep" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Opt.Recommendation.Service.AdvancedOnly" xml:space="preserve"><value>仅限高级用户</value></data>
+  <data name="Opt.Recommendation.Service.NeverRemove" xml:space="preserve"><value>不可修改</value></data>
+  <data name="Opt.Recommendation.Service.OptionalRemove" xml:space="preserve"><value>按需调整</value></data>
+  <data name="Opt.Recommendation.Service.RecommendedRemove" xml:space="preserve"><value>推荐调整</value></data>
+  <data name="Opt.Recommendation.Service.UsuallyKeep" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Opt.Recommendation.Unknown.AdvancedOnly" xml:space="preserve"><value>仅限高级用户</value></data>
+  <data name="Opt.Recommendation.Unknown.NeverRemove" xml:space="preserve"><value>不可修改</value></data>
+  <data name="Opt.Recommendation.Unknown.OptionalRemove" xml:space="preserve"><value>按需</value></data>
+  <data name="Opt.Recommendation.Unknown.RecommendedRemove" xml:space="preserve"><value>推荐</value></data>
+  <data name="Opt.Recommendation.Unknown.UsuallyKeep" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Opt.Scope.MountedImageFeature" xml:space="preserve"><value>离线镜像功能（DISM）</value></data>
+  <data name="Opt.Scope.OfflineAllUsers" xml:space="preserve"><value>离线镜像全部用户</value></data>
+  <data name="Opt.Scope.OfflineDefaultUser" xml:space="preserve"><value>新用户（默认用户配置文件）</value></data>
+  <data name="Opt.Scope.OfflineMachine" xml:space="preserve"><value>整机范围（离线镜像）</value></data>
+  <data name="Opt.Scope.PostInstallRequired" xml:space="preserve"><value>仅首次登录后生效——不写入镜像</value></data>
+  <data name="Opt.Scope.ProvisionedApp" xml:space="preserve"><value>离线镜像预置应用</value></data>
+  <data name="Opt.Scope.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Opt.Scope.UnsupportedOffline" xml:space="preserve"><value>离线镜像不支持</value></data>
+  <data name="Opt.Services.DiagTrack.DisplayName" xml:space="preserve"><value>连接的用户体验和遥测</value></data>
+  <data name="Opt.Services.DiagTrack.Short" xml:space="preserve"><value>Microsoft 遥测服务；注重隐私的镜像通常会禁用它</value></data>
+  <data name="Opt.Services.Lfsvc.DisplayName" xml:space="preserve"><value>地理位置服务</value></data>
+  <data name="Opt.Services.Lfsvc.Short" xml:space="preserve"><value>为应用提供当前位置；仅应用使用定位时需要</value></data>
+  <data name="Opt.Services.MapsBroker.DisplayName" xml:space="preserve"><value>已下载地图管理器</value></data>
+  <data name="Opt.Services.MapsBroker.Short" xml:space="preserve"><value>管理“地图”应用的离线地图下载；仅使用离线地图时需要</value></data>
+  <data name="Opt.Services.PcaSvc.DisplayName" xml:space="preserve"><value>程序兼容性助手服务</value></data>
+  <data name="Opt.Services.PcaSvc.Short" xml:space="preserve"><value>检测并提示兼容性问题；旧安装程序可能引发提示</value></data>
+  <data name="Opt.Services.RetailDemo.DisplayName" xml:space="preserve"><value>零售演示服务</value></data>
+  <data name="Opt.Services.RetailDemo.Short" xml:space="preserve"><value>运行零售/展台演示模式；普通电脑用不到</value></data>
+  <data name="Opt.Services.RpcSs.DisplayName" xml:space="preserve"><value>远程过程调用 (RPC)</value></data>
+  <data name="Opt.Services.RpcSs.Short" xml:space="preserve"><value>Windows 核心进程间通信基础——几乎所有组件都依赖它</value></data>
+  <data name="Opt.Services.TabletInputService.DisplayName" xml:space="preserve"><value>触摸键盘和手写面板服务</value></data>
+  <data name="Opt.Services.TabletInputService.Short" xml:space="preserve"><value>触摸键盘与手写输入；无触摸屏的台式机可设为手动</value></data>
+  <data name="Opt.Services.WMPNetworkSvc.DisplayName" xml:space="preserve"><value>Windows Media Player 网络共享</value></data>
+  <data name="Opt.Services.WMPNetworkSvc.Short" xml:space="preserve"><value>通过网络共享媒体库；仅需 WMP 共享时需要</value></data>
+  <data name="Opt.Services.WerSvc.DisplayName" xml:space="preserve"><value>Windows 错误报告服务</value></data>
+  <data name="Opt.Services.WerSvc.Short" xml:space="preserve"><value>向 Microsoft 报告崩溃；关闭可减少后台上报</value></data>
+  <data name="Opt.Services.XblAuthManager.DisplayName" xml:space="preserve"><value>Xbox Live 身份验证管理器</value></data>
+  <data name="Opt.Services.XblAuthManager.Short" xml:space="preserve"><value>Xbox Live 游戏的登录支持；仅在玩 Xbox Live 游戏时需要</value></data>
+  <data name="Opt.Services.XboxGipSvc.DisplayName" xml:space="preserve"><value>Xbox 配件管理服务</value></data>
+  <data name="Opt.Services.XboxGipSvc.Short" xml:space="preserve"><value>管理 Xbox 配件（手柄、耳机）；仅在使用 Xbox 配件时需要</value></data>
+  <data name="Opt.Services.XboxNetApiSvc.DisplayName" xml:space="preserve"><value>Xbox Live 网络服务</value></data>
+  <data name="Opt.Services.XboxNetApiSvc.Short" xml:space="preserve"><value>PC 上的 Xbox Live 网络支持；仅在玩 Xbox Live 游戏时需要</value></data>
+  <data name="Opt.StartType.Automatic" xml:space="preserve"><value>自动</value></data>
+  <data name="Opt.StartType.Boot" xml:space="preserve"><value>启动</value></data>
+  <data name="Opt.StartType.Disabled" xml:space="preserve"><value>禁用</value></data>
+  <data name="Opt.StartType.Manual" xml:space="preserve"><value>手动</value></data>
+  <data name="Opt.StartType.System" xml:space="preserve"><value>系统</value></data>
+  <data name="Opt.System.Cortana.DisplayName" xml:space="preserve"><value>消费者版 Cortana</value></data>
+  <data name="Opt.System.Cortana.Short" xml:space="preserve"><value>关闭消费者版 Cortana 集成</value></data>
+  <data name="Opt.System.DeliveryOptimization.DisplayName" xml:space="preserve"><value>传递优化下载</value></data>
+  <data name="Opt.System.DeliveryOptimization.Short" xml:space="preserve"><value>阻止 Windows 更新从网络中其他电脑下载</value></data>
+  <data name="Opt.System.DeviceMetadata.DisplayName" xml:space="preserve"><value>设备元数据下载</value></data>
+  <data name="Opt.System.DeviceMetadata.Short" xml:space="preserve"><value>阻止从网络自动下载设备元数据</value></data>
+  <data name="Opt.System.GameDvr.DisplayName" xml:space="preserve"><value>游戏 DVR 后台录制</value></data>
+  <data name="Opt.System.GameDvr.Short" xml:space="preserve"><value>阻止游戏 DVR 服务在后台录制</value></data>
+  <data name="Opt.System.Hibernation.DisplayName" xml:space="preserve"><value>休眠</value></data>
+  <data name="Opt.System.Hibernation.Short" xml:space="preserve"><value>关闭休眠（释放 hiberfil.sys；同时禁用快速启动）</value></data>
+  <data name="Opt.System.OneDriveSync.DisplayName" xml:space="preserve"><value>OneDrive 文件同步</value></data>
+  <data name="Opt.System.OneDriveSync.Short" xml:space="preserve"><value>关闭 OneDrive 文件同步（应用保留，同步关闭）</value></data>
+  <data name="Opt.System.PrintDriverDownload.DisplayName" xml:space="preserve"><value>网页打印驱动程序下载</value></data>
+  <data name="Opt.System.PrintDriverDownload.Short" xml:space="preserve"><value>不从网页自动下载打印驱动程序</value></data>
+  <data name="Opt.System.RemoteAssistance.DisplayName" xml:space="preserve"><value>远程协助邀请</value></data>
+  <data name="Opt.System.RemoteAssistance.Short" xml:space="preserve"><value>关闭远程协助邀请（远程桌面仍可用）</value></data>
+  <data name="Opt.System.Tips.DisplayName" xml:space="preserve"><value>Windows 提示/建议</value></data>
+  <data name="Opt.System.Tips.Short" xml:space="preserve"><value>抑制云端的提示与建议</value></data>
+  <data name="Opt.System.WindowsAi.DisplayName" xml:space="preserve"><value>AI 功能数据分析（Recall / Click To Do）</value></data>
+  <data name="Opt.System.WindowsAi.Short" xml:space="preserve"><value>关闭设备端 AI 数据分析（Windows AI；Windows 11 24H2 及以上）</value></data>
+  <data name="Plan.Action" xml:space="preserve"><value>操作</value></data>
+  <data name="Plan.Empty" xml:space="preserve"><value>尚未选择任何更改。</value></data>
+  <data name="Plan.Ops" xml:space="preserve"><value>已选更改</value></data>
+  <data name="Plan.Reversal" xml:space="preserve"><value>如何还原</value></data>
+  <data name="Plan.Reversal.Generic" xml:space="preserve"><value>恢复为 WinForge 记录的 Windows 默认值</value></data>
+  <data name="Plan.Scope" xml:space="preserve"><value>作用域</value></data>
+  <data name="Plan.Target" xml:space="preserve"><value>更改</value></data>
+<!-- WINFORGE_STAGE113_BLOCK_END -->
 </root>
