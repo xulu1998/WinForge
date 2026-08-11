@@ -11,6 +11,7 @@
                 <ResourceDictionary>
                     <BooleanToVisibilityConverter x:Key="BoolToVis"/>
                     <conv:NullToVisibilityConverter x:Key="NullToVis"/>
+                    <conv:StringNullOrEmptyToVisibilityConverter x:Key="NullEmptyToVis"/>
                     <conv:BooleanToVisibilityInverseConverter x:Key="BoolToVisInv"/>
                     <conv:BooleanToFontWeightConverter x:Key="BoolToBold"/>
 

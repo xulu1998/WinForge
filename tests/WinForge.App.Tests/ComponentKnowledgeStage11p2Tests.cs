@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using WinForge.App.Converters;
 using WinForge.App.Localization;
@@ -759,6 +761,121 @@ public class ComponentKnowledgeStage11p2Tests
             Assert.Equal("Recommendation.RecommendedRemove_ZH", zh.RecommendationCaption);
             Assert.NotEqual(en.RecommendationCaption, zh.RecommendationCaption);
         }
+
+        // ============================================================
+        // ADR-050 — master–detail state independence (unit level)
+        // ============================================================
+
+        [Fact]
+        public void ActiveDetail_Flag_Is_Distinct_From_Removal_Selection()
+        {
+            // The inspection highlight is driven for items that belong to the VM's
+            // list, so build a real seeded VM and use its rows.
+            var vm = BuildSeeded();
+            var item = vm.Items[0];
+
+            // Opening the detail sets ONLY the inspection flag; selection is false.
+            vm.ActiveDetail = item;
+            Assert.True(item.IsActiveDetail);
+            Assert.False(item.IsSelected);
+
+            // Toggling the removal checkbox must NOT change the inspection highlight.
+            item.IsSelected = true;
+            Assert.True(item.IsSelected);
+            Assert.True(item.IsActiveDetail);
+
+            vm.ActiveDetail = null;
+            Assert.False(item.IsActiveDetail);
+            Assert.True(item.IsSelected); // removal selection survives detail close
+        }
+
+        [Fact]
+        public void Checkbox_Toggle_Does_Not_Change_ActiveDetail()
+        {
+            var parent = ComponentKnowledgeTestFactory.Make(new AppState(), new InMemoryLoggerService());
+            var weather = new ComponentKnowledgeItem(CuratedEntry(Catalog().Single(d => d.Id == "Weather")),
+                new ResolvingLoc(), new AppState(), parent);
+            var clip = new ComponentKnowledgeItem(CuratedEntry(Catalog().Single(d => d.Id == "Clipchamp")),
+                new ResolvingLoc(), new AppState(), parent);
+
+            parent.ActiveDetail = weather;
+            // Toggle a DIFFERENT row's checkbox (removal action only).
+            clip.IsSelected = true;
+
+            Assert.Same(weather, parent.ActiveDetail); // detail unchanged
+            Assert.True(clip.IsSelected);
+        }
+
+        [Fact]
+        public void Removal_Selections_Survive_Detail_Close()
+        {
+            var parent = ComponentKnowledgeTestFactory.Make(new AppState(), new InMemoryLoggerService());
+            var weather = new ComponentKnowledgeItem(CuratedEntry(Catalog().Single(d => d.Id == "Weather")),
+                new ResolvingLoc(), new AppState(), parent);
+            var clip = new ComponentKnowledgeItem(CuratedEntry(Catalog().Single(d => d.Id == "Clipchamp")),
+                new ResolvingLoc(), new AppState(), parent);
+
+            weather.IsSelected = true;
+            clip.IsSelected = true;
+            parent.ActiveDetail = weather;
+            parent.ClearDetailCommand.Execute(null);
+
+            Assert.Null(parent.ActiveDetail);
+            Assert.True(weather.IsSelected); // selections untouched by closing detail
+            Assert.True(clip.IsSelected);
+        }
+
+        [Fact]
+        public void ActiveDetail_Closes_When_Filtered_Out_Selection_Intact()
+        {
+            var vm = BuildSeeded();
+            var weather = vm.Items.Single(i => i.Entry.Definition?.Id == "Weather");
+            weather.IsSelected = true;
+
+            vm.ActiveDetail = weather;
+            Assert.Same(weather, vm.ActiveDetail);
+
+            // Switch filter so the open detail item leaves the visible set.
+            vm.Filter = ComponentKnowledgeFilter.OptionalRemove; // Weather is RecommendedRemove
+            Assert.Null(vm.ActiveDetail);      // detail closes
+            Assert.True(weather.IsSelected);   // but its removal selection survives
+        }
+
+        [Fact]
+        public void Filter_Keeps_Detail_Open_While_Item_Visible()
+        {
+            var vm = BuildSeeded();
+            var av1 = vm.Items.Single(i => i.Entry.Definition?.Id == "AV1VideoExtension");
+
+            vm.ActiveDetail = av1;
+            vm.Filter = ComponentKnowledgeFilter.OptionalRemove; // AV1 is OptionalRemove → still visible
+            Assert.Contains(av1, vm.Items);
+            Assert.Same(av1, vm.ActiveDetail); // remains open
+
+            vm.Filter = ComponentKnowledgeFilter.RecommendedRemove; // now filtered out
+            Assert.DoesNotContain(av1, vm.Items);
+            Assert.Null(vm.ActiveDetail);
+        }
+
+        [Fact]
+        public void Blocked_Row_Can_Open_Detail_And_Checkbox_Disabled()
+        {
+            var parent = ComponentKnowledgeTestFactory.Make(new AppState(), new InMemoryLoggerService());
+            var def = new ComponentDefinition
+            {
+                Id = "Core",
+                DisplayNameKey = "Comp.Core.DisplayName",
+                Recommendation = RecommendationLevel.NeverRemove,
+                Risk = RiskLevel.Critical
+            };
+            var item = new ComponentKnowledgeItem(CuratedEntry(def), new KeyLoc(), new AppState(), parent);
+
+            // A blocked row is still inspectable (detail opens) …
+            parent.ShowDetailCommand.Execute(item);
+            Assert.Same(item, parent.ActiveDetail);
+            // … but its checkbox is disabled (no removal selection).
+            Assert.False(item.IsSelectable);
+        }
     }
 
     // ============================================================
@@ -1244,6 +1361,193 @@ public class ComponentKnowledgeStage11p2Tests
             });
         }
 
+        // ============================================================
+        // ADR-050 — master–detail row selection (no per-row Details button)
+        // ============================================================
+
+        [Fact]
+        public void Details_Button_Removed_From_Rows()
+        {
+            RunSta(() =>
+            {
+                var (view, _, list) = BuildLoadedView();
+                // No per-row Details button anywhere inside the decision list
+                // (the only remaining button is the detail-panel ✕, outside the list).
+                Assert.Null(FindVisual<Button>(list));
+            });
+        }
+
+        [Fact]
+        public void Row_Click_Opens_Detail()
+        {
+            RunSta(() =>
+            {
+                var (view, knowledge, list) = BuildLoadedView();
+                var container = Container(list, 0);
+                RaiseMouseLeftButtonUp(list, container);
+                Assert.Same(knowledge.Items[0], knowledge.ActiveDetail);
+            });
+        }
+
+        [Fact]
+        public void Row_Click_Switches_ActiveDetail_And_Stays_Open()
+        {
+            RunSta(() =>
+            {
+                var (view, knowledge, list) = BuildLoadedView();
+                RaiseMouseLeftButtonUp(list, Container(list, 0));
+                Assert.Same(knowledge.Items[0], knowledge.ActiveDetail);
+
+                RaiseMouseLeftButtonUp(list, Container(list, 1));
+                Assert.Same(knowledge.Items[1], knowledge.ActiveDetail); // switched
+
+                var detail = FindVisual<ContentControl>(view,
+                    cc => cc.GetType() == typeof(ContentControl) && cc.ContentTemplate is not null);
+                Assert.NotNull(detail);
+                Assert.Equal(Visibility.Visible, detail!.Visibility); // panel stays open
+            });
+        }
+
+        [Fact]
+        public void Row_Click_Does_Not_Change_RemovalSelected()
+        {
+            RunSta(() =>
+            {
+                var (view, knowledge, list) = BuildLoadedView();
+                knowledge.Items[0].IsSelected = true;
+                Assert.True(knowledge.Items[0].IsSelected);
+
+                // Click a DIFFERENT row to inspect it.
+                RaiseMouseLeftButtonUp(list, Container(list, 1));
+                Assert.Same(knowledge.Items[1], knowledge.ActiveDetail);
+                // The removal selection of row 0 is untouched by the inspection click.
+                Assert.True(knowledge.Items[0].IsSelected);
+            });
+        }
+
+        [Fact]
+        public void Checkbox_Click_Does_Not_Open_Detail()
+        {
+            RunSta(() =>
+            {
+                var (view, knowledge, list) = BuildLoadedView();
+                knowledge.ActiveDetail = knowledge.Items[0];
+                Assert.Same(knowledge.Items[0], knowledge.ActiveDetail);
+
+                // Click the checkbox of a different row — must NOT switch the detail.
+                var cb = FindVisual<CheckBox>(Container(list, 1));
+                Assert.NotNull(cb);
+                RaiseMouseLeftButtonUp(list, cb!);
+                Assert.Same(knowledge.Items[0], knowledge.ActiveDetail);
+            });
+        }
+
+        [Fact]
+        public void Enter_On_Row_Opens_Detail()
+        {
+            RunSta(() =>
+            {
+                var (view, knowledge, list) = BuildLoadedView();
+                using var hs = new HwndSource(new HwndSourceParameters("enter") { Width = 800, Height = 600 });
+                hs.RootVisual = view;
+                var source = PresentationSource.FromVisual(view);
+                Assert.NotNull(source);
+                RaiseKeyDown(list, Container(list, 2), source, Key.Enter);
+                Assert.Same(knowledge.Items[2], knowledge.ActiveDetail);
+            });
+        }
+
+        [Fact]
+        public void Enter_Does_Not_Toggle_Removal_Selection()
+        {
+            RunSta(() =>
+            {
+                var (view, knowledge, list) = BuildLoadedView();
+                using var hs = new HwndSource(new HwndSourceParameters("enter2") { Width = 800, Height = 600 });
+                hs.RootVisual = view;
+                var source = PresentationSource.FromVisual(view);
+                Assert.NotNull(source);
+                // Row 0 not yet selected; pressing Enter on it must open detail, not select.
+                RaiseKeyDown(list, Container(list, 0), source, Key.Enter);
+                Assert.Same(knowledge.Items[0], knowledge.ActiveDetail);
+                Assert.False(knowledge.Items[0].IsSelected);
+            });
+        }
+
+        [Fact]
+        public void No_Horizontal_Scroll_Dependency_At_Normal_Width()
+        {
+            RunSta(() =>
+            {
+                var (view, knowledge, list) = BuildLoadedView();
+                Assert.Equal(ScrollBarVisibility.Disabled,
+                    ScrollViewer.GetHorizontalScrollBarVisibility(list));
+                Assert.True(list.ActualWidth > 500, $"list width {list.ActualWidth}");
+            });
+        }
+
+        // ---- ADR-050 STA helpers ----
+
+        private static (ComponentKnowledgeView View, ComponentKnowledgeViewModel Vm, ListView List) BuildLoadedView()
+        {
+            var loc = new FakeLocalizationService();
+            InstallAppResources(loc);
+            var state = new AppState();
+            var ciVm = new ComponentIntelligenceViewModel(state, new InMemoryLoggerService(),
+                new RawInventoryCiService(MakeMatchingRawInventory()),
+                new CuratedComponentCatalog(), loc);
+            state.CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C:\wf\mount"
+            };
+            ciVm.DiscoverAsync().GetAwaiter().GetResult();
+            var knowledge = new ComponentKnowledgeViewModel(ciVm, state, new InMemoryLoggerService(), loc);
+
+            var view = new ComponentKnowledgeView { DataContext = knowledge };
+            view.Measure(new Size(1200, 700));
+            view.Arrange(new Rect(0, 0, 1200, 700));
+            view.UpdateLayout();
+
+            var list = FindVisual<ListView>(view);
+            if (list is null)
+            {
+                throw new Exception("ListView not found in visual tree");
+            }
+
+            return (view, knowledge, list);
+        }
+
+        private static ListViewItem Container(ListView list, int index)
+        {
+            list.UpdateLayout();
+            var container = list.ItemContainerGenerator.ContainerFromIndex(index) as ListViewItem;
+            if (container is null)
+            {
+                throw new Exception($"No ListViewItem container at index {index}");
+            }
+
+            return container;
+        }
+
+        private static void RaiseMouseLeftButtonUp(UIElement target, DependencyObject? source)
+        {
+            target.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+            {
+                RoutedEvent = UIElement.MouseLeftButtonUpEvent,
+                Source = source ?? target
+            });
+        }
+
+        private static void RaiseKeyDown(ListView list, ListViewItem container, PresentationSource source, Key key)
+        {
+            list.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, source, 0, key)
+            {
+                RoutedEvent = UIElement.KeyDownEvent,
+                Source = container
+            });
+        }
+
         // ---- STA + resource helpers (mirrors ComponentIntelligenceXamlLoadRegressionTests) ----
 
         private static void RunSta(Action action)
@@ -1296,6 +1600,7 @@ public class ComponentKnowledgeStage11p2Tests
             if (!res.Contains("BoolToVis")) res.Add("BoolToVis", new BooleanToVisibilityConverter());
             if (!res.Contains("BoolToVisInv")) res.Add("BoolToVisInv", new BooleanToVisibilityInverseConverter());
             if (!res.Contains("NullToVis")) res.Add("NullToVis", new NullToVisibilityConverter());
+            if (!res.Contains("NullEmptyToVis")) res.Add("NullEmptyToVis", new StringNullOrEmptyToVisibilityConverter());
             if (!res.Contains("StatusTile")) res.Add("StatusTile", new Style(typeof(Border)));
             if (!res.Contains("PrimaryButton")) res.Add("PrimaryButton", new Style(typeof(Button)));
             if (!res.Contains("FieldLabel")) res.Add("FieldLabel", new Style(typeof(TextBlock)));

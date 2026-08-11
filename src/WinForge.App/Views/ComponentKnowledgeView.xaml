@@ -44,6 +44,14 @@
                         </Border>
                     </StackPanel>
 
+                    <!-- Block reason: shown ONLY for components that cannot be removed
+                         (NeverRemove / Critical / Blocked). Selectable rows have an
+                         empty reason and stay collapsed (keeps the row to 5 columns). -->
+                    <TextBlock Margin="0,0,0,6" Foreground="#9B1C1C" FontWeight="SemiBold"
+                               Text="{Binding BlockReason}"
+                               Visibility="{Binding BlockReason, Mode=OneWay,
+                               Converter={StaticResource NullEmptyToVis}}"/>
+
                     <!-- Why is this recommended? (deterministic, curated) -->
                     <TextBlock FontWeight="SemiBold" Margin="0,4,0,2">
                         <TextBlock.Text>
@@ -224,10 +232,26 @@
             <!-- Primary decision list occupies the main content area (never squeezed). -->
             <Grid Grid.Column="0">
             <ListView ItemsSource="{Binding Items}" BorderBrush="#CBD2D9" BorderThickness="1"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto">
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      MouseLeftButtonUp="OnRowMouseLeftButtonUp"
+                      KeyDown="OnRowKeyDown"
+                      VirtualizingStackPanel.IsVirtualizing="False">
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:ComponentKnowledgeItem}">
                         <Border BorderBrush="#E4E7EB" BorderThickness="0,0,0,1" Padding="6" Margin="2">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <!-- "Currently being inspected" highlight — distinct from the
+                                             checkbox's own (removal) checked visual. -->
+                                        <DataTrigger Binding="{Binding IsActiveDetail}" Value="True">
+                                            <Setter Property="Background" Value="#E8F0FE"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
                             <Border.ToolTip>
                                 <StackPanel MaxWidth="340">
                                     <TextBlock FontWeight="Bold" Text="{Binding DisplayName}"/>
@@ -279,21 +303,6 @@
                                         Padding="6,2" CornerRadius="3" Margin="0,0,6,0" VerticalAlignment="Center">
                                     <TextBlock Foreground="White" FontSize="11" Text="{Binding RiskCaption}"/>
                                 </Border>
-                                <Button Margin="8,0,0,0" Padding="8,2"
-                                        Command="{Binding DataContext.ShowDetailCommand,
-                                                RelativeSource={RelativeSource AncestorType=ListView}}"
-                                        CommandParameter="{Binding}">
-                                    <TextBlock>
-                                        <TextBlock.Text>
-                                            <MultiBinding Converter="{StaticResource locKey}" Mode="OneWay">
-                                                <Binding Source="Knowledge.Detail"/><Binding Source="{StaticResource Loc}"/>
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                </Button>
-                                <TextBlock Foreground="#9B1C1C" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"
-                                           Text="{Binding BlockReason}" Visibility="{Binding IsSelectable, Mode=OneWay,
-                                           Converter={StaticResource BoolToVisInv}}"/>
                             </StackPanel>
                         </Border>
                     </DataTemplate>

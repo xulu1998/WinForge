@@ -94,7 +94,26 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
     public ComponentKnowledgeItem? ActiveDetail
     {
         get => _activeDetail;
-        set => SetField(ref _activeDetail, value);
+        set
+        {
+            if (SetField(ref _activeDetail, value))
+            {
+                RefreshActiveDetailFlags();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Keeps each row's <see cref="ComponentKnowledgeItem.IsActiveDetail"/> flag in
+    /// sync with the single open detail, so exactly one row shows the "currently
+    /// being inspected" highlight independent of removal selection.
+    /// </summary>
+    private void RefreshActiveDetailFlags()
+    {
+        foreach (var it in _all)
+        {
+            it.IsActiveDetail = ReferenceEquals(it, _activeDetail);
+        }
     }
 
     public ComponentKnowledgeFilter Filter
@@ -220,6 +239,14 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
             {
                 Items.Add(it);
             }
+        }
+
+        // Preferred deterministic behaviour (spec): if the item currently shown in
+        // the detail panel is no longer in the visible filtered set, close the
+        // detail panel. Removal selections are intentionally NOT touched.
+        if (_activeDetail is not null && !Items.Contains(_activeDetail))
+        {
+            ActiveDetail = null;
         }
 
         // Empty-state is derived from Items.Count; EmptyStateText also depends on

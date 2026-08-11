@@ -114,6 +114,20 @@ public sealed class ComponentKnowledgeItem : ViewModelBase
                         : string.Empty;
 
     private bool _isSelected;
+    private bool _isActiveDetail;
+
+    /// <summary>
+    /// True when this row's component is the one currently shown in the detail panel.
+    /// Drives the "currently being inspected" row highlight and is intentionally
+    /// independent of <see cref="IsSelected"/> (removal selection). The parent
+    /// <see cref="ComponentKnowledgeViewModel"/> refreshes this flag whenever
+    /// <c>ActiveDetail</c> changes.
+    /// </summary>
+    public bool IsActiveDetail
+    {
+        get => _isActiveDetail;
+        set => SetField(ref _isActiveDetail, value);
+    }
 
     /// <summary>Plan-backed selection. Setting it toggles declarative plan operations (no DISM).</summary>
     public bool IsSelected

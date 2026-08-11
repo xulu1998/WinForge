@@ -307,17 +307,19 @@ WinForge.Infrastructure  (Windows only)
 - **Customize **Apps tab** = knowledge-backed decision surface (App).** The `ComponentKnowledgeView`
   engine is **repurposed as the Apps tab** (passed as the tab `Content`; App.xaml's implicit `DataType`
   DataTemplate renders it — no duplicate View/ViewModel); the former separate "Component Knowledge" tab
-  is **removed** (ADR-048). The Apps row shows 选择 | 名称 | 作用 | 建议 | 风险 + ⓘ 详情 + 阻塞原因
-  (category dropped from the row, kept in hover/detail); raw Windows package identity is hidden from the
-  row and hover card and shown **only** in the collapsed detail / Advanced / the CI page. The view
-  presents a default **decision-oriented sort** (RecommendedRemove→OptionalRemove→UsuallyKeep→
-  AdvancedOnly→NeverRemove, then risk/category/name), filters, a compact hover quick card, an explicit
-  ⓘ 详情 detail action (keyboard/touch accessible, **without changing selection**), conservative
-  Protected/Unknown UX with explicit block reasons, official-vs-community evidence, and deterministic
-  "why" captions. **No automatic destructive selection** — the tab informs only; the user's actual plan
-  changes happen through the existing selection→plan flow (the same `appx|` op-ids `ComponentsViewModel`
-  uses). The left-rail 组件智能/Component Intelligence page is repositioned as the advanced **高级组件检查器
-  / Component Inspector** inspection surface (raw identities shown only there / in detail / Advanced).
+  is **removed** (ADR-048). The Apps row shows 选择 | 名称 | 作用 | 建议 | 风险 (category dropped from
+  the row, kept in hover/detail); raw Windows package identity is hidden from the row and hover card and
+  shown **only** in the collapsed detail / Advanced / the CI page. The view presents a default
+  **decision-oriented sort** (RecommendedRemove→OptionalRemove→UsuallyKeep→AdvancedOnly→NeverRemove,
+  then risk/category/name), filters, a compact hover quick card, and **direct master–detail row
+  selection** (ADR-050: clicking any row opens/switches the right-side detail panel; the checkbox only
+  toggles plan inclusion, so inspection and removal stay independent and keyboard-accessible via Enter),
+  conservative Protected/Unknown UX with explicit block reasons, official-vs-community evidence, and
+  deterministic "why" captions. **No automatic destructive selection** — the tab informs only; the user's
+  actual plan changes happen through the existing selection→plan flow (the same `appx|` op-ids
+  `ComponentsViewModel` uses). The left-rail 组件智能/Component Intelligence page is repositioned as the
+  advanced **高级组件检查器 / Component Inspector** inspection surface (raw identities shown only there /
+  in detail / Advanced).
   **ADR-049 real-desktop fix:** `Rebuild()` filters to `Curated && RawItems.Count > 0` (only
   present-in-image curated appear; catalog-only/absent excluded; empty before discovery); the view is a
   two-column layout (list + empty-state in Col 0, detail side panel in Col 1) with the detail
@@ -325,10 +327,13 @@ WinForge.Infrastructure  (Windows only)
   never squeezed; an explicit empty-state replaces any empty detail card; `CustomizeStepViewModel
   .DiscoverCommand` is a unified read-only pass running BOTH Components and CI knowledge discovery (one
   button, no duplicate destructive servicing).
+  **ADR-050 master–detail:** the per-row 详情 button is removed; `ListView.MouseLeftButtonUp` +
+  `KeyDown` route to `ShowDetailCommand` while `CheckBox` clicks are isolated; the active row gets a
+  distinct highlight via `IsActiveDetail`; closing detail never touches removal selection.
 - **Tests.** Stage 11.2 added 39 `ComponentKnowledgeStage11p2Tests` (Parts A–M); the UX rework
   (ADR-048) added/updated 25 regression tests; the real-desktop defect fix (ADR-049) added 8 + updated
   7 (unified non-destructive discovery, present-only curated, empty-state, detail-collapse, zh-CN
-  captions, CI inspector unchanged); full suite **542 pass (Core 53, App 489), 0 errors, 0 warnings
+  captions, CI inspector unchanged); full suite **556 pass (Core 53, App 503), 0 errors, 0 warnings
   (Release)**.
 
 See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 for the full rationale.

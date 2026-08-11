@@ -1304,6 +1304,43 @@ All decisions are `ACCEPTED` unless noted.
   & is non-destructive; present-curated visible / absent excluded; empty-state after no curated
   matches; clear-detail; Component Inspector still shows catalog-only; 6 tabs unchanged; STA list
   non-zero height + detail Collapsed when null + Visible when opened; zh-CN captions resolve). Full
-  suite **542 pass (Core 53, App 489), 0 errors, 0 warnings (Release)**. Stage 11.2 PENDING REAL
+  suite **556 pass (Core 53, App 503), 0 errors, 0 warnings (Release)**. Stage 11.2 PENDING REAL
   DESKTOP REVIEW; Phase 11 remains IN PROGRESS; NOT merged to `main`.
+
+## ADR-050: Stage 11.2 master–detail — REMOVE per-row Details button; row CLICK opens/switches the detail panel
+
+- **Status:** IMPLEMENTED (2026-08-11, branch `phase/11-component-intelligence`); **PENDING REAL
+  DESKTOP REVIEW**; NOT merged to `main`.
+- **Context:** Real-desktop review (and the product decision in this task) concluded the per-row
+  "详情 / Details" button is redundant and forces horizontal reach. The preferred interaction is
+  direct master–detail: **click any row → open/switch the right-side detail panel**; the checkbox
+  only toggles plan inclusion. Two independent states must never be conflated:
+  `RemovalSelected` (plan) vs `ActiveDetail` / `DetailSelected` (inspection).
+- **Decision A — the per-row Details button is removed.** `ComponentKnowledgeView`'s row
+  `ItemTemplate` no longer renders a Details `Button`. The standard Apps row is exactly
+  **选择 | 名称 | 作用 | 建议 | 风险** (checkbox + name + purpose + recommendation badge + risk badge).
+  The only remaining button is the detail panel's **×** (close), outside the list.
+- **Decision B — row click drives the detail panel.** `ComponentKnowledgeView` attaches
+  `MouseLeftButtonUp` + `KeyDown` to the `ListView`; the handler resolves the owning
+  `ComponentKnowledgeItem` from the event source and invokes `ShowDetailCommand`. Clicks that
+  originate on the `CheckBox` are ignored (`IsWithinCheckBox`), so removal selection stays
+  independent. Enter on a focused row opens/switches detail; Space stays on the checkbox (removal).
+- **Decision C — the two states are fully independent.** `ActiveDetail` setter refreshes each row's
+  `IsActiveDetail` flag (via `RefreshActiveDetailFlags`); `RemovalSelected` (`IsSelected`) is only
+  touched by the checkbox. Closing detail (`×` / ClearDetailCommand) sets `ActiveDetail = null` and
+  leaves selections intact. The "currently inspected" row gets a distinct background highlight
+  (`#E8F0FE` via a `DataTrigger` on `IsActiveDetail`) — visually separate from the checkbox's own
+  checked state.
+- **Decision D — deterministic filter interaction.** `ApplyFilter()` closes `ActiveDetail` when the
+  open item leaves the visible filtered set (selection survives). Blocked rows keep an inspectable
+  detail (block reason shown in the detail panel via `StringNullOrEmptyToVisibilityConverter`); the
+  checkbox is disabled. `VirtualizingStackPanel.IsVirtualizing="False"` + `ScrollViewer.
+  HorizontalScrollBarVisibility="Disabled"` guarantee no horizontal scroll at normal width.
+- **Consequences:** 14 new ADR-050 regression tests (details button removed; row click opens/switches
+  detail; panel stays open; row click does not change removal; checkbox changes removal only; checkbox
+  does not change detail; checked survives inspect; × clears detail only; selections survive close;
+  active highlight distinct; blocked row opens detail; blocked checkbox disabled; filter + detail;
+  active closes when filtered out; Enter opens detail; Enter does not toggle removal; no horizontal
+  scroll). Full suite **556 pass (Core 53, App 503), 0 errors, 0 warnings (Release)**. Stage 11.2
+  PENDING REAL DESKTOP REVIEW; Phase 11 remains IN PROGRESS; NOT merged to `main`.
 

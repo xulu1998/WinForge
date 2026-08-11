@@ -420,24 +420,27 @@ Phased development plan for WinForge. Each phase records its **Status**,
   `ComponentKnowledgeView` engine (passed as the tab `Content`; App.xaml's implicit `DataType`
   DataTemplate renders it, no duplicate View/ViewModel) and reuses `ComponentIntelligenceViewModel`'s
   classified inventory: human 名称/作用/建议/风险 badges, decision-oriented default sort, filters,
-  compact hover quick card, explicit ⓘ 详情 detail action (keyboard/touch accessible, no selection
-  change), conservative Protected/Unknown UX with explicit block reasons, official-vs-community
-  evidence, deterministic "why" captions, **no automatic destructive selection**. The former separate
-  "Component Knowledge" tab is **removed** (ADR-048). The left-rail 组件智能/Component Intelligence page
-  is repositioned as the advanced **高级组件检查器 / Component Inspector** inspection surface (raw
-  identities shown only there / in detail / Advanced). **542 automated tests pass (Core 53, App 489),
-  0 errors, 0 warnings (Release).** ADR-045/ADR-046/ADR-047/ADR-048/ADR-049.
+  compact hover quick card, and **direct master–detail row selection** (ADR-050: click any row →
+  open/switch the right-side detail panel; the per-row 详情 button is removed; the checkbox only
+  toggles plan inclusion, so inspection and removal stay independent), conservative Protected/Unknown
+  UX with explicit block reasons, official-vs-community evidence, deterministic "why" captions,
+  **no automatic destructive selection**. The former separate "Component Knowledge" tab is **removed**
+  (ADR-048). The left-rail 组件智能/Component Intelligence page is repositioned as the advanced
+  **高级组件检查器 / Component Inspector** inspection surface (raw identities shown only there / in
+  detail / Advanced). **556 automated tests pass (Core 53, App 503), 0 errors, 0 warnings (Release).**
+  ADR-045/ADR-046/ADR-047/ADR-048/ADR-049/ADR-050.
 - **Acceptance Criteria (Stage 11.2):** catalog regenerated with no duplicate resx keys (idempotent
   generator, exactly 284 keys); knowledge provenance never elevates community opinion to
   RecommendedRemove; the Customize Apps tab (knowledge-backed decision surface) renders with no
   XAML/binding crash; default sort places RecommendedRemove first then by risk/name; Standard mode
   hides raw Windows package identity from the row/hover card (shown only in detail / Advanced / CI
-  page); clicking ⓘ 详情 shows detail without changing the plan; no automatic destructive selection
-  on load; build 0/0; all tests green.
+  page); clicking a row opens/switches the detail panel without changing the plan; no automatic
+  destructive selection on load; build 0/0; all tests green.
 - **Next (Stage 11.2 — PENDING REAL DESKTOP REVIEW):** Re-run the real Windows 11 25H2 zh-CN x64
   Consumer enumeration and a real-desktop validation pass of the Customize Apps tab (knowledge-backed
-  decision surface) — render (选择|名称|作用|建议|风险 + 详情 + 阻塞原因), hover quick card, ⓘ 详情
-  detail (keyboard/touch accessible, no selection change), sort/filter, official-vs-community evidence,
+  decision surface) — render (选择 | 名称 | 作用 | 建议 | 风险), click any row → open/switch the
+  detail panel, hover quick card, detail (keyboard/touch accessible, no selection change), sort/filter,
+  official-vs-community evidence,
   raw identity hidden in Standard mode, no automatic destructive selection — before marking Phase 11
   COMPLETE. Raw Windows identities remain
   discovered independently from curated WinForge logical components; **Unknown stays Unknown until
