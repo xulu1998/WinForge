@@ -321,6 +321,10 @@
   <data name="Servicing.Msg.PrepareFailedUnexpected" xml:space="preserve"><value>准备时发生意外错误。</value></data>
   <data name="Servicing.Msg.MountFailedUnexpected" xml:space="preserve"><value>挂载时发生意外错误。</value></data>
   <data name="Servicing.Msg.UnmountFailedUnexpected" xml:space="preserve"><value>卸载时发生意外错误。</value></data>
+
+
+
+<!-- WINFORGE_CATALOG_BLOCK_START -->
   <data name="Nav.ComponentIntelligence" xml:space="preserve"><value>组件智能</value></data>
   <data name="ComponentIntelligence.Title" xml:space="preserve"><value>组件智能</value></data>
   <data name="ComponentIntelligence.Intro" xml:space="preserve"><value>了解每个 Windows 组件的作用、是否需要，以及移除后会发生什么。只读分析原型。</value></data>
@@ -390,6 +394,44 @@
   <data name="Component.NotInventoried" xml:space="preserve"><value>尚未清点</value></data>
   <data name="Component.Present" xml:space="preserve"><value>映像中存在</value></data>
   <data name="Component.ListHeader" xml:space="preserve"><value>组件</value></data>
+  <data name="Component.Why" xml:space="preserve"><value>为什么？</value></data>
+  <data name="Component.Evidence" xml:space="preserve"><value>信息来源</value></data>
+  <data name="Component.Blocked" xml:space="preserve"><value>不可移除</value></data>
+  <data name="Component.NotConfirmed" xml:space="preserve"><value>WinForge 尚未确认</value></data>
+  <data name="KnowledgeSource.MicrosoftOfficial" xml:space="preserve"><value>Microsoft 官方</value></data>
+  <data name="KnowledgeSource.WindowsImageDiscovery" xml:space="preserve"><value>当前 Windows 镜像</value></data>
+  <data name="KnowledgeSource.CommunityProject" xml:space="preserve"><value>社区参考</value></data>
+  <data name="KnowledgeSource.WinForgeCurated" xml:space="preserve"><value>WinForge 已审核</value></data>
+  <data name="KnowledgeSource.EmpiricalValidation" xml:space="preserve"><value>实证验证</value></data>
+  <data name="KnowledgeSource.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Confidence.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Confidence.Low" xml:space="preserve"><value>低</value></data>
+  <data name="Confidence.Medium" xml:space="preserve"><value>中</value></data>
+  <data name="Confidence.High" xml:space="preserve"><value>高</value></data>
+  <data name="Confidence.Verified" xml:space="preserve"><value>已核实</value></data>
+  <data name="Customize.Tab.Knowledge" xml:space="preserve"><value>组件知识</value></data>
+  <data name="Knowledge.Filter.All" xml:space="preserve"><value>全部</value></data>
+  <data name="Knowledge.Filter.RecommendedRemove" xml:space="preserve"><value>推荐精简</value></data>
+  <data name="Knowledge.Filter.OptionalRemove" xml:space="preserve"><value>可精简</value></data>
+  <data name="Knowledge.Filter.UsuallyKeep" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Knowledge.Filter.AdvancedOnly" xml:space="preserve"><value>高级</value></data>
+  <data name="Knowledge.Filter.NeverRemove" xml:space="preserve"><value>不可移除</value></data>
+  <data name="Knowledge.Detail" xml:space="preserve"><value>详情</value></data>
+  <data name="Knowledge.WhyRecommended" xml:space="preserve"><value>为什么这样建议？</value></data>
+  <data name="Knowledge.SortNote" xml:space="preserve"><value>按建议排序，再按风险排序。</value></data>
+  <data name="Knowledge.PresentInImage" xml:space="preserve"><value>存在于此映像</value></data>
+  <data name="Knowledge.CatalogOnly" xml:space="preserve"><value>目录条目（此映像未检测到）</value></data>
+  <data name="ComponentIntelligence.StatusCancelled" xml:space="preserve"><value>发现已取消。</value></data>
+  <data name="Dependency.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Dependency.Requires" xml:space="preserve"><value>需要</value></data>
+  <data name="Dependency.RequiredBy" xml:space="preserve"><value>被依赖</value></data>
+  <data name="Dependency.RelatedTo" xml:space="preserve"><value>相关</value></data>
+  <data name="Dependency.ConflictsWith" xml:space="preserve"><value>冲突</value></data>
+  <data name="Dependency.RecommendsKeeping" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Savings.None" xml:space="preserve"><value>未知</value></data>
+  <data name="Savings.Low" xml:space="preserve"><value>低</value></data>
+  <data name="Savings.Medium" xml:space="preserve"><value>中</value></data>
+  <data name="Savings.High" xml:space="preserve"><value>高</value></data>
   <data name="ComponentScenario.Unknown" xml:space="preserve"><value>未知</value></data>
   <data name="ComponentScenario.Gaming" xml:space="preserve"><value>游戏</value></data>
   <data name="ComponentScenario.Office" xml:space="preserve"><value>办公</value></data>
@@ -428,12 +470,15 @@
   <data name="Comp.GetHelp.KeepIf" xml:space="preserve"><value>你使用内置“帮助”应用联系微软支持。</value></data>
   <data name="Comp.GetHelp.RemoveIf" xml:space="preserve"><value>你从不用“帮助”应用，而是直接上网搜索。</value></data>
   <data name="Comp.GetHelp.Impact" xml:space="preserve"><value>“获取帮助”应用不可用；Windows 设置与故障排除仍然可用。</value></data>
-  <data name="Comp.XboxApp.DisplayName" xml:space="preserve"><value>Xbox</value></data>
-  <data name="Comp.XboxApp.Short" xml:space="preserve"><value>Xbox 应用及相关的游戏覆盖层/提供程序。</value></data>
-  <data name="Comp.XboxApp.Long" xml:space="preserve"><value>Xbox 应用及其游戏覆盖层与身份提供程序。与 Xbox Game Pass 和 PC 游戏相关。不玩 Xbox 的用户可安全移除。</value></data>
+  <data name="Comp.XboxApp.DisplayName" xml:space="preserve"><value>Xbox / 游戏</value></data>
+  <data name="Comp.XboxApp.Short" xml:space="preserve"><value>Xbox 应用及其游戏覆盖层、提供程序与服务。</value></data>
+  <data name="Comp.XboxApp.Long" xml:space="preserve"><value>Xbox 应用、游戏覆盖层与身份提供程序，以及 Xbox Game Pass 和 PC 游戏使用的 Gaming Services 运行时。多个 Xbox 原始标识归并为这一个逻辑组件。不玩 Xbox 的用户可安全移除。</value></data>
   <data name="Comp.XboxApp.KeepIf" xml:space="preserve"><value>你使用 Xbox Game Pass 或在此电脑上游玩 Xbox 游戏。</value></data>
   <data name="Comp.XboxApp.RemoveIf" xml:space="preserve"><value>你不使用 Xbox 应用或 PC 游戏。</value></data>
-  <data name="Comp.XboxApp.Impact" xml:space="preserve"><value>Xbox 应用、游戏覆盖层与 Xbox 登录提供程序被移除；非游戏应用不受影响。</value></data>
+  <data name="Comp.XboxApp.Impact" xml:space="preserve"><value>Xbox 应用、游戏覆盖层、Xbox 登录提供程序与 Gaming Services 被移除；非游戏应用不受影响。</value></data>
+  <data name="Comp.XboxApp.Prov0" xml:space="preserve"><value>Xbox / 游戏 包含 Xbox 应用、游戏覆盖层、身份提供程序与 Gaming Services 运行时。</value></data>
+  <data name="Comp.XboxApp.Prov1" xml:space="preserve"><value>对不使用 Xbox / PC 游戏的用户，可选移除。</value></data>
+  <data name="Comp.XboxApp.Scen.Gaming" xml:space="preserve"><value>选择“游戏”配置后保留；Xbox Game Pass 与 PC 游戏依赖它。</value></data>
   <data name="Comp.Photos.DisplayName" xml:space="preserve"><value>照片</value></data>
   <data name="Comp.Photos.Short" xml:space="preserve"><value>微软默认的照片查看器/编辑器。</value></data>
   <data name="Comp.Photos.Long" xml:space="preserve"><value>默认的照片应用。许多用户将其作为系统图片查看器；移除后系统将没有内置照片查看器（文件仍可由其他应用打开）。</value></data>
@@ -466,7 +511,7 @@
   <data name="Comp.Solitaire.Impact" xml:space="preserve"><value>纸牌合集被移除；没有任何 Windows 功能依赖它。</value></data>
   <data name="Comp.Teams.DisplayName" xml:space="preserve"><value>Microsoft Teams</value></data>
   <data name="Comp.Teams.Short" xml:space="preserve"><value>微软消费/工作版聊天与会议应用。</value></data>
-  <data name="Comp.Teams.Long" xml:space="preserve"><value>用于个人与工作沟通的 Teams。Teams 中共享的文件存储在 OneDrive 中；移除 OneDrive 前请参见依赖说明。</value></data>
+  <data name="Comp.Teams.Long" xml:space="preserve"><value>用于个人与工作沟通的 Teams。Teams 中共享的文件存储在 OneDrive 中；两者相关联（见依赖说明），但 Teams 在没有 OneDrive 时仍可正常使用。</value></data>
   <data name="Comp.Teams.KeepIf" xml:space="preserve"><value>你使用 Teams 进行聊天、通话或会议。</value></data>
   <data name="Comp.Teams.RemoveIf" xml:space="preserve"><value>你在此电脑上不使用 Teams。</value></data>
   <data name="Comp.Teams.Impact" xml:space="preserve"><value>Teams 应用被移除；网页版 Teams 仍可在浏览器中使用。</value></data>
@@ -476,18 +521,93 @@
   <data name="Comp.OneDrive.KeepIf" xml:space="preserve"><value>你依赖 OneDrive 同步或备份文件。</value></data>
   <data name="Comp.OneDrive.RemoveIf" xml:space="preserve"><value>你不使用云文件同步，仅保留本地文件。</value></data>
   <data name="Comp.OneDrive.Impact" xml:space="preserve"><value>OneDrive 同步停止；本地缓存的文件可能需要重新下载。Office 与文件资源管理器集成减弱。</value></data>
-
-  <data name="ComponentIntelligence.StatusCancelled" xml:space="preserve"><value>发现已取消。</value></data>
-
-  <data name="Dependency.Unknown" xml:space="preserve"><value>未知</value></data>
-  <data name="Dependency.Requires" xml:space="preserve"><value>需要</value></data>
-  <data name="Dependency.RequiredBy" xml:space="preserve"><value>被依赖</value></data>
-  <data name="Dependency.RelatedTo" xml:space="preserve"><value>相关</value></data>
-  <data name="Dependency.ConflictsWith" xml:space="preserve"><value>冲突</value></data>
-  <data name="Dependency.RecommendsKeeping" xml:space="preserve"><value>建议保留</value></data>
-
-  <data name="Savings.None" xml:space="preserve"><value>未知</value></data>
-  <data name="Savings.Low" xml:space="preserve"><value>低</value></data>
-  <data name="Savings.Medium" xml:space="preserve"><value>中</value></data>
-  <data name="Savings.High" xml:space="preserve"><value>高</value></data>
+  <data name="Comp.AV1VideoExtension.DisplayName" xml:space="preserve"><value>AV1 视频扩展</value></data>
+  <data name="Comp.AV1VideoExtension.Short" xml:space="preserve"><value>让 Windows 播放 AV1 编码视频的编解码器。</value></data>
+  <data name="Comp.AV1VideoExtension.Long" xml:space="preserve"><value>提供 AV1 硬件/软件播放能力。可选：大多数内容仍可通过其他编解码器播放；移除仅影响 AV1 播放。</value></data>
+  <data name="Comp.AV1VideoExtension.KeepIf" xml:space="preserve"><value>你观看 AV1 视频或需要最完整的编解码支持。</value></data>
+  <data name="Comp.AV1VideoExtension.RemoveIf" xml:space="preserve"><value>你不播放 AV1 视频并希望释放空间。</value></data>
+  <data name="Comp.AV1VideoExtension.Impact" xml:space="preserve"><value>AV1 视频无法播放（其他格式不受影响）。</value></data>
+  <data name="Comp.AV1VideoExtension.Prov0" xml:space="preserve"><value>AV1 视频扩展提供 AV1 媒体播放支持。</value></data>
+  <data name="Comp.AV1VideoExtension.Prov1" xml:space="preserve"><value>对不播放 AV1 视频的用户，可选移除。</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.DisplayName" xml:space="preserve"><value>AVC 编码器视频扩展</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Short" xml:space="preserve"><value>让应用编码 H.264/AVC 视频的编解码器。</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Long" xml:space="preserve"><value>提供部分录制/分享应用使用的 AVC 编码能力。可选：移除仅影响依赖此特定编码器的应用。</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.KeepIf" xml:space="preserve"><value>你使用编码 AVC 视频的录屏/捕获应用。</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.RemoveIf" xml:space="preserve"><value>你不使用 AVC 编码应用。</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Impact" xml:space="preserve"><value>依赖 AVC 编码器的应用可能失去导出选项。</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Prov0" xml:space="preserve"><value>AVC 编码器视频扩展提供 H.264/AVC 视频编码。</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Prov1" xml:space="preserve"><value>对不编码 AVC 视频的用户，可选移除。</value></data>
+  <data name="Comp.BingNews.DisplayName" xml:space="preserve"><value>微软新闻</value></data>
+  <data name="Comp.BingNews.Short" xml:space="preserve"><value>微软新闻聚合应用。</value></data>
+  <data name="Comp.BingNews.Long" xml:space="preserve"><value>面向消费者的新闻阅读应用。纯可选；没有任何 Windows 功能依赖它。</value></data>
+  <data name="Comp.BingNews.KeepIf" xml:space="preserve"><value>你在内置应用中阅读新闻。</value></data>
+  <data name="Comp.BingNews.RemoveIf" xml:space="preserve"><value>你从不用新闻应用。</value></data>
+  <data name="Comp.BingNews.Impact" xml:space="preserve"><value>新闻应用不可用；网页新闻仍可用。</value></data>
+  <data name="Comp.BingNews.Prov0" xml:space="preserve"><value>微软新闻是面向消费者的新闻聚合应用，为新用户预置。</value></data>
+  <data name="Comp.BingNews.Prov1" xml:space="preserve"><value>可选移除；无系统依赖。</value></data>
+  <data name="Comp.BingSearch.DisplayName" xml:space="preserve"><value>搜索（Bing）</value></data>
+  <data name="Comp.BingSearch.Short" xml:space="preserve"><value>开始菜单与任务栏搜索所用的 Windows 搜索 / Bing 应用。</value></data>
+  <data name="Comp.BingSearch.Long" xml:space="preserve"><value>提供 Windows 搜索中的网页结果。本地文件/设置搜索是独立的系统服务，移除后仍可用；仅网页层受影响。</value></data>
+  <data name="Comp.BingSearch.KeepIf" xml:space="preserve"><value>你依赖 Windows 搜索中的网页结果。</value></data>
+  <data name="Comp.BingSearch.RemoveIf" xml:space="preserve"><value>你只搜索本地文件与设置。</value></data>
+  <data name="Comp.BingSearch.Impact" xml:space="preserve"><value>Windows 搜索中的网页结果消失；本地搜索不受影响。</value></data>
+  <data name="Comp.BingSearch.Prov0" xml:space="preserve"><value>Bing 搜索在 Windows 搜索体验中提供网页结果。</value></data>
+  <data name="Comp.BingSearch.Prov1" xml:space="preserve"><value>可选移除；本地搜索仍可用。</value></data>
+  <data name="Comp.Calculator.DisplayName" xml:space="preserve"><value>计算器</value></data>
+  <data name="Comp.Calculator.Short" xml:space="preserve"><value>微软计算器应用。</value></data>
+  <data name="Comp.Calculator.Long" xml:space="preserve"><value>广泛使用的工具。可以移除，但许多用户依赖它；除非用其他计算器替代，否则建议保留。</value></data>
+  <data name="Comp.Calculator.KeepIf" xml:space="preserve"><value>你经常使用内置计算器。</value></data>
+  <data name="Comp.Calculator.RemoveIf" xml:space="preserve"><value>你使用其他计算器应用。</value></data>
+  <data name="Comp.Calculator.Impact" xml:space="preserve"><value>计算器应用被移除；无系统功能依赖它。</value></data>
+  <data name="Comp.Calculator.Prov0" xml:space="preserve"><value>计算器是许多用户使用的内置工具应用。</value></data>
+  <data name="Comp.Calculator.Prov1" xml:space="preserve"><value>通常保留；移除安全但许多用户会感到意外。</value></data>
+  <data name="Comp.Notepad.DisplayName" xml:space="preserve"><value>记事本</value></data>
+  <data name="Comp.Notepad.Short" xml:space="preserve"><value>微软纯文本编辑器。</value></data>
+  <data name="Comp.Notepad.Long" xml:space="preserve"><value>许多用户与脚本依赖的经典工具。除非替代，否则建议保留。</value></data>
+  <data name="Comp.Notepad.KeepIf" xml:space="preserve"><value>你或你的脚本使用记事本。</value></data>
+  <data name="Comp.Notepad.RemoveIf" xml:space="preserve"><value>你只用其他文本编辑器。</value></data>
+  <data name="Comp.Notepad.Impact" xml:space="preserve"><value>记事本被移除；许多用户与工具依赖它。</value></data>
+  <data name="Comp.Notepad.Prov0" xml:space="preserve"><value>记事本是许多用户与脚本依赖的内置纯文本编辑器。</value></data>
+  <data name="Comp.Notepad.Prov1" xml:space="preserve"><value>通常保留；移除安全但普遍令人意外。</value></data>
+  <data name="Comp.Paint.DisplayName" xml:space="preserve"><value>画图</value></data>
+  <data name="Comp.Paint.Short" xml:space="preserve"><value>微软经典位图图像编辑器。</value></data>
+  <data name="Comp.Paint.Long" xml:space="preserve"><value>熟悉的绘图工具。可选：存在替代（Paint.NET、照片）；移除仅影响该应用本身。</value></data>
+  <data name="Comp.Paint.KeepIf" xml:space="preserve"><value>你使用画图进行快速图片编辑。</value></data>
+  <data name="Comp.Paint.RemoveIf" xml:space="preserve"><value>你使用其他图像编辑器。</value></data>
+  <data name="Comp.Paint.Impact" xml:space="preserve"><value>画图被移除；图片文件仍可由其他应用打开。</value></data>
+  <data name="Comp.Paint.Prov0" xml:space="preserve"><value>画图是 Windows 自带的经典位图图像编辑器。</value></data>
+  <data name="Comp.Paint.Prov1" xml:space="preserve"><value>可选移除；存在替代。</value></data>
+  <data name="Comp.Terminal.DisplayName" xml:space="preserve"><value>Windows 终端</value></data>
+  <data name="Comp.Terminal.Short" xml:space="preserve"><value>微软现代多标签页终端。</value></data>
+  <data name="Comp.Terminal.Long" xml:space="preserve"><value>开发者与 IT 人员偏好的终端。除非使用其他终端，否则建议保留；移除安全但对高级用户不便。</value></data>
+  <data name="Comp.Terminal.KeepIf" xml:space="preserve"><value>你使用 Windows 终端进行命令行工作。</value></data>
+  <data name="Comp.Terminal.RemoveIf" xml:space="preserve"><value>你使用其他终端模拟器。</value></data>
+  <data name="Comp.Terminal.Impact" xml:space="preserve"><value>Windows 终端被移除；经典控制台宿主仍可用。</value></data>
+  <data name="Comp.Terminal.Prov0" xml:space="preserve"><value>Windows 终端是 Windows 的现代多标签页终端。</value></data>
+  <data name="Comp.Terminal.Prov1" xml:space="preserve"><value>通常保留；对开发者很有价值。</value></data>
+  <data name="Comp.ToDo.DisplayName" xml:space="preserve"><value>Microsoft To Do</value></data>
+  <data name="Comp.ToDo.Short" xml:space="preserve"><value>微软任务 / 待办事项应用。</value></data>
+  <data name="Comp.ToDo.Long" xml:space="preserve"><value>面向消费者的生产力应用。可选；没有任何 Windows 功能依赖它。</value></data>
+  <data name="Comp.ToDo.KeepIf" xml:space="preserve"><value>你在 Microsoft To Do 中管理任务。</value></data>
+  <data name="Comp.ToDo.RemoveIf" xml:space="preserve"><value>你使用其他任务应用。</value></data>
+  <data name="Comp.ToDo.Impact" xml:space="preserve"><value>Microsoft To Do 被移除；网页/手机版仍可用。</value></data>
+  <data name="Comp.ToDo.Prov0" xml:space="preserve"><value>Microsoft To Do 是面向消费者的任务管理应用。</value></data>
+  <data name="Comp.ToDo.Prov1" xml:space="preserve"><value>可选移除；无系统依赖。</value></data>
+  <data name="Comp.QuickAssist.DisplayName" xml:space="preserve"><value>快速助手</value></data>
+  <data name="Comp.QuickAssist.Short" xml:space="preserve"><value>微软用于提供/接受远程帮助的应用。</value></data>
+  <data name="Comp.QuickAssist.Long" xml:space="preserve"><value>让协助者查看并控制屏幕以提供帮助。可选；正常使用或标准远程桌面不需要它。</value></data>
+  <data name="Comp.QuickAssist.KeepIf" xml:space="preserve"><value>你（或帮助台）使用快速助手进行远程协助。</value></data>
+  <data name="Comp.QuickAssist.RemoveIf" xml:space="preserve"><value>你从不用远程协助。</value></data>
+  <data name="Comp.QuickAssist.Impact" xml:space="preserve"><value>快速助手被移除；标准远程桌面不受影响。</value></data>
+  <data name="Comp.QuickAssist.Prov0" xml:space="preserve"><value>快速助手提供用于远程协助的屏幕查看/控制共享。</value></data>
+  <data name="Comp.QuickAssist.Prov1" xml:space="preserve"><value>可选移除；正常使用不需要。</value></data>
+  <data name="Comp.DesktopAppInstaller.DisplayName" xml:space="preserve"><value>应用安装程序（winget）</value></data>
+  <data name="Comp.DesktopAppInstaller.Short" xml:space="preserve"><value>提供 winget 包管理器与 .msix/.appx 安装程序。</value></data>
+  <data name="Comp.DesktopAppInstaller.Long" xml:space="preserve"><value>承载 winget 与 AppX/MSIX 安装程序。移除会破坏包管理与基于应用商店的安装；视为“有条件”，除非有理由否则保留。</value></data>
+  <data name="Comp.DesktopAppInstaller.KeepIf" xml:space="preserve"><value>你使用 winget 或安装 .msix/.appx 程序包。</value></data>
+  <data name="Comp.DesktopAppInstaller.RemoveIf" xml:space="preserve"><value>你从不用 winget 或旁加载程序包。</value></data>
+  <data name="Comp.DesktopAppInstaller.Impact" xml:space="preserve"><value>winget 与 AppX/MSIX 安装不可用；部分安装会失败。</value></data>
+  <data name="Comp.DesktopAppInstaller.Prov0" xml:space="preserve"><value>应用安装程序提供 winget 包管理器与 MSIX/AppX 安装程序。</value></data>
+  <data name="Comp.DesktopAppInstaller.Prov1" xml:space="preserve"><value>通常保留；移除会破坏包管理。</value></data>
+<!-- WINFORGE_CATALOG_BLOCK_END -->
 </root>

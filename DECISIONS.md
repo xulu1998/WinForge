@@ -1170,3 +1170,40 @@ All decisions are `ACCEPTED` unless noted.
   checkboxes. Status: **REAL DESKTOP VALIDATED**; Stage 11.1 is REAL DESKTOP VALIDATED; Phase 11
   remains IN PROGRESS (Stage 11.2 NOT STARTED, not merged to `main`).
 
+## ADR-047: Knowledge provenance — separate FACT from RECOMMENDATION; community opinion never auto-promotes to RecommendedRemove
+
+- **Status:** **IMPLEMENTED** (2026-08-10); on branch `phase/11-component-intelligence`; **NOT merged
+  to `main`**; Stage 11.2 PENDING REAL DESKTOP REVIEW.
+- **Context:** Stage 11.2 imports curated + official + community knowledge to make components
+  actionable for ordinary users. The risk: a community "debloat" list (e.g. Win11Debloat) is an
+  *opinion* that a component is removable; if imported as a WinForge `RecommendedRemove` fact, WinForge
+  would assertively tell users to remove something on the basis of an unvetted third-party script. That
+  conflates evidence-backed WinForge curation with community opinion and creates a false-authority UX.
+  Additionally, mixing a verified `Fact` (e.g. "Xbox Game Bar is a gaming capture tool") with a
+  `Recommendation` (e.g. "you may remove it") in one field makes the UI unable to show *why* a
+  recommendation exists or let the user weigh official vs community evidence.
+- **Decision A — `Fact` and `Recommendation` are distinct claim kinds.** `KnowledgeClaim.Kind` is
+  `Fact` or `Recommendation`. A `Fact` is a verified, non-opinion statement about the component
+  (identity, purpose, what breaks if removed, restore availability). A `Recommendation` is opinionated
+  remove/keep guidance carrying a `KnowledgeSource`. The UI surfaces `Fact`s as established knowledge
+  and `Recommendation`s as guidance tagged by source. A `Recommendation` can **never** be upgraded into
+  a `Fact`.
+- **Decision B — community opinion never becomes WinForge `RecommendedRemove`.** `KnowledgeImportPipeline`
+  ingests community adapters (`Win11DebloatCommunityAdapter`) as `CommunityProposal` candidates. A
+  `CommunityProposal` is **never** promoted into `EffectiveRecommendation` and is **never** auto-promoted
+  to `Curated`. It is surfaced only as *community evidence* in the Customize Component Knowledge tab
+  (informational, clearly sourced). Only `WinForgeCurated` / `MicrosoftOfficial` / `WindowsImageDiscovery`
+  claims may drive an official `EffectiveRecommendation` after review. Candidates never auto-promote to
+  `Curated`; `Deprecated` entries are excluded on merge; merge is de-duplicated by target.
+- **Decision C — provenance is per-claim and surfaced in the UI.** Every `Recommendation` carries its
+  `KnowledgeSource` (Curated / MicrosoftOfficial / WindowsImageDiscovery / Community). The Customize
+  Component Knowledge tab renders official-vs-community evidence separately and shows deterministic
+  "why" captions, so the user can weigh sources. The Component Intelligence page remains the advanced
+  inspection surface; the Customize tab is the ordinary-user primary path.
+- **Consequences:** 39 new `ComponentKnowledgeStage11p2Tests` guard the separation (community
+  `EffectiveRecommendation = Unknown` is not elevated; `PromoteToCurated` rejects community; candidates
+  never auto-Curated; merge de-dup; `Deprecated` excluded). The product can never assert a removal it
+  doesn't itself stand behind. Full suite **530 pass (Core 53, App 477), 0 errors, 0 warnings (Release)**.
+  Stage 11.2 PENDING REAL DESKTOP REVIEW; Phase 11 remains IN PROGRESS; NOT merged to `main`.
+  remains IN PROGRESS (Stage 11.2 NOT STARTED, not merged to `main`).
+

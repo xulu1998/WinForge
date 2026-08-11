@@ -19,7 +19,8 @@ public enum CustomizeTabKind
     ComponentList,
     Privacy,
     System,
-    Experience
+    Experience,
+    Knowledge
 }
 
 /// <summary>
@@ -109,12 +110,14 @@ public sealed class CustomizeStepViewModel : ViewModelBase
         ComponentsViewModel components,
         PrivacyViewModel privacy,
         SystemViewModel system,
-        ComingSoonViewModel experience)
+        ComingSoonViewModel experience,
+        ComponentKnowledgeViewModel knowledge)
     {
         Components = components;
         Privacy = privacy;
         System = system;
         Experience = experience;
+        Knowledge = knowledge;
         DiscoverCommand = components.DiscoverCommand;
 
         Tabs = new ObservableCollection<CustomizeTabViewModel>
@@ -128,6 +131,7 @@ public sealed class CustomizeStepViewModel : ViewModelBase
             new CustomizeTabViewModel("Customize.Tab.Services",
                 new ComponentListTabViewModel(components, ComponentListKind.Services, "Customize.Tab.Services"),
                 CustomizeTabKind.ComponentList),
+            new CustomizeTabViewModel("Customize.Tab.Knowledge", knowledge, CustomizeTabKind.Knowledge),
             new CustomizeTabViewModel("Customize.Tab.Privacy", privacy, CustomizeTabKind.Privacy),
             new CustomizeTabViewModel("Customize.Tab.System", system, CustomizeTabKind.System),
             new CustomizeTabViewModel("Customize.Tab.Experience", experience, CustomizeTabKind.Experience),
@@ -135,4 +139,8 @@ public sealed class CustomizeStepViewModel : ViewModelBase
 
         SelectedTab = Tabs[0];
     }
+
+    /// <summary>The Component Knowledge tab (Stage 11.2): the Component Intelligence
+    /// knowledge engine surfaced inside Customize as the primary end-user decision aid.</summary>
+    public ComponentKnowledgeViewModel Knowledge { get; }
 }

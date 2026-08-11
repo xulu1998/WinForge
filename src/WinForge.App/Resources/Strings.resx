@@ -321,6 +321,10 @@
   <data name="Servicing.Msg.PrepareFailedUnexpected" xml:space="preserve"><value>Preparation failed unexpectedly.</value></data>
   <data name="Servicing.Msg.MountFailedUnexpected" xml:space="preserve"><value>Mount failed unexpectedly.</value></data>
   <data name="Servicing.Msg.UnmountFailedUnexpected" xml:space="preserve"><value>Unmount failed unexpectedly.</value></data>
+
+
+
+<!-- WINFORGE_CATALOG_BLOCK_START -->
   <data name="Nav.ComponentIntelligence" xml:space="preserve"><value>Component Intelligence</value></data>
   <data name="ComponentIntelligence.Title" xml:space="preserve"><value>Component Intelligence</value></data>
   <data name="ComponentIntelligence.Intro" xml:space="preserve"><value>Understand what each Windows component does, whether you need it, and what happens if you remove it. Read-only analysis prototype.</value></data>
@@ -390,6 +394,44 @@
   <data name="Component.NotInventoried" xml:space="preserve"><value>Not yet inventoried</value></data>
   <data name="Component.Present" xml:space="preserve"><value>Present in image</value></data>
   <data name="Component.ListHeader" xml:space="preserve"><value>Components</value></data>
+  <data name="Component.Why" xml:space="preserve"><value>Why?</value></data>
+  <data name="Component.Evidence" xml:space="preserve"><value>Evidence</value></data>
+  <data name="Component.Blocked" xml:space="preserve"><value>Cannot be removed</value></data>
+  <data name="Component.NotConfirmed" xml:space="preserve"><value>WinForge has not confirmed this</value></data>
+  <data name="KnowledgeSource.MicrosoftOfficial" xml:space="preserve"><value>Microsoft official</value></data>
+  <data name="KnowledgeSource.WindowsImageDiscovery" xml:space="preserve"><value>Current Windows image</value></data>
+  <data name="KnowledgeSource.CommunityProject" xml:space="preserve"><value>Community reference</value></data>
+  <data name="KnowledgeSource.WinForgeCurated" xml:space="preserve"><value>WinForge reviewed</value></data>
+  <data name="KnowledgeSource.EmpiricalValidation" xml:space="preserve"><value>Empirical validation</value></data>
+  <data name="KnowledgeSource.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Confidence.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Confidence.Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Confidence.Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="Confidence.High" xml:space="preserve"><value>High</value></data>
+  <data name="Confidence.Verified" xml:space="preserve"><value>Verified</value></data>
+  <data name="Customize.Tab.Knowledge" xml:space="preserve"><value>Component Knowledge</value></data>
+  <data name="Knowledge.Filter.All" xml:space="preserve"><value>All</value></data>
+  <data name="Knowledge.Filter.RecommendedRemove" xml:space="preserve"><value>Recommended remove</value></data>
+  <data name="Knowledge.Filter.OptionalRemove" xml:space="preserve"><value>Optional remove</value></data>
+  <data name="Knowledge.Filter.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
+  <data name="Knowledge.Filter.AdvancedOnly" xml:space="preserve"><value>Advanced</value></data>
+  <data name="Knowledge.Filter.NeverRemove" xml:space="preserve"><value>Do not remove</value></data>
+  <data name="Knowledge.Detail" xml:space="preserve"><value>Details</value></data>
+  <data name="Knowledge.WhyRecommended" xml:space="preserve"><value>Why is this recommended?</value></data>
+  <data name="Knowledge.SortNote" xml:space="preserve"><value>Sorted by recommendation, then risk.</value></data>
+  <data name="Knowledge.PresentInImage" xml:space="preserve"><value>Present in this image</value></data>
+  <data name="Knowledge.CatalogOnly" xml:space="preserve"><value>Catalog entry (not detected in this image)</value></data>
+  <data name="ComponentIntelligence.StatusCancelled" xml:space="preserve"><value>Discovery was cancelled.</value></data>
+  <data name="Dependency.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Dependency.Requires" xml:space="preserve"><value>Requires</value></data>
+  <data name="Dependency.RequiredBy" xml:space="preserve"><value>Required by</value></data>
+  <data name="Dependency.RelatedTo" xml:space="preserve"><value>Related to</value></data>
+  <data name="Dependency.ConflictsWith" xml:space="preserve"><value>Conflicts with</value></data>
+  <data name="Dependency.RecommendsKeeping" xml:space="preserve"><value>Recommends keeping</value></data>
+  <data name="Savings.None" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Savings.Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Savings.Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="Savings.High" xml:space="preserve"><value>High</value></data>
   <data name="ComponentScenario.Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="ComponentScenario.Gaming" xml:space="preserve"><value>Gaming</value></data>
   <data name="ComponentScenario.Office" xml:space="preserve"><value>Office</value></data>
@@ -428,12 +470,15 @@
   <data name="Comp.GetHelp.KeepIf" xml:space="preserve"><value>You use the built-in Help app to reach Microsoft support.</value></data>
   <data name="Comp.GetHelp.RemoveIf" xml:space="preserve"><value>You never use the Help app and search the web instead.</value></data>
   <data name="Comp.GetHelp.Impact" xml:space="preserve"><value>The Get Help app is unavailable. Windows Settings and troubleshooting remain.</value></data>
-  <data name="Comp.XboxApp.DisplayName" xml:space="preserve"><value>Xbox</value></data>
-  <data name="Comp.XboxApp.Short" xml:space="preserve"><value>Xbox app and related gaming overlays/providers.</value></data>
-  <data name="Comp.XboxApp.Long" xml:space="preserve"><value>The Xbox app plus its gaming overlay and identity provider. Relevant to Xbox Game Pass and PC gaming. Removal is safe for users who do not game on Xbox.</value></data>
+  <data name="Comp.XboxApp.DisplayName" xml:space="preserve"><value>Xbox / Gaming</value></data>
+  <data name="Comp.XboxApp.Short" xml:space="preserve"><value>Xbox app plus gaming overlays, providers and services.</value></data>
+  <data name="Comp.XboxApp.Long" xml:space="preserve"><value>The Xbox app, game overlay and identity provider, plus the Gaming Services runtime used by Xbox Game Pass and PC games. Several raw Xbox identities collapse into this one logical component. Removal is safe for users who do not game on Xbox.</value></data>
   <data name="Comp.XboxApp.KeepIf" xml:space="preserve"><value>You use Xbox Game Pass or play Xbox titles on this PC.</value></data>
   <data name="Comp.XboxApp.RemoveIf" xml:space="preserve"><value>You do not use Xbox apps or PC gaming.</value></data>
-  <data name="Comp.XboxApp.Impact" xml:space="preserve"><value>Xbox app, game overlay and Xbox sign-in provider are removed. Non-gaming apps are unaffected.</value></data>
+  <data name="Comp.XboxApp.Impact" xml:space="preserve"><value>Xbox app, game overlay, Xbox sign-in provider and Gaming Services are removed. Non-gaming apps are unaffected.</value></data>
+  <data name="Comp.XboxApp.Prov0" xml:space="preserve"><value>Xbox / Gaming bundles the Xbox app, game overlay, identity provider and Gaming Services runtime.</value></data>
+  <data name="Comp.XboxApp.Prov1" xml:space="preserve"><value>Optional to remove for users who do not use Xbox / PC gaming.</value></data>
+  <data name="Comp.XboxApp.Scen.Gaming" xml:space="preserve"><value>Kept because you selected a Gaming profile; Xbox Game Pass and PC gaming depend on it.</value></data>
   <data name="Comp.Photos.DisplayName" xml:space="preserve"><value>Photos</value></data>
   <data name="Comp.Photos.Short" xml:space="preserve"><value>Microsoft's default photo viewer/editor.</value></data>
   <data name="Comp.Photos.Long" xml:space="preserve"><value>The default Photos app. Many users rely on it as the shell image viewer; removing it leaves the OS without a built-in photo viewer (files still open via other apps).</value></data>
@@ -466,7 +511,7 @@
   <data name="Comp.Solitaire.Impact" xml:space="preserve"><value>The Solitaire Collection is removed. No Windows function depends on it.</value></data>
   <data name="Comp.Teams.DisplayName" xml:space="preserve"><value>Microsoft Teams</value></data>
   <data name="Comp.Teams.Short" xml:space="preserve"><value>Microsoft's consumer/work chat and meetings app.</value></data>
-  <data name="Comp.Teams.Long" xml:space="preserve"><value>Teams for personal and work communication. Files shared in Teams are stored in OneDrive; see the dependency note before removing OneDrive.</value></data>
+  <data name="Comp.Teams.Long" xml:space="preserve"><value>Teams for personal and work communication. Files shared in Teams are stored in OneDrive; the two are associated (see the dependency note) but Teams works without OneDrive.</value></data>
   <data name="Comp.Teams.KeepIf" xml:space="preserve"><value>You use Teams for chat, calls or meetings.</value></data>
   <data name="Comp.Teams.RemoveIf" xml:space="preserve"><value>You do not use Teams on this PC.</value></data>
   <data name="Comp.Teams.Impact" xml:space="preserve"><value>The Teams app is removed. Web Teams still works in a browser.</value></data>
@@ -476,18 +521,93 @@
   <data name="Comp.OneDrive.KeepIf" xml:space="preserve"><value>You rely on OneDrive to sync or back up your files.</value></data>
   <data name="Comp.OneDrive.RemoveIf" xml:space="preserve"><value>You do not use cloud file sync and keep files local only.</value></data>
   <data name="Comp.OneDrive.Impact" xml:space="preserve"><value>OneDrive sync stops; locally cached files may need re-downloading. Office and shell integration are reduced.</value></data>
-
-  <data name="ComponentIntelligence.StatusCancelled" xml:space="preserve"><value>Discovery was cancelled.</value></data>
-
-  <data name="Dependency.Unknown" xml:space="preserve"><value>Unknown</value></data>
-  <data name="Dependency.Requires" xml:space="preserve"><value>Requires</value></data>
-  <data name="Dependency.RequiredBy" xml:space="preserve"><value>Required by</value></data>
-  <data name="Dependency.RelatedTo" xml:space="preserve"><value>Related to</value></data>
-  <data name="Dependency.ConflictsWith" xml:space="preserve"><value>Conflicts with</value></data>
-  <data name="Dependency.RecommendsKeeping" xml:space="preserve"><value>Recommends keeping</value></data>
-
-  <data name="Savings.None" xml:space="preserve"><value>Unknown</value></data>
-  <data name="Savings.Low" xml:space="preserve"><value>Low</value></data>
-  <data name="Savings.Medium" xml:space="preserve"><value>Medium</value></data>
-  <data name="Savings.High" xml:space="preserve"><value>High</value></data>
+  <data name="Comp.AV1VideoExtension.DisplayName" xml:space="preserve"><value>AV1 Video Extension</value></data>
+  <data name="Comp.AV1VideoExtension.Short" xml:space="preserve"><value>Codec that lets Windows play AV1-encoded video.</value></data>
+  <data name="Comp.AV1VideoExtension.Long" xml:space="preserve"><value>Provides AV1 hardware/software playback. Optional: most content still plays via other codecs; removing it only affects AV1 playback.</value></data>
+  <data name="Comp.AV1VideoExtension.KeepIf" xml:space="preserve"><value>You watch AV1 video or need maximum codec coverage.</value></data>
+  <data name="Comp.AV1VideoExtension.RemoveIf" xml:space="preserve"><value>You do not play AV1 video and want to free space.</value></data>
+  <data name="Comp.AV1VideoExtension.Impact" xml:space="preserve"><value>AV1 video will not play (other formats are unaffected).</value></data>
+  <data name="Comp.AV1VideoExtension.Prov0" xml:space="preserve"><value>AV1 Video Extension provides AV1 media playback support.</value></data>
+  <data name="Comp.AV1VideoExtension.Prov1" xml:space="preserve"><value>Optional to remove for users who do not play AV1 video.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.DisplayName" xml:space="preserve"><value>AVC Encoder Video Extension</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Short" xml:space="preserve"><value>Codec that lets apps encode H.264/AVC video.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Long" xml:space="preserve"><value>Provides AVC encoding used by some capture/share apps. Optional: removing it only affects apps that depend on this specific encoder.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.KeepIf" xml:space="preserve"><value>You use screen/capture apps that encode AVC video.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.RemoveIf" xml:space="preserve"><value>You do not use AVC encoding apps.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Impact" xml:space="preserve"><value>Apps relying on the AVC encoder may lose export options.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Prov0" xml:space="preserve"><value>AVC Encoder Video Extension provides H.264/AVC video encoding.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Prov1" xml:space="preserve"><value>Optional to remove for users who do not encode AVC video.</value></data>
+  <data name="Comp.BingNews.DisplayName" xml:space="preserve"><value>Microsoft News</value></data>
+  <data name="Comp.BingNews.Short" xml:space="preserve"><value>Microsoft's news aggregation app.</value></data>
+  <data name="Comp.BingNews.Long" xml:space="preserve"><value>A consumer news reader. Purely optional; no Windows feature depends on it.</value></data>
+  <data name="Comp.BingNews.KeepIf" xml:space="preserve"><value>You read news in the built-in app.</value></data>
+  <data name="Comp.BingNews.RemoveIf" xml:space="preserve"><value>You never use the News app.</value></data>
+  <data name="Comp.BingNews.Impact" xml:space="preserve"><value>The News app is unavailable. Web news still works.</value></data>
+  <data name="Comp.BingNews.Prov0" xml:space="preserve"><value>Microsoft News is a consumer news aggregation app provisioned for new users.</value></data>
+  <data name="Comp.BingNews.Prov1" xml:space="preserve"><value>Optional to remove; no system dependency.</value></data>
+  <data name="Comp.BingSearch.DisplayName" xml:space="preserve"><value>Search (Bing)</value></data>
+  <data name="Comp.BingSearch.Short" xml:space="preserve"><value>The Windows Search / Bing app used by Start and taskbar search.</value></data>
+  <data name="Comp.BingSearch.Long" xml:space="preserve"><value>Provides web results inside Windows Search. Local file/settings search is a separate OS service and continues to work after removal; only the web layer is affected.</value></data>
+  <data name="Comp.BingSearch.KeepIf" xml:space="preserve"><value>You rely on web results inside Windows Search.</value></data>
+  <data name="Comp.BingSearch.RemoveIf" xml:space="preserve"><value>You only search local files and settings.</value></data>
+  <data name="Comp.BingSearch.Impact" xml:space="preserve"><value>Web results disappear from Windows Search; local search is unaffected.</value></data>
+  <data name="Comp.BingSearch.Prov0" xml:space="preserve"><value>Bing Search provides web results inside the Windows Search experience.</value></data>
+  <data name="Comp.BingSearch.Prov1" xml:space="preserve"><value>Optional to remove; local search continues to work.</value></data>
+  <data name="Comp.Calculator.DisplayName" xml:space="preserve"><value>Calculator</value></data>
+  <data name="Comp.Calculator.Short" xml:space="preserve"><value>Microsoft's calculator app.</value></data>
+  <data name="Comp.Calculator.Long" xml:space="preserve"><value>A widely used utility. Removal is possible but many users expect it; keep unless you replace it with another calculator.</value></data>
+  <data name="Comp.Calculator.KeepIf" xml:space="preserve"><value>You use the built-in Calculator regularly.</value></data>
+  <data name="Comp.Calculator.RemoveIf" xml:space="preserve"><value>You use a different calculator app.</value></data>
+  <data name="Comp.Calculator.Impact" xml:space="preserve"><value>The Calculator app is removed. No OS function depends on it.</value></data>
+  <data name="Comp.Calculator.Prov0" xml:space="preserve"><value>Calculator is a built-in utility app used by many users.</value></data>
+  <data name="Comp.Calculator.Prov1" xml:space="preserve"><value>Usually keep; removal is safe but unexpected by many users.</value></data>
+  <data name="Comp.Notepad.DisplayName" xml:space="preserve"><value>Notepad</value></data>
+  <data name="Comp.Notepad.Short" xml:space="preserve"><value>Microsoft's plain-text editor.</value></data>
+  <data name="Comp.Notepad.Long" xml:space="preserve"><value>A long-standing utility many users and scripts rely on. Keep unless replaced.</value></data>
+  <data name="Comp.Notepad.KeepIf" xml:space="preserve"><value>You or your scripts use Notepad.</value></data>
+  <data name="Comp.Notepad.RemoveIf" xml:space="preserve"><value>You use another text editor exclusively.</value></data>
+  <data name="Comp.Notepad.Impact" xml:space="preserve"><value>Notepad is removed. Many users and tools expect it.</value></data>
+  <data name="Comp.Notepad.Prov0" xml:space="preserve"><value>Notepad is a built-in plain-text editor relied on by users and scripts.</value></data>
+  <data name="Comp.Notepad.Prov1" xml:space="preserve"><value>Usually keep; removal is safe but widely unexpected.</value></data>
+  <data name="Comp.Paint.DisplayName" xml:space="preserve"><value>Paint</value></data>
+  <data name="Comp.Paint.Short" xml:space="preserve"><value>Microsoft's classic raster graphics editor.</value></data>
+  <data name="Comp.Paint.Long" xml:space="preserve"><value>A familiar drawing tool. Optional: alternatives (Paint.NET, Photos) exist; removal only affects the app itself.</value></data>
+  <data name="Comp.Paint.KeepIf" xml:space="preserve"><value>You use Paint for quick image edits.</value></data>
+  <data name="Comp.Paint.RemoveIf" xml:space="preserve"><value>You use another image editor.</value></data>
+  <data name="Comp.Paint.Impact" xml:space="preserve"><value>Paint is removed. Image files remain and open via other apps.</value></data>
+  <data name="Comp.Paint.Prov0" xml:space="preserve"><value>Paint is a classic raster graphics editor included with Windows.</value></data>
+  <data name="Comp.Paint.Prov1" xml:space="preserve"><value>Optional to remove; alternatives exist.</value></data>
+  <data name="Comp.Terminal.DisplayName" xml:space="preserve"><value>Windows Terminal</value></data>
+  <data name="Comp.Terminal.Short" xml:space="preserve"><value>Microsoft's modern multi-tab terminal.</value></data>
+  <data name="Comp.Terminal.Long" xml:space="preserve"><value>Preferred terminal for developers and IT. Keep unless you use another; removal is safe but inconvenient for power users.</value></data>
+  <data name="Comp.Terminal.KeepIf" xml:space="preserve"><value>You use Windows Terminal for command-line work.</value></data>
+  <data name="Comp.Terminal.RemoveIf" xml:space="preserve"><value>You use another terminal emulator.</value></data>
+  <data name="Comp.Terminal.Impact" xml:space="preserve"><value>Windows Terminal is removed; classic Console Host still works.</value></data>
+  <data name="Comp.Terminal.Prov0" xml:space="preserve"><value>Windows Terminal is the modern multi-tab terminal for Windows.</value></data>
+  <data name="Comp.Terminal.Prov1" xml:space="preserve"><value>Usually keep; valuable for developers.</value></data>
+  <data name="Comp.ToDo.DisplayName" xml:space="preserve"><value>Microsoft To Do</value></data>
+  <data name="Comp.ToDo.Short" xml:space="preserve"><value>Microsoft's task / to-do list app.</value></data>
+  <data name="Comp.ToDo.Long" xml:space="preserve"><value>A consumer productivity app. Optional; no Windows feature depends on it.</value></data>
+  <data name="Comp.ToDo.KeepIf" xml:space="preserve"><value>You manage tasks in Microsoft To Do.</value></data>
+  <data name="Comp.ToDo.RemoveIf" xml:space="preserve"><value>You use another task app.</value></data>
+  <data name="Comp.ToDo.Impact" xml:space="preserve"><value>Microsoft To Do is removed. Web/phone versions still work.</value></data>
+  <data name="Comp.ToDo.Prov0" xml:space="preserve"><value>Microsoft To Do is a consumer task-management app.</value></data>
+  <data name="Comp.ToDo.Prov1" xml:space="preserve"><value>Optional to remove; no system dependency.</value></data>
+  <data name="Comp.QuickAssist.DisplayName" xml:space="preserve"><value>Quick Assist</value></data>
+  <data name="Comp.QuickAssist.Short" xml:space="preserve"><value>Microsoft's app for giving/receiving remote help.</value></data>
+  <data name="Comp.QuickAssist.Long" xml:space="preserve"><value>Lets a helper view and control the screen to assist. Optional; not required for normal use or for standard Remote Desktop.</value></data>
+  <data name="Comp.QuickAssist.KeepIf" xml:space="preserve"><value>You (or help desk) use Quick Assist for remote help.</value></data>
+  <data name="Comp.QuickAssist.RemoveIf" xml:space="preserve"><value>You never use remote assistance.</value></data>
+  <data name="Comp.QuickAssist.Impact" xml:space="preserve"><value>Quick Assist is removed. Standard Remote Desktop is unaffected.</value></data>
+  <data name="Comp.QuickAssist.Prov0" xml:space="preserve"><value>Quick Assist provides view/control screen sharing for remote help.</value></data>
+  <data name="Comp.QuickAssist.Prov1" xml:space="preserve"><value>Optional to remove; not required for normal use.</value></data>
+  <data name="Comp.DesktopAppInstaller.DisplayName" xml:space="preserve"><value>App Installer (winget)</value></data>
+  <data name="Comp.DesktopAppInstaller.Short" xml:space="preserve"><value>Provides the winget package manager and .msix/.appx installer.</value></data>
+  <data name="Comp.DesktopAppInstaller.Long" xml:space="preserve"><value>Hosts winget and the AppX/MSIX installer. Removing it breaks package management and Store-based installs; treat as Conditional and keep unless you have a reason.</value></data>
+  <data name="Comp.DesktopAppInstaller.KeepIf" xml:space="preserve"><value>You use winget or install .msix/.appx packages.</value></data>
+  <data name="Comp.DesktopAppInstaller.RemoveIf" xml:space="preserve"><value>You never use winget or sideloaded packages.</value></data>
+  <data name="Comp.DesktopAppInstaller.Impact" xml:space="preserve"><value>winget and AppX/MSIX install are unavailable; some installs break.</value></data>
+  <data name="Comp.DesktopAppInstaller.Prov0" xml:space="preserve"><value>App Installer provides the winget package manager and MSIX/AppX installer.</value></data>
+  <data name="Comp.DesktopAppInstaller.Prov1" xml:space="preserve"><value>Usually keep; removal breaks package management.</value></data>
+<!-- WINFORGE_CATALOG_BLOCK_END -->
 </root>

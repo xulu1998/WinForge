@@ -105,6 +105,13 @@ public sealed class ComponentIntelligenceViewModel : ViewModelBase
         private set => SetField(ref _hasInventory, value);
     }
 
+    /// <summary>
+    /// The last classified inventory (catalog-only rows are present even before a
+    /// discovery pass). The Customize knowledge tab reuses this same data so
+    /// Component Intelligence acts as the backing knowledge engine.
+    /// </summary>
+    public ComponentInventory? Inventory => _classified;
+
     public string StatusMessage
     {
         get => _statusMessage;

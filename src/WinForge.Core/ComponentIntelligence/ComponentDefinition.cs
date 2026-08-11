@@ -49,7 +49,7 @@ public sealed class CompatibilityRule
 /// Unknown is preferred over invented information — leave an enum at Unknown or a
 /// list empty rather than guessing.
 /// </summary>
-public sealed class ComponentDefinition
+public sealed partial class ComponentDefinition
 {
     /// <summary>Stable WinForge identifier (not a Windows package name).</summary>
     public string Id { get; init; } = string.Empty;

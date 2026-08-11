@@ -79,7 +79,8 @@ public class ReviewExecutionToApplyRegressionTests
             Privacy = new PrivacyViewModel(State, logger, defs);
             System = new SystemViewModel(State, logger, defs);
             var comingSoon = new ComingSoonViewModel();
-            var customize = new CustomizeStepViewModel(Components, Privacy, System, comingSoon);
+            var knowledge = ComponentKnowledgeTestFactory.Make(State, logger);
+            var customize = new CustomizeStepViewModel(Components, Privacy, System, comingSoon, knowledge);
             Plan = new PlanReviewViewModel(State, logger, Execution);
             var build = new BuildStepViewModel(
                 State, new FakeBuildService(), new FakeFileSystem(), new WorkflowAndCommandTests.FakeFilePicker(),

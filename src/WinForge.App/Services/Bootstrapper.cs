@@ -90,6 +90,7 @@ public static class Bootstrapper
         services.AddSingleton<ImageViewModel>();
         services.AddSingleton<ComponentsViewModel>();
         services.AddSingleton<ComponentIntelligenceViewModel>();
+        services.AddSingleton<ComponentKnowledgeViewModel>();
         services.AddSingleton<PrivacyViewModel>();
         services.AddSingleton<SystemViewModel>();
         services.AddSingleton<PlanReviewViewModel>();

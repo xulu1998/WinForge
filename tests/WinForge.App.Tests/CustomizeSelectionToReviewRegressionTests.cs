@@ -92,7 +92,8 @@ public class CustomizeSelectionToReviewRegressionTests
             Privacy = new PrivacyViewModel(State, logger, defs);
             System = new SystemViewModel(State, logger, defs);
             var comingSoon = new ComingSoonViewModel();
-            var customize = new CustomizeStepViewModel(Components, Privacy, System, comingSoon);
+            var knowledge = ComponentKnowledgeTestFactory.Make(State, logger);
+            var customize = new CustomizeStepViewModel(Components, Privacy, System, comingSoon, knowledge);
             var plan = new PlanReviewViewModel(State, logger, new FakeCustomizationExecutionService());
             var build = new BuildStepViewModel(
                 State, new FakeBuildService(), new FakeFileSystem(), new WorkflowAndCommandTests.FakeFilePicker(),
