@@ -162,6 +162,7 @@
   <data name="Customize.Discovering" xml:space="preserve"><value>正在从已挂载的镜像中发现组件…</value></data>
   <data name="Customize.NeedsMount" xml:space="preserve"><value>发现组件需要先挂载工作镜像。</value></data>
   <data name="Customize.Selected" xml:space="preserve"><value>已选</value></data>
+  <data name="Customize.SelectedItems" xml:space="preserve"><value>项</value></data>
   <data name="Customize.Tab.Apps" xml:space="preserve"><value>应用</value></data>
   <data name="Customize.Tab.Components" xml:space="preserve"><value>Windows 组件</value></data>
   <data name="Customize.Tab.Services" xml:space="preserve"><value>服务</value></data>

@@ -162,6 +162,7 @@
   <data name="Customize.Discovering" xml:space="preserve"><value>Discovering components from the mounted image…</value></data>
   <data name="Customize.NeedsMount" xml:space="preserve"><value>Discovery requires a mounted working image.</value></data>
   <data name="Customize.Selected" xml:space="preserve"><value>Selected</value></data>
+  <data name="Customize.SelectedItems" xml:space="preserve"><value>items</value></data>
   <data name="Customize.Tab.Apps" xml:space="preserve"><value>Apps</value></data>
   <data name="Customize.Tab.Components" xml:space="preserve"><value>Windows components</value></data>
   <data name="Customize.Tab.Services" xml:space="preserve"><value>Services</value></data>

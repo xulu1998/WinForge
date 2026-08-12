@@ -396,6 +396,14 @@ WinForge.Infrastructure  (Windows only)
   overrides + present logical ids. Part Q: a NEW image workspace resets the session
   (`ResetForNewWorkflow`); a fresh workflow defaults to NO profile (pure manual mode) — a previous
   aggressive profile is never silently reused on a new ISO.
+- **Customize shell (`CustomizeStepViewModel` / `CustomizeView`, final compact layout).** The view is a
+  5-row Grid (Auto×4 + star): compact header (title 20px + subtitle + scan/已选 N 项 on ONE row —
+  measured 77px, ~45% smaller than before), the two-panel profile area, and a star-height TabControl so
+  the component list always consumes the majority of the viewport (measured 372px of 700px → ~7 rows at
+  1200×700). `ProfileView` is a real two-column Grid: primary profile radio cards (LEFT, 3 equal columns,
+  ~46px cards, ~75% width) vs extra scenarios (RIGHT, 5 compact checkboxes, ~25% width), followed by a
+  single-line summary + actions row. No horizontal scrollbars; the recommendation engine is untouched by
+  this layout work (Part L).
 - **Profile UI (`ProfileViewModel` / `ProfileView`, embedded at the top of Customize).** ONE primary
   profile as mutually-exclusive radio cards in a 3-column equal-width Grid (Part 1 rework) + optional
   EXTRA scenarios as independent checkboxes (Part 2); compact panel (STA-pinned ≤ ~260 px) with the
@@ -416,6 +424,6 @@ WinForge.Infrastructure  (Windows only)
   dependency-keep/override/safety, Gaming/Developer/Office/Lightweight rule sets against the real
   catalog, conflict resolution with reasons, preview/adopt/high-risk/override UX, en/zh localization,
   profile change never mutates the plan); ProfileView added to the WPF binding audit. Full suite
-  **649 pass (Core 53, App 596), 0 errors, 0 warnings (Release)**.
+  **651 pass (Core 53, App 598), 0 errors, 0 warnings (Release)**.
 
 See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 / ADR-057 / ADR-058 / ADR-059 / ADR-060 for the full rationale.

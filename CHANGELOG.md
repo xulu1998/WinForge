@@ -32,6 +32,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   profile switch). 自定义 disables profile overrides (back to catalog defaults) while keeping your
   manual selections. The Discover button becomes 重新扫描 after discovery, and the component lists
   keep the majority of the page.
+- **Final compact Customize layout.** The header (title + subtitle + scan/已选 N 项) is one compact
+  block; the profile panel is a two-column grid (primary profile cards LEFT ~75%, extra scenarios RIGHT
+  ~25%) with a single-line summary + actions row; the tab control takes the star height so the component
+  list is the primary work surface (~7 rows visible at 1200×700). The recommendation engine is unchanged.
 - **Primary profile + extra scenarios (rework).** 主要用途 is now ONE mutually-exclusive radio choice
   (3-column aligned cards: 均衡推荐/游戏优先/开发工作站/办公稳定/轻量系统/专用精简/自定义); 额外需求
   are independent checkboxes (Xbox/Game Pass, WSL/Docker, 打印扫描, 触屏/手写, 远程桌面) combined by
