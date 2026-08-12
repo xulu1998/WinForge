@@ -41,21 +41,26 @@ public sealed class PlanReviewViewModel : ViewModelBase
     private readonly ILoggerService _logger;
     private readonly ICustomizationExecutionService _execution;
     private readonly ILocalizationService? _loc;
+    private readonly Func<CustomizationPlan, IReadOnlyList<string>> _validate;
 
     private ObservableCollection<string> _warnings = new();
     private string _progressText = string.Empty;
     private string _resultSummary = string.Empty;
+    private bool _validationPassed;
+    private string _validationMessage = string.Empty;
 
     public PlanReviewViewModel(
         IAppState appState,
         ILoggerService logger,
         ICustomizationExecutionService execution,
-        ILocalizationService? loc = null)
+        ILocalizationService? loc = null,
+        Func<CustomizationPlan, IReadOnlyList<string>>? validate = null)
     {
         _appState = appState;
         _logger = logger;
         _execution = execution;
         _loc = loc;
+        _validate = validate ?? (p => p.Validate());
 
         Operations = new ObservableCollection<ReviewOperationItem>();
         ValidateCommand = new RelayCommand(_ => ValidatePlan(), _ => CanValidate);
@@ -95,10 +100,41 @@ public sealed class PlanReviewViewModel : ViewModelBase
     public ObservableCollection<string> Warnings
     {
         get => _warnings;
-        private set => SetField(ref _warnings, value);
+        private set
+        {
+            if (SetField(ref _warnings, value))
+            {
+                OnPropertyChanged(nameof(HasWarnings));
+            }
+        }
     }
 
     public bool HasWarnings => _warnings.Count > 0;
+
+    // ---- Stage 12.2/12.3 real-desktop blocker: visible validation feedback.
+    // The old flow only toggled Warnings (whose HasWarnings was never notified),
+    // so a failed validation kept showing "没有校验警告" and a successful one gave
+    // no feedback at all — Apply stayed disabled with no explanation. ----
+
+    /// <summary>True after ValidatePlan when the plan is Validated and applyable.</summary>
+    public bool ValidationPassed
+    {
+        get => _validationPassed;
+        private set => SetField(ref _validationPassed, value);
+    }
+
+    /// <summary>Localized success / blocking-failure / exception message.</summary>
+    public string ValidationMessage
+    {
+        get => _validationMessage;
+        private set => SetField(ref _validationMessage, value);
+    }
+
+    /// <summary>True when a validation outcome message should be shown.</summary>
+    public bool HasValidationMessage => !string.IsNullOrWhiteSpace(_validationMessage);
+
+    /// <summary>True when the last validation failed (blocking issues or exception).</summary>
+    public bool HasValidationFailure => !_validationPassed && HasValidationMessage;
 
     public CustomizationExecutionState ExecutionState => _appState.CustomizationExecutionState;
 
@@ -138,6 +174,11 @@ public sealed class PlanReviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(ExecutionState));
         OnPropertyChanged(nameof(CanValidate));
         OnPropertyChanged(nameof(CanApply));
+        OnPropertyChanged(nameof(HasWarnings));
+        OnPropertyChanged(nameof(ValidationPassed));
+        OnPropertyChanged(nameof(ValidationMessage));
+        OnPropertyChanged(nameof(HasValidationMessage));
+        OnPropertyChanged(nameof(HasValidationFailure));
         RebuildOperations();
         if (ValidateCommand is RelayCommand v) v.RaiseCanExecuteChanged();
         if (ApplyCommand is AsyncRelayCommand a) a.RaiseCanExecuteChanged();
@@ -212,15 +253,36 @@ public sealed class PlanReviewViewModel : ViewModelBase
             return;
         }
 
-        var issues = Plan.RecomputeValidation();
-        var validateIssues = Plan.Validate();
-        Warnings = new ObservableCollection<string>(validateIssues);
-        _appState.CustomizationExecutionState = CustomizationExecutionState.Ready;
-        _logger.Info(Plan.Status == CustomizationPlanStatus.Validated
-            ? "Plan: validated successfully."
-            : $"Plan: validation failed with {validateIssues.Count} issue(s).");
+        try
+        {
+            var issues = _validate(Plan);
+            Warnings = new ObservableCollection<string>(issues);
+            ValidationPassed = issues.Count == 0 && Plan.Status == CustomizationPlanStatus.Validated;
+            ValidationMessage = ValidationPassed
+                ? Localize("Review.ValidatePassed")
+                : string.Format(Localize("Review.ValidateFailed"), issues.Count);
+            _appState.CustomizationExecutionState = CustomizationExecutionState.Ready;
+            _logger.Info(ValidationPassed
+                ? "Plan: validated successfully."
+                : $"Plan: validation failed with {issues.Count} issue(s).");
+        }
+        catch (Exception ex)
+        {
+            // NO SILENT FAILURES (real-desktop blocker requirement): a throwing
+            // validator surfaces the exact error instead of leaving Apply dead
+            // with no explanation.
+            ValidationPassed = false;
+            ValidationMessage = string.Format(Localize("Review.ValidateError"), ex.Message);
+            Warnings = new ObservableCollection<string> { ex.Message };
+            _logger.Error($"Plan: validation threw: {ex}");
+        }
+
+        OnPropertyChanged(nameof(HasValidationMessage));
+        OnPropertyChanged(nameof(HasValidationFailure));
         Refresh();
     }
+
+    private string Localize(string key) => _loc is null ? key : _loc[key];
 
     public async Task ApplyAsync()
     {

@@ -24,6 +24,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Incident regression.** A repeated-workflow test proves disposable workspaces no longer accumulate
   across sessions (the ~249 GB stale-workspace incident becomes impossible under normal use).
 
+### Fixed (Phase 12 Stage 12.3 — REAL DESKTOP BLOCKER: Review 校验计划 no-op / Apply disabled)
+
+- **Root cause:** 「校验计划」gave no visible response and 「应用到已挂载镜像」stayed disabled.
+  (1) A successful validation set the plan Validated but showed NO success feedback, so the run
+  looked dead; (2) a FAILED validation (blocking issues such as duplicate/conflicting operations —
+  e.g. two selected ops sharing a ConflictKey) kept displaying 「没有校验警告」 because
+  `PlanReviewViewModel.Warnings` was replaced without notifying the derived `HasWarnings`, so the
+  real blocking reason stayed invisible while Apply (keyed on `Plan.Status == Validated`) stayed
+  disabled; (3) a throwing validator was swallowed silently. Next staying disabled until Apply is
+  EXECUTED is the intended contract (the Apply step is NotAvailable before execution succeeds).
+- **Fix:** `ValidatePlan` now sets explicit localized outcome state — `ValidationPassed` /
+  `ValidationMessage` / `HasValidationFailure` — shown as green success
+  「计划校验通过，可以应用修改。」or red blocking failure 「计划校验失败：N 个阻塞问题…」;
+  Warnings notifies HasWarnings; exceptions surface the exact error (localized, logged, never
+  silent); ApplyCommand/NextCommand re-evaluate immediately (no timing hacks). New resx keys
+  Review.ValidatePassed/ValidateFailed/ValidateError (zh + en).
+- **Regression:** `Stage12p3ReviewValidationTests` (14) cover: plan exists, ValidateCommand
+  executes through the ICommand surface, Validated state set, visible success feedback (real resx),
+  Apply disabled before / enabled immediately after validation, non-blocking unselected issue,
+  blocking duplicate keeps Apply disabled + shows reason, validation exception surfaces error +
+  logged, CanExecuteChanged fires, mounted-state gating, zh/en strings. WPF binding audit gains
+  PlanReviewView.Validated and PlanReviewView.ValidationFailed render cases (0 binding errors).
+
 ### Fixed (Phase 12 Stage 12.2 — REAL DESKTOP BLOCKER: Storage page Run.Text exception)
 
 - **Root cause:** the Settings → 存储 usage line was composed from multiple `<Run>` inlines

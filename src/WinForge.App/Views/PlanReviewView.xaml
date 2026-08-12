@@ -161,6 +161,17 @@
                 </TextBlock.Text>
             </TextBlock>
 
+            <!-- Stage 12.2/12.3 blocker fix: explicit validation outcome. The old
+                 flow gave no visible response at all — a successful validation
+                 merely enabled Apply and a failed one kept showing
+                 "没有校验警告" because HasWarnings was never notified. -->
+            <TextBlock Foreground="#2F855A" FontSize="13" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap"
+                       Visibility="{Binding ValidationPassed, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                       Text="{Binding ValidationMessage, Mode=OneWay}"/>
+            <TextBlock Foreground="#9B1C1C" FontSize="13" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap"
+                       Visibility="{Binding HasValidationFailure, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                       Text="{Binding ValidationMessage, Mode=OneWay}"/>
+
             <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
                 <Button Style="{StaticResource PrimaryButton}" Background="#487EB0" Command="{Binding ValidateCommand}">
                     <TextBlock>

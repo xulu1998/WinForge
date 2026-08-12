@@ -215,6 +215,9 @@
   <data name="Review.Services" xml:space="preserve"><value>Services:</value></data>
   <data name="Review.PageTitle" xml:space="preserve"><value>Plan Review</value></data>
   <data name="Review.Warnings" xml:space="preserve"><value>Validation warnings</value></data>
+  <data name="Review.ValidatePassed" xml:space="preserve"><value>Plan validation passed. Changes can now be applied.</value></data>
+  <data name="Review.ValidateFailed" xml:space="preserve"><value>Plan validation failed with {0} blocking issue(s). Review the list below.</value></data>
+  <data name="Review.ValidateError" xml:space="preserve"><value>Plan validation failed: {0}</value></data>
   <data name="Review.NoWarnings" xml:space="preserve"><value>No validation warnings.</value></data>
   <data name="Review.Validate" xml:space="preserve"><value>Validate plan</value></data>
   <data name="Review.Apply" xml:space="preserve"><value>Apply to mounted image</value></data>

@@ -215,6 +215,9 @@
   <data name="Review.Services" xml:space="preserve"><value>服务：</value></data>
   <data name="Review.PageTitle" xml:space="preserve"><value>计划审核</value></data>
   <data name="Review.Warnings" xml:space="preserve"><value>校验警告</value></data>
+  <data name="Review.ValidatePassed" xml:space="preserve"><value>计划校验通过，可以应用修改。</value></data>
+  <data name="Review.ValidateFailed" xml:space="preserve"><value>计划校验失败：{0} 个阻塞问题。请查看下方列表。</value></data>
+  <data name="Review.ValidateError" xml:space="preserve"><value>计划校验失败：{0}</value></data>
   <data name="Review.NoWarnings" xml:space="preserve"><value>没有校验警告。</value></data>
   <data name="Review.Validate" xml:space="preserve"><value>校验计划</value></data>
   <data name="Review.Apply" xml:space="preserve"><value>应用到已挂载镜像</value></data>

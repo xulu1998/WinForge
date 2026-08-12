@@ -239,6 +239,72 @@ public class CustomizeBindingRegressionTests
                     storage.TrySetRoot(System.IO.Path.GetPathRoot(System.IO.Path.GetTempPath()) ?? "C:\\");
                     return new StorageView { DataContext = storage };
                 }, culture));
+            // Phase 12.3 — Review page validation-feedback bindings (success + failure
+            // states render, incl. the new ValidationPassed / ValidationMessage /
+            // HasValidationFailure TextBlocks and the Warnings list visibility).
+            cases.Add(new("PlanReviewView.Validated",
+                () =>
+                {
+                    var state = new AppState();
+                    state.CurrentImageWorkspace = new ImageWorkspace();
+                    state.CurrentServicingWorkspace = new ImageServicingWorkspace
+                    {
+                        WorkingDirectory = @"C:\wf\ws",
+                        MountDirectory = @"C:\wf\ws\mount",
+                        WorkingImagePath = @"C:\wf\ws\image\install.wim",
+                        State = ServicingWorkspaceState.Mounted,
+                    };
+                    var plan = PlanSync.EnsureDraftPlan(state);
+                    plan.AddOperation(new CustomizationOperation
+                    {
+                        OperationId = "op-1",
+                        OperationType = CustomizationOperationType.RemoveProvisionedAppx,
+                        TargetIdentifier = "AppA",
+                        DisplayName = "App A",
+                        Risk = RiskClass.Removable,
+                        IsSelected = true,
+                    });
+                    var vm = new PlanReviewViewModel(state, new InMemoryLoggerService(),
+                        new FakeCustomizationExecutionService(), new FakeLoc());
+                    vm.ValidatePlan();
+                    return new PlanReviewView { DataContext = vm };
+                }, culture));
+            cases.Add(new("PlanReviewView.ValidationFailed",
+                () =>
+                {
+                    var state = new AppState();
+                    state.CurrentImageWorkspace = new ImageWorkspace();
+                    state.CurrentServicingWorkspace = new ImageServicingWorkspace
+                    {
+                        WorkingDirectory = @"C:\wf\ws",
+                        MountDirectory = @"C:\wf\ws\mount",
+                        WorkingImagePath = @"C:\wf\ws\image\install.wim",
+                        State = ServicingWorkspaceState.Mounted,
+                    };
+                    var plan = PlanSync.EnsureDraftPlan(state);
+                    plan.AddOperation(new CustomizationOperation
+                    {
+                        OperationId = "op-1",
+                        OperationType = CustomizationOperationType.RemoveProvisionedAppx,
+                        TargetIdentifier = "AppA",
+                        DisplayName = "App A",
+                        Risk = RiskClass.Removable,
+                        IsSelected = true,
+                    });
+                    plan.AddOperation(new CustomizationOperation
+                    {
+                        OperationId = "op-dup",
+                        OperationType = CustomizationOperationType.RemoveProvisionedAppx,
+                        TargetIdentifier = "AppA",
+                        DisplayName = "App A (again)",
+                        Risk = RiskClass.Removable,
+                        IsSelected = true,
+                    });
+                    var vm = new PlanReviewViewModel(state, new InMemoryLoggerService(),
+                        new FakeCustomizationExecutionService(), new FakeLoc());
+                    vm.ValidatePlan();
+                    return new PlanReviewView { DataContext = vm };
+                }, culture));
             // Stage 11.4 — profile selector panel (recommended configuration engine).
             cases.Add(new("ProfileView",
                 () =>
