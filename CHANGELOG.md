@@ -32,6 +32,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   profile switch). 自定义 disables profile overrides (back to catalog defaults) while keeping your
   manual selections. The Discover button becomes 重新扫描 after discovery, and the component lists
   keep the majority of the page.
+- **Profile selection is now the adoption.** Picking a primary profile (or an extra scenario)
+  immediately applies its safe recommended selections — the separate "采用推荐选择" button is gone.
+  Profile-managed selections track provenance and update when you switch profiles; your manual
+  choices are never silently overwritten (an explicit 恢复此配置推荐 appears only when an override
+  exists). 查看推荐详情 opens as an overlay with × 返回自定义, and 已选 N 项 updates instantly.
 - **Final compact Customize layout.** The header (title + subtitle + scan/已选 N 项) is one compact
   block; the profile panel is a two-column grid (primary profile cards LEFT ~75%, extra scenarios RIGHT
   ~25%) with a single-line summary + actions row; the tab control takes the star height so the component

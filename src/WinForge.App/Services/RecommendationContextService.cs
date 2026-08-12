@@ -25,6 +25,7 @@ public sealed class RecommendationContextService
     private readonly List<ProfileDefinition> _profiles;
     private readonly List<string> _extraProfileIds = new();
     private readonly HashSet<string> _userOverrides = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _profileManaged = new(StringComparer.Ordinal);
     private HashSet<string> _presentIds = new(StringComparer.Ordinal);
     private ImageWorkspace? _lastWorkspace;
     private string? _primaryProfileId;
@@ -129,6 +130,43 @@ public sealed class RecommendationContextService
     /// <summary>True when the user manually changed at least one item this session.</summary>
     public bool IsUserOverriddenAny() => _userOverrides.Count > 0;
 
+    /// <summary>True when at least one item carries an explicit user override (drives 恢复此配置推荐).</summary>
+    public bool HasUserOverrides => _userOverrides.Count > 0;
+
+    // ---- Stage 11.4 final flow — profile-managed selections ----
+
+    /// <summary>
+    /// Logical ids whose CURRENT selection is managed by the active profile
+    /// (auto-applied when the profile is selected; may be reverted/removed when
+    /// the profile changes). Explicit user overrides are never in this set.
+    /// </summary>
+    public IReadOnlyCollection<string> ProfileManagedIds => _profileManaged;
+
+    public bool IsProfileManaged(string logicalId) => _profileManaged.Contains(logicalId);
+
+    /// <summary>Records which ids the active profile currently manages (after a direct-apply pass).</summary>
+    public void SetProfileManaged(IEnumerable<string> ids)
+    {
+        _profileManaged.Clear();
+        _profileManaged.UnionWith(ids);
+    }
+
+    /// <summary>
+    /// Explicit "恢复此配置推荐": clears ALL user overrides so the next apply pass
+    /// recalculates Profile-managed selections from the active profile. Raises
+    /// <see cref="Changed"/> so the ProfileViewModel re-applies immediately.
+    /// </summary>
+    public void ClearUserOverrides()
+    {
+        if (_userOverrides.Count == 0)
+        {
+            return;
+        }
+
+        _userOverrides.Clear();
+        RaiseChanged();
+    }
+
     // ---- Part O — real image state ----
 
     /// <summary>Logical ids present in the mounted image / applicable on it (refreshed after discovery).</summary>
@@ -152,6 +190,7 @@ public sealed class RecommendationContextService
         _primaryProfileId = null;
         _extraProfileIds.Clear();
         _userOverrides.Clear();
+        _profileManaged.Clear();
         _presentIds.Clear();
         RaiseChanged();
     }

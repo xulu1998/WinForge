@@ -135,25 +135,16 @@
                     <Run Text="{Binding SummaryConflictLabel, Mode=OneWay}"/>
                 </TextBlock>
 
-                <Button Style="{StaticResource PrimaryButton}" Background="#2F855A" Margin="18,0,0,0"
-                        Command="{Binding AdoptCommand, Mode=OneWay}">
-                    <TextBlock>
-                        <TextBlock.Text>
-                            <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Source="Profile.Adopt"/><Binding Source="{StaticResource Loc}"/>
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
-                </Button>
-                <!-- Conditional reapply (only after adoption + divergence) -->
-                <Button Margin="8,0,0,0" Padding="10,6" Background="White" BorderBrush="#CBD2D9"
+                <!-- Conditional "恢复此配置推荐" — only when the user overrode
+                     Profile-managed selections (final flow) -->
+                <Button Margin="18,0,0,0" Padding="10,6" Background="White" BorderBrush="#CBD2D9"
                         BorderThickness="1" FontSize="12" Foreground="#1F2933" VerticalAlignment="Center"
-                        Command="{Binding ReapplyCommand, Mode=OneWay}"
-                        Visibility="{Binding ReapplyVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                        Command="{Binding RestoreCommand, Mode=OneWay}"
+                        Visibility="{Binding RestoreVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                     <TextBlock>
                         <TextBlock.Text>
                             <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Source="Profile.Reapply"/><Binding Source="{StaticResource Loc}"/>
+                                <Binding Source="Profile.Restore"/><Binding Source="{StaticResource Loc}"/>
                             </MultiBinding>
                         </TextBlock.Text>
                     </TextBlock>
@@ -177,43 +168,6 @@
                        Text="{Binding ActiveProfileCaption, Mode=OneWay}"
                        Visibility="{Binding HasActiveProfiles, Mode=OneWay, Converter={StaticResource BoolToVisInv}}"/>
 
-            <!-- Detail view (Part 11): decisions grouped by bucket, with per-tab breakdown -->
-            <StackPanel Margin="0,10,0,0"
-                        Visibility="{Binding IsPreviewOpen, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                <ItemsControl ItemsSource="{Binding PreviewGroups, Mode=OneWay}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type vm:RecommendationPreviewGroup}">
-                            <StackPanel Margin="0,0,0,8">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933">
-                                        <TextBlock.Text>
-                                            <MultiBinding Converter="{StaticResource locKey}">
-                                                <Binding Path="HeaderKey" Mode="OneWay"/><Binding Source="{StaticResource Loc}" Mode="OneWay"/>
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                    <TextBlock FontSize="12" Foreground="#7B8794" Margin="10,0,0,0"
-                                               Text="{Binding TabBreakdown, Mode=OneWay}"/>
-                                </StackPanel>
-                                <ItemsControl ItemsSource="{Binding Items, Mode=OneWay}" Margin="12,2,0,0">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="{x:Type vm:RecommendationPreviewItem}">
-                                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                                <TextBlock FontSize="12" Foreground="#1F2933"
-                                                           Text="{Binding DisplayName, Mode=OneWay}" MinWidth="240"/>
-                                                <TextBlock FontSize="12" Foreground="#2F855A"
-                                                           Text="{Binding Caption, Mode=OneWay}" MinWidth="110"/>
-                                                <TextBlock FontSize="11" Foreground="#7B8794" TextWrapping="Wrap"
-                                                           MaxWidth="480" Text="{Binding ReasonText, Mode=OneWay}"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
         </StackPanel>
     </Border>
 </UserControl>

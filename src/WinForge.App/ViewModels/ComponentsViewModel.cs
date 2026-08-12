@@ -27,6 +27,9 @@ public sealed class ComponentsViewModel : ViewModelBase
     private readonly ICustomizationDefinitionProvider _definitions;
     private readonly IFriendlyMetadataProvider? _friendly;
 
+    /// <summary>Shared app state (used by the Customize header for the plan-wide selected count).</summary>
+    internal IAppState AppState => _appState;
+
     private bool _isDiscovering;
     private bool _hasInventory;
     private bool _showProtectedEntries;

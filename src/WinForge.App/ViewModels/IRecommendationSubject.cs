@@ -45,6 +45,13 @@ public interface IRecommendationSubject
     /// <summary>Localized conflict/resolution text (empty when no conflict).</summary>
     string ConflictText { get; }
 
+    /// <summary>
+    /// Localized selection-origin caption for the row (final flow): empty when
+    /// the selection is untouched, "由「X」自动选择" when the active profile
+    /// auto-applied it, "手动选择" when the user explicitly toggled it.
+    /// </summary>
+    string SelectionOriginText { get; }
+
     /// <summary>Recomputes the effective recommendation from the shared context.</summary>
     void RefreshRecommendation(RecommendationContextService context);
 

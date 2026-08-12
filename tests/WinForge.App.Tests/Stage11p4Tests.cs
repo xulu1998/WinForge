@@ -355,8 +355,10 @@ public sealed class Stage11p4Tests
     }
 
     [Fact]
-    public void Profile_Change_Updates_Badges_Not_Checkboxes()
+    public void Profile_Selection_Updates_Badges_And_Keeps_Are_Never_AutoSelected()
     {
+        // Final flow: badges update immediately AND safe trims auto-apply, but a
+        // KEEP recommendation (Xbox) is never auto-selected.
         var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp"));
         var profileVm = customize.Profiles!;
         var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
@@ -369,9 +371,9 @@ public sealed class Stage11p4Tests
 
         Assert.Equal(EffectiveRecommendationLevel.RecommendKeep, xbox.Effective.Level);
         Assert.Equal("Recommendation.UsuallyKeep", xbox.RecommendationCaption);
-        // Part H: NO checkbox changes automatically — plan untouched.
         Assert.False(xbox.IsSelected);
-        Assert.Empty(GetPlanOps(state));
+        Assert.DoesNotContain(GetPlanOps(state), o => o.TargetIdentifier == "Microsoft.XboxApp");
+        _ = state;
     }
 
     [Fact]
@@ -381,6 +383,7 @@ public sealed class Stage11p4Tests
         var profileVm = customize.Profiles!;
         profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
 
+        var before = GetPlanOps(state); // Gaming selection already auto-applied
         profileVm.ShowPreview();
 
         var adopt = profileVm.PreviewGroups.Single(g => g.Kind == RecommendationPreviewGroupKind.Adopt);
@@ -388,19 +391,20 @@ public sealed class Stage11p4Tests
         Assert.Contains(adopt.Items, i => i.DisplayName.Contains("Weather", StringComparison.OrdinalIgnoreCase));
         // A keep (Xbox) must NOT appear in the adopt group.
         Assert.DoesNotContain(adopt.Items, i => i.DisplayName.Contains("Xbox", StringComparison.OrdinalIgnoreCase));
-        // Still nothing selected.
-        Assert.Empty(GetPlanOps(state));
+        // Opening the preview itself never mutates the plan.
+        Assert.Equal(before.Select(o => o.TargetIdentifier).OrderBy(t => t),
+            GetPlanOps(state).Select(o => o.TargetIdentifier).OrderBy(t => t));
     }
 
     [Fact]
-    public void Adopt_Updates_Only_Eligible_Items()
+    public void Profile_Selection_Immediately_Applies_Eligible_Selections()
     {
+        // Final flow (T1): selecting a profile IS the adoption — no second button.
         var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
         var profileVm = customize.Profiles!;
         var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
-        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
 
-        profileVm.Adopt();
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
 
         // Only low-risk, apply-supported, present, conflict-free TRIMS are selected
         // (Gaming trims Weather; the Privacy-tab trims add registry ops too).
@@ -408,10 +412,13 @@ public sealed class Stage11p4Tests
         Assert.NotEmpty(ops);
         Assert.Contains(ops, o => o.TargetIdentifier == "Microsoft.BingWeather");
         Assert.Contains(ops, o => o.OperationType == CustomizationOperationType.SetOfflineRegistryValue);
-        // XboxApp is a keep → never adopted.
+        // XboxApp is a keep → never auto-selected.
         Assert.DoesNotContain(ops, o => o.TargetIdentifier == "Microsoft.XboxApp");
         Assert.True(apps.Items.Single(i => i.LogicalId == "Weather").IsSelected);
         Assert.False(apps.Items.Single(i => i.LogicalId == "XboxApp").IsSelected);
+        // The selection is Profile-managed and attributed.
+        Assert.True(profileVm.IsProfileManaged("Weather"));
+        Assert.Contains("Profile.Origin.Auto", apps.Items.Single(i => i.LogicalId == "Weather").SelectionOriginText);
         _ = state;
     }
 
@@ -429,34 +436,42 @@ public sealed class Stage11p4Tests
         Assert.Equal(EffectiveRecommendationLevel.RecommendDisable, vmp.Effective.Level);
         Assert.Equal(RiskLevel.High, vmp.Effective.Risk);
 
-        profileVm.Adopt();
-
-        // High-risk trim stays unselected AND never reaches the plan.
+        // Selecting the profile already ran the safe-apply pass (T1): the
+        // high-risk trim stays unselected AND never reaches the plan.
         Assert.False(vmp.IsSelected);
         Assert.DoesNotContain(GetPlanOps(state), o => o.TargetIdentifier == "VirtualMachinePlatform");
     }
 
     [Fact]
-    public void Manual_Override_Survives_Reapply()
+    public void User_Override_Survives_Profile_Switch()
     {
+        // Final flow (T6/T9): a manual choice survives profile switching; only an
+        // explicit 恢复此配置推荐 may recalculate it.
         var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
         var profileVm = customize.Profiles!;
         var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
         profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
 
-        // Adopt → Weather selected (Gaming trims it).
-        profileVm.Adopt();
+        // Gaming auto-applies Weather (trim).
         var weather = apps.Items.Single(i => i.LogicalId == "Weather");
         Assert.True(weather.IsSelected);
 
-        // Manual deselect → user override (Part K).
+        // Manual deselect -> user override (Part K).
         weather.IsSelected = false;
         Assert.False(weather.IsSelected);
+        Assert.True(weather.WasOverridden);
+        Assert.Contains("Profile.Origin.Manual", weather.SelectionOriginText);
 
-        // Reapply must NOT resurrect the user's explicit choice.
-        profileVm.Reapply();
+        // Switch to Lightweight — Weather is ALSO trimmed there, but the user
+        // override must win: it stays deselected.
+        profileVm.Profiles.Single(p => p.Definition.Id == "Lightweight").IsSelected = true;
         Assert.False(weather.IsSelected);
         Assert.True(weather.WasOverridden);
+
+        // 恢复此配置推荐 (explicit) clears the override and re-applies.
+        profileVm.Restore();
+        Assert.True(weather.IsSelected);
+        Assert.False(weather.WasOverridden);
         _ = state;
     }
 
@@ -495,62 +510,64 @@ public sealed class Stage11p4Tests
     }
 
     [Fact]
-    public void Reapply_Is_Hidden_In_Initial_State()
+    public void Restore_Is_Hidden_In_Initial_State()
     {
         var (_, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp"));
-        Assert.False(customize.Profiles!.ReapplyVisible);
+        Assert.False(customize.Profiles!.RestoreVisible);
     }
 
     [Fact]
-    public void Reapply_Appears_Only_After_Adoption_And_Divergence()
+    public void Restore_Appears_Only_After_Manual_Override()
     {
         var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
         var profileVm = customize.Profiles!;
         var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
 
-        // Selecting a profile alone never reveals reapply.
+        // Selecting a profile alone never reveals restore.
         profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
-        Assert.False(profileVm.ReapplyVisible);
+        Assert.False(profileVm.RestoreVisible);
 
-        // Adopt with no divergence → still hidden (nothing to re-apply).
-        profileVm.Adopt();
-        Assert.False(profileVm.ReapplyVisible);
-
-        // Manual divergence (user changed a selection afterward) → visible.
+        // Manual override → visible.
         var weather = apps.Items.Single(i => i.LogicalId == "Weather");
         weather.IsSelected = false;
-        Assert.True(profileVm.ReapplyVisible);
+        Assert.True(profileVm.RestoreVisible);
 
-        // Profile-set divergence also reveals it.
-        profileVm.Reapply();
+        // Profile switch alone (no new override) keeps it visible (override persists).
         profileVm.Profiles.Single(p => p.Definition.Id == "Lightweight").IsSelected = true;
-        Assert.True(profileVm.ReapplyVisible);
+        Assert.True(profileVm.RestoreVisible);
+
+        // Restore clears the override → hidden again (nothing to restore).
+        profileVm.Restore();
+        Assert.False(profileVm.RestoreVisible);
         _ = state;
     }
 
     [Fact]
-    public void Custom_Removes_Profile_Overrides_And_Preserves_Manual_Selections()
+    public void Custom_Preserves_Current_Selections()
     {
+        // Final flow (T7): Custom stops profile-driven overrides and keeps the
+        // user's existing plan — it never clears selections merely because it is
+        // chosen. All subsequent changes are manual.
         var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
         var profileVm = customize.Profiles!;
         var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
 
+        // Gaming auto-applies Weather (Profile-managed).
         profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
-        profileVm.Adopt();
         var weather = apps.Items.Single(i => i.LogicalId == "Weather");
         Assert.True(weather.IsSelected);
-        Assert.Equal(EffectiveRecommendationLevel.RecommendRemove, weather.Effective.Level);
 
-        // Manual override, then switch to Custom.
-        weather.IsSelected = false;
+        // Switch to Custom → selections are PRESERVED (plan untouched).
         profileVm.Profiles.Single(p => p.Definition.Id == "Custom").IsSelected = true;
-
-        // Custom = no profile-driven overrides → catalog defaults, manual mode.
         Assert.False(profileVm.HasActiveProfiles);
-        // Weather's catalog default is RecommendedRemove → effective default trim.
-        Assert.Equal(EffectiveRecommendationLevel.RecommendRemove, weather.Effective.Level);
+        Assert.True(weather.IsSelected);
+        Assert.Contains(GetPlanOps(state), o => o.TargetIdentifier == "Microsoft.BingWeather");
         Assert.False(weather.Effective.WasProfileDriven);
-        // Explicit manual selection preserved.
+        // Profile-managed bookkeeping cleared; the row is now just "selected".
+        Assert.False(profileVm.IsProfileManaged("Weather"));
+
+        // Subsequent changes are manual.
+        weather.IsSelected = false;
         Assert.False(weather.IsSelected);
         _ = state;
     }
@@ -583,6 +600,276 @@ public sealed class Stage11p4Tests
 
         Assert.True(vWith.TrimCount > vWithout.TrimCount,
             $"Weather-present ({vWith.TrimCount}) must exceed absent ({vWithout.TrimCount}).");
+    }
+
+    // =====================================================================
+    // Final flow (2026-08-12): selecting a profile IS the adoption. Tests T1-T17.
+    // =====================================================================
+
+    [Fact]
+    public void No_Adopt_Button_Exists()
+    {
+        // T2: the mandatory "choose profile then adopt" step is removed — the
+        // ViewModel no longer exposes AdoptCommand / Adopt, and the ProfileView
+        // no longer renders a 采用推荐选择 button.
+        Assert.Null(typeof(ProfileViewModel).GetProperty("AdoptCommand"));
+        Assert.Null(typeof(ProfileViewModel).GetMethod("Adopt"));
+        Assert.Null(typeof(ProfileViewModel).GetMethod("Reapply"));
+    }
+
+    [Fact]
+    public void Selected_Count_Updates_Immediately()
+    {
+        // T3: clicking a profile updates the plan (and thus 已选 N 项) at once.
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var profileVm = customize.Profiles!;
+        Assert.Equal(0, customize.SelectedTotal);
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+
+        Assert.True(customize.SelectedTotal > 0,
+            $"SelectedTotal must jump immediately (was {customize.SelectedTotal}).");
+        Assert.Equal(customize.SelectedTotal, GetPlanOps(state).Count);
+        _ = state;
+    }
+
+    [Fact]
+    public void Medium_Risk_Stays_Manual_Review()
+    {
+        // T4: HyperV is a Medium-risk, AdvancedOnly trim under Lightweight — it
+        // must stay unselected and appear in the 需要确认 bucket.
+        var (state, customize) = BuildCustomize(FeatureInventory(("Microsoft-Hyper-V", FeatureState.Enabled)));
+        var profileVm = customize.Profiles!;
+        var components = (ComponentKnowledgeViewModel)customize.Tabs[1].Content;
+        profileVm.Profiles.Single(p => p.Definition.Id == "Lightweight").IsSelected = true;
+
+        var hyperv = components.Items.Single(i => i.LogicalId == "HyperV");
+        Assert.Equal(EffectiveRecommendationLevel.RecommendDisable, hyperv.Effective.Level);
+        Assert.Equal(RiskLevel.Medium, hyperv.Effective.Risk);
+        Assert.False(hyperv.IsSelected);
+        Assert.DoesNotContain(GetPlanOps(state), o => o.TargetIdentifier == "HyperV");
+
+        profileVm.ShowPreview();
+        var manual = profileVm.PreviewGroups.Single(g => g.Kind == RecommendationPreviewGroupKind.Manual);
+        Assert.Contains(manual.Items, i => i.DisplayName.Contains("Hyper-V", StringComparison.OrdinalIgnoreCase));
+        _ = state;
+    }
+
+    [Fact]
+    public void Unsupported_Capability_Stays_Unselected()
+    {
+        // T5: an apply-unsupported Capability (OpenSSH Client) is never
+        // auto-selected and shows under 冲突/不可执行, not in the plan.
+        var (state, customize) = BuildCustomize(MixedInventory());
+        var profileVm = customize.Profiles!;
+        profileVm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
+
+        Assert.DoesNotContain(GetPlanOps(state), o =>
+            o.TargetIdentifier is "OpenSSH.Client" or "OpenSSH.Client~~~~0.0.1.0");
+        Assert.True(profileVm.UnsupportedCount >= 1);
+        profileVm.ShowPreview();
+        var conflict = profileVm.PreviewGroups.Single(g => g.Kind == RecommendationPreviewGroupKind.Conflict);
+        Assert.Contains(conflict.Items, i => i.DisplayName.Contains("OpenSSH", StringComparison.OrdinalIgnoreCase));
+        _ = state;
+    }
+
+    [Fact]
+    public void Profile_Managed_Selection_Changes_With_Profile()
+    {
+        // T8: BingNews is trimmed by Developer but NOT by Gaming — switching
+        // profiles must deselect the now-unrecommended Profile-managed row.
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.BingNews"));
+        var profileVm = customize.Profiles!;
+        var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
+        var bingNews = apps.Items.Single(i => i.LogicalId == "BingNews");
+        Assert.True(bingNews.IsSelected);
+        Assert.True(profileVm.IsProfileManaged("BingNews"));
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+        Assert.False(bingNews.IsSelected); // no longer recommended by Gaming
+        Assert.False(profileVm.IsProfileManaged("BingNews"));
+        Assert.DoesNotContain(GetPlanOps(state), o => o.TargetIdentifier == "Microsoft.BingNews");
+        _ = state;
+    }
+
+    [Fact]
+    public void User_Managed_Selection_Does_Not_Silently_Change()
+    {
+        // T9: a row the user selected MANUALLY (never Profile-managed) is not
+        // silently toggled by later profile changes.
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp"));
+        var profileVm = customize.Profiles!;
+        var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
+        var xbox = apps.Items.Single(i => i.LogicalId == "XboxApp");
+
+        // Manual selection while NO profile drives anything.
+        xbox.IsSelected = true;
+        Assert.True(xbox.IsSelected);
+        Assert.True(xbox.WasOverridden);
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
+        // Developer keeps Xbox too — but more importantly the manual choice stays.
+        Assert.True(xbox.IsSelected);
+        Assert.True(xbox.WasOverridden);
+        _ = state;
+    }
+
+    [Fact]
+    public void Recommendation_Detail_Opens()
+    {
+        // T10: the detail overlay opens with grouped buckets.
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var profileVm = customize.Profiles!;
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+
+        Assert.False(profileVm.IsPreviewOpen);
+        profileVm.ShowPreview();
+        Assert.True(profileVm.IsPreviewOpen);
+        Assert.True(profileVm.HasPreviewItems);
+        Assert.True(profileVm.PreviewGroups.Count >= 2); // adopt + keep (+ manual/conflict)
+        _ = state;
+    }
+
+    [Fact]
+    public void Recommendation_Detail_Closes_And_Restores_State()
+    {
+        // T11/T12/T13: the overlay has an explicit close; closing restores the
+        // EXACT same Customize state — selections, profile and tab preserved.
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var profileVm = customize.Profiles!;
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+        customize.SelectedTab = customize.Tabs[3]; // e.g. Privacy
+
+        profileVm.ShowPreview();
+        var opsBefore = GetPlanOps(state).Select(o => o.TargetIdentifier).OrderBy(t => t).ToList();
+        var selectedTabBefore = customize.SelectedTab;
+        var profileBefore = profileVm.ActiveProfileCaption;
+
+        Assert.NotNull(profileVm.ClosePreviewCommand);
+        profileVm.ClosePreview();
+
+        Assert.False(profileVm.IsPreviewOpen);
+        Assert.Equal(selectedTabBefore, customize.SelectedTab);
+        Assert.Equal(profileBefore, profileVm.ActiveProfileCaption);
+        Assert.Equal(opsBefore, GetPlanOps(state).Select(o => o.TargetIdentifier).OrderBy(t => t).ToList());
+        Assert.True(profileVm.IsProfileManaged("Weather"));
+        _ = state;
+    }
+
+    [Fact]
+    public void Plan_Reflects_Actual_Selections_For_Next()
+    {
+        // T14: Next gating is driven by the actual resulting plan — after profile
+        // selection the plan contains the auto-applied operations and the
+        // selected count matches, with no navigation triggered (T15).
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var profileVm = customize.Profiles!;
+        var selectedBefore = customize.SelectedTab;
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+
+        Assert.NotEmpty(GetPlanOps(state));
+        Assert.Equal(customize.SelectedTotal, GetPlanOps(state).Count);
+        Assert.Equal(selectedBefore, customize.SelectedTab); // no auto-navigation
+        _ = state;
+    }
+
+    [Fact]
+    public void Profile_Switch_Does_Not_Navigate()
+    {
+        // T15: selecting/switching profiles never navigates away from Customize
+        // (SelectedTab and the wizard position are untouched).
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var profileVm = customize.Profiles!;
+        customize.SelectedTab = customize.Tabs[0];
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Lightweight").IsSelected = true;
+        profileVm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
+
+        Assert.Equal(customize.Tabs[0], customize.SelectedTab);
+        _ = state;
+    }
+
+    [Fact]
+    public void Selection_Origin_Text_Is_Localized()
+    {
+        // T16: zh/en origin captions resolve through the REAL resx service.
+        var zh = BuildCustomizeLocalized(AppxInventory("Microsoft.BingWeather"), "zh-CN");
+        var zhVm = zh.Customize.Profiles!;
+        var zhApps = (ComponentKnowledgeViewModel)zh.Customize.Tabs[0].Content;
+        zhVm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
+        var zhOrigin = zhApps.Items.Single(i => i.LogicalId == "Weather").SelectionOriginText;
+        Assert.Contains("由「", zhOrigin);
+        Assert.Contains("」自动选择", zhOrigin);
+
+        var en = BuildCustomizeLocalized(AppxInventory("Microsoft.BingWeather"), "en");
+        var enVm = en.Customize.Profiles!;
+        var enApps = (ComponentKnowledgeViewModel)en.Customize.Tabs[0].Content;
+        enVm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
+        var enOrigin = enApps.Items.Single(i => i.LogicalId == "Weather").SelectionOriginText;
+        Assert.Contains("Auto-selected by", enOrigin);
+    }
+
+    /// <summary>Like <see cref="BuildCustomize"/> but with the real resx localization service.</summary>
+    private static (AppState State, CustomizeStepViewModel Customize) BuildCustomizeLocalized(
+        ComponentInventory inventory, string cultureName)
+    {
+        var state = new AppState
+        {
+            CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C:\wf\mount",
+            },
+        };
+        var logger = new InMemoryLoggerService();
+        var rm = new System.Resources.ResourceManager(
+            "WinForge.App.Resources.Strings", typeof(ComponentKnowledgeViewModel).Assembly);
+        var loc = new WinForge.App.Localization.ResourceManagerLocalizationService(
+            rm, System.Globalization.CultureInfo.GetCultureInfo("en"));
+        loc.SetCulture(System.Globalization.CultureInfo.GetCultureInfo(cultureName));
+        var ctx = new RecommendationContextService(new RecommendationEngine(), new ProfileCatalog(), state);
+        var ciVm = new ComponentIntelligenceViewModel(state, logger,
+            new StaticInventoryCiService { Inventory = inventory },
+            new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog()), loc);
+        var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc, null, ctx);
+        var componentsKnowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability }, ctx);
+        var catalog = new OptimizationCatalog();
+        var customize = new CustomizeStepViewModel(
+            new ComponentsViewModel(state, logger, new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider()),
+            knowledge,
+            componentsKnowledge,
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Services, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Privacy, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.System, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Personalization, ctx),
+            ctx,
+            loc);
+        knowledge.DiscoverAsync().GetAwaiter().GetResult();
+        componentsKnowledge.RefreshFromInventory();
+        return (state, customize);
+    }
+
+    [Fact]
+    public void Selecting_Profile_Keeps_User_Manual_Selection_When_Already_Chosen()
+    {
+        // T1 extension: if the user already manually selected a row and then picks
+        // a profile that recommends it too, the row stays (no flicker), still
+        // flagged as a user choice — never downgraded to Profile-managed.
+        var (_, customize) = BuildCustomize(AppxInventory("Microsoft.BingWeather"));
+        var profileVm = customize.Profiles!;
+        var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
+        var weather = apps.Items.Single(i => i.LogicalId == "Weather");
+        weather.IsSelected = true; // manual, override
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
+
+        Assert.True(weather.IsSelected);
+        Assert.True(weather.WasOverridden);
+        Assert.False(profileVm.IsProfileManaged("Weather")); // override never Profile-managed
     }
 
     [Fact]
@@ -746,19 +1033,6 @@ public sealed class Stage11p4Tests
         Assert.Contains("## Gaming", text);
         Assert.Contains("## Balanced", text);
         Assert.Contains("Automatic (low-risk, adoptable):", text);
-    }
-
-    [Fact]
-    public void Profile_Change_Does_Not_Mutate_Plan()
-    {
-        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingNews"));
-        var profileVm = customize.Profiles!;
-        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
-        Assert.Empty(GetPlanOps(state));
-
-        profileVm.Profiles.Single(p => p.Definition.Id == "Lightweight").IsSelected = true;
-        Assert.Empty(GetPlanOps(state));
-        _ = state;
     }
 
     // =====================================================================

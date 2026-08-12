@@ -633,6 +633,8 @@
 
 
 
+
+
 <!-- WINFORGE_STAGE113_BLOCK_START -->
   <data name="Customize.Rescan" xml:space="preserve"><value>Rescan</value></data>
   <data name="Customize.Tab.Personalization" xml:space="preserve"><value>Personalization</value></data>
@@ -853,6 +855,7 @@
   <data name="Profile.Active" xml:space="preserve"><value>Current configuration</value></data>
   <data name="Profile.Adopt" xml:space="preserve"><value>Adopt recommended selections</value></data>
   <data name="Profile.AdvisedBy" xml:space="preserve"><value>Configuration advice</value></data>
+  <data name="Profile.BackToCustomize" xml:space="preserve"><value>Back to Customize</value></data>
   <data name="Profile.Balanced.Description" xml:space="preserve"><value>Balanced defaults — keep the experience close to Windows as shipped</value></data>
   <data name="Profile.Balanced.DisplayName" xml:space="preserve"><value>Balanced</value></data>
   <data name="Profile.Conflict.Summary" xml:space="preserve"><value>Resolved — keeping wins when another selected configuration needs the component</value></data>
@@ -872,6 +875,8 @@
   <data name="Profile.None" xml:space="preserve"><value>No profile selected — manual mode</value></data>
   <data name="Profile.Office.Description" xml:space="preserve"><value>Office compatibility, printing/scanning, OneDrive and stable defaults</value></data>
   <data name="Profile.Office.DisplayName" xml:space="preserve"><value>Office / Productivity</value></data>
+  <data name="Profile.Origin.Auto" xml:space="preserve"><value>Auto-selected by {0}</value></data>
+  <data name="Profile.Origin.Manual" xml:space="preserve"><value>Manually selected</value></data>
   <data name="Profile.Preview" xml:space="preserve"><value>Preview recommendation plan</value></data>
   <data name="Profile.Preview.Group.Adopt" xml:space="preserve"><value>Recommended to apply</value></data>
   <data name="Profile.Preview.Group.Conflict" xml:space="preserve"><value>Conflicts / blocked</value></data>
@@ -925,6 +930,7 @@
   <data name="Profile.Reason.XboxGamePass.Keep" xml:space="preserve"><value>Game Pass needs the Xbox app and services</value></data>
   <data name="Profile.RemoteDesktop.Description" xml:space="preserve"><value>SSH to remote machines and remote assistance</value></data>
   <data name="Profile.RemoteDesktop.DisplayName" xml:space="preserve"><value>Remote Desktop</value></data>
+  <data name="Profile.Restore" xml:space="preserve"><value>Restore this configuration's recommendations</value></data>
   <data name="Profile.Subtitle" xml:space="preserve"><value>Pick one or more usage scenarios — WinForge adjusts recommendations across every tab. Nothing changes until you explicitly adopt a plan.</value></data>
   <data name="Profile.Summary.Adopt" xml:space="preserve"><value>Suggested to apply</value></data>
   <data name="Profile.Summary.Confirm" xml:space="preserve"><value>Review manually</value></data>

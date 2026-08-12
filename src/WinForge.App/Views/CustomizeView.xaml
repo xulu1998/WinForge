@@ -7,11 +7,12 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:CustomizeStepViewModel}">
     <!--
-        Stage 11.4 final layout (approved compact Customize):
-        header rows are Auto and the TabControl takes the star height, so the
-        component list is the PRIMARY work surface and always consumes the
-        majority of the viewport. Header (title + subtitle + scan/selected) is
-        one compact block (Part A/F/J).
+        Stage 11.4 final layout: header rows are Auto and the TabControl takes the
+        star height, so the component list is the PRIMARY work surface. Selecting a
+        profile immediately applies its safe recommendations (final flow — no
+        separate adopt button). The recommendation detail opens as an OVERLAY over
+        the Customize surface with an explicit close/back action, so the user is
+        never trapped and the tabs/list stay logically intact.
     -->
     <Grid Margin="16,10,16,0">
         <Grid.RowDefinitions>
@@ -40,7 +41,7 @@
             </TextBlock.Text>
         </TextBlock>
 
-        <!-- Scan + selected-count share ONE compact row (no separate large row) -->
+        <!-- Scan + selected-count share ONE compact row -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
             <Button Style="{StaticResource PrimaryButton}" Background="#2F855A"
                     Padding="12,5"
@@ -89,7 +90,7 @@
                     </Run.Text>
                 </Run>
                 <Run Text=" "/>
-                <Run Text="{Binding Components.SelectedTotal, Mode=OneWay}"/>
+                <Run Text="{Binding SelectedTotal, Mode=OneWay}"/>
                 <Run>
                     <Run.Text>
                         <MultiBinding Converter="{StaticResource locKey}">
@@ -104,26 +105,104 @@
         <ContentControl Grid.Row="3" Content="{Binding Profiles, Mode=OneWay}"
                         Visibility="{Binding Profiles, Mode=OneWay, Converter={StaticResource NullToVis}}"/>
 
-        <!-- Star row: the tab control consumes ALL remaining height -->
-        <TabControl Grid.Row="4" ItemsSource="{Binding Tabs}"
-                    SelectedItem="{Binding SelectedTab, Mode=TwoWay}"
-                    Margin="0,10,0,12">
-            <TabControl.ItemTemplate>
-                <DataTemplate DataType="{x:Type vm:CustomizeTabViewModel}">
-                    <TextBlock>
-                        <TextBlock.Text>
-                            <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Path="HeaderKey"/><Binding Source="{StaticResource Loc}"/>
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
-                </DataTemplate>
-            </TabControl.ItemTemplate>
-            <TabControl.ContentTemplate>
-                <DataTemplate DataType="{x:Type vm:CustomizeTabViewModel}">
-                    <ContentControl Content="{Binding Content}" Margin="10"/>
-                </DataTemplate>
-            </TabControl.ContentTemplate>
-        </TabControl>
+        <!-- Star row: tabs/list + recommendation-detail overlay on top -->
+        <Grid Grid.Row="4" Margin="0,10,0,12">
+            <TabControl ItemsSource="{Binding Tabs}"
+                        SelectedItem="{Binding SelectedTab, Mode=TwoWay}">
+                <TabControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:CustomizeTabViewModel}">
+                        <TextBlock>
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Path="HeaderKey"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+                <TabControl.ContentTemplate>
+                    <DataTemplate DataType="{x:Type vm:CustomizeTabViewModel}">
+                        <ContentControl Content="{Binding Content}" Margin="10"/>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+
+            <!-- Recommendation detail overlay (final flow): explicit close returns
+                 to the EXACT same Customize state — tabs, selections, profile kept -->
+            <Grid Panel.ZIndex="10"
+                  Background="#99000000"
+                  Visibility="{Binding Profiles.IsPreviewOpen, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                <Border Background="White" BorderBrush="#CBD2D9" BorderThickness="1" CornerRadius="6"
+                        Margin="24,10" MaxWidth="1000" MaxHeight="640"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <DockPanel Grid.Row="0" Margin="16,12,16,6">
+                            <Button DockPanel.Dock="Right" Margin="0,0,0,0" Padding="10,5"
+                                    Background="Transparent" BorderThickness="0" FontSize="13"
+                                    Foreground="#3B82F6" VerticalAlignment="Center"
+                                    Command="{Binding Profiles.ClosePreviewCommand, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="× " FontSize="16" FontWeight="Bold"/>
+                                    <TextBlock>
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{StaticResource locKey}">
+                                                <Binding Source="Profile.BackToCustomize"/><Binding Source="{StaticResource Loc}"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Button>
+                            <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="#1F2933" VerticalAlignment="Center">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource locKey}">
+                                        <Binding Source="Profile.Details"/><Binding Source="{StaticResource Loc}"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </DockPanel>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding Profiles.PreviewGroups, Mode=OneWay}" Margin="16,4,16,12">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:RecommendationPreviewGroup}">
+                                        <StackPanel Margin="0,0,0,10">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding Converter="{StaticResource locKey}">
+                                                            <Binding Path="HeaderKey" Mode="OneWay"/><Binding Source="{StaticResource Loc}" Mode="OneWay"/>
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                                <TextBlock FontSize="12" Foreground="#7B8794" Margin="10,0,0,0"
+                                                           Text="{Binding TabBreakdown, Mode=OneWay}"/>
+                                            </StackPanel>
+                                            <ItemsControl ItemsSource="{Binding Items, Mode=OneWay}" Margin="14,4,0,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type vm:RecommendationPreviewItem}">
+                                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                            <TextBlock FontSize="12" Foreground="#1F2933"
+                                                                       Text="{Binding DisplayName, Mode=OneWay}" MinWidth="240"/>
+                                                            <TextBlock FontSize="12" Foreground="#2F855A"
+                                                                       Text="{Binding Caption, Mode=OneWay}" MinWidth="110"/>
+                                                            <TextBlock FontSize="11" Foreground="#7B8794" TextWrapping="Wrap"
+                                                                       MaxWidth="480" Text="{Binding ReasonText, Mode=OneWay}"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
     </Grid>
 </UserControl>

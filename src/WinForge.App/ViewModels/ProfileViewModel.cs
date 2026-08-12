@@ -90,14 +90,17 @@ public sealed class RecommendationPreviewGroup
 }
 
 /// <summary>
-/// Stage 11.4 profile selector + preview + adopt (ADR-057..060). Sits at the top
-/// of Customize. ONE primary profile (mutually exclusive radio cards, Part 1)
-/// plus optional EXTRA scenarios (independent checkboxes, Part 2) recompute
-/// every tab's effective recommendation; NOTHING is selected into the plan until
-/// the user explicitly clicks "采用推荐选择" — and even then only low-risk,
-/// apply-supported, conflict-free, present items are auto-selected (Part J).
-/// Manual toggles are recorded as user overrides (Part K) and survive
-/// recalculation / reapply.
+/// Stage 11.4 profile selector (final flow, ADR-057..060). Sits at the top of
+/// Customize. ONE primary profile (mutually exclusive radio cards) plus optional
+/// EXTRA scenarios (independent checkboxes) recompute every tab's effective
+/// recommendation, and — the key product change — SELECTING A PROFILE ITSELF
+/// immediately applies its SAFE recommended selections (no separate
+/// "采用推荐选择" step). Auto-selection stays strictly limited to present,
+/// apply-supported, low-risk, trusted, conflict-free items (Part J). Manual
+/// toggles are recorded as user overrides (Part K) and survive profile
+/// switching; "恢复此配置推荐" (conditional) explicitly clears overrides and
+/// recalculates. The recommendation detail opens as an overlay with an explicit
+/// close/back action.
 /// </summary>
 public sealed class ProfileViewModel : ViewModelBase
 {
@@ -107,8 +110,6 @@ public sealed class ProfileViewModel : ViewModelBase
     private readonly Action _recompute;
 
     private bool _isPreviewOpen;
-    private bool _hasAdopted;
-    private string _adoptedSignature = string.Empty;
 
     public ProfileViewModel(
         RecommendationContextService ctx,
@@ -130,8 +131,8 @@ public sealed class ProfileViewModel : ViewModelBase
         RefreshSelectionFlags();
 
         ShowPreviewCommand = new RelayCommand(_ => ShowPreview());
-        AdoptCommand = new RelayCommand(_ => Adopt(), _ => _ctx.HasActiveProfiles);
-        ReapplyCommand = new RelayCommand(_ => Reapply(), _ => _ctx.HasActiveProfiles && ReapplyVisible);
+        ClosePreviewCommand = new RelayCommand(_ => ClosePreview());
+        RestoreCommand = new RelayCommand(_ => Restore(), _ => _ctx.HasActiveProfiles && RestoreVisible);
 
         _ctx.Changed += (_, _) => OnContextChanged();
     }
@@ -153,9 +154,11 @@ public sealed class ProfileViewModel : ViewModelBase
 
     public ICommand ShowPreviewCommand { get; }
 
-    public ICommand AdoptCommand { get; }
+    public ICommand ClosePreviewCommand { get; }
 
-    public ICommand ReapplyCommand { get; }
+    /// <summary>"恢复此配置推荐" — recalculates Profile-managed selections, explicitly
+    /// clearing user overrides first. Only visible when an override exists.</summary>
+    public ICommand RestoreCommand { get; }
 
     public bool IsPreviewOpen
     {
@@ -164,6 +167,9 @@ public sealed class ProfileViewModel : ViewModelBase
     }
 
     public bool HasActiveProfiles => _ctx.HasActiveProfiles;
+
+    /// <summary>True when the row's current selection is auto-managed by the active profile.</summary>
+    public bool IsProfileManaged(string logicalId) => _ctx.IsProfileManaged(logicalId);
 
     /// <summary>
     /// 当前推荐配置 caption. Custom counts as "自定义" (manual mode); with no
@@ -188,13 +194,11 @@ public sealed class ProfileViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Conditional "重新采用推荐" visibility (UX fix): only after recommendations
-    /// were adopted AND the current state diverged — the user manually changed
-    /// selections afterward, or the profile set changed since adoption. Hidden in
-    /// the initial untouched state and right after an adopt with no divergence.
+    /// Conditional "恢复此配置推荐" visibility (final flow): only when a profile is
+    /// active AND the user has manually overridden at least one Profile-managed
+    /// selection. Hidden initially and right after a plain profile selection.
     /// </summary>
-    public bool ReapplyVisible =>
-        _hasAdopted && (ContextSignature() != _adoptedSignature || _ctx.IsUserOverriddenAny());
+    public bool RestoreVisible => _ctx.HasActiveProfiles && _ctx.HasUserOverrides;
 
     public bool HasPreviewItems => PreviewGroups.Any(g => g.Items.Count > 0);
 
@@ -246,6 +250,7 @@ public sealed class ProfileViewModel : ViewModelBase
     {
         RefreshSelectionFlags();
         _recompute();
+        ApplyProfileSelections();
         RefreshSummary();
     }
 
@@ -268,9 +273,8 @@ public sealed class ProfileViewModel : ViewModelBase
         OnPropertyChanged(nameof(SummaryKeepLabel));
         OnPropertyChanged(nameof(SummaryConflictLabel));
         OnPropertyChanged(nameof(SummaryUnsupportedLabel));
-        OnPropertyChanged(nameof(ReapplyVisible));
-        if (AdoptCommand is RelayCommand a) a.RaiseCanExecuteChanged();
-        if (ReapplyCommand is RelayCommand r) r.RaiseCanExecuteChanged();
+        OnPropertyChanged(nameof(RestoreVisible));
+        if (RestoreCommand is RelayCommand r) r.RaiseCanExecuteChanged();
     }
 
     private void RefreshSelectionFlags()
@@ -343,12 +347,12 @@ public sealed class ProfileViewModel : ViewModelBase
         PreviewGroups.Add(group);
     }
 
-    // ---- Adopt / Reapply (Part I/J/K) ----
+    // ---- Final flow — selecting a Profile IS the adoption (Part J unchanged) ----
 
     /// <summary>
     /// Part J eligibility: present + apply-supported + effective level is a
     /// recommended change (remove/disable/set) + risk Low + no conflict + not a
-    /// user override. Everything else stays manual.
+    /// user override. Everything else stays manual (需要确认 / 当前不可执行).
     /// </summary>
     private static bool IsAdoptEligible(IRecommendationSubject s)
         => s.IsPresent
@@ -366,50 +370,71 @@ public sealed class ProfileViewModel : ViewModelBase
            && s.Effective.Level != EffectiveRecommendationLevel.RecommendKeep
            && !(s.Effective.HasConflict || s.Effective.Level == EffectiveRecommendationLevel.Blocked || !s.Effective.IsApplySupported);
 
-    /// <summary>Adopts the current recommendations — the ONLY path that changes selections.</summary>
-    public void Adopt()
+    /// <summary>
+    /// Directly applies the active profile's safe recommendations to the plan.
+    /// Called automatically whenever the profile context changes (selection of a
+    /// profile or an extra scenario, Custom, restore). Deterministic:
+    /// <list type="bullet">
+    ///   <item>a user override NEVER changes — the item stays exactly as the user left it;</item>
+    ///   <item>an eligible item is selected (Profile-managed);</item>
+    ///   <item>an item that WAS Profile-managed but is no longer eligible under the
+    ///     NEW profile is deselected (unless overridden);</item>
+    ///   <item>an item the user selected manually (never Profile-managed) is untouched;</item>
+    ///   <item>Custom / no profile: Profile-managed bookkeeping is cleared and NOTHING changes.</item>
+    /// </list>
+    /// </summary>
+    private void ApplyProfileSelections()
     {
         if (!_ctx.HasActiveProfiles)
         {
+            _ctx.SetProfileManaged(Array.Empty<string>());
             return;
         }
 
-        foreach (var s in Subjects().Where(IsAdoptEligible))
+        var subjects = Subjects().ToList();
+        var eligible = subjects.Where(IsAdoptEligible).Select(s => s.LogicalId).ToHashSet(StringComparer.Ordinal);
+
+        foreach (var s in subjects)
         {
-            s.SetSelectedForAdoption(true);
+            if (s.WasOverridden)
+            {
+                continue; // user choice protected (Part K)
+            }
+
+            if (eligible.Contains(s.LogicalId))
+            {
+                s.SetSelectedForAdoption(true);
+            }
+            else if (_ctx.IsProfileManaged(s.LogicalId) && s.IsSelected)
+            {
+                // Was auto-applied by the previous profile, no longer recommended.
+                s.SetSelectedForAdoption(false);
+            }
         }
 
-        _hasAdopted = true;
-        _adoptedSignature = ContextSignature();
+        _ctx.SetProfileManaged(eligible);
         RefreshSummary();
     }
 
     /// <summary>
-    /// Re-applies the recommendations. Identical eligibility to Adopt; user
-    /// overrides (manual choices) are excluded by the predicate, so an explicit
-    /// user choice survives recalculation (Part K). After re-applying, the
-    /// adoption signature moves to the current profile set.
+    /// "恢复此配置推荐" — the ONLY explicit path that may overwrite user overrides.
+    /// Clears all overrides (raising the context change, which re-applies the
+    /// profile's safe recommendations), then refreshes the summary.
     /// </summary>
-    public void Reapply()
+    public void Restore()
     {
-        if (!ReapplyVisible)
+        if (!RestoreVisible)
         {
             return;
         }
 
-        foreach (var s in Subjects().Where(IsAdoptEligible))
-        {
-            s.SetSelectedForAdoption(true);
-        }
-
-        _adoptedSignature = ContextSignature();
+        _ctx.ClearUserOverrides(); // triggers OnContextChanged -> recompute + ApplyProfileSelections
         RefreshSummary();
     }
 
-    /// <summary>Deterministic signature of the active profile set (primary + extras, sorted).</summary>
-    private string ContextSignature()
-        => string.Join("|", _ctx.SelectedProfiles.Select(p => p.Id).OrderBy(id => id, StringComparer.Ordinal));
-
     private int CountPresent(Func<IRecommendationSubject, bool> predicate)
         => _ctx.HasActiveProfiles ? Subjects().Count(s => s.IsPresent && predicate(s)) : 0;
+
+    /// <summary>Closes the recommendation-detail overlay, restoring the Customize surface.</summary>
+    public void ClosePreview() => IsPreviewOpen = false;
 }

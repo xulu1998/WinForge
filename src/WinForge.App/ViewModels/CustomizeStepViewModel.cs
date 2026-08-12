@@ -104,6 +104,15 @@ public sealed class CustomizeStepViewModel : ViewModelBase
 
     public ICommand DiscoverCommand { get; }
 
+    /// <summary>
+    /// Total selected changes across ALL surfaces (knowledge rows write straight
+    /// into the shared plan). Drives the header "已选 N 项". Refreshes via
+    /// <see cref="PlanSync.PlanChanged"/> so profile auto-apply and manual toggles
+    /// both update the count immediately.
+    /// </summary>
+    public int SelectedTotal =>
+        Components.AppState.CurrentCustomizationPlan?.Operations.Count(o => o.IsSelected) ?? 0;
+
     private bool _isDiscovering;
 
     /// <summary>True while the unified discovery pass is running (Components + knowledge).</summary>
@@ -166,6 +175,8 @@ public sealed class CustomizeStepViewModel : ViewModelBase
         // AND the Component Intelligence knowledge discovery (curated classification).
         // The user never has to discover twice for two different systems.
         DiscoverCommand = new AsyncRelayCommand(_ => DiscoverAllAsync(), _ => CanDiscover);
+        // Header "已选 N 项" tracks the shared plan (profile auto-apply + manual).
+        PlanSync.PlanChanged += (_, _) => OnPropertyChanged(nameof(SelectedTotal));
         components.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ComponentsViewModel.IsMounted))

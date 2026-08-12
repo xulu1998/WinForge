@@ -467,9 +467,9 @@ public class CustomizeBindingRegressionTests
         "HasUnsupported", "TrimCount", "ManualCount",
         "KeepCount", "ConflictCount", "UnsupportedCount", "HasConflicts", "HasPreviewItems",
         "SummaryAdoptLabel", "SummaryConfirmLabel", "SummaryKeepLabel", "SummaryConflictLabel",
-        "SummaryUnsupportedLabel", "ReapplyVisible", "IsPreviewOpen", "Profiles", "ExtraScenarios",
-        "PreviewGroups", "ShowPreviewCommand",
-        "AdoptCommand", "ReapplyCommand", "Items",
+        "SummaryUnsupportedLabel", "RestoreVisible", "IsPreviewOpen", "Profiles", "ExtraScenarios",
+        "PreviewGroups", "ShowPreviewCommand", "ClosePreviewCommand", "RestoreCommand",
+        "Items",
         // Phase 10 BuildStepViewModel display-only getter-only properties (Defect 2 audit).
         "ProgressPercent", "CurrentStageText", "BuildModeText", "OutputPath",
         "OutputSizeText", "IsIndeterminate", "HasOutput", "AdkMissing",

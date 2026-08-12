@@ -631,6 +631,8 @@
 
 
 
+
+
 <!-- WINFORGE_STAGE113_BLOCK_START -->
   <data name="Customize.Rescan" xml:space="preserve"><value>重新扫描</value></data>
   <data name="Customize.Tab.Personalization" xml:space="preserve"><value>个性化</value></data>
@@ -851,6 +853,7 @@
   <data name="Profile.Active" xml:space="preserve"><value>当前推荐配置</value></data>
   <data name="Profile.Adopt" xml:space="preserve"><value>采用推荐选择</value></data>
   <data name="Profile.AdvisedBy" xml:space="preserve"><value>配置建议</value></data>
+  <data name="Profile.BackToCustomize" xml:space="preserve"><value>返回自定义</value></data>
   <data name="Profile.Balanced.Description" xml:space="preserve"><value>均衡默认——尽量保持 Windows 出厂体验</value></data>
   <data name="Profile.Balanced.DisplayName" xml:space="preserve"><value>均衡推荐</value></data>
   <data name="Profile.Conflict.Summary" xml:space="preserve"><value>已解决——当另一所选配置需要该组件时，保留方胜出</value></data>
@@ -870,6 +873,8 @@
   <data name="Profile.None" xml:space="preserve"><value>未选择推荐配置——手动模式</value></data>
   <data name="Profile.Office.Description" xml:space="preserve"><value>优先 Office 兼容、打印扫描、OneDrive 与稳定默认</value></data>
   <data name="Profile.Office.DisplayName" xml:space="preserve"><value>办公稳定</value></data>
+  <data name="Profile.Origin.Auto" xml:space="preserve"><value>由「{0}」自动选择</value></data>
+  <data name="Profile.Origin.Manual" xml:space="preserve"><value>手动选择</value></data>
   <data name="Profile.Preview" xml:space="preserve"><value>查看推荐方案</value></data>
   <data name="Profile.Preview.Group.Adopt" xml:space="preserve"><value>推荐执行</value></data>
   <data name="Profile.Preview.Group.Conflict" xml:space="preserve"><value>冲突 / 阻止</value></data>
@@ -923,6 +928,7 @@
   <data name="Profile.Reason.XboxGamePass.Keep" xml:space="preserve"><value>Game Pass 需要 Xbox 应用与服务</value></data>
   <data name="Profile.RemoteDesktop.Description" xml:space="preserve"><value>需要 SSH 远程连接与远程协助</value></data>
   <data name="Profile.RemoteDesktop.DisplayName" xml:space="preserve"><value>远程桌面</value></data>
+  <data name="Profile.Restore" xml:space="preserve"><value>恢复此配置推荐</value></data>
   <data name="Profile.Subtitle" xml:space="preserve"><value>选择一个或多个使用场景，WinForge 会据此调整各标签页的推荐。在你明确采用方案前，不会更改任何内容。</value></data>
   <data name="Profile.Summary.Adopt" xml:space="preserve"><value>建议执行</value></data>
   <data name="Profile.Summary.Confirm" xml:space="preserve"><value>需确认</value></data>

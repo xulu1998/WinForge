@@ -420,10 +420,19 @@ WinForge.Infrastructure  (Windows only)
   Risk==Low + no conflict + not overridden, Part J) and 重新应用推荐 (same eligibility; overrides
   excluded, Part K). Manual toggles mark user overrides via `IRecommendationSubject` rows; adopt uses
   `SetSelectedForAdoption` which never marks overrides.
+- **Final flow (2026-08-12): profile selection IS the adoption.** Selecting a primary
+  profile (or an extra scenario) immediately runs `ApplyProfileSelections` — Part J eligibility
+  unchanged — and the "采用推荐选择" button / AdoptCommand are removed. `RecommendationContextService`
+  records Profile-managed ids (`IsProfileManaged`); `ProfileViewModel` re-applies Profile-managed rows
+  on profile switches (adds new, drops no-longer-recommended Profile-managed rows) and NEVER touches
+  user overrides; Custom preserves the plan; conditional `RestoreCommand` ("恢复此配置推荐") clears
+  overrides and recalculates. The recommendation detail is a Customize overlay with an explicit
+  close/back (tabs, selections, profile preserved). The header count reads the shared plan via
+  `PlanSync.PlanChanged`. Rows show `SelectionOriginText` (由「X」自动选择 / 手动选择).
 - **Tests.** 39 `Stage11p4Tests` (model round-trip, multi-scenario combination, precedence incl.
   dependency-keep/override/safety, Gaming/Developer/Office/Lightweight rule sets against the real
   catalog, conflict resolution with reasons, preview/adopt/high-risk/override UX, en/zh localization,
   profile change never mutates the plan); ProfileView added to the WPF binding audit. Full suite
-  **651 pass (Core 53, App 598), 0 errors, 0 warnings (Release)**.
+  **662 pass (Core 53, App 609), 0 errors, 0 warnings (Release)**.
 
 See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 / ADR-057 / ADR-058 / ADR-059 / ADR-060 for the full rationale.

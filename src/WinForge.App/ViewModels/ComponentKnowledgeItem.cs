@@ -79,6 +79,7 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
         OnPropertyChanged(nameof(WasOverridden));
         OnPropertyChanged(nameof(HasConflict));
         OnPropertyChanged(nameof(ReasonText));
+        OnPropertyChanged(nameof(SelectionOriginText));
         OnPropertyChanged(nameof(ConflictText));
         OnPropertyChanged(nameof(AdvisedByText));
         OnPropertyChanged(nameof(WhyPoints));
@@ -149,6 +150,37 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
                 return $"{_loc["Profile.Conflict.Summary"]} ({trim} → {keep})";
             });
             return string.Join("; ", parts);
+        }
+    }
+
+    /// <summary>
+    /// Final flow row feedback: why is this row currently selected (or not)?
+    /// "由「X」自动选择" when the active profile auto-applied it, "手动选择" when
+    /// the user explicitly toggled it, empty when untouched.
+    /// </summary>
+    public string SelectionOriginText
+    {
+        get
+        {
+            if (_ctx is null)
+            {
+                return string.Empty;
+            }
+
+            if (_ctx.IsUserOverridden(LogicalId) || Effective.WasOverridden)
+            {
+                return _loc["Profile.Origin.Manual"];
+            }
+
+            if (_ctx.IsProfileManaged(LogicalId))
+            {
+                var primary = _ctx.SelectedProfiles.FirstOrDefault(p => p.Kind == WinForge.Core.Profiles.ProfileKind.Primary);
+                return primary is null
+                    ? string.Empty
+                    : string.Format(_loc["Profile.Origin.Auto"], _loc[primary.DisplayNameKey]);
+            }
+
+            return string.Empty;
         }
     }
 
