@@ -435,4 +435,16 @@ WinForge.Infrastructure  (Windows only)
   profile change never mutates the plan); ProfileView added to the WPF binding audit. Full suite
   **662 pass (Core 53, App 609), 0 errors, 0 warnings (Release)**.
 
-See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 / ADR-057 / ADR-058 / ADR-059 / ADR-060 for the full rationale.
+## Phase 11 — COMPLETED (2026-08-12)
+
+Stage 11.1–11.4 all passed real-desktop validation on the Windows 11 25H2 zh-CN x64 Consumer image and
+Phase 11 was merged to `main` via a `--no-ff` merge. The final Stage 11.4 flow: selecting a profile is
+the adoption (safe recommendations apply immediately; `ApplyProfileSelections` with Part J eligibility);
+`RecommendationContextService` tracks Profile-managed ids vs user overrides; switching profiles
+re-applies Profile-managed rows while user overrides always win; Custom preserves the plan; conditional
+恢复此配置推荐 clears overrides; the recommendation detail is a Customize overlay with explicit
+close/back; the header count reads the shared plan (`PlanSync.PlanChanged`); rows expose
+`SelectionOriginText`. One non-blocking follow-up is recorded (ADR-061): allow Extra Scenarios in
+Custom mode as keep/recommendation hints without a primary preset.
+
+See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 / ADR-057 / ADR-058 / ADR-059 / ADR-060 / ADR-061 for the full rationale.

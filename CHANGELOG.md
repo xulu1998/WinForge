@@ -5,6 +5,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Phase 11 — COMPLETED (2026-08-12)
+
+- **Phase 11 (Component Intelligence Foundation) is complete and merged to `main`** — real-desktop
+  validation passed on Windows 11 25H2 zh-CN x64 Consumer: profile selection applies safe
+  recommendations immediately, the selected count updates, user overrides stay protected, the
+  recommendation-detail overlay opens and returns correctly, all six Customize tabs + Review work, and
+  Gaming / Developer / Lightweight produce meaningful differences.
+- **Non-blocking follow-up (ADR-061):** the Custom profile currently disables Extra Scenarios; a future
+  polish will let extras act as keep/recommendation hints in Custom mode without enabling a primary preset.
+
 ### Added (Phase 11 Stage 11.4 — Scenario Profile / Recommended Configuration Engine — phase/11-component-intelligence)
 - **Recommended configuration selector at the top of Customize.** Pick one or more usage scenarios
   (均衡推荐 / 游戏优先 / 开发工作站 / 办公稳定 / 轻量系统 / 专用精简 / 自定义, multi-select; Custom is

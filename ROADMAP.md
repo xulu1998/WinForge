@@ -380,7 +380,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 11 — Component Intelligence Foundation
 
-- **Status:** IN PROGRESS (Stage 11.1 **REAL DESKTOP VALIDATED** 2026-08-10; Stage 11.2 **REAL DESKTOP VALIDATED** 2026-08-11 by the user after the ADR-050 master–detail fix; Stage 11.3 **IMPLEMENTED** 2026-08-11, **PENDING REAL DESKTOP REVIEW**; branch `phase/11-component-intelligence`, NOT merged to `main`)
+- **Status:** COMPLETED — **REAL DESKTOP VALIDATION PASSED** (2026-08-12) — **MERGED TO `main`** via `--no-ff` (merge commit recorded in PROJECT_STATUS; branch `phase/11-component-intelligence` kept until merge/push verified). Stage 11.1/11.2/11.3/11.4 all REAL DESKTOP VALIDATED. Non-blocking follow-up (ADR-061): allow Extra Scenarios in Custom mode as keep/recommendation hints without a primary preset.
 - **Goal:** Teach WinForge to *explain* Windows components to ordinary users — WHAT a
   component is, WHETHER they need it, WHAT breaks if removed, HOW risky, and whether it is
   restorable — without ever offering a destructive removal in Stage 11.1. Separate the

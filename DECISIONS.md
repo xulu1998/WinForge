@@ -1562,3 +1562,24 @@ All decisions are `ACCEPTED` unless noted.
   never adoptable; a High-risk trim (e.g. VirtualMachinePlatform under Lightweight) is visible but
   never auto-selected; Review then reflects the final explicit selections.
 
+
+
+## ADR-061: Phase 11 closeout — MERGED TO main; recorded non-blocking Custom + Extra Scenarios follow-up
+
+- **Context:** Stage 11.4 passed real-desktop validation on the Windows 11 25H2 zh-CN x64 Consumer image
+  (2026-08-12): profile selection works, safe recommended selections apply immediately, the selected
+  count updates correctly, user overrides remain protected, the recommendation-detail overlay opens and
+  returns correctly, Customize state is preserved, Gaming/Developer/Lightweight produce meaningful
+  differences, the profile layout is usable with the component list still visible, and all six Customize
+  tabs plus Review work without binding/runtime defects. Phase 11 is therefore closed out and merged to
+  `main` via a `--no-ff` merge (merge commit recorded in PROJECT_STATUS).
+- **Decision:**
+  - PHASE 11 — COMPLETED; Stage 11.1/11.2/11.3/11.4 — REAL DESKTOP VALIDATED; MERGED TO MAIN.
+  - One NON-BLOCKING follow-up is recorded (explicitly out of scope for Phase 11 completion):
+    **Custom profile currently disables the Extra Scenarios panel** (extras require an active primary
+    preset). Future polish: allow Extra Scenarios in Custom mode as recommendation/keep HINTS — they may
+    advise keeps (e.g. "WSL / Docker" keeps virtualization) without enabling a primary Profile preset and
+    without auto-applying anything. This is a UX/enablement refinement, not a correctness defect.
+- **Consequences:** Phase 11 work is complete and merged; the Custom + Extra Scenarios hint mode is a
+  candidate for a later phase (tracked in ROADMAP follow-ups). No changes were made to the recommendation
+  engine for this closeout.
