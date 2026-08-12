@@ -24,6 +24,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Incident regression.** A repeated-workflow test proves disposable workspaces no longer accumulate
   across sessions (the ~249 GB stale-workspace incident becomes impossible under normal use).
 
+### Fixed (Phase 12 Stage 12.5 — build completed but wizard step stayed InProgress / Finish disabled)
+
+- **Real-desktop:** full build succeeded (构建完成 / 100% / 已完成, final 7.62 GB ISO at
+  Documents\WinForge) but the top stepper still showed 构建镜像 · 进行中 and 完成 stayed disabled.
+- **Root cause (two defects in WorkflowViewModel):** (1) `OnBuildChanged` refreshed CanFinish on
+  `BuildStepViewModel.CurrentStage` changes but never called `RecomputeStates()`, so the Build step
+  stayed `Current` (InProgress) forever — the step graph was only recomputed from app-state changes;
+  (2) it raised FinishCommand via an `is RelayCommand` type check, but `FinishCommand` is an
+  `AsyncRelayCommand` — so `RaiseCanExecuteChanged()` was NEVER invoked and the 完成 button stayed
+  disabled even though `CanFinish` (IsFinalStep && CurrentStage == Completed) was true.
+- **Fix:** `OnBuildChanged` now calls `RecomputeStates()` on `CurrentStage` changes; the Build step
+  branch maps a CURRENT step whose `_build.CurrentStage == Completed` to `Completed`
+  (构建镜像 → 已完成) instead of `Current`; both `RecomputeStates` and the refresh path raise
+  FinishCommand via the correct `AsyncRelayCommand` type. Finish gating unchanged (NotStarted /
+  Failed / Cancelled / Verifying-failed all keep Finish disabled — one coherent source of truth:
+  `CanFinish => IsFinalStep && _build.CurrentStage == BuildState.Completed`). Stage 12.2 Finish
+  cleanup untouched (authoritative DISM check, ISO preserved, reclaimed bytes reported, Home nav).
+- **Regression:** `Stage12p5BuildFinishStateTests` (9) — Build start → step InProgress; success →
+  step Completed + Finish enabled immediately + CanExecuteChanged fires; failure / cancellation /
+  verification-failure keep Finish disabled; success survives navigate-back-and-forward; Finish
+  cleanup still deletes the completed workspace while the final ISO path survives; Finish returns
+  Home; zh/en StepState strings. Full suite **748 pass (Core 53, App 695), 0 errors, 0 warnings**.
+
 ### Fixed (Phase 12 Stage 12.4 — plan compiler emitted duplicate identical registry operations)
 
 - **Real-desktop report:** after the Stage 12.3 validation-UX fix, the validator correctly surfaced

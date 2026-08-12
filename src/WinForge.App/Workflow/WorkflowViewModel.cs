@@ -258,9 +258,16 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
                 // actually applied (execution succeeded), never as an always-open
                 // placeholder. The step's own CanBuild (mounted + ADK present) further
                 // gates the actual build command; this gate controls navigation only.
+                // Stage 12.5: a CURRENT Build step whose build reached Completed shows
+                // Completed (not InProgress) — the wizard must mirror the build VM's
+                // terminal state so the top stepper and Finish stay coherent.
                 WorkflowStep.Build => !execSucceeded
                     ? WorkflowStepState.NotAvailable
-                    : isCurrent ? WorkflowStepState.Current : WorkflowStepState.Available,
+                    : isCurrent
+                        ? (_build.CurrentStage == BuildState.Completed
+                            ? WorkflowStepState.Completed
+                            : WorkflowStepState.Current)
+                        : WorkflowStepState.Available,
 
                 _ => WorkflowStepState.Available
             };
@@ -273,20 +280,24 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
         if (NextCommand is RelayCommand next) next.RaiseCanExecuteChanged();
         if (BackCommand is RelayCommand back) back.RaiseCanExecuteChanged();
         if (SelectStepCommand is RelayCommand select) select.RaiseCanExecuteChanged();
-        if (FinishCommand is RelayCommand finish) finish.RaiseCanExecuteChanged();
+        // Stage 12.5: FinishCommand is an AsyncRelayCommand — the earlier
+        // `is RelayCommand` type check never matched, so FinishCommand.
+        // RaiseCanExecuteChanged() was NEVER called and the Finish button stayed
+        // disabled even after a successful build.
+        if (FinishCommand is AsyncRelayCommand finish) finish.RaiseCanExecuteChanged();
     }
 
     /// <summary>
     /// The Build step's completion state lives on <see cref="_build"/>, not on
     /// <see cref="IAppState"/>, so the wizard must react to its property changes
-    /// to enable "Finish" the moment a build completes.
+    /// to enable "Finish" and to flip the step to Completed the moment a build
+    /// completes. Recomputing the whole step graph also covers navigation gating.
     /// </summary>
     private void OnBuildChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(BuildStepViewModel.CurrentStage))
         {
-            OnPropertyChanged(nameof(CanFinish));
-            if (FinishCommand is RelayCommand finish) finish.RaiseCanExecuteChanged();
+            RecomputeStates();
         }
     }
 

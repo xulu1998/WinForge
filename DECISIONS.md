@@ -1687,3 +1687,24 @@ All decisions are `ACCEPTED` unless noted.
 - **Consequences:** identical recommendation intents produce one executable operation; Review counts
   reflect executable operations; true conflicts (same target, different value) still block Apply with
   visible warnings; rollback/explainability data keeps all sources.
+
+
+## ADR-069: Build→Finish workflow state synchronization
+
+- **Context:** real desktop: the build pipeline completed successfully (verified ISO, 100%,
+  已完成) but the wizard stepper kept 构建镜像 · 进行中 and 完成 stayed disabled. BuildStep internal
+  state was Completed; the wizard never learned about it.
+- **Root cause:** `WorkflowViewModel.OnBuildChanged` (a) refreshed `CanFinish` but never called
+  `RecomputeStates()`, so the Build step's `State` never flipped from `Current` to `Completed`; and
+  (b) refreshed FinishCommand via `if (FinishCommand is RelayCommand finish)` — but FinishCommand is
+  an `AsyncRelayCommand`, so `RaiseCanExecuteChanged()` was NEVER called and the button stayed
+  disabled even though `CanFinish` (IsFinalStep && CurrentStage == Completed) was already true.
+- **Decision:** `OnBuildChanged` on `CurrentStage` changes now calls `RecomputeStates()`; the Build
+  step maps a CURRENT step with `_build.CurrentStage == Completed` to `Completed`; command refresh
+  uses the correct `AsyncRelayCommand` type in both `RecomputeStates` and the refresh path. Finish
+  gating keeps ONE source of truth (`CanFinish`); NotStarted / Failed / Cancelled / verification
+  failure all keep Finish disabled. Stage 12.2 Finish cleanup is untouched (authoritative DISM
+  mount check, final ISO preserved, reclaimed bytes reported, navigate Home).
+- **Consequences:** at the moment the build log reaches "Build completed" the stepper flips to
+  已完成, 完成 enables immediately (no navigation/restart/rescan), Finish cleanup runs, ISO stays,
+  Home returns.
