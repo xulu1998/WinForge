@@ -1708,3 +1708,27 @@ All decisions are `ACCEPTED` unless noted.
 - **Consequences:** at the moment the build log reaches "Build completed" the stepper flips to
   已完成, 完成 enables immediately (no navigation/restart/rescan), Finish cleanup runs, ISO stays,
   Home returns.
+
+
+## ADR-070: Hide Widgets offline registry target — policy-based equivalent + apply-result UX
+
+- **Context:** real desktop: 「隐藏小组件按钮」 (OfflineDefaultUser SetOfflineRegistryValue) threw
+  UnauthorizedAccessException while the sibling 「任务栏搜索仅显示图标」 (same hive, same
+  Explorer\Advanced key) succeeded.
+- **Root cause:** the old target Explorer\Advanced\TaskbarDa sits in the PROTECTED Explorer subtree
+  of the Default User template; template ACLs reject offline writes (the sibling worked only because
+  TaskbarSearch already exists in the template). EnsureKeyPath fell through to CreateSubKey on the
+  existing-but-read-only key and surfaced the bare exception.
+- **Decision (Case D):**
+  - HideTaskbarWidgets now targets the official USER POLICY branch
+    Software\Policies\Microsoft\Dsh → EnableWebContent = 0 (Windows 11 25H2 supported mechanism),
+    written into the offline Default User NTUSER.DAT. Policy branches are offline-writable by design.
+  - EnsureKeyPath probes read-only keys and raises an explicit contextual "read-only template ACL"
+    error (never forces writes, never takes ownership, never rewrites ACLs).
+  - Apply result UX: localized summary 应用完成：{0} 项成功，{1} 项失败。 and a visible
+    failed-operations panel (name + reason). Execution writes per-operation outcomes back from the
+    frozen snapshot onto the LIVE plan so the panel can populate.
+  - Partial apply semantics: CompletedWithErrors unlocks Apply/Build but is NEVER presented as full
+    success — the failure panel is shown and the user proceeds only after seeing it.
+- **Consequences:** the operation remains offline-supported (policy branch), siblings unaffected, no
+  ACL hacks; failed operations are visible with exact reasons on the Review page.

@@ -24,6 +24,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Incident regression.** A repeated-workflow test proves disposable workspaces no longer accumulate
   across sessions (the ~249 GB stale-workspace incident becomes impossible under normal use).
 
+### Fixed (Phase 12 Stage 12.6 — Hide Widgets offline registry UnauthorizedAccessException + apply-result UX)
+
+- **Real-desktop:** applying 「隐藏小组件按钮」(SetOfflineRegistryValue, OfflineDefaultUser) failed with
+  "Attempted to perform an unauthorized operation" (UnauthorizedAccessException) while the sibling
+  「任务栏搜索仅显示图标」 (TaskbarSearch, same hive, same Explorer\Advanced key) succeeded.
+- **Root cause:** the old target Explorer\Advanced\TaskbarDa lives in the PROTECTED Explorer subtree
+  of the Default User template — its template ACLs reject offline writes (the sibling only worked
+  because TaskbarSearch already exists in the template). Execution: EnsureKeyPath fell into
+  CreateSubKey on an existing-but-read-only key and surfaced the bare exception.
+- **Fix (Case D — policy-based offline-safe equivalent; ADR-070):** HideTaskbarWidgets now targets
+  the official user-policy branch Software\Policies\Microsoft\Dsh → EnableWebContent = 0
+  (Windows 11 25H2 supported mechanism). `EnsureKeyPath` now probes read-only keys and raises an
+  explicit, contextual "read-only template ACL" failure instead of a bare UnauthorizedAccessException
+  (WinForge NEVER takes ownership / rewrites ACLs on offline user keys).
+- **Apply-result UX:** localized summary 「应用完成：{0} 项成功，{1} 项失败。」/ "Application
+  completed: {0} succeeded, {1} failed." plus a visible failed-operations panel (name + reason,
+  expandable). Per-operation outcomes are now written back from the execution SNAPSHOT onto the
+  LIVE plan (previously the frozen-snapshot execution left live operations Pending, so the failure
+  panel could never populate). Partial apply is never silently treated as full success.
+- **Regression:** Stage12p6HideWidgetsTests (10) — model targets Dsh policy; sibling TaskbarSearch
+  unchanged; old TaskbarDa target gone; corrected target executes successfully through the engine
+  (fake offline registry); no ACL-rewrite code exists; localized summary counts; failed item + reason
+  visible; partial-failure state deterministic (CompletedWithErrors unlocks Build with the panel
+  shown). Binding audit gains PlanReviewView.ApplyFailed render case. Full suite
+  **758 pass (Core 53, App 705), 0 errors, 0 warnings**.
+
 ### Fixed (Phase 12 Stage 12.5 — build completed but wizard step stayed InProgress / Finish disabled)
 
 - **Real-desktop:** full build succeeded (构建完成 / 100% / 已完成, final 7.62 GB ISO at

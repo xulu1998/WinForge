@@ -217,6 +217,11 @@
   <data name="Review.Warnings" xml:space="preserve"><value>校验警告</value></data>
   <data name="Review.ValidatePassed" xml:space="preserve"><value>计划校验通过，可以应用修改。</value></data>
   <data name="Review.ValidateFailed" xml:space="preserve"><value>计划校验失败：{0} 个阻塞问题。请查看下方列表。</value></data>
+  <data name="Apply.Summary" xml:space="preserve"><value>应用完成：{0} 项成功，{1} 项失败。</value></data>
+  <data name="Apply.SummaryAllSucceeded" xml:space="preserve"><value>应用完成：{0} 项全部成功。</value></data>
+  <data name="Apply.FailedItemsHeader" xml:space="preserve"><value>失败项</value></data>
+  <data name="Apply.FailedItemsToggle" xml:space="preserve"><value>查看失败项</value></data>
+  <data name="Apply.FailedItemsHide" xml:space="preserve"><value>收起失败项</value></data>
   <data name="Review.ValidateError" xml:space="preserve"><value>计划校验失败：{0}</value></data>
   <data name="Review.NoWarnings" xml:space="preserve"><value>没有校验警告。</value></data>
   <data name="Review.Validate" xml:space="preserve"><value>校验计划</value></data>

@@ -269,6 +269,41 @@ public class CustomizeBindingRegressionTests
                     vm.ValidatePlan();
                     return new PlanReviewView { DataContext = vm };
                 }, culture));
+            cases.Add(new("PlanReviewView.ApplyFailed",
+                () =>
+                {
+                    var state = new AppState();
+                    state.CurrentImageWorkspace = new ImageWorkspace();
+                    state.CurrentServicingWorkspace = new ImageServicingWorkspace
+                    {
+                        WorkingDirectory = @"C://wf//ws",
+                        MountDirectory = @"C://wf//ws//mount",
+                        WorkingImagePath = @"C://wf//ws//image//install.wim",
+                        State = ServicingWorkspaceState.Mounted,
+                    };
+                    var plan = PlanSync.EnsureDraftPlan(state);
+                    plan.AddOperation(new CustomizationOperation
+                    {
+                        OperationId = "op-1",
+                        OperationType = CustomizationOperationType.SetOfflineRegistryValue,
+                        DisplayName = "隐藏小组件按钮",
+                        RegistryHive = "DEFAULT_USER", RegistryKeyPath = @"Software\Policies\Microsoft\Dsh",
+                        RegistryValueName = "EnableWebContent", RegistryValueKind = OfflineRegistryValueKind.DWord,
+                        RegistryValueData = "0", Scope = OptimizationScope.OfflineDefaultUser,
+                        Risk = RiskClass.Safe, IsSelected = true,
+                    });
+                    plan.Validate();
+                    var failed = plan.SelectedOperations.Single();
+                    failed.ExecutionStatus = CustomizationOperationStatus.FailedRecoverable;
+                    failed.ErrorDetails = "Attempted to perform an unauthorized operation.";
+                    var fake = new FakeCustomizationExecutionService
+                    {
+                        Result = new CustomizationResult { TotalOperations = 1, Succeeded = 0, FailedOperations = 1 },
+                    };
+                    var vm = new PlanReviewViewModel(state, new InMemoryLoggerService(), fake, new FakeLoc());
+                    vm.ApplyAsync().GetAwaiter().GetResult();
+                    return new PlanReviewView { DataContext = vm };
+                }, culture));
             cases.Add(new("PlanReviewView.ValidationFailed",
                 () =>
                 {

@@ -217,6 +217,11 @@
   <data name="Review.Warnings" xml:space="preserve"><value>Validation warnings</value></data>
   <data name="Review.ValidatePassed" xml:space="preserve"><value>Plan validation passed. Changes can now be applied.</value></data>
   <data name="Review.ValidateFailed" xml:space="preserve"><value>Plan validation failed with {0} blocking issue(s). Review the list below.</value></data>
+  <data name="Apply.Summary" xml:space="preserve"><value>Application completed: {0} succeeded, {1} failed.</value></data>
+  <data name="Apply.SummaryAllSucceeded" xml:space="preserve"><value>Application completed: all {0} operations succeeded.</value></data>
+  <data name="Apply.FailedItemsHeader" xml:space="preserve"><value>Failed items</value></data>
+  <data name="Apply.FailedItemsToggle" xml:space="preserve"><value>View failed items</value></data>
+  <data name="Apply.FailedItemsHide" xml:space="preserve"><value>Hide failed items</value></data>
   <data name="Review.ValidateError" xml:space="preserve"><value>Plan validation failed: {0}</value></data>
   <data name="Review.NoWarnings" xml:space="preserve"><value>No validation warnings.</value></data>
   <data name="Review.Validate" xml:space="preserve"><value>Validate plan</value></data>

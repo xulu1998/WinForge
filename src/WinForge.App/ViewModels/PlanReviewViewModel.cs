@@ -26,6 +26,13 @@ public sealed class ReviewOperationItem
     public string ReversalCaption { get; init; } = string.Empty;
 }
 
+/// <summary>One failed apply operation shown in the Review failure panel.</summary>
+public sealed class ReviewFailedOperationItem
+{
+    public string DisplayName { get; init; } = string.Empty;
+    public string Reason { get; init; } = string.Empty;
+}
+
 /// <summary>
 /// Plan review page (Step 3.3 sections K, L, P; Stage 11.3 Part S). Aggregates the
 /// shared <see cref="CustomizationPlan"/> into human-readable totals (apps /
@@ -46,6 +53,8 @@ public sealed class PlanReviewViewModel : ViewModelBase
     private ObservableCollection<string> _warnings = new();
     private string _progressText = string.Empty;
     private string _resultSummary = string.Empty;
+    private bool _hasFailedOperations;
+    private bool _failedItemsExpanded;
     private bool _validationPassed;
     private string _validationMessage = string.Empty;
 
@@ -65,12 +74,16 @@ public sealed class PlanReviewViewModel : ViewModelBase
         Operations = new ObservableCollection<ReviewOperationItem>();
         ValidateCommand = new RelayCommand(_ => ValidatePlan(), _ => CanValidate);
         ApplyCommand = new AsyncRelayCommand(_ => ApplyAsync(), _ => CanApply);
+        ToggleFailedItemsCommand = new RelayCommand(_ => FailedItemsExpanded = !FailedItemsExpanded);
         _appState.PropertyChanged += OnAppStateChanged;
         Refresh();
     }
 
     public ICommand ValidateCommand { get; }
     public ICommand ApplyCommand { get; }
+
+    /// <summary>Expands / collapses the failed-operation list (Stage 12.6 UX).</summary>
+    public ICommand ToggleFailedItemsCommand { get; }
 
     public CustomizationPlan? Plan => _appState.CurrentCustomizationPlan;
 
@@ -148,6 +161,27 @@ public sealed class PlanReviewViewModel : ViewModelBase
     {
         get => _resultSummary;
         private set => SetField(ref _resultSummary, value);
+    }
+
+    /// <summary>Failed apply operations (name + reason), populated after Apply (Stage 12.6).</summary>
+    public ObservableCollection<ReviewFailedOperationItem> FailedOperations { get; } = new();
+
+    public bool HasFailedOperations
+    {
+        get => _hasFailedOperations;
+        private set => SetField(ref _hasFailedOperations, value);
+    }
+
+    public bool FailedItemsExpanded
+    {
+        get => _failedItemsExpanded;
+        private set
+        {
+            if (SetField(ref _failedItemsExpanded, value))
+            {
+                OnPropertyChanged(nameof(FailedItemsExpanded));
+            }
+        }
     }
 
     public bool CanValidate =>
@@ -284,6 +318,34 @@ public sealed class PlanReviewViewModel : ViewModelBase
 
     private string Localize(string key) => _loc is null ? key : _loc[key];
 
+    /// <summary>
+    /// Collects the failed operations (name + reason) into the visible list and
+    /// raises the failure panel state. A partial apply is NEVER silently treated
+    /// as full success — the panel stays visible until the user understands.
+    /// </summary>
+    private void PopulateFailedOperations()
+    {
+        FailedOperations.Clear();
+        if (Plan is not null)
+        {
+            foreach (var op in Plan.SelectedOperations.Where(o => o.ExecutionStatus
+                is CustomizationOperationStatus.FailedRecoverable))
+            {
+                FailedOperations.Add(new ReviewFailedOperationItem
+                {
+                    DisplayName = op.DisplayName,
+                    Reason = op.ErrorDetails ?? "Unknown error",
+                });
+            }
+        }
+
+        HasFailedOperations = FailedOperations.Count > 0;
+        FailedItemsExpanded = HasFailedOperations;
+        OnPropertyChanged(nameof(FailedOperations));
+        OnPropertyChanged(nameof(HasFailedOperations));
+        OnPropertyChanged(nameof(FailedItemsExpanded));
+    }
+
     public async Task ApplyAsync()
     {
         if (!CanApply || Plan is null || _appState.CurrentServicingWorkspace is null)
@@ -314,7 +376,13 @@ public sealed class PlanReviewViewModel : ViewModelBase
                         ? CustomizationExecutionState.CompletedWithErrors
                         : CustomizationExecutionState.Completed));
 
-            ResultSummary = result.Summary ?? "Done.";
+            // Stage 12.6 UX: a localized, explicit outcome summary (never the raw
+            // English engine text) plus the exact failed operations with reasons —
+            // the user must not hunt through the Logs page for what failed.
+            ResultSummary = result.Success && result.FailedOperations == 0
+                ? string.Format(Localize("Apply.SummaryAllSucceeded"), result.Succeeded)
+                : string.Format(Localize("Apply.Summary"), result.Succeeded, result.FailedOperations);
+            PopulateFailedOperations();
             _logger.Info($"Plan: applied ({result.Succeeded} succeeded, {result.FailedOperations} failed).");
         }
         catch (System.Exception ex)

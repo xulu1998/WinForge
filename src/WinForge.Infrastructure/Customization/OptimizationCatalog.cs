@@ -1090,7 +1090,16 @@ public sealed class OptimizationCatalog : IOptimizationCatalogProvider
             KeepIf = new string[0],
             RemoveIf = new string[0],
             KnownImpact = new string[0],
-            RegistryTargets = new[] {new RegistryTarget { Hive = "DEFAULT_USER", KeyPath = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", ValueName = "TaskbarDa", ValueKind = OfflineRegistryValueKind.DWord, RecommendedData = "0", RestoreData = "1" }},
+            // Stage 12.6 (real-desktop defect): the previous target
+            // Explorer\Advanced\TaskbarDa threw UnauthorizedAccessException when
+            // written into the OFFLINE Default User template — the Explorer subtree
+            // of NTUSER.DAT carries template ACLs that reject offline writes, while
+            // the sibling TaskbarSearch value only worked because it already exists.
+            // Windows 11 25H2's supported offline mechanism is the Dsh (Desktop
+            // Shell / Widgets) USER POLICY under Software\Policies\Microsoft\Dsh
+            // — a policy branch that is offline-writable by design. EnableWebContent
+            // = 0 disables Widgets (hides the taskbar button and the panel).
+            RegistryTargets = new[] {new RegistryTarget { Hive = "DEFAULT_USER", KeyPath = "Software\\Policies\\Microsoft\\Dsh", ValueName = "EnableWebContent", ValueKind = OfflineRegistryValueKind.DWord, RecommendedData = "0", RestoreData = "1" }},
             TargetIdentifier = null,
             IsStandardVisible = true,
         },
