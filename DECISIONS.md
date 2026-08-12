@@ -1433,3 +1433,35 @@ All decisions are `ACCEPTED` unless noted.
 - **Consequences:** Personalization no longer displays Coming Soon; tests assert the tab type, the
   five required groups, and the DEFAULT_USER strategy of the show-file-extensions operation.
 
+
+## ADR-055: Stage 11.3 real-desktop defect — unified Discover must refresh BOTH knowledge tabs
+
+- **Context:** on the real Windows 11 25H2 image, after one unified "发现组件" action the Customize
+  **Windows Components tab showed ZERO rows** and the "请先发现当前映像中的组件。" await-discovery
+  empty state, while Apps / Services / Privacy / System / Personalization all worked. The 12 reviewed
+  logical components were implemented but invisible.
+- **Root cause (traced, not guessed):** `CustomizeStepViewModel.DiscoverAllAsync()` ran the single
+  Component Intelligence discovery and refreshed only the **Apps** knowledge VM
+  (`_knowledge.DiscoverAsync()`). The **Windows Components** knowledge VM is a separate
+  `ComponentKnowledgeViewModel` instance over the SAME classified inventory — its `Rebuild()` ran once
+  in the constructor against the pre-discovery (catalog-only, `Discovered=false`) inventory and was
+  never re-run, so `HasInventory` stayed false (hence the await-discovery text) and `Items` stayed
+  empty. Matching rules, identities, parsers, and state handling were all correct.
+- **Decision:**
+  - `ComponentKnowledgeViewModel.RefreshFromInventory()` rebuilds a tab from the already-classified
+    shared inventory WITHOUT re-running DISM.
+  - `CustomizeStepViewModel.DiscoverAllAsync()` now calls
+    `_componentsKnowledge.RefreshFromInventory()` after `_knowledge.DiscoverAsync()` — one DISM pass
+    refreshes Apps AND Windows Components together (ADR-049's single-pass guarantee preserved).
+  - Execution eligibility separated from display eligibility: `ComponentKnowledgeItem.IsApplySupported`
+    gates SELECTION for OptionalFeature/Capability rows on `FeatureConfigPolicy`; a capability (or a
+    not-yet-allowlisted feature) row stays VISIBLE for knowledge with its checkbox disabled and an
+    explicit reason (`Opt.ApplyUnsupported` "当前版本暂不支持应用") instead of being hidden or silently
+    Skipped at Apply.
+- **Consequences:** 6 new regression tests (`Stage11p3ComponentsTabDefectTests`: OptionalFeature maps
+  to a Windows Components row; Disabled feature stays visible; AppX filter cannot affect the
+  Components tab; execution allowlist does not gate visibility; unsupported apply shows a blocked
+  reason + disabled checkbox; unified Discover populates Apps + Components together; catalog targets
+  pinned to the documented 25H2 `/Get-Features` identities). Full suite **590 pass (Core 53, App 537),
+  0 errors, 0 warnings (Release)**.
+

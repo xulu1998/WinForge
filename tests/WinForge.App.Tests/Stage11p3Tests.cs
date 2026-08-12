@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using WinForge.App.Mvvm;
 using WinForge.App.ViewModels;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
@@ -461,14 +462,18 @@ public class Stage11p3ComponentsKnowledgeTests
             new[] { ComponentCategory.Capability, ComponentCategory.OptionalFeature });
 
         var cap = vm.Items.Single(i => i.Entry.Definition?.Id == "CapX");
-        cap.IsSelected = true;
-
-        var op = state.CurrentCustomizationPlan!.Operations.Single(o => o.OperationId == "cap|OneCore.TestCap");
-        Assert.Equal(CustomizationOperationType.RemoveCapability, op.OperationType);
-        Assert.Equal(OptimizationMechanism.RemoveCapability, op.Mechanism);
-        Assert.Equal("cap|OneCore.TestCap", op.ConflictKey);
-        // Capabilities are not offered for execution in the first tranche.
+        // Capability rows are VISIBLE (knowledge) but apply is not supported in the
+        // first tranche → checkbox disabled with an explicit reason (defect fix:
+        // display eligibility and execution eligibility are separate).
+        Assert.True(cap.IsCurated);
         Assert.False(FeatureConfigPolicy.IsCapabilityAllowed("OneCore.TestCap"));
+        Assert.False(cap.IsApplySupported);
+        Assert.False(cap.IsSelectable);
+        Assert.Equal("Opt.ApplyUnsupported", cap.BlockReason);
+
+        // Selecting must be a no-op — no silent Skipped operation may enter the plan.
+        cap.IsSelected = true;
+        Assert.Null(state.CurrentCustomizationPlan);
     }
 }
 
@@ -702,4 +707,304 @@ internal sealed class SyntheticCatalog : IOptimizationCatalogProvider
     private readonly IReadOnlyList<OptimizationDefinition> _entries;
     public SyntheticCatalog(params OptimizationDefinition[] entries) => _entries = entries;
     public IReadOnlyList<OptimizationDefinition> GetEntries() => _entries;
+}
+
+// ---------------------------------------------------------------------------
+// Stage 11.3 REAL-DESKTOP DEFECT regression: "Windows Components tab shows ZERO
+// items despite 12 implemented logical components".
+// Root cause: the unified Customize Discover only refreshed the Apps knowledge
+// VM; the Windows Components knowledge VM (same CI inventory, different category
+// filter) was never refreshed and stayed in its pre-discovery empty state.
+// ---------------------------------------------------------------------------
+public class Stage11p3ComponentsTabDefectTests
+{
+    private sealed class StaticCiService : IComponentIntelligenceService
+    {
+        public ComponentInventory Inventory { get; set; } = new();
+        public Task<ComponentInventory> DiscoverAsync(
+            ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
+            => Task.FromResult(Inventory);
+    }
+
+    private static ComponentInventory FeatureInventory(params (string Name, FeatureState State)[] features)
+        => new()
+        {
+            Discovered = true,
+            Categories = new[]
+            {
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.OptionalFeature,
+                    Status = InventoryStatus.Success,
+                    Items = features
+                        .Select(f => (IRawInventoryItem)new RawOptionalFeature
+                        {
+                            Category = ComponentCategory.OptionalFeature,
+                            RawIdentity = f.Name,
+                            DisplayName = f.Name,
+                            FeatureStateValue = f.State,
+                            State = f.State.ToString()
+                        })
+                        .ToList()
+                }
+            }
+        };
+
+    private static ComponentKnowledgeViewModel BuildComponentsTab(AppState state, IComponentIntelligenceService svc)
+    {
+        var logger = new InMemoryLoggerService();
+        var loc = new FakeLocalizationService();
+        var ciVm = new ComponentIntelligenceViewModel(state, logger, svc,
+            new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog()), loc);
+        state.CurrentServicingWorkspace = new ImageServicingWorkspace
+        {
+            State = ServicingWorkspaceState.Mounted,
+            MountDirectory = @"C:\wf\mount"
+        };
+        ciVm.DiscoverAsync().GetAwaiter().GetResult();
+        return new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability });
+    }
+
+    [Fact]
+    public void OptionalFeature_Raw_Item_Maps_To_Windows_Components_Row()
+    {
+        var vm = BuildComponentsTab(new AppState(),
+            new StaticCiService { Inventory = FeatureInventory(("Microsoft-Hyper-V", FeatureState.Enabled)) });
+
+        Assert.False(vm.IsEmpty);
+        Assert.Single(vm.Items);
+        var row = vm.Items[0];
+        Assert.Equal("HyperV", row.Entry.Definition?.Id);
+        Assert.Equal("Microsoft-Hyper-V", row.RawIdentities[0]);
+        Assert.True(row.IsApplySupported);   // feature is on the execution allowlist
+        Assert.True(row.IsSelectable);
+    }
+
+    [Fact]
+    public void Disabled_Feature_Remains_Visible()
+    {
+        // A Disabled feature is STILL present in the image and meaningful —
+        // present states include Enabled AND Disabled (test area 3 / state filter).
+        var vm = BuildComponentsTab(new AppState(),
+            new StaticCiService { Inventory = FeatureInventory(("Containers-DisposableClientVM", FeatureState.Disabled)) });
+
+        Assert.Single(vm.Items);
+        Assert.Equal("WindowsSandbox", vm.Items[0].Entry.Definition?.Id);
+        Assert.Equal(FeatureState.Disabled.ToString(), vm.Items[0].Entry.RepresentativeRaw?.State);
+    }
+
+    [Fact]
+    public void AppX_Filter_Does_Not_Affect_Windows_Components()
+    {
+        // One CI discovery, two knowledge tabs: Apps shows AppX rows only;
+        // Windows Components shows capability/optional-feature rows only.
+        var inventory = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new[]
+            {
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.AppX,
+                    Status = InventoryStatus.Success,
+                    Items = new List<IRawInventoryItem>
+                    {
+                        new RawAppxPackage { Category = ComponentCategory.AppX,
+                            RawIdentity = "Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe",
+                            DisplayName = "Weather", State = "Provisioned" }
+                    }
+                },
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.OptionalFeature,
+                    Status = InventoryStatus.Success,
+                    Items = new List<IRawInventoryItem>
+                    {
+                        new RawOptionalFeature { Category = ComponentCategory.OptionalFeature,
+                            RawIdentity = "Microsoft-Hyper-V", DisplayName = "Hyper-V",
+                            FeatureStateValue = FeatureState.Enabled }
+                    }
+                }
+            }
+        };
+        var state = new AppState();
+        var logger = new InMemoryLoggerService();
+        var loc = new FakeLocalizationService();
+        var ciVm = new ComponentIntelligenceViewModel(state, logger, new StaticCiService { Inventory = inventory },
+            new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog()), loc);
+        state.CurrentServicingWorkspace = new ImageServicingWorkspace { State = ServicingWorkspaceState.Mounted, MountDirectory = @"C:\wf\mount" };
+        ciVm.DiscoverAsync().GetAwaiter().GetResult();
+
+        var apps = new ComponentKnowledgeViewModel(ciVm, state, logger, loc); // default = AppX only
+        var components = new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability });
+
+        var appsRows = apps.Items.Select(i => i.Entry.Definition?.Category).ToHashSet();
+        var componentsRows = components.Items.Select(i => i.Entry.Definition?.Category).ToHashSet();
+        Assert.Contains(ComponentCategory.AppX, appsRows);
+        Assert.All(appsRows, c => Assert.Equal(ComponentCategory.AppX, c));
+        Assert.Contains(ComponentCategory.OptionalFeature, componentsRows);
+        Assert.All(componentsRows, c => Assert.NotEqual(ComponentCategory.AppX, c));
+    }
+
+    [Fact]
+    public void Execution_Allowlist_Does_Not_Gate_Visibility()
+    {
+        // A reviewed feature that is NOT on the execution allowlist must stay
+        // VISIBLE (knowledge), with the checkbox disabled + explicit reason —
+        // it must not be filtered out of the list entirely.
+        var def = new ComponentDefinition
+        {
+            Id = "SyntheticFeat",
+            Category = ComponentCategory.OptionalFeature,
+            DisplayNameKey = "Feat.SyntheticFeat.DisplayName",
+            ShortDescriptionKey = "Feat.SyntheticFeat.Short",
+            Recommendation = RecommendationLevel.OptionalRemove,
+            Risk = RiskLevel.Low,
+            Removal = RemovalSupport.Supported,
+            Restore = RestoreSupport.Easy,
+            Action = OptimizationAction.Feature,
+            Mechanism = OptimizationMechanism.DisableOptionalFeature,
+            Scope = OptimizationScope.MountedImageFeature,
+            TechnicalTargets = new[] { new TechnicalTarget { Category = ComponentCategory.OptionalFeature, Match = MatchMethod.Exact, Pattern = "Not-Reviewed-Feature" } },
+        };
+        var inventory = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new[]
+            {
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.OptionalFeature,
+                    Status = InventoryStatus.Success,
+                    Items = new List<IRawInventoryItem>
+                    {
+                        new RawOptionalFeature { Category = ComponentCategory.OptionalFeature,
+                            RawIdentity = "Not-Reviewed-Feature", DisplayName = "X",
+                            FeatureStateValue = FeatureState.Enabled }
+                    }
+                }
+            }
+        };
+        var state = new AppState();
+        var logger = new InMemoryLoggerService();
+        var loc = new FakeLocalizationService();
+        var ciVm = new ComponentIntelligenceViewModel(state, logger, new StaticCiService { Inventory = inventory },
+            new InMemoryCatalog(def), loc);
+        state.CurrentServicingWorkspace = new ImageServicingWorkspace { State = ServicingWorkspaceState.Mounted, MountDirectory = @"C:\wf\mount" };
+        ciVm.DiscoverAsync().GetAwaiter().GetResult();
+        var vm = new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability });
+
+        var row = Assert.Single(vm.Items);           // VISIBLE
+        Assert.False(FeatureConfigPolicy.IsFeatureAllowed("Not-Reviewed-Feature"));
+        Assert.False(row.IsApplySupported);          // execution not supported
+        Assert.False(row.IsSelectable);              // checkbox disabled
+        Assert.Equal("Opt.ApplyUnsupported", row.BlockReason); // explicit reason
+    }
+
+    [Fact]
+    public async Task Unified_Discover_Populates_Apps_And_Windows_Components_Together()
+    {
+        // THE regression: after one unified Discover, BOTH knowledge tabs must
+        // show rows. Before the fix the Windows Components tab stayed in its
+        // pre-discovery empty state (zero rows, "请先发现当前映像中的组件。").
+        var inventory = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new[]
+            {
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.AppX,
+                    Status = InventoryStatus.Success,
+                    Items = new List<IRawInventoryItem>
+                    {
+                        new RawAppxPackage { Category = ComponentCategory.AppX,
+                            RawIdentity = "Microsoft.BingWeather_4.53.53006.0_neutral_~_8wekyb3d8bbwe",
+                            DisplayName = "Weather", State = "Provisioned" }
+                    }
+                },
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.OptionalFeature,
+                    Status = InventoryStatus.Success,
+                    Items = new List<IRawInventoryItem>
+                    {
+                        new RawOptionalFeature { Category = ComponentCategory.OptionalFeature,
+                            RawIdentity = "Microsoft-Hyper-V", DisplayName = "Hyper-V",
+                            FeatureStateValue = FeatureState.Enabled }
+                    }
+                }
+            }
+        };
+        var state = new AppState();
+        var logger = new InMemoryLoggerService();
+        var loc = new FakeLocalizationService();
+        var ciVm = new ComponentIntelligenceViewModel(state, logger, new StaticCiService { Inventory = inventory },
+            new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog()), loc);
+        state.CurrentServicingWorkspace = new ImageServicingWorkspace
+        {
+            State = ServicingWorkspaceState.Mounted,
+            MountDirectory = @"C:\wf\mount"
+        };
+
+        var components = new ComponentsViewModel(state, logger, new FakeCustomizationDiscoveryService(),
+            new FakeCustomizationDefinitionProvider());
+        var apps = new ComponentKnowledgeViewModel(ciVm, state, logger, loc);
+        var componentsK = new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability });
+        var customize = new CustomizeStepViewModel(components, apps, componentsK,
+            ComponentKnowledgeTestFactory.MakeOptimization(state, logger, OptimizationTab.Services),
+            ComponentKnowledgeTestFactory.MakeOptimization(state, logger, OptimizationTab.Privacy),
+            ComponentKnowledgeTestFactory.MakeOptimization(state, logger, OptimizationTab.System),
+            ComponentKnowledgeTestFactory.MakeOptimization(state, logger, OptimizationTab.Personalization));
+
+        Assert.True(customize.CanDiscover);
+        await ((AsyncRelayCommand)customize.DiscoverCommand).ExecuteAsync(null);
+
+        // Apps tab populated…
+        Assert.True(apps.HasInventory);
+        Assert.Contains(apps.Items, i => i.Entry.Definition?.Id == "Weather");
+        // …AND Windows Components tab populated from the SAME single discovery.
+        Assert.True(componentsK.HasInventory, "Windows Components tab must have inventory after Discover.");
+        Assert.Contains(componentsK.Items, i => i.Entry.Definition?.Id == "HyperV");
+        Assert.False(customize.IsDiscovering);
+    }
+
+    [Fact]
+    public void Catalog_Targets_Match_Documented_25H2_FeatureNames()
+    {
+        // Pins the 12 logical Windows Components to the exact DISM /Get-Features
+        // identities on Windows 11 25H2 (evidence-backed; no fuzzy loosening).
+        var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Microsoft-Hyper-V",
+            "Microsoft-Hyper-V-Management-PowerShell",
+            "Containers-DisposableClientVM",
+            "Microsoft-Windows-Subsystem-Linux",
+            "VirtualMachinePlatform",
+            "OpenSSH.Client",
+            "OpenSSH.Server",
+            "WindowsMediaPlayer",
+            "Internet-Printing-Client",
+            "ScanManagementConsole",
+            "Printing-XPSServices-Features",
+            "MicrosoftWindowsPowerShellV2Root",
+            "HypervisorPlatform",
+        };
+
+        var catalogTargets = new WindowsFeaturesCatalog().GetDefinitions()
+            .SelectMany(d => d.TechnicalTargets)
+            .Where(t => t.Category == ComponentCategory.OptionalFeature)
+            .Select(t => t.Pattern)
+            .ToList();
+
+        Assert.Equal(expected.Count, catalogTargets.Count);
+        foreach (var pattern in catalogTargets)
+        {
+            Assert.Contains(expected, e => string.Equals(e, pattern, StringComparison.OrdinalIgnoreCase));
+        }
+    }
 }

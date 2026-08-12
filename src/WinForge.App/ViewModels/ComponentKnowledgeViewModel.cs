@@ -200,6 +200,21 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Rebuilds this tab from the ALREADY-classified shared inventory without
+    /// re-running DISM. Stage 11.3 real-desktop defect fix: the unified Customize
+    /// Discover runs ONE Component Intelligence discovery, then refreshes BOTH
+    /// knowledge tabs (Apps + Windows Components) from the same result. Without
+    /// this the Windows Components tab stayed in its pre-discovery
+    /// (await-discovery) empty state and showed zero rows.
+    /// </summary>
+    public void RefreshFromInventory()
+    {
+        Rebuild();
+        HasInventory = _ciVm.Inventory?.Discovered ?? false;
+        Refresh();
+    }
+
     /// <summary>Rebuilds the full (sorted) list from the shared classified inventory.</summary>
     private void Rebuild()
     {

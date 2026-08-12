@@ -94,8 +94,47 @@ public sealed class ComponentKnowledgeItem : ViewModelBase
     public string RiskCaption => _loc["Risk." + RiskLevel];
 
     // ---- Selectability ----
-    /// <summary>True when the item may be selected into the plan (removable, not Protected/Unknown).</summary>
+    /// <summary>
+    /// Execution eligibility (Stage 11.3 defect fix): a row is VISIBLE whenever it
+    /// is a reviewed, present component, but it is only SELECTABLE when the
+    /// mechanism can actually be applied to the offline image. Display eligibility
+    /// and execution eligibility are deliberately separate — e.g. Capability rows
+    /// stay visible for knowledge but are blocked ("当前版本暂不支持应用") because the
+    /// capability execution allowlist is intentionally empty this tranche. This
+    /// prevents selecting an operation that would silently become Skipped at Apply.
+    /// </summary>
+    public bool IsApplySupported
+    {
+        get
+        {
+            foreach (var raw in Entry.RawItems)
+            {
+                switch (raw.Category)
+                {
+                    case ComponentCategory.OptionalFeature:
+                        if (!FeatureConfigPolicy.IsFeatureAllowed(raw.RawIdentity))
+                        {
+                            return false;
+                        }
+
+                        break;
+                    case ComponentCategory.Capability:
+                        if (!FeatureConfigPolicy.IsCapabilityAllowed(raw.RawIdentity))
+                        {
+                            return false;
+                        }
+
+                        break;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    /// <summary>True when the item may be selected into the plan (removable, not Protected/Unknown, apply-supported).</summary>
     public bool IsSelectable =>
+        IsApplySupported &&
         Entry.Definition is not null &&
         Entry.Definition.Removal != RemovalSupport.Blocked &&
         Entry.Definition.Recommendation != RecommendationLevel.NeverRemove &&
@@ -105,13 +144,15 @@ public sealed class ComponentKnowledgeItem : ViewModelBase
     public string BlockReason =>
         Entry.Definition is null
             ? _loc["Component.NotConfirmed"]
-            : Entry.Definition.Recommendation == RecommendationLevel.NeverRemove
-                ? _loc["Component.Blocked"]
-                : Entry.Definition.Risk == RiskLevel.Critical
+            : !IsApplySupported
+                ? _loc["Opt.ApplyUnsupported"]
+                : Entry.Definition.Recommendation == RecommendationLevel.NeverRemove
                     ? _loc["Component.Blocked"]
-                    : Entry.Definition.Removal == RemovalSupport.Blocked
+                    : Entry.Definition.Risk == RiskLevel.Critical
                         ? _loc["Component.Blocked"]
-                        : string.Empty;
+                        : Entry.Definition.Removal == RemovalSupport.Blocked
+                            ? _loc["Component.Blocked"]
+                            : string.Empty;
 
     private bool _isSelected;
     private bool _isActiveDetail;

@@ -622,6 +622,8 @@
 
 
 
+
+
 <!-- WINFORGE_STAGE113_BLOCK_START -->
   <data name="Customize.Tab.Personalization" xml:space="preserve"><value>Personalization</value></data>
   <data name="Feat.HyperV.DisplayName" xml:space="preserve"><value>Hyper-V</value></data>
@@ -666,6 +668,7 @@
   <data name="Opt.Action.Remove" xml:space="preserve"><value>Remove</value></data>
   <data name="Opt.Action.Service" xml:space="preserve"><value>Service</value></data>
   <data name="Opt.Action.Unknown" xml:space="preserve"><value>Change</value></data>
+  <data name="Opt.ApplyUnsupported" xml:space="preserve"><value>Apply is not supported for this item in this version</value></data>
   <data name="Opt.Blocked" xml:space="preserve"><value>Cannot be changed</value></data>
   <data name="Opt.CoreNeverChange" xml:space="preserve"><value>Core infrastructure — never modified by WinForge</value></data>
   <data name="Opt.Dep.hvplatform-dep" xml:space="preserve"><value>Shared virtualization / platform dependency — verify before disabling.</value></data>

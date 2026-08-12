@@ -466,8 +466,11 @@ Phased development plan for WinForge. Each phase records its **Status**,
   Services **12** (11 reviewed + 1 core informational), Privacy **11**, System **10**,
   Personalization **14** (Coming Soon removed; Start/Search + Taskbar + Explorer + Lock screen/Desktop
   + Appearance groups). Review lists every selected change with its exact action type + scope + revert
-  contract. **584 automated tests pass (Core 53, App 531), 0 errors, 0 warnings (Release).**
-  ADR-051/ADR-052/ADR-053/ADR-054.
+  contract. **590 automated tests pass (Core 53, App 537), 0 errors, 0 warnings (Release).**
+  ADR-051/ADR-052/ADR-053/ADR-054/ADR-055 (real-desktop defect fix: the unified Discover now
+  refreshes BOTH the Apps and Windows Components knowledge tabs from one DISM pass; execution
+  eligibility is separated from display eligibility so capability / not-yet-allowlisted rows stay
+  visible with a disabled checkbox and "当前版本暂不支持应用").
 - **Next (Stage 11.3 — IMPLEMENTED / PENDING REAL DESKTOP REVIEW):** real Windows 11 25H2 zh-CN x64
   Consumer validation of all six Customize tabs (record exact visible item counts; Personalization no
   longer Coming Soon; Review lists action types; no host-system side effects; no binding/runtime

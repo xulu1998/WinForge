@@ -115,6 +115,7 @@ public sealed class CustomizeStepViewModel : ViewModelBase
     public bool CanDiscover => !IsDiscovering && Components.IsMounted;
 
     private readonly ComponentKnowledgeViewModel _knowledge;
+    private readonly ComponentKnowledgeViewModel _componentsKnowledge;
 
     private CustomizeTabViewModel? _selectedTab;
 
@@ -135,6 +136,7 @@ public sealed class CustomizeStepViewModel : ViewModelBase
     {
         Components = components ?? throw new System.ArgumentNullException(nameof(components));
         _knowledge = knowledge ?? throw new System.ArgumentNullException(nameof(knowledge));
+        _componentsKnowledge = componentsKnowledge ?? throw new System.ArgumentNullException(nameof(componentsKnowledge));
 
         // ADR-049: ONE Discover button drives a single coherent, read-only discovery
         // pass — the existing Components discovery (Apps/Windows components/Services)
@@ -198,6 +200,11 @@ public sealed class CustomizeStepViewModel : ViewModelBase
         {
             await Components.DiscoverAsync();
             await _knowledge.DiscoverAsync();
+            // Stage 11.3 real-desktop defect fix: the Windows Components knowledge
+            // tab reuses the SAME classified inventory (one DISM pass) but must be
+            // explicitly refreshed — otherwise it stays in its pre-discovery
+            // empty state and shows zero rows after Discover.
+            _componentsKnowledge.RefreshFromInventory();
         }
         finally
         {

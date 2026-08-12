@@ -91,6 +91,7 @@ SHARED = [
     ("Opt.NotApplicable", "Not applicable to the selected image", "不适用于当前所选映像"),
     ("Opt.NoChangeRecommended", "No change recommended — Windows default kept", "不建议更改——保持 Windows 默认"),
     ("Opt.CoreNeverChange", "Core infrastructure — never modified by WinForge", "核心基础组件——WinForge 绝不修改"),
+    ("Opt.ApplyUnsupported", "Apply is not supported for this item in this version", "当前版本暂不支持应用"),
     # Service start type captions
     ("Opt.StartType.Automatic", "Automatic", "自动"),
     ("Opt.StartType.Manual", "Manual", "手动"),

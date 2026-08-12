@@ -620,6 +620,8 @@
 
 
 
+
+
 <!-- WINFORGE_STAGE113_BLOCK_START -->
   <data name="Customize.Tab.Personalization" xml:space="preserve"><value>个性化</value></data>
   <data name="Feat.HyperV.DisplayName" xml:space="preserve"><value>Hyper-V</value></data>
@@ -664,6 +666,7 @@
   <data name="Opt.Action.Remove" xml:space="preserve"><value>移除</value></data>
   <data name="Opt.Action.Service" xml:space="preserve"><value>服务</value></data>
   <data name="Opt.Action.Unknown" xml:space="preserve"><value>更改</value></data>
+  <data name="Opt.ApplyUnsupported" xml:space="preserve"><value>当前版本暂不支持应用</value></data>
   <data name="Opt.Blocked" xml:space="preserve"><value>不可更改</value></data>
   <data name="Opt.CoreNeverChange" xml:space="preserve"><value>核心基础组件——WinForge 绝不修改</value></data>
   <data name="Opt.Dep.hvplatform-dep" xml:space="preserve"><value>共享虚拟化/平台依赖——请先确认再关闭。</value></data>
