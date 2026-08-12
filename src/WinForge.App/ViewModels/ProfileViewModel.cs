@@ -50,6 +50,14 @@ public sealed class ProfileItemViewModel : ViewModelBase
             }
         }
     }
+
+    /// <summary>
+    /// Syncs the card's checked state WITHOUT routing through the context (no
+    /// Select/Deselect). Used by <see cref="ProfileViewModel.RefreshSelectionFlags"/>
+    /// to mirror the context after a profile change — routing would re-enter
+    /// ToggleProfile and recurse (UX-fix regression guard).
+    /// </summary>
+    internal void SetSelectedSilently(bool value) => SetField(ref _isSelected, value);
 }
 
 /// <summary>Preview-group discriminator (Part I).</summary>
@@ -93,6 +101,8 @@ public sealed class ProfileViewModel : ViewModelBase
     private readonly Action _recompute;
 
     private bool _isPreviewOpen;
+    private bool _hasAdopted;
+    private string _adoptedSignature = string.Empty;
 
     public ProfileViewModel(
         RecommendationContextService ctx,
@@ -111,7 +121,7 @@ public sealed class ProfileViewModel : ViewModelBase
 
         ShowPreviewCommand = new RelayCommand(_ => ShowPreview());
         AdoptCommand = new RelayCommand(_ => Adopt(), _ => _ctx.HasActiveProfiles);
-        ReapplyCommand = new RelayCommand(_ => Reapply(), _ => _ctx.HasActiveProfiles);
+        ReapplyCommand = new RelayCommand(_ => Reapply(), _ => _ctx.HasActiveProfiles && ReapplyVisible);
 
         _ctx.Changed += (_, _) => OnContextChanged();
     }
@@ -134,19 +144,33 @@ public sealed class ProfileViewModel : ViewModelBase
 
     public bool HasActiveProfiles => _ctx.HasActiveProfiles;
 
-    /// <summary>当前推荐配置 caption (joined profile names or manual-mode text).</summary>
+    /// <summary>
+    /// 当前推荐配置 caption. Custom counts as "自定义" (manual mode); with no
+    /// profile at all it is the manual-mode text.
+    /// </summary>
     public string ActiveProfileCaption
     {
         get
         {
-            if (!_ctx.HasActiveProfiles)
+            if (_ctx.HasActiveProfiles)
             {
-                return _loc["Profile.None"];
+                return string.Join(" + ", _ctx.SelectedProfiles.Select(p => _loc[p.DisplayNameKey]));
             }
 
-            return string.Join(" + ", _ctx.SelectedProfiles.Select(p => _loc[p.DisplayNameKey]));
+            return _ctx.IsProfileSelected("Custom")
+                ? _loc["Profile.Custom.DisplayName"]
+                : _loc["Profile.None"];
         }
     }
+
+    /// <summary>
+    /// Conditional "重新采用推荐" visibility (UX fix): only after recommendations
+    /// were adopted AND the current state diverged — the user manually changed
+    /// selections afterward, or the profile set changed since adoption. Hidden in
+    /// the initial untouched state and right after an adopt with no divergence.
+    /// </summary>
+    public bool ReapplyVisible =>
+        _hasAdopted && (ContextSignature() != _adoptedSignature || _ctx.IsUserOverriddenAny());
 
     public bool HasPreviewItems => PreviewGroups.Any(g => g.Items.Count > 0);
 
@@ -160,8 +184,8 @@ public sealed class ProfileViewModel : ViewModelBase
 
     public bool HasConflicts => ConflictCount > 0;
 
-    public string SummaryTrimLabel => _loc["Profile.Summary.Trim"];
-    public string SummaryManualLabel => _loc["Profile.Summary.Manual"];
+    public string SummaryAdoptLabel => _loc["Profile.Summary.Adopt"];
+    public string SummaryConfirmLabel => _loc["Profile.Summary.Confirm"];
     public string SummaryKeepLabel => _loc["Profile.Summary.Keep"];
     public string SummaryConflictLabel => _loc["Profile.Summary.Conflict"];
 
@@ -191,19 +215,23 @@ public sealed class ProfileViewModel : ViewModelBase
         OnPropertyChanged(nameof(ConflictCount));
         OnPropertyChanged(nameof(UnsupportedCount));
         OnPropertyChanged(nameof(HasConflicts));
-        OnPropertyChanged(nameof(SummaryTrimLabel));
-        OnPropertyChanged(nameof(SummaryManualLabel));
+        OnPropertyChanged(nameof(SummaryAdoptLabel));
+        OnPropertyChanged(nameof(SummaryConfirmLabel));
         OnPropertyChanged(nameof(SummaryKeepLabel));
         OnPropertyChanged(nameof(SummaryConflictLabel));
+        OnPropertyChanged(nameof(ReapplyVisible));
         if (AdoptCommand is RelayCommand a) a.RaiseCanExecuteChanged();
         if (ReapplyCommand is RelayCommand r) r.RaiseCanExecuteChanged();
     }
 
     private void RefreshSelectionFlags()
     {
+        // Silently mirror the context's selection — never routes back through
+        // Select/Deselect, otherwise a profile change would re-enter ToggleProfile
+        // and recurse (Custom's clear-presets path exposed this).
         foreach (var p in Profiles)
         {
-            p.IsSelected = _ctx.IsProfileSelected(p.Definition.Id);
+            p.SetSelectedSilently(_ctx.IsProfileSelected(p.Definition.Id));
         }
     }
 
@@ -290,15 +318,36 @@ public sealed class ProfileViewModel : ViewModelBase
             s.SetSelectedForAdoption(true);
         }
 
+        _hasAdopted = true;
+        _adoptedSignature = ContextSignature();
         RefreshSummary();
     }
 
     /// <summary>
     /// Re-applies the recommendations. Identical eligibility to Adopt; user
     /// overrides (manual choices) are excluded by the predicate, so an explicit
-    /// user choice survives recalculation (Part K).
+    /// user choice survives recalculation (Part K). After re-applying, the
+    /// adoption signature moves to the current profile set.
     /// </summary>
-    public void Reapply() => Adopt();
+    public void Reapply()
+    {
+        if (!ReapplyVisible)
+        {
+            return;
+        }
+
+        foreach (var s in Subjects().Where(IsAdoptEligible))
+        {
+            s.SetSelectedForAdoption(true);
+        }
+
+        _adoptedSignature = ContextSignature();
+        RefreshSummary();
+    }
+
+    /// <summary>Deterministic signature of the active profile set (sorted, Custom excluded).</summary>
+    private string ContextSignature()
+        => string.Join("|", _ctx.SelectedProfiles.Select(p => p.Id).OrderBy(id => id, StringComparer.Ordinal));
 
     private int CountPresent(Func<IRecommendationSubject, bool> predicate)
         => _ctx.HasActiveProfiles ? Subjects().Count(s => s.IsPresent && predicate(s)) : 0;

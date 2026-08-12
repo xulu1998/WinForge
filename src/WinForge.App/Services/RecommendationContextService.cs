@@ -44,12 +44,18 @@ public sealed class RecommendationContextService
     /// <summary>All reviewed profiles in catalog order.</summary>
     public IReadOnlyList<ProfileDefinition> AllProfiles => _profiles;
 
+    /// <summary>
+    /// Profiles that actually drive recommendations. <c>Custom</c> is EXCLUDED —
+    /// it means "no profile-driven overrides": the engine falls back to catalog
+    /// defaults while explicit manual checkbox selections are preserved.
+    /// </summary>
     public IReadOnlyList<ProfileDefinition> SelectedProfiles =>
-        _profiles.Where(p => _selectedProfileIds.Contains(p.Id)).ToList();
+        _profiles.Where(p => _selectedProfileIds.Contains(p.Id) && p.Id != "Custom").ToList();
 
     public IReadOnlyList<string> SelectedProfileIds => _selectedProfileIds;
 
-    public bool HasActiveProfiles => _selectedProfileIds.Count > 0;
+    /// <summary>True when at least one NON-Custom profile is active (Custom = manual mode).</summary>
+    public bool HasActiveProfiles => _selectedProfileIds.Any(id => id != "Custom");
 
     public bool IsProfileSelected(string profileId) => _selectedProfileIds.Contains(profileId);
 
@@ -106,6 +112,9 @@ public sealed class RecommendationContextService
     }
 
     public bool IsUserOverridden(string logicalId) => _userOverrides.Contains(logicalId);
+
+    /// <summary>True when the user manually changed at least one item this session.</summary>
+    public bool IsUserOverriddenAny() => _userOverrides.Count > 0;
 
     // ---- Part O — real image state ----
 

@@ -628,7 +628,10 @@
 
 
 
+
+
 <!-- WINFORGE_STAGE113_BLOCK_START -->
+  <data name="Customize.Rescan" xml:space="preserve"><value>Rescan</value></data>
   <data name="Customize.Tab.Personalization" xml:space="preserve"><value>Personalization</value></data>
   <data name="Feat.HyperV.DisplayName" xml:space="preserve"><value>Hyper-V</value></data>
   <data name="Feat.HyperV.KeepIf" xml:space="preserve"><value>You use Hyper-V</value></data>
@@ -853,6 +856,7 @@
   <data name="Profile.Custom.DisplayName" xml:space="preserve"><value>Custom</value></data>
   <data name="Profile.DedicatedMinimal.Description" xml:space="preserve"><value>Aggressive trims for kiosks and special-purpose systems; critical changes stay manual</value></data>
   <data name="Profile.DedicatedMinimal.DisplayName" xml:space="preserve"><value>Dedicated / Minimal</value></data>
+  <data name="Profile.Details" xml:space="preserve"><value>View recommendation details</value></data>
   <data name="Profile.Developer.Description" xml:space="preserve"><value>WSL, virtualization, Terminal, OpenSSH and dev tooling</value></data>
   <data name="Profile.Developer.DisplayName" xml:space="preserve"><value>Developer</value></data>
   <data name="Profile.Empty.Preview" xml:space="preserve"><value>Select a configuration to preview its recommendation plan.</value></data>
@@ -897,10 +901,10 @@
   <data name="Profile.Reason.Trim" xml:space="preserve"><value>Recommended to trim by the selected configuration</value></data>
   <data name="Profile.Reason.UserOverride" xml:space="preserve"><value>You changed this manually — recommendations will not overwrite your choice</value></data>
   <data name="Profile.Subtitle" xml:space="preserve"><value>Pick one or more usage scenarios — WinForge adjusts recommendations across every tab. Nothing changes until you explicitly adopt a plan.</value></data>
+  <data name="Profile.Summary.Adopt" xml:space="preserve"><value>Suggested to apply</value></data>
+  <data name="Profile.Summary.Confirm" xml:space="preserve"><value>Review manually</value></data>
   <data name="Profile.Summary.Conflict" xml:space="preserve"><value>Conflicts</value></data>
   <data name="Profile.Summary.Keep" xml:space="preserve"><value>Suggested to keep</value></data>
-  <data name="Profile.Summary.Manual" xml:space="preserve"><value>Review manually</value></data>
-  <data name="Profile.Summary.Trim" xml:space="preserve"><value>Suggested to trim</value></data>
   <data name="Profile.Summary.Unsupported" xml:space="preserve"><value>Apply not supported</value></data>
   <data name="Profile.Title" xml:space="preserve"><value>Recommended configuration</value></data>
   <data name="Profile.Why" xml:space="preserve"><value>Why</value></data>

@@ -476,6 +476,116 @@ public sealed class Stage11p4Tests
     }
 
     [Fact]
+    public void Preview_Is_Not_Required_For_Recommendation_Update()
+    {
+        // UX fix: badges update IMMEDIATELY on profile selection — no preview step.
+        var (_, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp"));
+        var profileVm = customize.Profiles!;
+        var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
+        var xbox = apps.Items.Single(i => i.LogicalId == "XboxApp");
+
+        Assert.Equal(EffectiveRecommendationLevel.ManualReview, xbox.Effective.Level);
+        Assert.False(profileVm.IsPreviewOpen);
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+
+        Assert.Equal(EffectiveRecommendationLevel.RecommendKeep, xbox.Effective.Level);
+        Assert.Equal("Recommendation.UsuallyKeep", xbox.RecommendationCaption);
+        Assert.False(profileVm.IsPreviewOpen); // preview was never opened
+    }
+
+    [Fact]
+    public void Reapply_Is_Hidden_In_Initial_State()
+    {
+        var (_, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp"));
+        Assert.False(customize.Profiles!.ReapplyVisible);
+    }
+
+    [Fact]
+    public void Reapply_Appears_Only_After_Adoption_And_Divergence()
+    {
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var profileVm = customize.Profiles!;
+        var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
+
+        // Selecting a profile alone never reveals reapply.
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+        Assert.False(profileVm.ReapplyVisible);
+
+        // Adopt with no divergence → still hidden (nothing to re-apply).
+        profileVm.Adopt();
+        Assert.False(profileVm.ReapplyVisible);
+
+        // Manual divergence (user changed a selection afterward) → visible.
+        var weather = apps.Items.Single(i => i.LogicalId == "Weather");
+        weather.IsSelected = false;
+        Assert.True(profileVm.ReapplyVisible);
+
+        // Profile-set divergence also reveals it.
+        profileVm.Reapply();
+        profileVm.Profiles.Single(p => p.Definition.Id == "Lightweight").IsSelected = true;
+        Assert.True(profileVm.ReapplyVisible);
+        _ = state;
+    }
+
+    [Fact]
+    public void Custom_Removes_Profile_Overrides_And_Preserves_Manual_Selections()
+    {
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var profileVm = customize.Profiles!;
+        var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+        profileVm.Adopt();
+        var weather = apps.Items.Single(i => i.LogicalId == "Weather");
+        Assert.True(weather.IsSelected);
+        Assert.Equal(EffectiveRecommendationLevel.RecommendRemove, weather.Effective.Level);
+
+        // Manual override, then switch to Custom.
+        weather.IsSelected = false;
+        profileVm.Profiles.Single(p => p.Definition.Id == "Custom").IsSelected = true;
+
+        // Custom = no profile-driven overrides → catalog defaults, manual mode.
+        Assert.False(profileVm.HasActiveProfiles);
+        // Weather's catalog default is RecommendedRemove → effective default trim.
+        Assert.Equal(EffectiveRecommendationLevel.RecommendRemove, weather.Effective.Level);
+        Assert.False(weather.Effective.WasProfileDriven);
+        // Explicit manual selection preserved.
+        Assert.False(weather.IsSelected);
+        _ = state;
+    }
+
+    [Fact]
+    public void Summary_Counts_Update_Immediately_On_Profile_Selection()
+    {
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var profileVm = customize.Profiles!;
+        Assert.Equal(0, profileVm.TrimCount);
+
+        profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+
+        // Updated immediately — no adopt, no preview required.
+        Assert.True(profileVm.TrimCount > 0);
+        Assert.True(profileVm.KeepCount > 0);
+        _ = state;
+    }
+
+    [Fact]
+    public void Summary_Counts_Use_Present_Items_Only()
+    {
+        // Part O: an absent trim candidate (Weather) must NOT be counted.
+        var (_, cWithWeather) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var (_, cWithoutWeather) = BuildCustomize(AppxInventory("Microsoft.XboxApp"));
+        var vWith = cWithWeather.Profiles!;
+        var vWithout = cWithoutWeather.Profiles!;
+        vWith.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+        vWithout.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+
+        Assert.True(vWith.TrimCount > vWithout.TrimCount,
+            $"Weather-present ({vWith.TrimCount}) must exceed absent ({vWithout.TrimCount}).");
+    }
+
+    [Fact]
     public void Profile_Change_Does_Not_Mutate_Plan()
     {
         var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingNews"));

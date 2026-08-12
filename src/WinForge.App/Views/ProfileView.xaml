@@ -7,26 +7,10 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:ProfileViewModel}">
     <Border Background="#F5F7FA" BorderBrush="#E4E7EB" BorderThickness="1" CornerRadius="6"
-            Padding="16" Margin="0,12,0,0">
+            Padding="12,8" Margin="0,10,0,0">
         <StackPanel>
-            <!-- Title -->
-            <TextBlock FontSize="15" FontWeight="SemiBold" Foreground="#1F2933">
-                <TextBlock.Text>
-                    <MultiBinding Converter="{StaticResource locKey}">
-                        <Binding Source="Profile.Title"/><Binding Source="{StaticResource Loc}"/>
-                    </MultiBinding>
-                </TextBlock.Text>
-            </TextBlock>
-            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="860">
-                <TextBlock.Text>
-                    <MultiBinding Converter="{StaticResource locKey}">
-                        <Binding Source="Profile.Subtitle"/><Binding Source="{StaticResource Loc}"/>
-                    </MultiBinding>
-                </TextBlock.Text>
-            </TextBlock>
-
-            <!-- Profile cards (multi-select; Custom is exclusive) -->
-            <ItemsControl ItemsSource="{Binding Profiles, Mode=OneWay}" Margin="0,10,0,0">
+            <!-- Compact profile cards: one row, name + very short subtitle (UX fix) -->
+            <ItemsControl ItemsSource="{Binding Profiles, Mode=OneWay}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel/>
@@ -34,61 +18,44 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:ProfileItemViewModel}">
-                        <Border Margin="0,0,10,10" CornerRadius="6" BorderThickness="1" BorderBrush="#CBD2D9"
-                                Background="White" Padding="10" MinWidth="170" MaxWidth="240">
-                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Top">
-                                <StackPanel Margin="4,0,0,0">
-                                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933"
-                                               Text="{Binding DisplayName, Mode=OneWay}"/>
-                                    <TextBlock FontSize="11" Foreground="#7B8794" TextWrapping="Wrap" MaxWidth="190"
-                                               Text="{Binding Description, Mode=OneWay}"/>
-                                </StackPanel>
-                            </CheckBox>
-                        </Border>
+                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  VerticalAlignment="Top" Margin="0,0,8,0"
+                                  ToolTip="{Binding Description, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Margin="2,0,6,0">
+                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933"
+                                           Text="{Binding DisplayName, Mode=OneWay}"/>
+                                <TextBlock FontSize="11" Foreground="#7B8794" Margin="8,2,0,0"
+                                           Text="{Binding Description, Mode=OneWay}"/>
+                            </StackPanel>
+                        </CheckBox>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Summary metrics (Part P) — visible only when a profile is active -->
-            <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+            <!-- Compact summary + primary action row -->
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
                         Visibility="{Binding HasActiveProfiles, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" VerticalAlignment="Center">
-                    <Run Text="{Binding ActiveProfileCaption, Mode=OneWay}"/>
-                </TextBlock>
-                <TextBlock FontSize="12" Foreground="#3E4C59" Margin="16,0,0,0" VerticalAlignment="Center">
+                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" VerticalAlignment="Center"
+                           Text="{Binding ActiveProfileCaption, Mode=OneWay}"/>
+                <TextBlock FontSize="12" Foreground="#3E4C59" Margin="14,0,0,0" VerticalAlignment="Center">
                     <Run Text="{Binding TrimCount, Mode=OneWay}"/><Run Text=" "/>
-                    <Run Text="{Binding SummaryTrimLabel, Mode=OneWay}"/>
-                </TextBlock>
-                <TextBlock FontSize="12" Foreground="#3E4C59" Margin="12,0,0,0" VerticalAlignment="Center">
-                    <Run Text="{Binding ManualCount, Mode=OneWay}"/><Run Text=" "/>
-                    <Run Text="{Binding SummaryManualLabel, Mode=OneWay}"/>
+                    <Run Text="{Binding SummaryAdoptLabel, Mode=OneWay}"/>
                 </TextBlock>
                 <TextBlock FontSize="12" Foreground="#3E4C59" Margin="12,0,0,0" VerticalAlignment="Center">
                     <Run Text="{Binding KeepCount, Mode=OneWay}"/><Run Text=" "/>
                     <Run Text="{Binding SummaryKeepLabel, Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock FontSize="12" Foreground="#3E4C59" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <Run Text="{Binding ManualCount, Mode=OneWay}"/><Run Text=" "/>
+                    <Run Text="{Binding SummaryConfirmLabel, Mode=OneWay}"/>
                 </TextBlock>
                 <TextBlock FontSize="12" Foreground="#B45309" Margin="12,0,0,0" VerticalAlignment="Center"
                            Visibility="{Binding HasConflicts, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                     <Run Text="{Binding ConflictCount, Mode=OneWay}"/><Run Text=" "/>
                     <Run Text="{Binding SummaryConflictLabel, Mode=OneWay}"/>
                 </TextBlock>
-            </StackPanel>
-            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,4,0,0"
-                       Text="{Binding ActiveProfileCaption, Mode=OneWay}"
-                       Visibility="{Binding HasActiveProfiles, Mode=OneWay, Converter={StaticResource BoolToVisInv}}"/>
 
-            <!-- Actions -->
-            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                <Button Style="{StaticResource PrimaryButton}" Command="{Binding ShowPreviewCommand, Mode=OneWay}">
-                    <TextBlock>
-                        <TextBlock.Text>
-                            <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Source="Profile.Preview"/><Binding Source="{StaticResource Loc}"/>
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
-                </Button>
-                <Button Style="{StaticResource PrimaryButton}" Background="#2F855A" Margin="8,0,0,0"
+                <Button Style="{StaticResource PrimaryButton}" Background="#2F855A" Margin="18,0,0,0"
                         Command="{Binding AdoptCommand, Mode=OneWay}">
                     <TextBlock>
                         <TextBlock.Text>
@@ -98,8 +65,11 @@
                         </TextBlock.Text>
                     </TextBlock>
                 </Button>
-                <Button Style="{StaticResource StepButton}" Margin="8,0,0,0"
-                        Command="{Binding ReapplyCommand, Mode=OneWay}">
+                <!-- Conditional reapply (only after adoption + divergence) -->
+                <Button Margin="8,0,0,0" Padding="10,6" Background="White" BorderBrush="#CBD2D9"
+                        BorderThickness="1" FontSize="12" Foreground="#1F2933" VerticalAlignment="Center"
+                        Command="{Binding ReapplyCommand, Mode=OneWay}"
+                        Visibility="{Binding ReapplyVisible, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                     <TextBlock>
                         <TextBlock.Text>
                             <MultiBinding Converter="{StaticResource locKey}">
@@ -108,10 +78,27 @@
                         </TextBlock.Text>
                     </TextBlock>
                 </Button>
+                <!-- Demoted preview: lightweight secondary action, not a competing primary -->
+                <Button Margin="8,0,0,0" Padding="10,6" Background="Transparent" BorderThickness="0"
+                        FontSize="12" Foreground="#3B82F6" VerticalAlignment="Center"
+                        Command="{Binding ShowPreviewCommand, Mode=OneWay}">
+                    <TextBlock>
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{StaticResource locKey}">
+                                <Binding Source="Profile.Details"/><Binding Source="{StaticResource Loc}"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </Button>
             </StackPanel>
 
+            <!-- Manual-mode / Custom caption when no preset profile drives recommendations -->
+            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,6,0,0"
+                       Text="{Binding ActiveProfileCaption, Mode=OneWay}"
+                       Visibility="{Binding HasActiveProfiles, Mode=OneWay, Converter={StaticResource BoolToVisInv}}"/>
+
             <!-- Preview panel (Part I) — non-destructive, shows what WOULD be selected -->
-            <StackPanel Margin="0,12,0,0"
+            <StackPanel Margin="0,10,0,0"
                         Visibility="{Binding IsPreviewOpen, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                 <ItemsControl ItemsSource="{Binding PreviewGroups, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>

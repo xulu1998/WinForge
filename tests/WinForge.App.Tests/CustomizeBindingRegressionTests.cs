@@ -5,8 +5,11 @@ using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Threading;
 using WinForge.App.Converters;
 using WinForge.App.Services;
@@ -15,9 +18,10 @@ using WinForge.App.Views;
 using WinForge.Core.Models;
 using WinForge.Core.Profiles;
 using WinForge.Core.Services;
+using WinForge.Infrastructure.ComponentIntelligence;
+using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.Logging;
 using WinForge.Infrastructure.Profiles;
-using System.Windows.Data;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -431,8 +435,8 @@ public class CustomizeBindingRegressionTests
         // false positives in this audit.
         "ActiveProfileCaption", "HasActiveProfiles", "TrimCount", "ManualCount",
         "KeepCount", "ConflictCount", "UnsupportedCount", "HasConflicts", "HasPreviewItems",
-        "SummaryTrimLabel", "SummaryManualLabel", "SummaryKeepLabel", "SummaryConflictLabel",
-        "IsPreviewOpen", "Profiles", "PreviewGroups", "ShowPreviewCommand",
+        "SummaryAdoptLabel", "SummaryConfirmLabel", "SummaryKeepLabel", "SummaryConflictLabel",
+        "ReapplyVisible", "IsPreviewOpen", "Profiles", "PreviewGroups", "ShowPreviewCommand",
         "AdoptCommand", "ReapplyCommand", "Items",
         // Phase 10 BuildStepViewModel display-only getter-only properties (Defect 2 audit).
         "ProgressPercent", "CurrentStageText", "BuildModeText", "OutputPath",
@@ -454,6 +458,98 @@ public class CustomizeBindingRegressionTests
         }
 
         return dir.FullName;
+    }
+
+    /// <summary>
+    /// Stage 11.4 UX defect fix: the profile panel must stay compact and the
+    /// Customize tabs/list must remain visible at normal window size — the
+    /// component list is the PRIMARY surface.
+    /// </summary>
+    [Fact]
+    public void ProfilePanel_Is_Compact_And_Tabs_Stay_Visible()
+    {
+        RunWpf(() =>
+        {
+            InstallAppResources(CultureInfo.GetCultureInfo("en"));
+
+            // 1) Profile panel alone stays <= 200 px tall at 1200px width.
+            var ctx = new RecommendationContextService(new RecommendationEngine(), new ProfileCatalog(), new AppState());
+            var profileVm = new ProfileViewModel(ctx, new FakeLoc(), () => Array.Empty<IRecommendationSubject>(), () => { });
+            var profileView = new ProfileView { DataContext = profileVm };
+            profileView.Measure(new Size(1200, 700));
+            profileView.Arrange(new Rect(0, 0, 1200, 700));
+            profileView.UpdateLayout();
+            Assert.True(profileView.DesiredSize.Height <= 200,
+                $"ProfileView is {profileView.DesiredSize.Height}px tall — must stay <= 200px.");
+
+            // 2) Customize (WITH the profile panel wired) keeps the tabs list visible.
+            var customize = BuildCustomizeWithProfiles();
+            var view = new CustomizeView { DataContext = customize };
+            view.Measure(new Size(1200, 700));
+            view.Arrange(new Rect(0, 0, 1200, 700));
+            view.UpdateLayout();
+            var tabs = FindVisuals<TabControl>(view).FirstOrDefault();
+            Assert.NotNull(tabs);
+            Assert.True(tabs.ActualHeight >= 250,
+                $"TabControl height {tabs.ActualHeight}px too small — the component list is squeezed.");
+        });
+    }
+
+    /// <summary>Profile-wired Customize graph (Stage 11.4 UX layout test).</summary>
+    private static CustomizeStepViewModel BuildCustomizeWithProfiles()
+    {
+        var state = new AppState
+        {
+            CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C://wf//mount",
+            },
+        };
+        var logger = new InMemoryLoggerService();
+        var loc = new FakeLoc();
+        var ctx = new RecommendationContextService(new RecommendationEngine(), new ProfileCatalog(), state);
+        var ciVm = new ComponentIntelligenceViewModel(state, logger, new NoopCiService(),
+            new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog()), loc);
+        var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc, null, ctx);
+        var componentsKnowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability }, ctx);
+        var catalog = new OptimizationCatalog();
+        return new CustomizeStepViewModel(
+            new ComponentsViewModel(state, logger, new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider()),
+            knowledge,
+            componentsKnowledge,
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Services, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Privacy, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.System, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Personalization, ctx),
+            ctx,
+            loc);
+    }
+
+    private sealed class NoopCiService : IComponentIntelligenceService
+    {
+        public Task<ComponentInventory> DiscoverAsync(
+            ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
+            => Task.FromResult(new ComponentInventory());
+    }
+
+    private static List<T> FindVisuals<T>(DependencyObject root) where T : DependencyObject
+    {
+        var found = new List<T>();
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T match)
+            {
+                found.Add(match);
+            }
+
+            found.AddRange(FindVisuals<T>(child));
+        }
+
+        return found;
     }
 
     [Fact]

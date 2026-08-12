@@ -28,11 +28,29 @@
                 <Button Style="{StaticResource PrimaryButton}" Background="#2F855A"
                         Command="{Binding DiscoverCommand, Mode=OneWay}">
                     <TextBlock>
-                        <TextBlock.Text>
-                            <MultiBinding Converter="{StaticResource locKey}">
-                                <Binding Source="Customize.Discover"/><Binding Source="{StaticResource Loc}"/>
-                            </MultiBinding>
-                        </TextBlock.Text>
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text">
+                                    <Setter.Value>
+                                        <MultiBinding Converter="{StaticResource locKey}">
+                                            <Binding Source="Customize.Discover"/><Binding Source="{StaticResource Loc}"/>
+                                        </MultiBinding>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <!-- Once discovery completed, the button becomes 重新扫描 -->
+                                    <DataTrigger Binding="{Binding Components.HasInventory, Mode=OneWay}" Value="True">
+                                        <Setter Property="Text">
+                                            <Setter.Value>
+                                                <MultiBinding Converter="{StaticResource locKey}">
+                                                    <Binding Source="Customize.Rescan"/><Binding Source="{StaticResource Loc}"/>
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
                     </TextBlock>
                 </Button>
                 <TextBlock VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#3B82F6"

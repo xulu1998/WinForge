@@ -626,7 +626,10 @@
 
 
 
+
+
 <!-- WINFORGE_STAGE113_BLOCK_START -->
+  <data name="Customize.Rescan" xml:space="preserve"><value>重新扫描</value></data>
   <data name="Customize.Tab.Personalization" xml:space="preserve"><value>个性化</value></data>
   <data name="Feat.HyperV.DisplayName" xml:space="preserve"><value>Hyper-V</value></data>
   <data name="Feat.HyperV.KeepIf" xml:space="preserve"><value>你使用Hyper-V</value></data>
@@ -851,6 +854,7 @@
   <data name="Profile.Custom.DisplayName" xml:space="preserve"><value>自定义</value></data>
   <data name="Profile.DedicatedMinimal.Description" xml:space="preserve"><value>面向自助终端与专用系统的激进精简；关键更改仍需手动</value></data>
   <data name="Profile.DedicatedMinimal.DisplayName" xml:space="preserve"><value>专用精简</value></data>
+  <data name="Profile.Details" xml:space="preserve"><value>查看推荐详情</value></data>
   <data name="Profile.Developer.Description" xml:space="preserve"><value>优先 WSL、虚拟化、终端、OpenSSH 与开发工具链</value></data>
   <data name="Profile.Developer.DisplayName" xml:space="preserve"><value>开发工作站</value></data>
   <data name="Profile.Empty.Preview" xml:space="preserve"><value>请先选择推荐配置以预览推荐方案。</value></data>
@@ -866,7 +870,7 @@
   <data name="Profile.Preview.Group.Conflict" xml:space="preserve"><value>冲突 / 阻止</value></data>
   <data name="Profile.Preview.Group.Keep" xml:space="preserve"><value>建议保留</value></data>
   <data name="Profile.Preview.Group.Manual" xml:space="preserve"><value>需要确认</value></data>
-  <data name="Profile.Reapply" xml:space="preserve"><value>重新应用推荐</value></data>
+  <data name="Profile.Reapply" xml:space="preserve"><value>重新采用推荐</value></data>
   <data name="Profile.Reason.Conflict.KeepWins" xml:space="preserve"><value>保留方胜出——另一所选配置需要该组件</value></data>
   <data name="Profile.Reason.Dedicated.Aggressive" xml:space="preserve"><value>专用精简面向专用系统激进精简</value></data>
   <data name="Profile.Reason.Dedicated.Keep" xml:space="preserve"><value>专用精简保留必要工具</value></data>
@@ -895,10 +899,10 @@
   <data name="Profile.Reason.Trim" xml:space="preserve"><value>所选配置建议精简</value></data>
   <data name="Profile.Reason.UserOverride" xml:space="preserve"><value>你已手动更改——推荐不会覆盖你的选择</value></data>
   <data name="Profile.Subtitle" xml:space="preserve"><value>选择一个或多个使用场景，WinForge 会据此调整各标签页的推荐。在你明确采用方案前，不会更改任何内容。</value></data>
+  <data name="Profile.Summary.Adopt" xml:space="preserve"><value>建议执行</value></data>
+  <data name="Profile.Summary.Confirm" xml:space="preserve"><value>需确认</value></data>
   <data name="Profile.Summary.Conflict" xml:space="preserve"><value>存在冲突</value></data>
   <data name="Profile.Summary.Keep" xml:space="preserve"><value>建议保留</value></data>
-  <data name="Profile.Summary.Manual" xml:space="preserve"><value>按需确认</value></data>
-  <data name="Profile.Summary.Trim" xml:space="preserve"><value>建议精简</value></data>
   <data name="Profile.Summary.Unsupported" xml:space="preserve"><value>暂不支持应用</value></data>
   <data name="Profile.Title" xml:space="preserve"><value>推荐配置</value></data>
   <data name="Profile.Why" xml:space="preserve"><value>原因</value></data>

@@ -26,6 +26,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   it as a user override; switching profiles or re-applying recommendations leaves it untouched.
 - **Per-workflow state.** The chosen profile + overrides belong to the current workflow only; a new
   image starts clean with no profile selected (manual mode).
+- **Compact profile panel (UX refinement).** The selector is a single compact row of profile cards
+  (name + short subtitle); 采用推荐选择 is the one clear primary action, 查看推荐详情 is a light
+  secondary link, and 重新采用推荐 only appears after you adopt and then diverge (manual change or
+  profile switch). 自定义 disables profile overrides (back to catalog defaults) while keeping your
+  manual selections. The Discover button becomes 重新扫描 after discovery, and the component lists
+  keep the majority of the page.
 
 ### Added (Phase 11 Stage 11.3 — Customize coverage expansion + Personalization activation — phase/11-component-intelligence)
 - **Personalization tab is live (no longer "Coming Soon").** The sixth Customize tab now shows 14

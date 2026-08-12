@@ -482,8 +482,8 @@ Phased development plan for WinForge. Each phase records its **Status**,
   (safety > user override > required dependency > profile requirement > scenario override > component
   default), visible conflict resolution (KEEP wins with a reason), category-aware captions, the
   non-destructive 查看推荐方案 preview, and 采用推荐选择 limited to present + low-risk +
-  apply-supported + conflict-free + non-overridden items. **630 automated tests pass (Core 53,
-  App 577), 0 errors, 0 warnings (Release).** Do NOT mark Phase 11 complete and do NOT start Profiles
+  apply-supported + conflict-free + non-overridden items. **637 automated tests pass (Core 53,
+  App 584), 0 errors, 0 warnings (Release).** Do NOT mark Phase 11 complete and do NOT start Profiles
   beyond this stage until the expanded Customize coverage and the profile engine are reviewed and
   accepted on the real image (Part S: Balanced/Gaming/Developer/Lightweight; record recommendation
   changes, counts, keeps/trims, conflicts; adopt → only eligible items selected; manual override
