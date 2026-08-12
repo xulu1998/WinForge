@@ -9,11 +9,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using WinForge.App.Converters;
+using WinForge.App.Services;
 using WinForge.App.ViewModels;
 using WinForge.App.Views;
 using WinForge.Core.Models;
+using WinForge.Core.Profiles;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.Logging;
+using WinForge.Infrastructure.Profiles;
 using System.Windows.Data;
 using Xunit;
 using Xunit.Abstractions;
@@ -163,6 +166,18 @@ public class CustomizeBindingRegressionTests
                 () => new OptimizationKnowledgeView { DataContext = c.Tabs[4].Content }, culture));
             cases.Add(new("OptimizationKnowledgeView.Personalization",
                 () => new OptimizationKnowledgeView { DataContext = c.Tabs[5].Content }, culture));
+            // Stage 11.4 — profile selector panel (recommended configuration engine).
+            cases.Add(new("ProfileView",
+                () =>
+                {
+                    var ctx = new RecommendationContextService(
+                        new RecommendationEngine(), new ProfileCatalog(), new AppState());
+                    return new ProfileView
+                    {
+                        DataContext = new ProfileViewModel(
+                            ctx, new FakeLoc(), () => Array.Empty<IRecommendationSubject>(), () => { }),
+                    };
+                }, culture));
             // Phase 10 Build page (Defect 2 audit): render BuildView with the
             // real BuildStepViewModel under both ADK-present and ADK-missing
             // states so the read-only binding audit catches any TwoWay/OneWayToSource
@@ -409,6 +424,16 @@ public class CustomizeBindingRegressionTests
         "ExecutionState", "ShowProtectedVisible", "Items", "Plan", "DiscoverCommand",
         // Stage 11.3 OptimizationKnowledgeViewModel display-only getter-only properties.
         "IsEmpty", "EmptyStateText", "FilterOptions", "ItemCount",
+        // Stage 11.4 ProfileViewModel display-only getter-only properties. NOTE:
+        // generic model tokens ("DisplayName", "Description", "Items", "HeaderKey")
+        // are intentionally NOT listed — they collide with settable model
+        // properties on other pages (e.g. Setting.Description) and would produce
+        // false positives in this audit.
+        "ActiveProfileCaption", "HasActiveProfiles", "TrimCount", "ManualCount",
+        "KeepCount", "ConflictCount", "UnsupportedCount", "HasConflicts", "HasPreviewItems",
+        "SummaryTrimLabel", "SummaryManualLabel", "SummaryKeepLabel", "SummaryConflictLabel",
+        "IsPreviewOpen", "Profiles", "PreviewGroups", "ShowPreviewCommand",
+        "AdoptCommand", "ReapplyCommand", "Items",
         // Phase 10 BuildStepViewModel display-only getter-only properties (Defect 2 audit).
         "ProgressPercent", "CurrentStageText", "BuildModeText", "OutputPath",
         "OutputSizeText", "IsIndeterminate", "HasOutput", "AdkMissing",
@@ -439,7 +464,8 @@ public class CustomizeBindingRegressionTests
         {
             "CustomizeView.xaml", "ComponentsView.xaml", "PrivacyView.xaml",
             "SystemView.xaml", "PlanReviewView.xaml", "ComponentListTabView.xaml",
-            "ComingSoonView.xaml", "BuildView.xaml", "OptimizationKnowledgeView.xaml"
+            "ComingSoonView.xaml", "BuildView.xaml", "OptimizationKnowledgeView.xaml",
+            "ProfileView.xaml"
         };
 
         // Matches {Binding <body>} capturing the body (path + optional Mode/Converter).

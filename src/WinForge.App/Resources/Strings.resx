@@ -626,6 +626,8 @@
 
 
 
+
+
 <!-- WINFORGE_STAGE113_BLOCK_START -->
   <data name="Customize.Tab.Personalization" xml:space="preserve"><value>Personalization</value></data>
   <data name="Feat.HyperV.DisplayName" xml:space="preserve"><value>Hyper-V</value></data>
@@ -842,5 +844,65 @@
   <data name="Plan.Reversal.Generic" xml:space="preserve"><value>Restore to the Windows default recorded by WinForge</value></data>
   <data name="Plan.Scope" xml:space="preserve"><value>Applies to</value></data>
   <data name="Plan.Target" xml:space="preserve"><value>Change</value></data>
+  <data name="Profile.Active" xml:space="preserve"><value>Current configuration</value></data>
+  <data name="Profile.Adopt" xml:space="preserve"><value>Adopt recommended selections</value></data>
+  <data name="Profile.Balanced.Description" xml:space="preserve"><value>Balanced defaults — keep the experience close to Windows as shipped</value></data>
+  <data name="Profile.Balanced.DisplayName" xml:space="preserve"><value>Balanced</value></data>
+  <data name="Profile.Conflict.Summary" xml:space="preserve"><value>Resolved — keeping wins when another selected configuration needs the component</value></data>
+  <data name="Profile.Custom.Description" xml:space="preserve"><value>No preset — decide every change yourself</value></data>
+  <data name="Profile.Custom.DisplayName" xml:space="preserve"><value>Custom</value></data>
+  <data name="Profile.DedicatedMinimal.Description" xml:space="preserve"><value>Aggressive trims for kiosks and special-purpose systems; critical changes stay manual</value></data>
+  <data name="Profile.DedicatedMinimal.DisplayName" xml:space="preserve"><value>Dedicated / Minimal</value></data>
+  <data name="Profile.Developer.Description" xml:space="preserve"><value>WSL, virtualization, Terminal, OpenSSH and dev tooling</value></data>
+  <data name="Profile.Developer.DisplayName" xml:space="preserve"><value>Developer</value></data>
+  <data name="Profile.Empty.Preview" xml:space="preserve"><value>Select a configuration to preview its recommendation plan.</value></data>
+  <data name="Profile.Gaming.Description" xml:space="preserve"><value>Game compatibility, controller input, codecs and Game Pass in mind</value></data>
+  <data name="Profile.Gaming.DisplayName" xml:space="preserve"><value>Gaming</value></data>
+  <data name="Profile.Lightweight.Description" xml:space="preserve"><value>Fewer optional apps and background experiences; servicing and security kept</value></data>
+  <data name="Profile.Lightweight.DisplayName" xml:space="preserve"><value>Lightweight</value></data>
+  <data name="Profile.None" xml:space="preserve"><value>No profile selected — manual mode</value></data>
+  <data name="Profile.Office.Description" xml:space="preserve"><value>Office compatibility, printing/scanning, OneDrive and stable defaults</value></data>
+  <data name="Profile.Office.DisplayName" xml:space="preserve"><value>Office / Productivity</value></data>
+  <data name="Profile.Preview" xml:space="preserve"><value>Preview recommendation plan</value></data>
+  <data name="Profile.Preview.Group.Adopt" xml:space="preserve"><value>Recommended to apply</value></data>
+  <data name="Profile.Preview.Group.Conflict" xml:space="preserve"><value>Conflicts / blocked</value></data>
+  <data name="Profile.Preview.Group.Keep" xml:space="preserve"><value>Recommended to keep</value></data>
+  <data name="Profile.Preview.Group.Manual" xml:space="preserve"><value>Review manually</value></data>
+  <data name="Profile.Reapply" xml:space="preserve"><value>Reapply recommendations</value></data>
+  <data name="Profile.Reason.Conflict.KeepWins" xml:space="preserve"><value>Keeping wins — another selected configuration needs this component</value></data>
+  <data name="Profile.Reason.Dedicated.Aggressive" xml:space="preserve"><value>Dedicated trims aggressively for special-purpose systems</value></data>
+  <data name="Profile.Reason.Dedicated.Keep" xml:space="preserve"><value>Dedicated keeps essential tools</value></data>
+  <data name="Profile.Reason.Dependency" xml:space="preserve"><value>Required by another component that must be kept</value></data>
+  <data name="Profile.Reason.Developer.Sandbox" xml:space="preserve"><value>Developer keeps Windows Sandbox</value></data>
+  <data name="Profile.Reason.Gaming.Codecs" xml:space="preserve"><value>Gaming keeps media codec support</value></data>
+  <data name="Profile.Reason.Gaming.GameDvr" xml:space="preserve"><value>Gaming keeps Game DVR / Game Bar</value></data>
+  <data name="Profile.Reason.Gaming.Media" xml:space="preserve"><value>Gaming keeps media playback support</value></data>
+  <data name="Profile.Reason.Gaming.Telemetry" xml:space="preserve"><value>Gaming reduces telemetry / suggestion experiences</value></data>
+  <data name="Profile.Reason.Gaming.Trim" xml:space="preserve"><value>Gaming trims unrelated consumer apps</value></data>
+  <data name="Profile.Reason.Gaming.Xbox" xml:space="preserve"><value>Gaming keeps Xbox / Game Pass features</value></data>
+  <data name="Profile.Reason.Gaming.XboxServices" xml:space="preserve"><value>Gaming keeps Xbox service infrastructure</value></data>
+  <data name="Profile.Reason.Keep" xml:space="preserve"><value>Recommended to keep by the selected configuration</value></data>
+  <data name="Profile.Reason.Lightweight.Background" xml:space="preserve"><value>Lightweight trims background / consumer services</value></data>
+  <data name="Profile.Reason.Lightweight.Consumer" xml:space="preserve"><value>Lightweight trims optional consumer apps</value></data>
+  <data name="Profile.Reason.Lightweight.Telemetry" xml:space="preserve"><value>Lightweight reduces telemetry and consumer content</value></data>
+  <data name="Profile.Reason.Lightweight.UI" xml:space="preserve"><value>Lightweight trims unnecessary UI suggestions</value></data>
+  <data name="Profile.Reason.Lightweight.Virtualization" xml:space="preserve"><value>Lightweight trims virtualization capabilities</value></data>
+  <data name="Profile.Reason.Office.Keep" xml:space="preserve"><value>Office keeps productivity apps and stable defaults</value></data>
+  <data name="Profile.Reason.Office.Meetings" xml:space="preserve"><value>Office keeps meeting / collaboration apps</value></data>
+  <data name="Profile.Reason.Office.OneDrive" xml:space="preserve"><value>Office keeps OneDrive sync</value></data>
+  <data name="Profile.Reason.Office.Printing" xml:space="preserve"><value>Office keeps printing and scanning support</value></data>
+  <data name="Profile.Reason.Office.RemoteAssist" xml:space="preserve"><value>Office keeps remote assistance</value></data>
+  <data name="Profile.Reason.Requirement" xml:space="preserve"><value>Required by the selected configuration</value></data>
+  <data name="Profile.Reason.Safety" xml:space="preserve"><value>Protected — WinForge never changes it</value></data>
+  <data name="Profile.Reason.Trim" xml:space="preserve"><value>Recommended to trim by the selected configuration</value></data>
+  <data name="Profile.Reason.UserOverride" xml:space="preserve"><value>You changed this manually — recommendations will not overwrite your choice</value></data>
+  <data name="Profile.Subtitle" xml:space="preserve"><value>Pick one or more usage scenarios — WinForge adjusts recommendations across every tab. Nothing changes until you explicitly adopt a plan.</value></data>
+  <data name="Profile.Summary.Conflict" xml:space="preserve"><value>Conflicts</value></data>
+  <data name="Profile.Summary.Keep" xml:space="preserve"><value>Suggested to keep</value></data>
+  <data name="Profile.Summary.Manual" xml:space="preserve"><value>Review manually</value></data>
+  <data name="Profile.Summary.Trim" xml:space="preserve"><value>Suggested to trim</value></data>
+  <data name="Profile.Summary.Unsupported" xml:space="preserve"><value>Apply not supported</value></data>
+  <data name="Profile.Title" xml:space="preserve"><value>Recommended configuration</value></data>
+  <data name="Profile.Why" xml:space="preserve"><value>Why</value></data>
 <!-- WINFORGE_STAGE113_BLOCK_END -->
 </root>

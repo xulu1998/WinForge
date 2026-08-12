@@ -374,4 +374,39 @@ WinForge.Infrastructure  (Windows only)
   round-trip, DISM feature-disable execution, capability skip, OpenSSH-via-capability-inventory
   resolution. Full suite **591 pass (Core 53, App 538), 0 errors, 0 warnings (Release)**.
 
-See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 for the full rationale.
+### Phase 11 — Stage 11.4: Scenario Profile / Recommended Configuration Engine (ADR-057..060)
+
+- **Profile model (Core `Profiles/`).** `ProfileDefinition` (Id, DisplayNameKey/DescriptionKey/IconKey,
+  Scenarios, `RecommendationOverrides` TargetId+Intent Keep/Trim+ReasonKey+Tier, `RequiredCapabilities`,
+  `PreferredCapabilities`, `AvoidedComponents`, CompatibilityRules) — targets are ALWAYS logical
+  WinForge ids, never raw package names. The generated `ProfileCatalog` (Infrastructure) supplies 7
+  reviewed profiles: Balanced / Gaming / Developer / Office / Lightweight / DedicatedMinimal / Custom.
+  Profiles RECOMMEND; they never silently remove. Multi-select is supported (Gaming+Developer, …);
+  Custom is exclusive.
+- **Recommendation engine (Core, pure).** `RecommendationEngine.Evaluate(RecommendationInput,
+  RecommendationContext)` computes `EffectiveRecommendation` (Level/IsPresent/IsApplySupported/Risk/
+  WasOverridden/WasProfileDriven/HasConflict/ReasonKeys/SourceRuleIds/Conflicts) SEPARATELY from the
+  definition default (never mutated). Documented precedence (ADR-058): Critical safety constraint >
+  explicit user override > required dependency (Requires/RecommendsKeeping → a present profile-required
+  id) > profile requirement (RequiredCapabilities ∩ present ids) > scenario override (KEEP beats TRIM,
+  conflict recorded visibly with `RecommendationConflict`) > component default. Reason keys are
+  deterministic + localized (Part F — no runtime AI prose). Shared levels map to action-aware captions
+  (Apps 推荐移除 / Feature 推荐禁用 / Privacy 建议关闭 / Service 建议保持默认, Part L).
+- **Workflow state (`RecommendationContextService`, App singleton).** Selected profile ids + user
+  overrides + present logical ids. Part Q: a NEW image workspace resets the session
+  (`ResetForNewWorkflow`); a fresh workflow defaults to NO profile (pure manual mode) — a previous
+  aggressive profile is never silently reused on a new ISO.
+- **Profile UI (`ProfileViewModel` / `ProfileView`, embedded at the top of Customize).** Profile cards
+  (multi-select; en/zh), summary metrics (建议精简/按需确认/建议保留/冲突, computed from real present
+  items only — Part O/P), non-destructive 查看推荐方案 preview grouped 推荐执行/建议保留/需要确认/
+  冲突·阻止, 采用推荐选择 (the ONLY selection-changing action — eligibility: present + apply-supported +
+  Risk==Low + no conflict + not overridden, Part J) and 重新应用推荐 (same eligibility; overrides
+  excluded, Part K). Manual toggles mark user overrides via `IRecommendationSubject` rows; adopt uses
+  `SetSelectedForAdoption` which never marks overrides.
+- **Tests.** 39 `Stage11p4Tests` (model round-trip, multi-scenario combination, precedence incl.
+  dependency-keep/override/safety, Gaming/Developer/Office/Lightweight rule sets against the real
+  catalog, conflict resolution with reasons, preview/adopt/high-risk/override UX, en/zh localization,
+  profile change never mutates the plan); ProfileView added to the WPF binding audit. Full suite
+  **630 pass (Core 53, App 577), 0 errors, 0 warnings (Release)**.
+
+See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 / ADR-057 / ADR-058 / ADR-059 / ADR-060 for the full rationale.

@@ -17,6 +17,7 @@ OPT_CS = os.path.join(REPO, "src", "WinForge.Infrastructure", "Customization", "
 RESX_EN = os.path.join(REPO, "src", "WinForge.App", "Resources", "Strings.resx")
 RESX_ZH = os.path.join(REPO, "src", "WinForge.App", "Resources", "Strings.zh-CN.resx")
 MATRIX = os.path.join(REPO, ".tmp", "phase11", "stage11.3-coverage-matrix.md")
+PROF_CS = os.path.join(REPO, "src", "WinForge.Infrastructure", "Profiles", "ProfileCatalog.cs")
 BLOCK_START = "<!-- WINFORGE_STAGE113_BLOCK_START -->"
 BLOCK_END = "<!-- WINFORGE_STAGE113_BLOCK_END -->"
 
@@ -109,6 +110,33 @@ SHARED = [
     ("Opt.Mechanism.SystemPolicy", "System policy", "系统策略"),
     ("Opt.Mechanism.DisableOptionalFeature", "Optional feature (DISM)", "可选功能（DISM）"),
     ("Opt.Mechanism.RemoveCapability", "Capability (DISM)", "功能能力（DISM）"),
+    # Stage 11.4 — Scenario profiles (recommended configuration engine)
+    ("Profile.Title", "Recommended configuration", "推荐配置"),
+    ("Profile.Subtitle", "Pick one or more usage scenarios — WinForge adjusts recommendations across every tab. Nothing changes until you explicitly adopt a plan.", "选择一个或多个使用场景，WinForge 会据此调整各标签页的推荐。在你明确采用方案前，不会更改任何内容。"),
+    ("Profile.None", "No profile selected — manual mode", "未选择推荐配置——手动模式"),
+    ("Profile.Active", "Current configuration", "当前推荐配置"),
+    ("Profile.Summary.Trim", "Suggested to trim", "建议精简"),
+    ("Profile.Summary.Manual", "Review manually", "按需确认"),
+    ("Profile.Summary.Keep", "Suggested to keep", "建议保留"),
+    ("Profile.Summary.Conflict", "Conflicts", "存在冲突"),
+    ("Profile.Summary.Unsupported", "Apply not supported", "暂不支持应用"),
+    ("Profile.Preview", "Preview recommendation plan", "查看推荐方案"),
+    ("Profile.Preview.Group.Adopt", "Recommended to apply", "推荐执行"),
+    ("Profile.Preview.Group.Keep", "Recommended to keep", "建议保留"),
+    ("Profile.Preview.Group.Manual", "Review manually", "需要确认"),
+    ("Profile.Preview.Group.Conflict", "Conflicts / blocked", "冲突 / 阻止"),
+    ("Profile.Adopt", "Adopt recommended selections", "采用推荐选择"),
+    ("Profile.Reapply", "Reapply recommendations", "重新应用推荐"),
+    ("Profile.Why", "Why", "原因"),
+    ("Profile.Empty.Preview", "Select a configuration to preview its recommendation plan.", "请先选择推荐配置以预览推荐方案。"),
+    ("Profile.Conflict.Summary", "Resolved — keeping wins when another selected configuration needs the component", "已解决——当另一所选配置需要该组件时，保留方胜出"),
+    ("Profile.Reason.Requirement", "Required by the selected configuration", "所选配置需要此项"),
+    ("Profile.Reason.Dependency", "Required by another component that must be kept", "另一需要保留的组件依赖此项"),
+    ("Profile.Reason.Safety", "Protected — WinForge never changes it", "受保护——WinForge 绝不修改"),
+    ("Profile.Reason.UserOverride", "You changed this manually — recommendations will not overwrite your choice", "你已手动更改——推荐不会覆盖你的选择"),
+    ("Profile.Reason.Conflict.KeepWins", "Keeping wins — another selected configuration needs this component", "保留方胜出——另一所选配置需要该组件"),
+    ("Profile.Reason.Keep", "Recommended to keep by the selected configuration", "所选配置建议保留"),
+    ("Profile.Reason.Trim", "Recommended to trim by the selected configuration", "所选配置建议精简"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -242,6 +270,124 @@ UNSUPPORTED = [
 ]
 
 # ---------------------------------------------------------------------------
+# Stage 11.4 — Scenario profiles (recommended configuration engine, ADR-057..060)
+# ---------------------------------------------------------------------------
+# Profiles operate on LOGICAL ids from the three catalogs above (never raw
+# package names). keep/trim entries are (logicalId, reasonKeySuffix); reason
+# texts live in PROFILE_REASONS. required = hard keep when present (tier 4);
+# preferred = soft keep (tier 5). Rules are conservative (Part N): only items
+# already modeled in Stage 11.3 are referenced.
+PROFILES = [
+    dict(id="Balanced", name=("Balanced", "均衡推荐"),
+         desc=("Balanced defaults — keep the experience close to Windows as shipped", "均衡默认——尽量保持 Windows 出厂体验"),
+         scen=("Balanced",), required=(), preferred=(), keep=(), trim=(), avoided=()),
+    dict(id="Gaming", name=("Gaming", "游戏优先"),
+         desc=("Game compatibility, controller input, codecs and Game Pass in mind", "优先游戏兼容、手柄输入、媒体编解码与 Game Pass"),
+         scen=("Gaming", "XboxGamePass"), required=(), preferred=(),
+         keep=[("XboxApp", "Gaming.Xbox"), ("AV1VideoExtension", "Gaming.Codecs"),
+               ("AVCEncoderVideoExtension", "Gaming.Codecs"), ("XboxGipSvc", "Gaming.XboxServices"),
+               ("XboxNetApiSvc", "Gaming.XboxServices"), ("XblAuthManager", "Gaming.XboxServices"),
+               ("GameDvr", "Gaming.GameDvr"), ("MediaPlayer", "Gaming.Media")],
+         trim=[("FeedbackHub", "Gaming.Trim"), ("Solitaire", "Gaming.Trim"),
+               ("Weather", "Gaming.Trim"), ("Maps", "Gaming.Trim"), ("PhoneLink", "Gaming.Trim"),
+               ("AdvertisingId", "Gaming.Telemetry"), ("TailoredExperiences", "Gaming.Telemetry"),
+               ("FeedbackNotifications", "Gaming.Telemetry")],
+         avoided=()),
+    dict(id="Developer", name=("Developer", "开发工作站"),
+         desc=("WSL, virtualization, Terminal, OpenSSH and dev tooling", "优先 WSL、虚拟化、终端、OpenSSH 与开发工具链"),
+         scen=("Developer", "Wsl", "Docker", "HyperV", "WindowsSandbox"),
+         required=("Wsl", "VirtualMachinePlatform", "HyperV", "HypervisorPlatform",
+                   "Terminal", "DesktopAppInstaller", "OpenSshClient"),
+         preferred=("WindowsSandbox",),
+         keep=[("WindowsSandbox", "Developer.Sandbox")], trim=(), avoided=()),
+    dict(id="Office", name=("Office / Productivity", "办公稳定"),
+         desc=("Office compatibility, printing/scanning, OneDrive and stable defaults", "优先 Office 兼容、打印扫描、OneDrive 与稳定默认"),
+         scen=("Office", "PrintingScanning"), required=(), preferred=(),
+         keep=[("OneDrive", "Office.OneDrive"), ("OneDriveSync", "Office.OneDrive"),
+               ("InternetPrinting", "Office.Printing"), ("ScanManagement", "Office.Printing"),
+               ("PrintDriverDownload", "Office.Printing"), ("Teams", "Office.Meetings"),
+               ("ToDo", "Office.Keep"), ("Calculator", "Office.Keep"), ("Notepad", "Office.Keep"),
+               ("QuickAssist", "Office.RemoteAssist"), ("RemoteAssistance", "Office.RemoteAssist")],
+         trim=(), avoided=()),
+    dict(id="Lightweight", name=("Lightweight", "轻量系统"),
+         desc=("Fewer optional apps and background experiences; servicing and security kept", "精简可选应用与后台体验；保留系统服务与安全"),
+         scen=("Lightweight",), required=(), preferred=(),
+         keep=(),
+         trim=[("Weather", "Lightweight.Consumer"), ("Clipchamp", "Lightweight.Consumer"),
+               ("GetHelp", "Lightweight.Consumer"), ("FeedbackHub", "Lightweight.Consumer"),
+               ("Maps", "Lightweight.Consumer"), ("PhoneLink", "Lightweight.Consumer"),
+               ("Solitaire", "Lightweight.Consumer"), ("BingNews", "Lightweight.Consumer"),
+               ("BingSearch", "Lightweight.Consumer"), ("OneDrive", "Lightweight.Consumer"),
+               ("Wsl", "Lightweight.Virtualization"), ("VirtualMachinePlatform", "Lightweight.Virtualization"),
+               ("WindowsSandbox", "Lightweight.Virtualization"), ("HyperV", "Lightweight.Virtualization"),
+               ("HypervisorPlatform", "Lightweight.Virtualization"),
+               ("AdvertisingId", "Lightweight.Telemetry"), ("TailoredExperiences", "Lightweight.Telemetry"),
+               ("ActivityHistory", "Lightweight.Telemetry"), ("AppLaunchTracking", "Lightweight.Telemetry"),
+               ("FeedbackNotifications", "Lightweight.Telemetry"), ("SpotlightFeatures", "Lightweight.Telemetry"),
+               ("RetailDemo", "Lightweight.Background"), ("XboxGipSvc", "Lightweight.Background"),
+               ("XboxNetApiSvc", "Lightweight.Background"), ("XblAuthManager", "Lightweight.Background"),
+               ("MapsBroker", "Lightweight.Background"),
+               ("HideStartRecommended", "Lightweight.UI"), ("HideStartRecentlyAdded", "Lightweight.UI"),
+               ("HideTaskbarWidgets", "Lightweight.UI"), ("DisableSpotlight", "Lightweight.UI")],
+         avoided=()),
+    dict(id="DedicatedMinimal", name=("Dedicated / Minimal", "专用精简"),
+         desc=("Aggressive trims for kiosks and special-purpose systems; critical changes stay manual", "面向自助终端与专用系统的激进精简；关键更改仍需手动"),
+         scen=("DedicatedMinimal",), required=(), preferred=("Calculator", "Notepad"),
+         keep=[("Calculator", "Dedicated.Keep"), ("Notepad", "Dedicated.Keep")],
+         trim=[("Weather", "Dedicated.Aggressive"), ("Clipchamp", "Dedicated.Aggressive"),
+               ("GetHelp", "Dedicated.Aggressive"), ("FeedbackHub", "Dedicated.Aggressive"),
+               ("Maps", "Dedicated.Aggressive"), ("PhoneLink", "Dedicated.Aggressive"),
+               ("Solitaire", "Dedicated.Aggressive"), ("BingNews", "Dedicated.Aggressive"),
+               ("BingSearch", "Dedicated.Aggressive"), ("OneDrive", "Dedicated.Aggressive"),
+               ("Teams", "Dedicated.Aggressive"), ("ToDo", "Dedicated.Aggressive"),
+               ("Photos", "Dedicated.Aggressive"), ("Cortana", "Dedicated.Aggressive"),
+               ("Tips", "Dedicated.Aggressive"), ("GameDvr", "Dedicated.Aggressive"),
+               ("XpsServices", "Dedicated.Aggressive"), ("PowerShell2", "Dedicated.Aggressive"),
+               ("MediaPlayer", "Dedicated.Aggressive"),
+               ("Wsl", "Dedicated.Aggressive"), ("VirtualMachinePlatform", "Dedicated.Aggressive"),
+               ("WindowsSandbox", "Dedicated.Aggressive"), ("HyperV", "Dedicated.Aggressive"),
+               ("HypervisorPlatform", "Dedicated.Aggressive"),
+               ("AdvertisingId", "Dedicated.Aggressive"), ("TailoredExperiences", "Dedicated.Aggressive"),
+               ("ActivityHistory", "Dedicated.Aggressive"), ("AppLaunchTracking", "Dedicated.Aggressive"),
+               ("FeedbackNotifications", "Dedicated.Aggressive"), ("SpotlightFeatures", "Dedicated.Aggressive"),
+               ("RetailDemo", "Dedicated.Aggressive"), ("DiagTrack", "Dedicated.Aggressive"),
+               ("WerSvc", "Dedicated.Aggressive"), ("PcaSvc", "Dedicated.Aggressive"),
+               ("XboxGipSvc", "Dedicated.Aggressive"), ("XboxNetApiSvc", "Dedicated.Aggressive"),
+               ("XblAuthManager", "Dedicated.Aggressive"), ("MapsBroker", "Dedicated.Aggressive"),
+               ("TabletInputService", "Dedicated.Aggressive"),
+               ("HideStartRecommended", "Dedicated.Aggressive"), ("HideStartRecentlyAdded", "Dedicated.Aggressive"),
+               ("HideTaskbarWidgets", "Dedicated.Aggressive"), ("DisableSpotlight", "Dedicated.Aggressive")],
+         avoided=()),
+    dict(id="Custom", name=("Custom", "自定义"),
+         desc=("No preset — decide every change yourself", "不使用预设——一切由你手动决定"),
+         scen=(), required=(), preferred=(), keep=(), trim=(), avoided=()),
+]
+
+# Reason text for every override suffix used above (key suffix -> (en, zh)).
+PROFILE_REASONS = {
+    "Gaming.Xbox": ("Gaming keeps Xbox / Game Pass features", "游戏优先配置保留 Xbox / Game Pass 相关功能"),
+    "Gaming.Codecs": ("Gaming keeps media codec support", "游戏优先配置保留媒体编解码支持"),
+    "Gaming.XboxServices": ("Gaming keeps Xbox service infrastructure", "游戏优先配置保留 Xbox 服务基础"),
+    "Gaming.GameDvr": ("Gaming keeps Game DVR / Game Bar", "游戏优先配置保留游戏录制与游戏栏"),
+    "Gaming.Media": ("Gaming keeps media playback support", "游戏优先配置保留媒体播放支持"),
+    "Gaming.Trim": ("Gaming trims unrelated consumer apps", "游戏优先配置精简无关消费类应用"),
+    "Gaming.Telemetry": ("Gaming reduces telemetry / suggestion experiences", "游戏优先配置减少遥测与建议体验"),
+    "Developer.Sandbox": ("Developer keeps Windows Sandbox", "开发工作站配置保留 Windows 沙盒"),
+    "Office.Printing": ("Office keeps printing and scanning support", "办公稳定配置保留打印与扫描支持"),
+    "Office.OneDrive": ("Office keeps OneDrive sync", "办公稳定配置保留 OneDrive 同步"),
+    "Office.Meetings": ("Office keeps meeting / collaboration apps", "办公稳定配置保留会议与协作应用"),
+    "Office.Keep": ("Office keeps productivity apps and stable defaults", "办公稳定配置保留效率应用与稳定默认"),
+    "Office.RemoteAssist": ("Office keeps remote assistance", "办公稳定配置保留远程协助"),
+    "Lightweight.Consumer": ("Lightweight trims optional consumer apps", "轻量系统精简可选消费类应用"),
+    "Lightweight.Virtualization": ("Lightweight trims virtualization capabilities", "轻量系统精简虚拟化功能"),
+    "Lightweight.Telemetry": ("Lightweight reduces telemetry and consumer content", "轻量系统减少遥测与消费内容"),
+    "Lightweight.Background": ("Lightweight trims background / consumer services", "轻量系统精简后台与消费类服务"),
+    "Lightweight.UI": ("Lightweight trims unnecessary UI suggestions", "轻量系统精简不必要的界面建议"),
+    "Dedicated.Aggressive": ("Dedicated trims aggressively for special-purpose systems", "专用精简面向专用系统激进精简"),
+    "Dedicated.Keep": ("Dedicated keeps essential tools", "专用精简保留必要工具"),
+}
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 def esc(s):
@@ -340,6 +486,12 @@ def build_keys():
         add("Opt.Dep." + k,
             "Shared virtualization / platform dependency — verify before disabling.",
             "共享虚拟化/平台依赖——请先确认再关闭。")
+    # Stage 11.4 — profile display + reason keys
+    for p in PROFILES:
+        add("Profile.{}.DisplayName".format(p["id"]), p["name"][0], p["name"][1])
+        add("Profile.{}.Description".format(p["id"]), p["desc"][0], p["desc"][1])
+    for suffix, (en, zh) in PROFILE_REASONS.items():
+        add("Profile.Reason." + suffix, en, zh)
 
 build_keys()
 
@@ -498,6 +650,63 @@ def emit_opt_cs():
     lines.append("}")
     return "\n".join(lines) + "\n"
 
+def emit_profile_cs():
+    lines = ["// <auto-generated by .tmp/phase11/gen_stage113.py — Stage 11.4 scenario profiles>",
+             "// Do not edit by hand; edit the generator and re-run it.",
+             "using System.Collections.Generic;",
+             "using WinForge.Core.Models;",
+             "using WinForge.Core.Profiles;",
+             "",
+             "namespace WinForge.Infrastructure.Profiles;",
+             "",
+             "/// <summary>",
+             "/// Reviewed usage-scenario profiles for the recommended configuration engine",
+             "/// (Stage 11.4, ADR-057..060). Profiles operate on LOGICAL WinForge ids (never raw",
+             "/// package names) and describe PRIORITIES with deterministic reason keys. They",
+             "/// RECOMMEND — nothing is selected until the user explicitly adopts a plan.",
+             "/// </summary>",
+             "public sealed class ProfileCatalog : IProfileCatalogProvider",
+             "{",
+             "    public IReadOnlyList<ProfileDefinition> GetProfiles()",
+             "    {",
+             "        return new List<ProfileDefinition>",
+             "        {"]
+    for p in PROFILES:
+        pid = p["id"]
+        scen = ", ".join("ProfileScenario.{}".format(s) for s in p["scen"])
+        scen_init = "new[] {{{}}}".format(scen) if scen else "new ProfileScenario[0]"
+        required = ", ".join(cs_string(x) for x in p["required"])
+        required_init = "new[] {{{}}}".format(required) if required else "new string[0]"
+        preferred = ", ".join(cs_string(x) for x in p["preferred"])
+        preferred_init = "new[] {{{}}}".format(preferred) if preferred else "new string[0]"
+        avoided = ", ".join(cs_string(x) for x in p["avoided"])
+        avoided_init = "new[] {{{}}}".format(avoided) if avoided else "new string[0]"
+        ovs = []
+        for target, suffix in p["keep"]:
+            ovs.append('new ProfileRecommendationOverride {{ TargetId = {0}, Intent = ProfileIntent.Keep, ReasonKey = {1}, Tier = 5 }}'.format(
+                cs_string(target), cs_string("Profile.Reason." + suffix)))
+        for target, suffix in p["trim"]:
+            ovs.append('new ProfileRecommendationOverride {{ TargetId = {0}, Intent = ProfileIntent.Trim, ReasonKey = {1}, Tier = 5 }}'.format(
+                cs_string(target), cs_string("Profile.Reason." + suffix)))
+        ovs_init = "new[] {{{}}}".format(", ".join(ovs)) if ovs else "new ProfileRecommendationOverride[0]"
+        lines.append("            new ProfileDefinition")
+        lines.append("            {")
+        lines.append("                Id = {},".format(cs_string(pid)))
+        lines.append("                DisplayNameKey = {},".format(cs_string("Profile.{}.DisplayName".format(pid))))
+        lines.append("                DescriptionKey = {},".format(cs_string("Profile.{}.Description".format(pid))))
+        lines.append("                IconKey = string.Empty,")
+        lines.append("                Scenarios = {},".format(scen_init))
+        lines.append("                RecommendationOverrides = {},".format(ovs_init))
+        lines.append("                RequiredCapabilities = {},".format(required_init))
+        lines.append("                PreferredCapabilities = {},".format(preferred_init))
+        lines.append("                AvoidedComponents = {},".format(avoided_init))
+        lines.append("                CompatibilityRules = new CompatibilityRule[0],")
+        lines.append("            },")
+    lines.append("        };")
+    lines.append("    }")
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
 # ---------------------------------------------------------------------------
 # resx insertion (idempotent, mirrors gen_catalog.py)
 # ---------------------------------------------------------------------------
@@ -631,25 +840,46 @@ def emit_matrix():
     L.append("")
     L.append("Apps: the Stage 11.2 curated AppX catalog (22 definitions) is unchanged in this tranche; "
              "Apps coverage expansion candidates are listed under Deferred.")
+    L.append("")
+    L.append("## Profiles (Stage 11.4 — recommended configuration engine)")
+    L.append("")
+    L.append("| Profile | Scenarios | Required (hard keep, present-gated) | Keep overrides | Trim overrides |")
+    L.append("|---|---|---|---|---|")
+    for p in PROFILES:
+        scen = ", ".join(p["scen"]) or "—"
+        req = ", ".join(p["required"]) or "—"
+        keep = ", ".join(t for t, _ in p["keep"]) or "—"
+        trim = ", ".join(t for t, _ in p["trim"]) or "—"
+        L.append("| {} | {} | {} | {} | {} |".format(p["name"][0], scen, req, keep, trim))
+    L.append("")
+    L.append("All targets are logical WinForge ids from the implemented Stage 11.3 catalogs "
+             "(Apps / Windows Components / Services / Privacy / System / Personalization). "
+             "Profiles only RECOMMEND; auto-selection is gated by risk=Low + apply-supported + "
+             "no-conflict + present (Part J, ADR-060).")
     return "\n".join(L) + "\n"
 
 import re
 
 def main():
+    os.makedirs(os.path.dirname(PROF_CS), exist_ok=True)
     with open(FEAT_CS, "w", encoding="utf-8") as f:
         f.write(emit_feature_cs())
     with open(OPT_CS, "w", encoding="utf-8") as f:
         f.write(emit_opt_cs())
+    with open(PROF_CS, "w", encoding="utf-8") as f:
+        f.write(emit_profile_cs())
     insert_resx(RESX_EN, resx_block(False))
     insert_resx(RESX_ZH, resx_block(True))
     with open(MATRIX, "w", encoding="utf-8") as f:
         f.write(emit_matrix())
     print("Wrote", FEAT_CS)
     print("Wrote", OPT_CS)
+    print("Wrote", PROF_CS)
     print("Inserted", len(ALL_KEYS), "keys into each resx.")
     print("Wrote", MATRIX)
     print("Features:", len(FEATURES), "Services:", len(SERVICES), "Privacy:", len(PRIVACY),
-          "System:", len(SYSTEM), "Personalization:", len(PERSONALIZATION))
+          "System:", len(SYSTEM), "Personalization:", len(PERSONALIZATION),
+          "Profiles:", len(PROFILES))
 
 if __name__ == "__main__":
     main()

@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using WinForge.App.Mvvm;
+using WinForge.App.Services;
 using WinForge.Core.Models;
+using WinForge.Core.Services;
 
 namespace WinForge.App.ViewModels;
 
@@ -116,6 +118,7 @@ public sealed class CustomizeStepViewModel : ViewModelBase
 
     private readonly ComponentKnowledgeViewModel _knowledge;
     private readonly ComponentKnowledgeViewModel _componentsKnowledge;
+    private readonly RecommendationContextService? _profileCtx;
 
     private CustomizeTabViewModel? _selectedTab;
 
@@ -125,6 +128,13 @@ public sealed class CustomizeStepViewModel : ViewModelBase
         set => SetField(ref _selectedTab, value);
     }
 
+    /// <summary>
+    /// Stage 11.4 profile selector (recommended configuration engine). Null when
+    /// no recommendation context is wired (plain Stage 11.3 behavior); the
+    /// Customize view collapses the profile panel in that case.
+    /// </summary>
+    public ProfileViewModel? Profiles { get; }
+
     public CustomizeStepViewModel(
         ComponentsViewModel components,
         ComponentKnowledgeViewModel knowledge,
@@ -132,11 +142,24 @@ public sealed class CustomizeStepViewModel : ViewModelBase
         OptimizationKnowledgeViewModel servicesKnowledge,
         OptimizationKnowledgeViewModel privacyKnowledge,
         OptimizationKnowledgeViewModel systemKnowledge,
-        OptimizationKnowledgeViewModel personalizationKnowledge)
+        OptimizationKnowledgeViewModel personalizationKnowledge,
+        RecommendationContextService? profileCtx = null,
+        ILocalizationService? loc = null)
     {
         Components = components ?? throw new System.ArgumentNullException(nameof(components));
         _knowledge = knowledge ?? throw new System.ArgumentNullException(nameof(knowledge));
         _componentsKnowledge = componentsKnowledge ?? throw new System.ArgumentNullException(nameof(componentsKnowledge));
+        _profileCtx = profileCtx;
+
+        if (profileCtx is not null)
+        {
+            if (loc is null)
+            {
+                throw new System.ArgumentNullException(nameof(loc));
+            }
+
+            Profiles = new ProfileViewModel(profileCtx, loc, AllSubjects, RecomputeAll);
+        }
 
         // ADR-049: ONE Discover button drives a single coherent, read-only discovery
         // pass — the existing Components discovery (Apps/Windows components/Services)
@@ -205,6 +228,9 @@ public sealed class CustomizeStepViewModel : ViewModelBase
             // explicitly refreshed — otherwise it stays in its pre-discovery
             // empty state and shows zero rows after Discover.
             _componentsKnowledge.RefreshFromInventory();
+            // Stage 11.4: re-evaluate recommendations against the freshly
+            // discovered image contents (Part O).
+            RecomputeAll();
         }
         finally
         {
@@ -215,5 +241,60 @@ public sealed class CustomizeStepViewModel : ViewModelBase
                 c.RaiseCanExecuteChanged();
             }
         }
+    }
+
+    // ---- Stage 11.4 — profile recompute plumbing ----
+
+    /// <summary>Every knowledge row across all six tabs, as recommendation subjects.</summary>
+    private IEnumerable<IRecommendationSubject> AllSubjects()
+    {
+        foreach (var tab in Tabs)
+        {
+            switch (tab.Content)
+            {
+                case ComponentKnowledgeViewModel k:
+                    foreach (var s in k.RecommendationSubjects)
+                    {
+                        yield return s;
+                    }
+
+                    break;
+                case OptimizationKnowledgeViewModel o:
+                    foreach (var s in o.RecommendationSubjects)
+                    {
+                        yield return s;
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Recomputes present-ids (Part O), then every tab's effective recommendation
+    /// from the shared profile context. Never mutates selections (Part K).
+    /// </summary>
+    private void RecomputeAll()
+    {
+        if (_profileCtx is null || Profiles is null)
+        {
+            return;
+        }
+
+        _profileCtx.SetPresentIds(AllSubjects().Where(s => s.IsPresent).Select(s => s.LogicalId));
+        foreach (var tab in Tabs)
+        {
+            switch (tab.Content)
+            {
+                case ComponentKnowledgeViewModel k:
+                    k.RecomputeRecommendations();
+                    break;
+                case OptimizationKnowledgeViewModel o:
+                    o.RecomputeRecommendations();
+                    break;
+            }
+        }
+
+        Profiles.RefreshSummary();
     }
 }

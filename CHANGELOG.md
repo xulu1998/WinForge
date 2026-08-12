@@ -5,6 +5,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added (Phase 11 Stage 11.4 — Scenario Profile / Recommended Configuration Engine — phase/11-component-intelligence)
+- **Recommended configuration selector at the top of Customize.** Pick one or more usage scenarios
+  (均衡推荐 / 游戏优先 / 开发工作站 / 办公稳定 / 轻量系统 / 专用精简 / 自定义, multi-select; Custom is
+  exclusive) and every tab's recommendation badges + "为什么" change accordingly — with NO checkbox
+  changing automatically. A summary line shows 当前推荐配置 + 建议精简 / 按需确认 / 建议保留 / 存在冲突
+  counts derived from real present items only.
+- **Deterministic, explainable recommendations.** The engine computes effective recommendations from
+  component knowledge + scenario rules + real image contents + risk + dependency constraints, with
+  documented precedence (safety > your manual choice > required dependency > profile requirement >
+  scenario override > component default). Conflicts between profiles (e.g. 轻量系统 trims
+  virtualization vs 开发工作站 requires it) are resolved visibly — KEEP wins — with a reason.
+  Every reason is a deterministic localized key, never runtime AI prose.
+- **Non-destructive preview + safe adoption.** 查看推荐方案 shows what WOULD be selected, grouped
+  推荐执行 / 建议保留 / 需要确认 / 冲突·阻止. Only 采用推荐选择 changes selections, and only for
+  present, apply-supported, low-risk (Risk==Low), conflict-free items — High/Critical, blocked,
+  incompatible, unsupported-apply and conflicted rows always stay manual. 重新应用推荐 re-runs the
+  same rules.
+- **Your manual choices are never overwritten.** After adopting, toggling any checkbox manually marks
+  it as a user override; switching profiles or re-applying recommendations leaves it untouched.
+- **Per-workflow state.** The chosen profile + overrides belong to the current workflow only; a new
+  image starts clean with no profile selected (manual mode).
+
 ### Added (Phase 11 Stage 11.3 — Customize coverage expansion + Personalization activation — phase/11-component-intelligence)
 - **Personalization tab is live (no longer "Coming Soon").** The sixth Customize tab now shows 14
   reviewed controls across Start/Search (hide Recommended / recently added apps), Taskbar (hide

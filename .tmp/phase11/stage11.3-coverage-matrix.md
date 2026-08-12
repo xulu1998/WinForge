@@ -127,3 +127,17 @@
 Note: counts are the implemented, standard-visible rows per tab. Windows Components / Services rows additionally depend on image discovery (present-in-image only) exactly like the Apps tab.
 
 Apps: the Stage 11.2 curated AppX catalog (22 definitions) is unchanged in this tranche; Apps coverage expansion candidates are listed under Deferred.
+
+## Profiles (Stage 11.4 — recommended configuration engine)
+
+| Profile | Scenarios | Required (hard keep, present-gated) | Keep overrides | Trim overrides |
+|---|---|---|---|---|
+| Balanced | Balanced | — | — | — |
+| Gaming | Gaming, XboxGamePass | — | XboxApp, AV1VideoExtension, AVCEncoderVideoExtension, XboxGipSvc, XboxNetApiSvc, XblAuthManager, GameDvr, MediaPlayer | FeedbackHub, Solitaire, Weather, Maps, PhoneLink, AdvertisingId, TailoredExperiences, FeedbackNotifications |
+| Developer | Developer, Wsl, Docker, HyperV, WindowsSandbox | Wsl, VirtualMachinePlatform, HyperV, HypervisorPlatform, Terminal, DesktopAppInstaller, OpenSshClient | WindowsSandbox | — |
+| Office / Productivity | Office, PrintingScanning | — | OneDrive, OneDriveSync, InternetPrinting, ScanManagement, PrintDriverDownload, Teams, ToDo, Calculator, Notepad, QuickAssist, RemoteAssistance | — |
+| Lightweight | Lightweight | — | — | Weather, Clipchamp, GetHelp, FeedbackHub, Maps, PhoneLink, Solitaire, BingNews, BingSearch, OneDrive, Wsl, VirtualMachinePlatform, WindowsSandbox, HyperV, HypervisorPlatform, AdvertisingId, TailoredExperiences, ActivityHistory, AppLaunchTracking, FeedbackNotifications, SpotlightFeatures, RetailDemo, XboxGipSvc, XboxNetApiSvc, XblAuthManager, MapsBroker, HideStartRecommended, HideStartRecentlyAdded, HideTaskbarWidgets, DisableSpotlight |
+| Dedicated / Minimal | DedicatedMinimal | — | Calculator, Notepad | Weather, Clipchamp, GetHelp, FeedbackHub, Maps, PhoneLink, Solitaire, BingNews, BingSearch, OneDrive, Teams, ToDo, Photos, Cortana, Tips, GameDvr, XpsServices, PowerShell2, MediaPlayer, Wsl, VirtualMachinePlatform, WindowsSandbox, HyperV, HypervisorPlatform, AdvertisingId, TailoredExperiences, ActivityHistory, AppLaunchTracking, FeedbackNotifications, SpotlightFeatures, RetailDemo, DiagTrack, WerSvc, PcaSvc, XboxGipSvc, XboxNetApiSvc, XblAuthManager, MapsBroker, TabletInputService, HideStartRecommended, HideStartRecentlyAdded, HideTaskbarWidgets, DisableSpotlight |
+| Custom | — | — | — | — |
+
+All targets are logical WinForge ids from the implemented Stage 11.3 catalogs (Apps / Windows Components / Services / Privacy / System / Personalization). Profiles only RECOMMEND; auto-selection is gated by risk=Low + apply-supported + no-conflict + present (Part J, ADR-060).

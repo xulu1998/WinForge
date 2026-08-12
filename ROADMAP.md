@@ -451,7 +451,8 @@ Phased development plan for WinForge. Each phase records its **Status**,
   explicit, provenance-backed confirmation — see DECISIONS ADR-047/ADR-048. Phase 11 remains IN
   PROGRESS; NOT merged to `main`.
 - **Deliverables (Stage 11.3 — Customize Coverage Expansion + Personalization Activation +
-  Optimization Knowledge Matrix, ADR-051/ADR-052/ADR-053/ADR-054):** coverage-first — the coverage
+  Optimization Knowledge Matrix, ADR-051/ADR-052/ADR-053/ADR-054 — REAL DESKTOP VALIDATED 2026-08-12,
+  incl. ADR-055 defect fix + ADR-056 OpenSSH capability correction):** coverage-first — the coverage
   matrix `.tmp/phase11/stage11.3-coverage-matrix.md` records every candidate (Id / tab / name /
   mechanism / target / applicability / provenance / reversibility / recommendation / risk /
   compatibility / status Implemented/Deferred/Rejected/Unsupported). Operation taxonomy
@@ -473,13 +474,20 @@ Phased development plan for WinForge. Each phase records its **Status**,
   visible with a disabled checkbox and "当前版本暂不支持应用"; OpenSSH Client/Server are modeled as
   CAPABILITIES `OpenSSH.Client~~~~0.0.1.0` / `OpenSSH.Server~~~~0.0.1.0` per Microsoft docs, never as
   OptionalFeature FeatureNames).
-- **Next (Stage 11.3 — IMPLEMENTED / PENDING REAL DESKTOP REVIEW):** real Windows 11 25H2 zh-CN x64
-  Consumer validation of all six Customize tabs (record exact visible item counts; Personalization no
-  longer Coming Soon; Review lists action types; no host-system side effects; no binding/runtime
-  errors). First real-desktop pass may be Discovery + selection + Review only; if new offline operation
-  execution is exercised, run a second controlled Apply on a minimal safe subset. Do NOT mark Phase 11
-  complete and do NOT start the Profile engine until the expanded Customize coverage is reviewed and
-  accepted.
+- **Next (Stage 11.4 — IMPLEMENTED / PENDING REAL DESKTOP REVIEW):** real Windows 11 25H2 zh-CN x64
+  Consumer validation of the recommended configuration engine. Stage 11.3 is **REAL DESKTOP VALIDATED**
+  (2026-08-12). Stage 11.4 (ADR-057..060): the profile selector at the top of Customize ("What kind of
+  Windows are you building?"), 7 reviewed profiles (Balanced/Gaming/Developer/Office/Lightweight/
+  DedicatedMinimal/Custom; multi-select), the pure `RecommendationEngine` with documented precedence
+  (safety > user override > required dependency > profile requirement > scenario override > component
+  default), visible conflict resolution (KEEP wins with a reason), category-aware captions, the
+  non-destructive 查看推荐方案 preview, and 采用推荐选择 limited to present + low-risk +
+  apply-supported + conflict-free + non-overridden items. **630 automated tests pass (Core 53,
+  App 577), 0 errors, 0 warnings (Release).** Do NOT mark Phase 11 complete and do NOT start Profiles
+  beyond this stage until the expanded Customize coverage and the profile engine are reviewed and
+  accepted on the real image (Part S: Balanced/Gaming/Developer/Lightweight; record recommendation
+  changes, counts, keeps/trims, conflicts; adopt → only eligible items selected; manual override
+  survives profile change; Review reflects final selections; no Apply/build during first pass).
 
 ---
 

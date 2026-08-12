@@ -31,6 +31,7 @@ public sealed class OptimizationKnowledgeViewModel : ViewModelBase
     private readonly IOptimizationCatalogProvider _catalog;
 
     private readonly List<OptimizationKnowledgeItem> _all = new();
+    private readonly RecommendationContextService? _ctx;
     private ComponentKnowledgeFilter _filter = ComponentKnowledgeFilter.All;
     private OptimizationKnowledgeItem? _activeDetail;
 
@@ -39,12 +40,14 @@ public sealed class OptimizationKnowledgeViewModel : ViewModelBase
         ILoggerService logger,
         ILocalizationService loc,
         IOptimizationCatalogProvider catalog,
-        OptimizationTab tab)
+        OptimizationTab tab,
+        RecommendationContextService? ctx = null)
     {
         _appState = appState ?? throw new ArgumentNullException(nameof(appState));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _loc = loc ?? throw new ArgumentNullException(nameof(loc));
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+        _ctx = ctx;
         Tab = tab;
 
         Items = new ObservableCollection<OptimizationKnowledgeItem>();
@@ -105,6 +108,28 @@ public sealed class OptimizationKnowledgeViewModel : ViewModelBase
 
     public int ItemCount => _all.Count;
 
+    /// <summary>Unified recommendation-subject view of this tab for the profile engine.</summary>
+    public IReadOnlyList<IRecommendationSubject> RecommendationSubjects
+        => _all.Cast<IRecommendationSubject>().ToList();
+
+    /// <summary>
+    /// Stage 11.4 — recomputes every row's EFFECTIVE recommendation from the
+    /// shared profile context (no plan mutation). Rows the user manually toggled
+    /// keep their checkbox state (Part K).
+    /// </summary>
+    public void RecomputeRecommendations()
+    {
+        if (_ctx is null)
+        {
+            return;
+        }
+
+        foreach (var it in _all)
+        {
+            it.RefreshRecommendation(_ctx);
+        }
+    }
+
     private void Rebuild()
     {
         _all.Clear();
@@ -116,7 +141,7 @@ public sealed class OptimizationKnowledgeViewModel : ViewModelBase
                 continue;
             }
 
-            _all.Add(new OptimizationKnowledgeItem(definition, _loc, _appState, this));
+            _all.Add(new OptimizationKnowledgeItem(definition, _loc, _appState, this, _ctx));
         }
 
         _all.Sort(CompareForSort);
@@ -203,7 +228,12 @@ public sealed class OptimizationKnowledgeViewModel : ViewModelBase
         _ => RecommendationLevel.Unknown,
     };
 
-    private void OnCultureChanged(object? sender, EventArgs e) => Rebuild();
+    private void OnCultureChanged(object? sender, EventArgs e)
+    {
+        Rebuild();
+        // Profile-driven captions must survive a language switch (Part F/L).
+        RecomputeRecommendations();
+    }
 
     private void OnAppStateChanged(object? sender, PropertyChangedEventArgs e)
     {

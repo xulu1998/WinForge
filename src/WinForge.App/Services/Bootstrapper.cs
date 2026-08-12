@@ -7,6 +7,7 @@ using WinForge.App.Services;
 using WinForge.App.Workflow;
 using WinForge.App.ViewModels;
 using WinForge.Core.Models;
+using WinForge.Core.Profiles;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.ImageMetadata;
@@ -17,6 +18,7 @@ using WinForge.Infrastructure.Logging;
 using WinForge.Infrastructure.Servicing;
 using WinForge.Infrastructure.Build;
 using WinForge.Infrastructure.ComponentIntelligence;
+using WinForge.Infrastructure.Profiles;
 
 namespace WinForge.App.Services;
 
@@ -92,6 +94,11 @@ public static class Bootstrapper
         // Stage 11.3 — reviewed optimization catalog (Services / Privacy / System / Personalization).
         services.AddSingleton<IOptimizationCatalogProvider, OptimizationCatalog>();
 
+        // Stage 11.4 — scenario profile engine (recommended configuration).
+        services.AddSingleton<IProfileCatalogProvider, ProfileCatalog>();
+        services.AddSingleton<IRecommendationEngine, RecommendationEngine>();
+        services.AddSingleton<RecommendationContextService>();
+
         // View models (singletons, shared across navigation)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<HomeViewModel>();
@@ -124,11 +131,12 @@ public static class Bootstrapper
             var knowledge = sp.GetRequiredService<ComponentKnowledgeViewModel>();
 
             var ciVm = sp.GetRequiredService<ComponentIntelligenceViewModel>();
+            var profileCtx = sp.GetRequiredService<RecommendationContextService>();
             var componentsKnowledge = new ComponentKnowledgeViewModel(ciVm, appState, logger, loc,
-                new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability });
+                new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability }, profileCtx);
 
             OptimizationKnowledgeViewModel KnowledgeFor(OptimizationTab tab)
-                => new(appState, logger, loc, catalog, tab);
+                => new(appState, logger, loc, catalog, tab, profileCtx);
 
             return new CustomizeStepViewModel(
                 components,
@@ -137,7 +145,9 @@ public static class Bootstrapper
                 KnowledgeFor(OptimizationTab.Services),
                 KnowledgeFor(OptimizationTab.Privacy),
                 KnowledgeFor(OptimizationTab.System),
-                KnowledgeFor(OptimizationTab.Personalization));
+                KnowledgeFor(OptimizationTab.Personalization),
+                profileCtx,
+                loc);
         });
         services.AddSingleton<BuildStepViewModel>();
         services.AddSingleton<WorkflowViewModel>();

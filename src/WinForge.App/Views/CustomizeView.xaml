@@ -56,6 +56,10 @@
                 <Run Text=": "/>
                 <Run Text="{Binding Components.SelectedTotal, Mode=OneWay}"/>
             </TextBlock>
+
+            <!-- Stage 11.4 — recommended configuration selector (collapsed when not wired) -->
+            <ContentControl Content="{Binding Profiles, Mode=OneWay}"
+                            Visibility="{Binding Profiles, Mode=OneWay, Converter={StaticResource NullToVis}}"/>
         </StackPanel>
 
         <TabControl ItemsSource="{Binding Tabs}"

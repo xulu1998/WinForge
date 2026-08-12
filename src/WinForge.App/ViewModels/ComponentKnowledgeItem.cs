@@ -4,6 +4,7 @@ using System.Linq;
 using WinForge.App.Mvvm;
 using WinForge.App.Services;
 using WinForge.Core.Models;
+using WinForge.Core.Profiles;
 using WinForge.Core.Services;
 
 namespace WinForge.App.ViewModels;
@@ -18,26 +19,113 @@ namespace WinForge.App.ViewModels;
 /// through <see cref="PlanSync"/> — exactly the same flow the existing Components
 /// page uses. No DISM is called here. Protected / Unknown / NeverRemove items are
 /// NOT selectable and explain why.</para>
+///
+/// <para>Stage 11.4 (ADR-057..060): the row also implements
+/// <see cref="IRecommendationSubject"/> — the profile engine computes an EFFECTIVE
+/// recommendation (separately from the definition default, which is never
+/// mutated), exposes deterministic localized reasons, and marks manual toggles as
+/// user overrides so recalculation never silently overwrites an explicit choice.</para>
 /// </summary>
-public sealed class ComponentKnowledgeItem : ViewModelBase
+public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubject
 {
     private readonly ILocalizationService _loc;
     private readonly IAppState _appState;
     private readonly ComponentKnowledgeViewModel _parent;
+    private readonly RecommendationContextService? _ctx;
 
     public ComponentKnowledgeItem(
         ComponentInventoryEntry entry,
         ILocalizationService loc,
         IAppState appState,
-        ComponentKnowledgeViewModel parent)
+        ComponentKnowledgeViewModel parent,
+        RecommendationContextService? ctx = null)
     {
         _loc = loc ?? throw new ArgumentNullException(nameof(loc));
         _appState = appState ?? throw new ArgumentNullException(nameof(appState));
         _parent = parent ?? throw new ArgumentNullException(nameof(parent));
+        _ctx = ctx;
         Entry = entry ?? throw new ArgumentNullException(nameof(entry));
+        Effective = EffectiveRecommendation.FromDefault(RecommendationLevel);
     }
 
     public ComponentInventoryEntry Entry { get; }
+
+    // ---- Stage 11.4 — recommendation subject ----
+
+    public string LogicalId => Entry.LogicalId;
+
+    public bool IsPresent => Entry.RawItems.Count > 0;
+
+    public bool WasOverridden => Effective.WasOverridden;
+
+    public bool HasConflict => Effective.HasConflict;
+
+    public EffectiveRecommendation Effective { get; private set; }
+
+    public void RefreshRecommendation(RecommendationContextService context)
+        => ApplyRecommendation(context.Evaluate(ToRecommendationInput()));
+
+    public void ApplyRecommendation(EffectiveRecommendation effective)
+    {
+        Effective = effective ?? throw new ArgumentNullException(nameof(effective));
+        OnPropertyChanged(nameof(Effective));
+        OnPropertyChanged(nameof(RecommendationCaption));
+        OnPropertyChanged(nameof(WasOverridden));
+        OnPropertyChanged(nameof(HasConflict));
+        OnPropertyChanged(nameof(ReasonText));
+        OnPropertyChanged(nameof(ConflictText));
+        OnPropertyChanged(nameof(WhyPoints));
+    }
+
+    private RecommendationInput ToRecommendationInput() => new()
+    {
+        LogicalId = LogicalId,
+        Action = Entry.Definition?.Action ?? OptimizationAction.Remove,
+        DefaultRecommendation = RecommendationLevel,
+        Risk = RiskLevel,
+        Removal = Entry.Definition?.Removal ?? RemovalSupport.Unknown,
+        IsPresent = IsPresent,
+        IsApplySupported = IsApplySupported,
+        Dependencies = Entry.Definition?.Dependencies ?? new List<ComponentDependency>(),
+    };
+
+    /// <summary>Deterministic localized "why" for the effective recommendation (Part F).</summary>
+    public string ReasonText
+    {
+        get
+        {
+            var resolved = new List<string>();
+            foreach (var key in Effective.ReasonKeys)
+            {
+                var text = _loc[key];
+                if (!string.IsNullOrEmpty(text) && text != key)
+                {
+                    resolved.Add(text);
+                }
+            }
+
+            return resolved.Count > 0 ? string.Join("; ", resolved) : string.Empty;
+        }
+    }
+
+    public string ConflictText
+    {
+        get
+        {
+            if (!Effective.HasConflict)
+            {
+                return string.Empty;
+            }
+
+            var parts = Effective.Conflicts.Select(c =>
+            {
+                var keep = _loc["Profile." + c.KeepProfileId + ".DisplayName"];
+                var trim = _loc["Profile." + c.TrimProfileId + ".DisplayName"];
+                return $"{_loc["Profile.Conflict.Summary"]} ({trim} → {keep})";
+            });
+            return string.Join("; ", parts);
+        }
+    }
 
     public bool IsCurated => Entry.Definition is not null;
 
@@ -89,7 +177,28 @@ public sealed class ComponentKnowledgeItem : ViewModelBase
         }
     }
 
-    public string RecommendationCaption => _loc["Recommendation." + RecommendationLevel];
+    /// <summary>
+    /// Recommendation caption. With no profile effect this is the definition's own
+    /// curated caption (Stage 11.2 behavior preserved). When the profile engine
+    /// changed the outcome (Part L), the caption follows the EFFECTIVE level and
+    /// the item's action type — AppX rows say 推荐移除, feature rows say 推荐禁用.
+    /// </summary>
+    public string RecommendationCaption
+    {
+        get
+        {
+            if (!Effective.WasProfileDriven)
+            {
+                return _loc["Recommendation." + RecommendationLevel];
+            }
+
+            var mapped = Effective.Level.ToRecommendationLevel();
+            var action = Entry.Definition?.Action ?? OptimizationAction.Remove;
+            return action == OptimizationAction.Remove
+                ? _loc["Recommendation." + mapped]
+                : _loc[$"Opt.Recommendation.{action}.{mapped}"];
+        }
+    }
 
     public string RiskCaption => _loc["Risk." + RiskLevel];
 
@@ -187,7 +296,30 @@ public sealed class ComponentKnowledgeItem : ViewModelBase
             }
 
             SyncPlan(value);
+            // Part K — a manual toggle is an explicit user choice; subsequent
+            // profile recalculation / reapply must not silently overwrite it.
+            _ctx?.SetUserOverride(LogicalId);
         }
+    }
+
+    /// <summary>
+    /// Programmatic selection used by "adopt recommendations" / "reapply" (Part I/J).
+    /// Like <see cref="IsSelected"/> it only toggles declarative plan operations,
+    /// but it NEVER marks a user override — the adopt command may be re-run safely.
+    /// </summary>
+    public void SetSelectedForAdoption(bool selected)
+    {
+        if (!IsSelectable)
+        {
+            return;
+        }
+
+        if (!SetField(ref _isSelected, selected))
+        {
+            return;
+        }
+
+        SyncPlan(selected);
     }
 
     // ---- Hover card fields (compact) ----
@@ -279,6 +411,16 @@ public sealed class ComponentKnowledgeItem : ViewModelBase
             {
                 _loc["Component.Recommendation"] + ": " + RecommendationCaption,
             };
+            if (Effective.WasProfileDriven || Effective.HasConflict)
+            {
+                pts.Add(_loc["Profile.Why"] + ": " + ReasonText);
+            }
+
+            if (Effective.WasOverridden)
+            {
+                pts.Add(_loc["Profile.Reason.UserOverride"]);
+            }
+
             var keep = JoinOptional(Entry.Definition?.KeepIf);
             var remove = JoinOptional(Entry.Definition?.RemoveIf);
             if (!string.IsNullOrEmpty(keep))
