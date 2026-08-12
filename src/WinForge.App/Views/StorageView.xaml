@@ -93,9 +93,8 @@
         <!-- Summary numbers -->
         <StackPanel Orientation="Horizontal" Margin="0,14,0,0"
                     Visibility="{Binding HasScanned, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" VerticalAlignment="Center">
-                <Run Text="{Binding TotalBytesText, Mode=OneWay}"/>
-            </TextBlock>
+            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" VerticalAlignment="Center"
+                       Text="{Binding TotalBytesText, Mode=OneWay}"/>
             <TextBlock FontSize="12" Foreground="#3E4C59" Margin="8,0,0,0" VerticalAlignment="Center">
                 <TextBlock.Text>
                     <MultiBinding Converter="{StaticResource locKey}">
@@ -106,34 +105,13 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
                     Visibility="{Binding HasScanned, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-            <TextBlock FontSize="12" Foreground="#3E4C59">
-                <Run Text="{Binding ActiveBytesText, Mode=OneWay}"/><Run Text=" — "/>
-                <Run>
-                    <Run.Text>
-                        <MultiBinding Converter="{StaticResource locKey}">
-                            <Binding Source="Storage.Active"/><Binding Source="{StaticResource Loc}"/>
-                        </MultiBinding>
-                    </Run.Text>
-                </Run>
-                <Run Text=" · "/>
-                <Run Text="{Binding RecoverableBytesText, Mode=OneWay}"/><Run Text=" — "/>
-                <Run>
-                    <Run.Text>
-                        <MultiBinding Converter="{StaticResource locKey}">
-                            <Binding Source="Storage.Recoverable"/><Binding Source="{StaticResource Loc}"/>
-                        </MultiBinding>
-                    </Run.Text>
-                </Run>
-                <Run Text=" · "/>
-                <Run Text="{Binding DisposableBytesText, Mode=OneWay}"/><Run Text=" — "/>
-                <Run>
-                    <Run.Text>
-                        <MultiBinding Converter="{StaticResource locKey}">
-                            <Binding Source="Storage.Disposable"/><Binding Source="{StaticResource Loc}"/>
-                        </MultiBinding>
-                    </Run.Text>
-                </Run>
-            </TextBlock>
+            <!-- Stage 12.2 fix: single formatted string from the view model.
+                 The previous Run-inline composed list threw a
+                 'System.Windows.Documents.Run Text' property exception on the real
+                 desktop when the inlines were materialized during layout of the
+                 previously-collapsed TextBlock. No Run/Inline remains here. -->
+            <TextBlock FontSize="12" Foreground="#3E4C59"
+                       Text="{Binding UsageSummaryText, Mode=OneWay}"/>
         </StackPanel>
 
         <!-- Cleanup preview -->

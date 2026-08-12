@@ -90,6 +90,22 @@ public sealed class StorageViewModel : ViewModelBase
     public string RecoverableBytesText => DiskSpaceEstimator.FormatBytes(_recoverableBytes);
     public string DisposableBytesText => DiskSpaceEstimator.FormatBytes(_disposableBytes);
 
+    // Stage 12.2 fix (REAL DESKTOP BLOCKER): the Storage page used to compose the
+    // usage line from multiple <Run> inlines inside XAML. WPF throws while setting
+    // System.Windows.Documents.Run.Text when the inlines are materialized during
+    // layout of a previously-collapsed TextBlock, producing global error dialogs
+    // on the real desktop. The UI now binds a single fully-formatted string from
+    // the view model (stable TextBlock.Text binding), keeping localization intact.
+    public string ActiveLabel => _loc["Storage.Active"];
+    public string RecoverableLabel => _loc["Storage.Recoverable"];
+    public string DisposableLabel => _loc["Storage.Disposable"];
+
+    /// <summary>Single-line usage summary (active · recoverable · disposable).</summary>
+    public string UsageSummaryText => string.Format("{0} — {1} · {2} — {3} · {4} — {5}",
+        ActiveBytesText, ActiveLabel,
+        RecoverableBytesText, RecoverableLabel,
+        DisposableBytesText, DisposableLabel);
+
     public string CleanResultText
     {
         get => _cleanResultText;
@@ -212,7 +228,12 @@ public sealed class StorageViewModel : ViewModelBase
         OnPropertyChanged(nameof(RootLowSpaceWarningText));
     }
 
-    public async Task ScanAsync()
+    /// <param name="clearResultText">
+    /// When true (user-initiated scan) the previous cleanup result line is reset.
+    /// CleanAsync refreshes sizes with false so the "已清理 X" result the user
+    /// just saw is NOT wiped by the follow-up re-scan.
+    /// </param>
+    public async Task ScanAsync(bool clearResultText = true)
     {
         if (IsScanning)
         {
@@ -220,7 +241,10 @@ public sealed class StorageViewModel : ViewModelBase
         }
 
         IsScanning = true;
-        CleanResultText = string.Empty;
+        if (clearResultText)
+        {
+            CleanResultText = string.Empty;
+        }
         try
         {
             var classified = await _lifecycle.ClassifyAllAsync();
@@ -285,7 +309,7 @@ public sealed class StorageViewModel : ViewModelBase
             }
 
             CleanResultText = string.Format(_loc["Storage.Cleaned"], DiskSpaceEstimator.FormatBytes(reclaimed));
-            await ScanAsync(); // refresh remaining sizes
+            await ScanAsync(clearResultText: false); // refresh remaining sizes, keep the result line
         }
         finally
         {
@@ -303,6 +327,10 @@ public sealed class StorageViewModel : ViewModelBase
         OnPropertyChanged(nameof(ActiveBytesText));
         OnPropertyChanged(nameof(RecoverableBytesText));
         OnPropertyChanged(nameof(DisposableBytesText));
+        OnPropertyChanged(nameof(ActiveLabel));
+        OnPropertyChanged(nameof(RecoverableLabel));
+        OnPropertyChanged(nameof(DisposableLabel));
+        OnPropertyChanged(nameof(UsageSummaryText));
         OnPropertyChanged(nameof(HasScanned));
         OnPropertyChanged(nameof(HasCandidates));
         OnPropertyChanged(nameof(CleanResultText));

@@ -203,7 +203,11 @@ public class CustomizeBindingRegressionTests
             cases.Add(new("OptimizationKnowledgeView.Personalization",
                 () => new OptimizationKnowledgeView { DataContext = c.Tabs[5].Content }, culture));
             // Phase 12 — Settings/Storage disk-usage surface (Parts H/I/Q).
-            cases.Add(new("SettingsView.Storage",
+            // Phase 12.2 blocker regression: ScanAsync activates the scanned state so the
+            // usage-summary TextBlock (previously a <Run> inline list that threw
+            // 'System.Windows.Documents.Run.Text' on the real desktop) becomes VISIBLE during
+            // the layout pass and its binding is forced to execute.
+            cases.Add(new("SettingsView.Storage.Scanned",
                 () =>
                 {
                     var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "wf12_render_" + Guid.NewGuid().ToString("N"));
@@ -214,6 +218,25 @@ public class CustomizeBindingRegressionTests
                     };
                     var lifecycle = new WorkspaceLifecycleManager(paths, runner, new WorkspaceSafeDelete(), new InMemoryLoggerService());
                     var storage = new StorageViewModel(lifecycle, new FakeLoc());
+                    storage.ScanAsync().GetAwaiter().GetResult();
+                    return new StorageView { DataContext = storage };
+                }, culture));
+            cases.Add(new("SettingsView.Storage.RootErrorState",
+                () =>
+                {
+                    var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "wf12_render_" + Guid.NewGuid().ToString("N"));
+                    var paths = new WorkspacePathProvider(root);
+                    var runner = new FakeProcessRunner
+                    {
+                        Responder = req => new ProcessResult { ExitCode = 0, StandardOutput = "No mounted images found." },
+                    };
+                    var lifecycle = new WorkspaceLifecycleManager(paths, runner, new WorkspaceSafeDelete(), new InMemoryLoggerService());
+                    var settings = new WorkspaceRootSettingsService(
+                        System.IO.Path.Combine(System.IO.Path.GetTempPath(), "wf12_roots_" + Guid.NewGuid().ToString("N") + ".json"));
+                    var storage = new StorageViewModel(lifecycle, new FakeLoc(), settings);
+                    storage.ScanAsync().GetAwaiter().GetResult();
+                    // Drive-root candidate is rejected -> RootErrorText renders (red) inline.
+                    storage.TrySetRoot(System.IO.Path.GetPathRoot(System.IO.Path.GetTempPath()) ?? "C:\\");
                     return new StorageView { DataContext = storage };
                 }, culture));
             // Stage 11.4 — profile selector panel (recommended configuration engine).

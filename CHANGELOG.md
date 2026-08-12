@@ -24,6 +24,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Incident regression.** A repeated-workflow test proves disposable workspaces no longer accumulate
   across sessions (the ~249 GB stale-workspace incident becomes impossible under normal use).
 
+### Fixed (Phase 12 Stage 12.2 — REAL DESKTOP BLOCKER: Storage page Run.Text exception)
+
+- **Root cause:** the Settings → 存储 usage line was composed from multiple `<Run>` inlines
+  (including `Run.Text` MultiBindings). Compile-time checks passed (legal XAML) and the render
+  smoke test missed it because the scanned-state StackPanel was still Collapsed at layout time, so
+  WPF skipped the Inlines. On the real desktop the moment the scanned state became visible WPF
+  materialized the inlines during layout and threw while setting
+  'System.Windows.Documents.Run.Text' — repeated global error dialogs.
+- **Fix:** the usage line is now a single stable `TextBlock.Text` binding to a fully formatted,
+  localized `StorageViewModel.UsageSummaryText` (active · recoverable · disposable). `StorageView.xaml`
+  no longer contains any `Run`/`Inline`. Storage labels (`ActiveLabel`/`RecoverableLabel`/
+  `DisposableLabel`) moved into the view model with the same resx keys.
+- **Second defect found & fixed while testing:** `CleanAsync` set 已清理 X but immediately reset it
+  via the follow-up `ScanAsync()`. `ScanAsync(clearResultText:)` now keeps the cleanup result line
+  visible (only user-initiated scans reset it).
+- **Regression:** `StorageViewRenderRegressionTests` (9 new, zh-CN + en-US) build the real
+  `StorageViewModel` against the real resx service, activate the scanned state, force a full layout
+  pass, and assert every display state (root, free space, low-space, validation error, cleanup
+  result) renders without exception; a guard test asserts StorageView.xaml never contains `<Run`
+  again. The WPF binding audit's Storage cases now also activate the scanned/error states.
+
 ### Added (Phase 12 Stage 12.2 — Finish cleanup + workspace-root settings)
 
 - **Workspace-root settings.** Settings → 存储 now shows the temporary workspace location with free space;
