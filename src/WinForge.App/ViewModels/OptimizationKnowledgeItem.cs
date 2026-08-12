@@ -483,21 +483,28 @@ public sealed class OptimizationKnowledgeItem : ViewModelBase, IRecommendationSu
         if (Definition.Mechanism == OptimizationMechanism.ServiceStartup)
         {
             var opId = "svc|" + Definition.ServiceName;
-            PlanSync.Toggle(_appState, opId, selected, () => new CustomizationOperation
+            PlanSync.Toggle(_appState, opId, selected, () =>
             {
-                OperationId = opId,
-                Category = CustomizationCategory.Service,
-                OperationType = CustomizationOperationType.ConfigureOfflineService,
-                DisplayName = DisplayName,
-                Description = ShortPurpose,
-                ServiceName = Definition.ServiceName,
-                ServiceStartType = Definition.ProposedStartType,
-                Risk = Definition.Risk == RiskLevel.Low ? RiskClass.Safe : RiskClass.Removable,
-                ActionKind = Definition.Action,
-                Mechanism = Definition.Mechanism,
-                Scope = Definition.Scope,
-                ReversalKey = Definition.ReversalKey,
-                ExecutionOrder = 0,
+                // Stage 12.4: provenance — every plan operation knows which
+                // customization definition requested it (survives dedupe merges).
+                var op = new CustomizationOperation
+                {
+                    OperationId = opId,
+                    Category = CustomizationCategory.Service,
+                    OperationType = CustomizationOperationType.ConfigureOfflineService,
+                    DisplayName = DisplayName,
+                    Description = ShortPurpose,
+                    ServiceName = Definition.ServiceName,
+                    ServiceStartType = Definition.ProposedStartType,
+                    Risk = Definition.Risk == RiskLevel.Low ? RiskClass.Safe : RiskClass.Removable,
+                    ActionKind = Definition.Action,
+                    Mechanism = Definition.Mechanism,
+                    Scope = Definition.Scope,
+                    ReversalKey = Definition.ReversalKey,
+                    ExecutionOrder = 0,
+                };
+                op.AddSourceDefinition(Definition.Id);
+                return op;
             });
             _parent.RefreshSelectedTotal();
             return;
@@ -507,25 +514,31 @@ public sealed class OptimizationKnowledgeItem : ViewModelBase, IRecommendationSu
         foreach (var target in Definition.RegistryTargets)
         {
             var opId = $"opt|{Definition.Id}|{index}";
-            PlanSync.Toggle(_appState, opId, selected, () => new CustomizationOperation
+            PlanSync.Toggle(_appState, opId, selected, () =>
             {
-                OperationId = opId,
-                Category = CategoryForTab(Definition.Tab),
-                OperationType = CustomizationOperationType.SetOfflineRegistryValue,
-                DisplayName = DisplayName,
-                Description = ShortPurpose,
-                RegistryHive = target.Hive,
-                RegistryKeyPath = target.KeyPath,
-                RegistryValueName = target.ValueName,
-                RegistryValueKind = target.ValueKind,
-                RegistryValueData = target.RecommendedData,
-                Risk = RiskClass.Safe,
-                ActionKind = Definition.Action,
-                Mechanism = Definition.Mechanism,
-                Scope = Definition.Scope,
-                ReversalKey = Definition.ReversalKey,
-                RestoreValueData = target.RestoreData,
-                ExecutionOrder = index,
+                // Stage 12.4: provenance (see service branch above).
+                var op = new CustomizationOperation
+                {
+                    OperationId = opId,
+                    Category = CategoryForTab(Definition.Tab),
+                    OperationType = CustomizationOperationType.SetOfflineRegistryValue,
+                    DisplayName = DisplayName,
+                    Description = ShortPurpose,
+                    RegistryHive = target.Hive,
+                    RegistryKeyPath = target.KeyPath,
+                    RegistryValueName = target.ValueName,
+                    RegistryValueKind = target.ValueKind,
+                    RegistryValueData = target.RecommendedData,
+                    Risk = RiskClass.Safe,
+                    ActionKind = Definition.Action,
+                    Mechanism = Definition.Mechanism,
+                    Scope = Definition.Scope,
+                    ReversalKey = Definition.ReversalKey,
+                    RestoreValueData = target.RestoreData,
+                    ExecutionOrder = index,
+                };
+                op.AddSourceDefinition(Definition.Id);
+                return op;
             });
             index++;
         }

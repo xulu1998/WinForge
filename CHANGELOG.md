@@ -24,6 +24,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Incident regression.** A repeated-workflow test proves disposable workspaces no longer accumulate
   across sessions (the ~249 GB stale-workspace incident becomes impossible under normal use).
 
+### Fixed (Phase 12 Stage 12.4 — plan compiler emitted duplicate identical registry operations)
+
+- **Real-desktop report:** after the Stage 12.3 validation-UX fix, the validator correctly surfaced
+  "Duplicate operations target the same change: reg|SOFTWARE\Policies\Microsoft\Windows\CloudContent|
+  DisableWindowsSpotlightFeatures" and Apply stayed disabled — but the duplicate should never reach
+  the validator: the PLAN COMPILER emitted two identical physical operations.
+- **Exact sources:** Privacy "Windows 聚焦内容" (`SpotlightFeatures`, OptimizationCatalog) and
+  Personalization "Windows 聚焦（锁屏内容）" (`DisableSpotlight`) both compile to the SAME mutation —
+  `SetOfflineRegistryValue` on SOFTWARE\Policies\Microsoft\Windows\CloudContent
+  \DisableWindowsSpotlightFeatures = DWord 1, Scope OfflineMachine. Only the OperationId differed
+  (`opt|SpotlightFeatures|0` vs `opt|DisableSpotlight|0`), so ConflictKey collided and the validator
+  (correctly) flagged it.
+- **Fix (normalization layer, validator NOT weakened):** `CustomizationOperation` gains a canonical
+  effective-target identity — registry SCOPE + normalized hive + normalized key path + normalized
+  value name (case-insensitive, separator-normalized, scope is part of identity so OfflineMachine and
+  OfflineDefaultUser never merge) — and a mutation-semantics comparison (operation type + value kind +
+  normalized data; DWord/QWord compared numerically so "1" == "0x1" == "01"). `CustomizationPlan
+  .AddOperation` now MERGES identical effective registry changes into ONE physical operation,
+  retaining provenance (every originating definition id / operation id in `SourceDefinitionIds`);
+  semantically DIFFERENT mutations of the same target stay as two operations and remain blocking
+  conflicts. `ConflictKey` now includes the scope, so the validator never false-positives across
+  scopes. `OptimizationKnowledgeItem` records `Definition.Id` as operation provenance.
+- **Regression:** `Stage12p4PlanNormalizationTests` (15) — identical dedupe to 1, different value
+  stays blocking, different scope / DefaultUser-vs-machine never merge, provenance retains both
+  sources, totals reflect deduped executable count, validator still rejects AppX duplicate, true
+  conflict UI visible, real DisableWindowsSpotlightFeatures target dedupes + validates, Gaming /
+  Lightweight / Developer selection sets compile + validate, manual true conflict blocked, numeric
+  and path-case normalization. Full suite **739 pass (Core 53, App 686), 0 errors, 0 warnings**.
+
 ### Fixed (Phase 12 Stage 12.3 — REAL DESKTOP BLOCKER: Review 校验计划 no-op / Apply disabled)
 
 - **Root cause:** 「校验计划」gave no visible response and 「应用到已挂载镜像」stayed disabled.

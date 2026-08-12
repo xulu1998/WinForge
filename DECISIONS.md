@@ -1662,3 +1662,28 @@ All decisions are `ACCEPTED` unless noted.
     the Storage UI).
 - **Consequences:** repeated Prepare→Customize→Build→Finish (or →Discard) cycles no longer accumulate stale
   workspaces and never require manual AppData cleanup.
+
+
+## ADR-068: Plan compiler normalization — identical registry operations merge, true conflicts stay
+
+- **Context:** real desktop produced "Duplicate operations target the same change:
+  reg|...CloudContent|DisableWindowsSpotlightFeatures" — two independent customization items
+  (Privacy `SpotlightFeatures` "Windows 聚焦内容", Personalization `DisableSpotlight`
+  "Windows 聚焦（锁屏内容）") compile to the exact same registry mutation. The validator was right;
+  the plan COMPILER was wrong to emit two identical physical operations.
+- **Decision:**
+  - `CustomizationOperation.CanonicalRegistryTarget()` = SCOPE + normalized hive + normalized key
+    path + normalized value name (case-insensitive, '/'↔'\' separators; scope is identity —
+    OfflineMachine and OfflineDefaultUser never merge even with identical key text).
+  - `HasSameEffectiveChangeAs()` compares mutation semantics: operation type + registry value kind +
+    normalized data (DWord/QWord numeric equivalence: "1" == "0x1" == "01"; others case-insensitive).
+  - `CustomizationPlan.AddOperation` merges identical effective changes into ONE physical operation
+    (first wins, provenance merged); semantically DIFFERENT mutations of the same target remain two
+    operations and stay validator-blocking. The validator is NOT weakened and still flags any
+    duplicate that bypasses normalization as an internal-plan defect.
+  - `ConflictKey` includes the scope so the validator cannot false-positive across scopes.
+  - Provenance: `SourceDefinitionIds` retains every originating definition/operation id; the
+    customization VM records `Definition.Id` on every generated operation.
+- **Consequences:** identical recommendation intents produce one executable operation; Review counts
+  reflect executable operations; true conflicts (same target, different value) still block Apply with
+  visible warnings; rollback/explainability data keeps all sources.
