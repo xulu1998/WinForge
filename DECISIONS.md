@@ -1643,3 +1643,22 @@ All decisions are `ACCEPTED` unless noted.
   - BuildStepViewModel checks free space on the output drive before starting and blocks with a localized
     "需要约 X GB 可用；当前 Y GB" message when insufficient.
 - **Consequences:** operations stop before filling the drive; estimates are conservative by construction.
+
+
+## ADR-066: Stage 12.2 — configurable workspace root + Finish/Discard auto-cleanup
+
+- **Context:** two product gaps remained before real-desktop validation: users with small C: SSDs could not
+  relocate the workspace root, and completed/discarded workspaces still required a manual Storage visit.
+- **Decision:**
+  - `IWorkspaceRootSettingsService` (persisted `workspace-roots.json`): current root + known previous roots.
+    Root changes affect NEW workflows only; existing workspaces are never moved; an actively mounted session
+    blocks the change; candidate roots are validated (drive/profile roots rejected, creatable+writable probe);
+    a low-free-space drive shows a warning (not a block). Cleanup/orphan scanning covers ALL known roots
+    (Part G) so old roots are never orphaned.
+  - `WorkflowViewModel.FinishAsync` runs the authoritative DISM-safe cleanup of the completed workspace:
+    final ISO preserved, recoverable checkpoints retained (minimal-retention), reclaimed bytes reported on the
+    Build step; a partial failure is a WARNING with an explicit [立即重试清理] — never a build failure.
+  - A successful Unmount/Discard auto-cleans the disposable workspace in the background (failures surface in
+    the Storage UI).
+- **Consequences:** repeated Prepare→Customize→Build→Finish (or →Discard) cycles no longer accumulate stale
+  workspaces and never require manual AppData cleanup.

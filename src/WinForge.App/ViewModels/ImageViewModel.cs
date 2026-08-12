@@ -7,6 +7,7 @@ using WinForge.App.Mvvm;
 using WinForge.App.Services;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
+using WinForge.Core.WorkspaceLifecycle;
 
 namespace WinForge.App.ViewModels;
 
@@ -30,6 +31,7 @@ public sealed class ImageViewModel : ViewModelBase
     private readonly IImageWorkspaceFactory _workspaceFactory;
     private readonly IWimService _wimService;
     private readonly IImageServicingService _servicing;
+    private readonly IWorkspaceLifecycleManager? _lifecycle;
     private readonly ILocalizationService? _loc;
 
     private IsoInspectionResult? _result;
@@ -46,11 +48,13 @@ public sealed class ImageViewModel : ViewModelBase
         IImageWorkspaceFactory workspaceFactory,
         IWimService wimService,
         IImageServicingService servicing,
-        ILocalizationService? loc = null)
+        ILocalizationService? loc = null,
+        IWorkspaceLifecycleManager? lifecycle = null)
     {
         _appState = appState;
         _logger = logger;
         _inspection = inspection;
+        _lifecycle = lifecycle;
         _filePicker = filePicker;
         _workspaceFactory = workspaceFactory;
         _wimService = wimService;
@@ -440,6 +444,25 @@ public sealed class ImageViewModel : ViewModelBase
             ServicingMessage = result.Success
                 ? L("Servicing.Msg.Unmounted", "Working image unmounted (changes discarded).")
                 : (result.ErrorMessage ?? L("Servicing.Msg.UnmountFailed", "Unmount failed."));
+            // Stage 12.2 Part E: after a successful discard the disposable workspace
+            // is cleaned immediately (background, safe) so cancelled test runs never
+            // accumulate; failures surface in the Storage cleanup UI instead.
+            if (result.Success && _lifecycle is not null &&
+                result.Workspace is { WorkingDirectory: { } wd } && !string.IsNullOrWhiteSpace(wd))
+            {
+                var id = System.IO.Path.GetFileName(wd.TrimEnd('\\', '/')) ?? string.Empty;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _lifecycle.CleanupCompletedWorkspaceAsync(id);
+                    }
+                    catch
+                    {
+                        // best effort — Storage UI remains the retry surface
+                    }
+                });
+            }
         }
         catch (Exception ex)
         {

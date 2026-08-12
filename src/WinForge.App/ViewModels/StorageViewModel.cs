@@ -21,6 +21,9 @@ public sealed class StorageViewModel : ViewModelBase
 {
     private readonly IWorkspaceLifecycleManager _lifecycle;
     private readonly ILocalizationService _loc;
+    private readonly IWorkspaceRootSettingsService? _rootSettings;
+    private readonly IFilePicker? _filePicker;
+    private readonly IAppState? _appState;
     private bool _isScanning;
     private bool _isCleaning;
     private bool _hasScanned;
@@ -29,16 +32,25 @@ public sealed class StorageViewModel : ViewModelBase
     private long _recoverableBytes;
     private long _disposableBytes;
     private string _cleanResultText = string.Empty;
+    private string _rootErrorText = string.Empty;
 
     public StorageViewModel(
         IWorkspaceLifecycleManager lifecycle,
-        ILocalizationService loc)
+        ILocalizationService loc,
+        IWorkspaceRootSettingsService? rootSettings = null,
+        IFilePicker? filePicker = null,
+        IAppState? appState = null)
     {
         _lifecycle = lifecycle ?? throw new ArgumentNullException(nameof(lifecycle));
         _loc = loc ?? throw new ArgumentNullException(nameof(loc));
+        _rootSettings = rootSettings;
+        _filePicker = filePicker;
+        _appState = appState;
 
         ScanCommand = new RelayCommand(_ => _ = ScanAsync());
         CleanCommand = new AsyncRelayCommand(_ => CleanAsync(), _ => !IsCleaning && CleanupCandidates.Count > 0);
+        ChangeRootCommand = new RelayCommand(_ => ChangeRoot());
+        RestoreDefaultCommand = new RelayCommand(_ => RestoreDefault());
     }
 
     public ObservableCollection<StorageCandidateItem> CleanupCandidates { get; } = new();
@@ -46,6 +58,12 @@ public sealed class StorageViewModel : ViewModelBase
     public ICommand ScanCommand { get; }
 
     public ICommand CleanCommand { get; }
+
+    /// <summary>Opens a folder picker and switches the workspace root (Part A).</summary>
+    public ICommand ChangeRootCommand { get; }
+
+    /// <summary>Restores the default workspace root (Part A).</summary>
+    public ICommand RestoreDefaultCommand { get; }
 
     public bool IsScanning
     {
@@ -76,6 +94,122 @@ public sealed class StorageViewModel : ViewModelBase
     {
         get => _cleanResultText;
         private set => SetField(ref _cleanResultText, value);
+    }
+
+    // ---- Stage 12.2 — workspace root (Part A/B/F) ----
+
+    public string CurrentRootText => _rootSettings?.CurrentRoot ?? _lifecycle.WorkspaceRoot;
+
+    public string RootFreeSpaceText
+    {
+        get
+        {
+            try
+            {
+                var root = CurrentRootText;
+                var drive = System.IO.Path.GetPathRoot(System.IO.Path.GetFullPath(root));
+                if (!string.IsNullOrWhiteSpace(drive) && System.IO.Directory.Exists(drive))
+                {
+                    return string.Format(_loc["Storage.Root.Free"],
+                        DiskSpaceEstimator.FormatBytes(new System.IO.DriveInfo(drive).AvailableFreeSpace));
+                }
+            }
+            catch
+            {
+                // best effort
+            }
+
+            return string.Empty;
+        }
+    }
+
+    public bool RootLowSpaceWarning => RootFreeBytes < 10L * 1024 * 1024 * 1024;
+
+    public string RootLowSpaceWarningText => string.Format(_loc["Storage.Root.Warning"], RootFreeSpaceText);
+
+    public string RootErrorText
+    {
+        get => _rootErrorText;
+        private set => SetField(ref _rootErrorText, value);
+    }
+
+    private long RootFreeBytes
+    {
+        get
+        {
+            try
+            {
+                var drive = System.IO.Path.GetPathRoot(System.IO.Path.GetFullPath(CurrentRootText));
+                if (!string.IsNullOrWhiteSpace(drive) && System.IO.Directory.Exists(drive))
+                {
+                    return new System.IO.DriveInfo(drive).AvailableFreeSpace;
+                }
+            }
+            catch
+            {
+                // best effort
+            }
+
+            return long.MaxValue;
+        }
+    }
+
+    /// <summary>
+    /// Applies a candidate root (testable, no dialog). Part A: rejects an actively
+    /// mounted session, validates the path, persists the change, and affects new
+    /// workflows only — existing workspaces are never moved.
+    /// </summary>
+    public bool TrySetRoot(string candidate)
+    {
+        RootErrorText = string.Empty;
+        if (_rootSettings is null)
+        {
+            return false;
+        }
+
+        // Part B: never switch the root while the current image is mounted.
+        if (_appState?.CurrentServicingWorkspace?.State == WinForge.Core.Models.ServicingWorkspaceState.Mounted)
+        {
+            RootErrorText = _loc["Storage.Root.Mounted"];
+            return false;
+        }
+
+        if (!_rootSettings.SetCurrentRoot(candidate, out var errorKey))
+        {
+            RootErrorText = _loc[errorKey ?? "Storage.Root.Invalid"];
+            return false;
+        }
+
+        OnPropertyChanged(nameof(CurrentRootText));
+        OnPropertyChanged(nameof(RootFreeSpaceText));
+        OnPropertyChanged(nameof(RootLowSpaceWarning));
+        OnPropertyChanged(nameof(RootLowSpaceWarningText));
+        return true;
+    }
+
+    private void ChangeRoot()
+    {
+        if (_filePicker is null)
+        {
+            return;
+        }
+
+        var picked = _filePicker.PickFolder();
+        if (string.IsNullOrWhiteSpace(picked))
+        {
+            return; // user cancelled
+        }
+
+        TrySetRoot(picked);
+    }
+
+    private void RestoreDefault()
+    {
+        _rootSettings?.RestoreDefault();
+        OnPropertyChanged(nameof(CurrentRootText));
+        OnPropertyChanged(nameof(RootFreeSpaceText));
+        OnPropertyChanged(nameof(RootLowSpaceWarning));
+        OnPropertyChanged(nameof(RootLowSpaceWarningText));
     }
 
     public async Task ScanAsync()
@@ -172,6 +306,11 @@ public sealed class StorageViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasScanned));
         OnPropertyChanged(nameof(HasCandidates));
         OnPropertyChanged(nameof(CleanResultText));
+        OnPropertyChanged(nameof(CurrentRootText));
+        OnPropertyChanged(nameof(RootFreeSpaceText));
+        OnPropertyChanged(nameof(RootLowSpaceWarning));
+        OnPropertyChanged(nameof(RootLowSpaceWarningText));
+        OnPropertyChanged(nameof(RootErrorText));
     }
 }
 

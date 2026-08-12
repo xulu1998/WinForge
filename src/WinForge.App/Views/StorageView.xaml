@@ -22,6 +22,52 @@
             </TextBlock.Text>
         </TextBlock>
 
+        <!-- Stage 12.2: workspace root (Part A/F) -->
+        <Border Background="#F5F7FA" BorderBrush="#E4E7EB" BorderThickness="1" CornerRadius="6"
+                Padding="12,8" Margin="0,14,0,0" MaxWidth="760" HorizontalAlignment="Left">
+            <StackPanel>
+                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#1F2933">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Storage.Root.Title"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBlock FontSize="12" Foreground="#3E4C59" Margin="0,4,0,0" TextWrapping="Wrap"
+                           Text="{Binding CurrentRootText, Mode=OneWay}"/>
+                <TextBlock FontSize="11.5" Foreground="#7B8794" Margin="0,2,0,0"
+                           Text="{Binding RootFreeSpaceText, Mode=OneWay}"/>
+                <TextBlock FontSize="11.5" Foreground="#B45309" Margin="0,2,0,0"
+                           Text="{Binding RootLowSpaceWarningText, Mode=OneWay}"
+                           Visibility="{Binding RootLowSpaceWarning, Mode=OneWay, Converter={StaticResource BoolToVis}}"/>
+                <TextBlock FontSize="11.5" Foreground="#9A3412" Margin="0,2,0,0" TextWrapping="Wrap"
+                           Text="{Binding RootErrorText, Mode=OneWay}"
+                           Visibility="{Binding RootErrorText, Mode=OneWay, Converter={StaticResource NullEmptyToVis}}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button Background="#2F855A" Foreground="White" BorderThickness="0" Padding="10,5" FontSize="12"
+                            Command="{Binding ChangeRootCommand, Mode=OneWay}">
+                        <TextBlock>
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Storage.Root.Change"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Button>
+                    <Button Margin="8,0,0,0" Padding="10,5" Background="Transparent" BorderThickness="0" FontSize="12"
+                            Foreground="#3B82F6" Command="{Binding RestoreDefaultCommand, Mode=OneWay}">
+                        <TextBlock>
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource locKey}">
+                                    <Binding Source="Storage.Root.Restore"/><Binding Source="{StaticResource Loc}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
         <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
             <Button Style="{StaticResource PrimaryButton}" Background="#2F855A" Padding="12,6"
                     Command="{Binding ScanCommand, Mode=OneWay}"

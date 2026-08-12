@@ -74,6 +74,7 @@ public sealed class BuildStepViewModel : ViewModelBase
         CancelCommand = new RelayCommand(_ => CancelBuild(), _ => CanCancel);
         BrowseOutputCommand = new RelayCommand(_ => BrowseOutput(), _ => CanBrowse);
         OpenOutputFolderCommand = new RelayCommand(_ => OpenOutputFolder(), _ => CanOpenOutputFolder);
+        RetryFinishCleanupCommand = new AsyncRelayCommand(_ => RetryFinishCleanupAsync(), _ => HasFinishCleanupFailure);
 
         // Proactive ADK detection so the UI can clearly tell the user when the
         // Windows ADK Deployment Tools are required, instead of failing mid-build.
@@ -89,6 +90,9 @@ public sealed class BuildStepViewModel : ViewModelBase
     public ICommand CancelCommand { get; }
     public ICommand BrowseOutputCommand { get; }
     public ICommand OpenOutputFolderCommand { get; }
+
+    /// <summary>Stage 12.2: retries a failed Finish cleanup of the completed workspace.</summary>
+    public ICommand RetryFinishCleanupCommand { get; }
 
     /// <summary>True when the Apply step finished (successfully or with errors).</summary>
     public bool HasApplied => _appState.CustomizationExecutionState is
@@ -568,6 +572,64 @@ public sealed class BuildStepViewModel : ViewModelBase
         return string.IsNullOrWhiteSpace(documents)
             ? System.IO.Path.Combine(System.IO.Path.GetTempPath(), "WinForge", "Output")
             : System.IO.Path.Combine(documents, "WinForge");
+    }
+
+    // ---- Stage 12.2 Finish cleanup reporting (Part D) ----
+
+    private bool _finishCleanupSucceeded;
+    private bool _finishCleanupRetained;
+    private bool _finishCleanupFailed;
+    private long _finishCleanupBytes;
+    private string? _cleanupWorkspaceId;
+
+    /// <summary>True when a Finish cleanup failed and can be retried.</summary>
+    public bool HasFinishCleanupFailure => _finishCleanupFailed;
+
+    /// <summary>Finish cleanup retry button visibility (only after a failure).</summary>
+    public bool FinishCleanupRetryVisible => _finishCleanupFailed;
+
+    /// <summary>
+    /// Stage 12.2 Part C/D: reports the Finish-triggered cleanup of the completed
+    /// workspace. A cleanup failure is a WARNING — it never marks the build failed.
+    /// </summary>
+    public void ReportFinishCleanup(WinForge.Core.WorkspaceLifecycle.CompletedWorkspaceCleanupResult result)
+    {
+        _finishCleanupSucceeded = result.Cleaned;
+        _finishCleanupRetained = !result.Cleaned && result.RetentionReason is
+            WinForge.Core.WorkspaceLifecycle.WorkspaceRetentionReason.RecoverableBuildCheckpoint
+                or WinForge.Core.WorkspaceLifecycle.WorkspaceRetentionReason.ActiveMount;
+        _finishCleanupFailed = !result.Cleaned && !_finishCleanupRetained;
+        _finishCleanupBytes = result.Cleaned ? result.BytesReclaimed : result.BytesRetained;
+        _cleanupWorkspaceId = _appState.CurrentServicingWorkspace?.WorkingDirectory is null
+            ? null
+            : System.IO.Path.GetFileName(_appState.CurrentServicingWorkspace.WorkingDirectory.TrimEnd('\\', '/')) ?? null;
+
+        StatusMessage = result.Cleaned
+            ? _loc["Build.Status.Completed"] + " — " + string.Format(_loc["Build.Finish.Cleaned"],
+                WinForge.Core.WorkspaceLifecycle.DiskSpaceEstimator.FormatBytes(result.BytesReclaimed))
+            : _finishCleanupRetained
+                ? _loc["Build.Status.Completed"] + " — " + string.Format(_loc["Build.Finish.Retained"],
+                    WinForge.Core.WorkspaceLifecycle.DiskSpaceEstimator.FormatBytes(result.BytesRetained))
+                : _loc["Build.Status.Completed"] + " — " + string.Format(_loc["Build.Finish.Partial"],
+                    WinForge.Core.WorkspaceLifecycle.DiskSpaceEstimator.FormatBytes(result.BytesRetained));
+
+        OnPropertyChanged(nameof(HasFinishCleanupFailure));
+        OnPropertyChanged(nameof(FinishCleanupRetryVisible));
+        if (RetryFinishCleanupCommand is AsyncRelayCommand r)
+        {
+            r.RaiseCanExecuteChanged();
+        }
+    }
+
+    private async Task RetryFinishCleanupAsync()
+    {
+        if (_lifecycle is null || string.IsNullOrWhiteSpace(_cleanupWorkspaceId))
+        {
+            return;
+        }
+
+        var result = await _lifecycle.CleanupCompletedWorkspaceAsync(_cleanupWorkspaceId);
+        ReportFinishCleanup(result);
     }
 
     /// <summary>

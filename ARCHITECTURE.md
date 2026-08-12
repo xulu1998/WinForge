@@ -447,7 +447,13 @@ paths on partial failure. The final ISO defaults to `Documents\WinForge` (user o
 target; temp is strictly the workspace root). `BuildStepViewModel` marks Completed + FinalOutputPath and
 runs a conservative disk-space guard (`DiskSpaceEstimator`) before building. Settings hosts a **Storage**
 surface (`StorageViewModel`/`StorageView`): async, cancellable workspace scan grouped into temp /
-recoverable / active / disposable totals with a safe-cleanup preview and one-click 清理临时文件.
+recoverable / active / disposable totals with a safe-cleanup preview and one-click 清理临时文件, plus the
+workspace-root editor (change/restore default, validation, active-mount block, persisted via
+`workspace-roots.json`); multi-root cleanup discovery scans every known root (Part G). Stage 12.2:
+`WorkflowViewModel.FinishAsync` runs the Finish auto-cleanup (authoritative DISM-safe; final ISO preserved,
+recoverable checkpoints retained, reclaimed bytes reported on the Build step with [立即重试清理] on partial
+failure — a cleanup failure is a WARNING, never a build failure); a successful Unmount/Discard auto-cleans
+the disposable workspace in the background (Part E).
 
 ## Phase 11 — COMPLETED (2026-08-12)
 

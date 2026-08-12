@@ -28,26 +28,59 @@ public sealed class WorkspaceLifecycleManager : IWorkspaceLifecycleManager
     private readonly IProcessRunner _processRunner;
     private readonly IWorkspaceSafeDelete _safeDelete;
     private readonly ILoggerService _logger;
+    private readonly IWorkspaceRootSettingsService? _rootSettings;
 
     public WorkspaceLifecycleManager(
         IWorkspacePathProvider paths,
         IProcessRunner processRunner,
         IWorkspaceSafeDelete safeDelete,
-        ILoggerService logger)
+        ILoggerService logger,
+        IWorkspaceRootSettingsService? rootSettings = null)
     {
         _paths = paths ?? throw new ArgumentNullException(nameof(paths));
         _processRunner = processRunner ?? throw new ArgumentNullException(nameof(processRunner));
         _safeDelete = safeDelete ?? throw new ArgumentNullException(nameof(safeDelete));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _rootSettings = rootSettings;
     }
 
-    public string WorkspaceRoot => _paths.RootDirectory;
+    /// <summary>
+    /// Current workspace root — the user-configurable root (Stage 12.2) when a
+    /// settings service is wired, else the path provider default.
+    /// </summary>
+    public string WorkspaceRoot => _rootSettings?.CurrentRoot ?? _paths.RootDirectory;
+
+    /// <summary>
+    /// All roots that must be scanned for cleanup/orphans: the current root plus
+    /// every persisted known (previous) root (Part G). Never scans arbitrary drives.
+    /// </summary>
+    public IReadOnlyList<string> KnownRoots
+    {
+        get
+        {
+            var roots = new List<string> { WorkspaceRoot };
+            if (_rootSettings is not null)
+            {
+                foreach (var r in _rootSettings.KnownRoots)
+                {
+                    if (!roots.Contains(r, StringComparer.OrdinalIgnoreCase))
+                    {
+                        roots.Add(r);
+                    }
+                }
+            }
+
+            return roots;
+        }
+    }
 
     // ---- Manifest lifecycle ----
 
     public string CreateWorkspace(string workspaceId, string? sourceIsoPath)
     {
-        var dir = _paths.GetOrCreateWorkspaceDirectory(workspaceId);
+        var dir = Path.Combine(WorkspaceRoot, workspaceId);
+        Directory.CreateDirectory(Path.Combine(dir, "image"));
+        Directory.CreateDirectory(Path.Combine(dir, "mount"));
         var manifest = new WorkspaceManifest
         {
             WorkspaceId = workspaceId,
@@ -55,8 +88,8 @@ public sealed class WorkspaceLifecycleManager : IWorkspaceLifecycleManager
             LastUsedAtUtc = DateTime.UtcNow,
             CurrentState = WorkspaceLifecycleState.Created,
             SourceIsoPath = string.IsNullOrWhiteSpace(sourceIsoPath) ? null : sourceIsoPath,
-            WorkingWimPath = _paths.GetWorkingImagePath(workspaceId),
-            MountPath = _paths.GetMountDirectory(workspaceId),
+            WorkingWimPath = Path.Combine(dir, "image", "install.wim"),
+            MountPath = Path.Combine(dir, "mount"),
             IsMountedKnown = false,
             CanDeleteSafely = false,
             WinForgeVersion = GetVersion(),
@@ -242,6 +275,85 @@ public sealed class WorkspaceLifecycleManager : IWorkspaceLifecycleManager
         return new CleanupResult { Succeeded = false, BytesReclaimed = sizeBefore, LeftoverPath = leftover, Error = error };
     }
 
+    public async Task<CompletedWorkspaceCleanupResult> CleanupCompletedWorkspaceAsync(
+        string workspaceId, CancellationToken cancellationToken = default)
+    {
+        var dir = WorkspaceDirectoryOrNull(workspaceId);
+        if (dir is null || !Directory.Exists(dir))
+        {
+            return new CompletedWorkspaceCleanupResult { Cleaned = true }; // nothing to clean
+        }
+
+        // Authoritative mount check (Part B/C) — never clean an active mount.
+        var mountQuery = await QueryMountedStateAsync(cancellationToken);
+        if (!mountQuery.QuerySucceeded)
+        {
+            var unknown = await MeasureDirectorySizeAsync(dir, cancellationToken);
+            return new CompletedWorkspaceCleanupResult
+            {
+                BytesRetained = unknown,
+                RetentionReason = WorkspaceRetentionReason.None,
+                Error = "Mount-state query failed — cleanup refused (fail closed).",
+            };
+        }
+
+        var manifest = WorkspaceManifestStore.TryLoad(dir);
+        var mountPath = manifest?.MountPath?.TrimEnd('\\');
+        var dirPrefix = dir.TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
+        var hasActiveMount = mountQuery.MountedPaths.Any(m =>
+            (mountPath is not null && string.Equals(m, mountPath, StringComparison.OrdinalIgnoreCase)) ||
+            m.StartsWith(dirPrefix, StringComparison.OrdinalIgnoreCase));
+        if (hasActiveMount)
+        {
+            var mounted = await MeasureDirectorySizeAsync(dir, cancellationToken);
+            return new CompletedWorkspaceCleanupResult
+            {
+                BytesRetained = mounted,
+                RetentionReason = WorkspaceRetentionReason.ActiveMount,
+                Error = "Workspace is actively mounted — retained.",
+            };
+        }
+
+        // Recoverable states are retained with their size (minimal-retention rule).
+        var isRecoverableState = manifest is not null &&
+            manifest.CurrentState is WorkspaceLifecycleState.FailedRecoverable
+                or WorkspaceLifecycleState.BuildCheckpoint;
+        var completedWithoutOutput = manifest is not null &&
+            manifest.CurrentState == WorkspaceLifecycleState.Completed &&
+            string.IsNullOrWhiteSpace(manifest.FinalOutputPath);
+        if (isRecoverableState || completedWithoutOutput)
+        {
+            var retained = await MeasureDirectorySizeAsync(dir, cancellationToken);
+            return new CompletedWorkspaceCleanupResult
+            {
+                BytesRetained = retained,
+                RetentionReason = WorkspaceRetentionReason.RecoverableBuildCheckpoint,
+            };
+        }
+
+        // Disposable: delete (attributes stripped, partial failures recorded).
+        var sizeBefore = await MeasureDirectorySizeAsync(dir, cancellationToken);
+        var leftover = DeleteDirectorySafely(dir, out var error);
+        if (leftover is null)
+        {
+            Transition(workspaceId, WorkspaceLifecycleState.Cleaned, "FinishCleanupCompleted", sizeBefore);
+            return new CompletedWorkspaceCleanupResult { Cleaned = true, BytesReclaimed = sizeBefore };
+        }
+
+        Transition(workspaceId, WorkspaceLifecycleState.Cleaning, "FinishCleanupFailed");
+        UpdateManifest(workspaceId, m =>
+        {
+            m.RetentionReason = WorkspaceRetentionReason.CleanupFailure;
+            m.CleanupFailurePath = leftover;
+        });
+        return new CompletedWorkspaceCleanupResult
+        {
+            BytesRetained = sizeBefore,
+            RetentionReason = WorkspaceRetentionReason.CleanupFailure,
+            Error = error,
+        };
+    }
+
     public Task<long> MeasureDirectorySizeAsync(string path, CancellationToken cancellationToken = default)
         => Task.Run(() =>
         {
@@ -365,11 +477,25 @@ public sealed class WorkspaceLifecycleManager : IWorkspaceLifecycleManager
 
     private IEnumerable<DirectoryInfo> EnumerateWorkspaceDirectories()
     {
-        foreach (var dir in new DirectoryInfo(WorkspaceRoot).EnumerateDirectories())
+        var seenRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var root in KnownRoots)
         {
-            if (dir.Name.StartsWith("wf-", StringComparison.OrdinalIgnoreCase))
+            if (!seenRoots.Add(Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))
             {
-                yield return dir;
+                continue;
+            }
+
+            if (!Directory.Exists(root))
+            {
+                continue;
+            }
+
+            foreach (var dir in new DirectoryInfo(root).EnumerateDirectories())
+            {
+                if (dir.Name.StartsWith("wf-", StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return dir;
+                }
             }
         }
     }
@@ -381,8 +507,16 @@ public sealed class WorkspaceLifecycleManager : IWorkspaceLifecycleManager
             return null;
         }
 
-        var candidate = Path.Combine(WorkspaceRoot, workspaceId);
-        return _safeDelete.IsWithinWorkspace(WorkspaceRoot, candidate) && Directory.Exists(candidate) ? candidate : null;
+        foreach (var root in KnownRoots)
+        {
+            var candidate = Path.Combine(root, workspaceId);
+            if (_safeDelete.IsWithinWorkspace(root, candidate) && Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

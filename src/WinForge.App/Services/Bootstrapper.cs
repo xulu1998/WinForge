@@ -68,6 +68,7 @@ public static class Bootstrapper
         services.AddSingleton<IWorkspacePathProvider, WorkspacePathProvider>();
         services.AddSingleton<IWorkspaceSafeDelete, WorkspaceSafeDelete>();
         services.AddSingleton<IWorkspaceLifecycleManager, WorkspaceLifecycleManager>();
+        services.AddSingleton<IWorkspaceRootSettingsService, WorkspaceRootSettingsService>();
         services.AddSingleton<IImageServicingService, ImageServicingService>();
 
         // Phase 3 — Step 3.3 (Offline customization plan & execution engine)

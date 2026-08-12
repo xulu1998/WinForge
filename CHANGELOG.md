@@ -24,6 +24,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Incident regression.** A repeated-workflow test proves disposable workspaces no longer accumulate
   across sessions (the ~249 GB stale-workspace incident becomes impossible under normal use).
 
+### Added (Phase 12 Stage 12.2 — Finish cleanup + workspace-root settings)
+
+- **Workspace-root settings.** Settings → 存储 now shows the temporary workspace location with free space;
+  [更改位置] / [恢复默认位置] persist across restarts, reject invalid/unwritable roots and block the change
+  while an image is mounted. Old roots are remembered so cleanup still finds leftovers there.
+- **Finish auto-cleanup.** Completing a build now cleans the completed workspace automatically (final ISO is
+  always preserved; recoverable checkpoints are retained). The Build step reports 已清理临时文件：X GB,
+  or 保留恢复数据：X GB, or 部分未能清理 with [立即重试清理]. A cleanup failure never fails the build.
+- **Discard auto-cleanup.** Unmount/Discard cleans the disposable workspace in the background.
+
 ### Phase 11 — COMPLETED (2026-08-12)
 
 - **Phase 11 (Component Intelligence Foundation) is complete and merged to `main`** — real-desktop

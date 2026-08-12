@@ -7,6 +7,7 @@ using WinForge.App.Mvvm;
 using WinForge.App.ViewModels;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
+using WinForge.Core.WorkspaceLifecycle;
 
 namespace WinForge.App.Workflow;
 
@@ -23,6 +24,7 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
     private readonly IAppState _appState;
     private readonly BuildStepViewModel _build;
     private readonly INavigationService? _navigation;
+    private readonly IWorkspaceLifecycleManager? _lifecycle;
     private readonly List<WorkflowStepViewModel> _steps = new();
     private int _currentIndex;
 
@@ -32,11 +34,13 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
         CustomizeStepViewModel customize,
         PlanReviewViewModel plan,
         BuildStepViewModel build,
-        INavigationService? navigation = null)
+        INavigationService? navigation = null,
+        IWorkspaceLifecycleManager? lifecycle = null)
     {
         _appState = appState;
         _build = build;
         _navigation = navigation;
+        _lifecycle = lifecycle;
 
         _steps.Add(new WorkflowStepViewModel(WorkflowStep.Source, "Step.Source.Title", "Step.Source.Description", image, 0));
         _steps.Add(new WorkflowStepViewModel(WorkflowStep.Prepare, "Step.Prepare.Title", "Step.Prepare.Description", image, 1));
@@ -50,7 +54,7 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
         NextCommand = new RelayCommand(_ => GoNext(), _ => CanGoNext);
         BackCommand = new RelayCommand(_ => GoBack(), _ => CanGoBack);
         SelectStepCommand = new RelayCommand(p => GoToStep((WorkflowStep)p!), p => p is WorkflowStep s && CanGoToStep(s));
-        FinishCommand = new RelayCommand(_ => Finish(), _ => CanFinish);
+        FinishCommand = new AsyncRelayCommand(_ => FinishAsync(), _ => CanFinish);
 
         _appState.PropertyChanged += OnAppStateChanged;
         _build.PropertyChanged += OnBuildChanged;
@@ -157,16 +161,27 @@ public sealed class WorkflowViewModel : ViewModelBase, IWorkflowNavigator
     }
 
     /// <summary>
-    /// Completes the workflow. Called by <see cref="FinishCommand"/> only when
-    /// <see cref="CanFinish"/> is true (final step + build completed). It returns
-    /// the user to the Home / summary page. This is a clean navigation — it does
-    /// not delete the generated ISO or any completed build artifact.
+    /// Completes the workflow (Stage 12.2 Part C/D). Called by
+    /// <see cref="FinishCommand"/> only when <see cref="CanFinish"/> is true
+    /// (final step + build completed). Runs the authoritative safe cleanup of the
+    /// CURRENT completed workspace (final ISO is preserved; recoverable checkpoints
+    /// are retained), reports the outcome on the Build step, then navigates Home.
+    /// A cleanup failure is a WARNING, never a build failure — the user still
+    /// completes the workflow.
     /// </summary>
-    public void Finish()
+    private async Task FinishAsync()
     {
         if (!CanFinish)
         {
             return;
+        }
+
+        var ws = _appState.CurrentServicingWorkspace;
+        if (_lifecycle is not null && ws is not null && !string.IsNullOrWhiteSpace(ws.WorkingDirectory))
+        {
+            var id = System.IO.Path.GetFileName(ws.WorkingDirectory.TrimEnd('\\', '/')) ?? string.Empty;
+            var result = await _lifecycle.CleanupCompletedWorkspaceAsync(id);
+            _build.ReportFinishCleanup(result);
         }
 
         _navigation?.NavigateTo(PageKey.Home);

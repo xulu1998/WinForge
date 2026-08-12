@@ -491,7 +491,30 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ---
 
-## Phase 12 — Release
+## Phase 12 — Workspace Lifecycle & Disk Safety
+
+- **Status:** IN PROGRESS — **IMPLEMENTED (Stage 12.1 + 12.2) / PENDING REAL DESKTOP VALIDATION**
+  (2026-08-12; branch `phase/12-workspace-lifecycle`; NOT merged to `main`).
+- **Goal:** a deterministic, safe workspace lifecycle — repeated Select ISO → Prepare → Customize →
+  Apply/Cancel → Build → Finish must never accumulate hundreds of GB of stale files (ADR-062..066).
+- **Scope (Stage 12.1 — lifecycle + disk safety, IMPLEMENTED):** durable `workspace.json` manifests +
+  explicit lifecycle states; DISM-authoritative mount safety (fail closed); discard/build-completed →
+  cleanup-eligible; recoverable checkpoints retained; startup orphan/legacy classification (旧版残留 offered,
+  never bulk-deleted); Settings Storage UI (async scan + safe-cleanup preview + one-click 清理临时文件);
+  output/temp separation (final ISO → `Documents\WinForge`); conservative disk-space guards before
+  Prepare/Build; attribute-aware cleanup with partial-failure reporting.
+- **Scope (Stage 12.2 — Finish cleanup + workspace-root settings, IMPLEMENTED):** workspace-root editor in
+  Settings → 存储 (change/restore default, validation, active-mount block, persisted across restart,
+  low-space warning); multi-root cleanup discovery (old roots never orphaned); Finish auto-cleanup with
+  ISO-preserved / recoverable-retained / partial-with-retry reporting (cleanup failure is a warning, never a
+  build failure); Discard auto-cleanup in the background.
+- **Acceptance:** 701 tests pass (0 errors / 0 warnings); real-desktop validation on Windows 11 25H2:
+  Prepare→Discard leaves no mount; Prepare→Apply→Build→Finish preserves the ISO and drops temp usage;
+  a forced recoverable failure keeps only the checkpoint; a stale disposable workspace is detected, sized
+  and cleaned from the UI; workspace-root change applies to new workflows only and cleanup still finds old
+  roots. Do NOT mark Phase 12 complete until real-desktop validation passes.
+
+## Phase 13 — Release
 
 - **Status:** NOT STARTED
 - **Goal:** Package and publish a release.

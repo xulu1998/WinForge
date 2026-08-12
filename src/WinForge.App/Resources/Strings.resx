@@ -109,6 +109,18 @@
   <data name="Settings.Language" xml:space="preserve"><value>Display language</value></data>
   <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>
   <data name="Settings.Language.Chinese" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Build.Finish.Cleaned" xml:space="preserve"><value>ISO generated — temporary files cleaned: {0}</value></data>
+  <data name="Build.Finish.Partial" xml:space="preserve"><value>ISO generated — some temporary files could not be cleaned: {0}</value></data>
+  <data name="Build.Finish.Retained" xml:space="preserve"><value>ISO generated — recovery data retained: {0}</value></data>
+  <data name="Build.Finish.RetryCleanup" xml:space="preserve"><value>Retry cleanup</value></data>
+  <data name="Storage.Root.Title" xml:space="preserve"><value>Temporary workspace location</value></data>
+  <data name="Storage.Root.Change" xml:space="preserve"><value>Change location</value></data>
+  <data name="Storage.Root.Restore" xml:space="preserve"><value>Restore default location</value></data>
+  <data name="Storage.Root.Free" xml:space="preserve"><value>Free space: {0}</value></data>
+  <data name="Storage.Root.Warning" xml:space="preserve"><value>Selected drive has little free space ({0})</value></data>
+  <data name="Storage.Root.Invalid" xml:space="preserve"><value>The location is not usable (drive root or user-profile root).</value></data>
+  <data name="Storage.Root.NotWritable" xml:space="preserve"><value>The location cannot be created or written.</value></data>
+  <data name="Storage.Root.Mounted" xml:space="preserve"><value>Cannot change the workspace location while the current image is mounted — unmount it first.</value></data>
   <data name="Storage.Title" xml:space="preserve"><value>Storage</value></data>
   <data name="Storage.Description" xml:space="preserve"><value>WinForge keeps temporary servicing workspaces under your local app data. Check usage here and clean up safely. Active mounts, recoverable checkpoints and final ISO outputs are never deleted.</value></data>
   <data name="Storage.Scan" xml:space="preserve"><value>Scan disk usage</value></data>

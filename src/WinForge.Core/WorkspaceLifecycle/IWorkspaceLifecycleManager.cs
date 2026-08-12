@@ -87,6 +87,24 @@ public interface IWorkspaceLifecycleManager
 
     /// <summary>Asynchronously measures a directory's total size (cancellable).</summary>
     Task<long> MeasureDirectorySizeAsync(string path, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Stage 12.2 Finish cleanup (Part C): safely cleans a COMPLETED workspace
+    /// (authoritative DISM mount check first). Recoverable checkpoints and active
+    /// mounts are retained with their size; everything disposable is deleted.
+    /// </summary>
+    Task<CompletedWorkspaceCleanupResult> CleanupCompletedWorkspaceAsync(
+        string workspaceId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Result of the Finish-triggered workspace cleanup (Part C/D).</summary>
+public sealed class CompletedWorkspaceCleanupResult
+{
+    public bool Cleaned { get; init; }
+    public long BytesReclaimed { get; init; }
+    public long BytesRetained { get; init; }
+    public WorkspaceRetentionReason RetentionReason { get; init; } = WorkspaceRetentionReason.None;
+    public string? Error { get; init; }
 }
 
 /// <summary>Result of a cleanup attempt (Part O — never claim success on partial failure).</summary>
