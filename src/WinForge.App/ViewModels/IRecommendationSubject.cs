@@ -1,4 +1,5 @@
 using WinForge.App.Services;
+using WinForge.Core.Models;
 using WinForge.Core.Profiles;
 
 namespace WinForge.App.ViewModels;
@@ -15,6 +16,9 @@ public interface IRecommendationSubject
 {
     /// <summary>Stable logical id (component / optimization id).</summary>
     string LogicalId { get; }
+
+    /// <summary>Which Customize tab the row lives in (Part 11 per-tab breakdown).</summary>
+    OptimizationTab Tab { get; }
 
     string DisplayName { get; }
 

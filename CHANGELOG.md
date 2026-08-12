@@ -32,6 +32,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   profile switch). 自定义 disables profile overrides (back to catalog defaults) while keeping your
   manual selections. The Discover button becomes 重新扫描 after discovery, and the component lists
   keep the majority of the page.
+- **Primary profile + extra scenarios (rework).** 主要用途 is now ONE mutually-exclusive radio choice
+  (3-column aligned cards: 均衡推荐/游戏优先/开发工作站/办公稳定/轻量系统/专用精简/自定义); 额外需求
+  are independent checkboxes (Xbox/Game Pass, WSL/Docker, 打印扫描, 触屏/手写, 远程桌面) combined by
+  the same engine. Every primary profile now produces a meaningful multi-tab configuration
+  (查看方案详情 groups 推荐自动执行 / 需要确认 / 建议保留 / 冲突·不可执行 with per-tab counts), and
+  each changed recommendation explains itself: 配置建议: 游戏优先 → 建议保留.
 
 ### Added (Phase 11 Stage 11.3 — Customize coverage expansion + Personalization activation — phase/11-component-intelligence)
 - **Personalization tab is live (no longer "Coming Soon").** The sixth Customize tab now shows 14

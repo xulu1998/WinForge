@@ -396,9 +396,12 @@ WinForge.Infrastructure  (Windows only)
   overrides + present logical ids. Part Q: a NEW image workspace resets the session
   (`ResetForNewWorkflow`); a fresh workflow defaults to NO profile (pure manual mode) — a previous
   aggressive profile is never silently reused on a new ISO.
-- **Profile UI (`ProfileViewModel` / `ProfileView`, embedded at the top of Customize).** Compact cards
-  (name + short subtitle; long description in tooltip) keeping the panel ≤ ~200 px, with the Customize
-  tabs/list as the PRIMARY surface (real-desktop UX fix). Primary action = 采用推荐选择 (the ONLY
+- **Profile UI (`ProfileViewModel` / `ProfileView`, embedded at the top of Customize).** ONE primary
+  profile as mutually-exclusive radio cards in a 3-column equal-width Grid (Part 1 rework) + optional
+  EXTRA scenarios as independent checkboxes (Part 2); compact panel (STA-pinned ≤ ~260 px) with the
+  Customize tabs/list as the PRIMARY surface. Primary action = 采用推荐选择; 查看方案详情 groups
+  decisions by bucket with per-tab breakdown (Part 11); 重新采用推荐 is conditional; every
+  profile-driven row shows 配置建议: <profile> → <caption> (Part 13). Primary action = 采用推荐选择 (the ONLY
   selection-changing action); 查看推荐详情 is a demoted secondary link; 重新采用推荐 is conditionally
   visible only after adoption AND divergence (manual change or profile-set change); Custom means "no
   profile-driven overrides" (returns to catalog defaults, preserves manual selections); the Discover
@@ -413,6 +416,6 @@ WinForge.Infrastructure  (Windows only)
   dependency-keep/override/safety, Gaming/Developer/Office/Lightweight rule sets against the real
   catalog, conflict resolution with reasons, preview/adopt/high-risk/override UX, en/zh localization,
   profile change never mutates the plan); ProfileView added to the WPF binding audit. Full suite
-  **637 pass (Core 53, App 584), 0 errors, 0 warnings (Release)**.
+  **649 pass (Core 53, App 596), 0 errors, 0 warnings (Release)**.
 
 See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 / ADR-057 / ADR-058 / ADR-059 / ADR-060 for the full rationale.

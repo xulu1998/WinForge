@@ -628,6 +628,8 @@
 
 
 
+
+
 <!-- WINFORGE_STAGE113_BLOCK_START -->
   <data name="Customize.Rescan" xml:space="preserve"><value>重新扫描</value></data>
   <data name="Customize.Tab.Personalization" xml:space="preserve"><value>个性化</value></data>
@@ -847,6 +849,7 @@
   <data name="Plan.Target" xml:space="preserve"><value>更改</value></data>
   <data name="Profile.Active" xml:space="preserve"><value>当前推荐配置</value></data>
   <data name="Profile.Adopt" xml:space="preserve"><value>采用推荐选择</value></data>
+  <data name="Profile.AdvisedBy" xml:space="preserve"><value>配置建议</value></data>
   <data name="Profile.Balanced.Description" xml:space="preserve"><value>均衡默认——尽量保持 Windows 出厂体验</value></data>
   <data name="Profile.Balanced.DisplayName" xml:space="preserve"><value>均衡推荐</value></data>
   <data name="Profile.Conflict.Summary" xml:space="preserve"><value>已解决——当另一所选配置需要该组件时，保留方胜出</value></data>
@@ -858,6 +861,7 @@
   <data name="Profile.Developer.Description" xml:space="preserve"><value>优先 WSL、虚拟化、终端、OpenSSH 与开发工具链</value></data>
   <data name="Profile.Developer.DisplayName" xml:space="preserve"><value>开发工作站</value></data>
   <data name="Profile.Empty.Preview" xml:space="preserve"><value>请先选择推荐配置以预览推荐方案。</value></data>
+  <data name="Profile.Extras.Title" xml:space="preserve"><value>额外需求</value></data>
   <data name="Profile.Gaming.Description" xml:space="preserve"><value>优先游戏兼容、手柄输入、媒体编解码与 Game Pass</value></data>
   <data name="Profile.Gaming.DisplayName" xml:space="preserve"><value>游戏优先</value></data>
   <data name="Profile.Lightweight.Description" xml:space="preserve"><value>精简可选应用与后台体验；保留系统服务与安全</value></data>
@@ -870,17 +874,28 @@
   <data name="Profile.Preview.Group.Conflict" xml:space="preserve"><value>冲突 / 阻止</value></data>
   <data name="Profile.Preview.Group.Keep" xml:space="preserve"><value>建议保留</value></data>
   <data name="Profile.Preview.Group.Manual" xml:space="preserve"><value>需要确认</value></data>
+  <data name="Profile.Primary.Title" xml:space="preserve"><value>主要用途</value></data>
+  <data name="Profile.PrintingScanning.Description" xml:space="preserve"><value>需要打印机、扫描仪与 XPS 服务</value></data>
+  <data name="Profile.PrintingScanning.DisplayName" xml:space="preserve"><value>打印 / 扫描</value></data>
   <data name="Profile.Reapply" xml:space="preserve"><value>重新采用推荐</value></data>
+  <data name="Profile.Reason.Balanced.Ads" xml:space="preserve"><value>均衡推荐关闭低风险广告与推荐控制</value></data>
+  <data name="Profile.Reason.Balanced.Consumer" xml:space="preserve"><value>均衡推荐精简明显的可选消费类内容</value></data>
+  <data name="Profile.Reason.Balanced.UI" xml:space="preserve"><value>均衡推荐执行安全的界面清理</value></data>
   <data name="Profile.Reason.Conflict.KeepWins" xml:space="preserve"><value>保留方胜出——另一所选配置需要该组件</value></data>
   <data name="Profile.Reason.Dedicated.Aggressive" xml:space="preserve"><value>专用精简面向专用系统激进精简</value></data>
   <data name="Profile.Reason.Dedicated.Keep" xml:space="preserve"><value>专用精简保留必要工具</value></data>
   <data name="Profile.Reason.Dependency" xml:space="preserve"><value>另一需要保留的组件依赖此项</value></data>
+  <data name="Profile.Reason.Developer.Consumer" xml:space="preserve"><value>开发工作站精简无关消费与推广应用</value></data>
+  <data name="Profile.Reason.Developer.Explorer" xml:space="preserve"><value>开发工作站启用资源管理器友好设置（显示文件扩展名）</value></data>
   <data name="Profile.Reason.Developer.Sandbox" xml:space="preserve"><value>开发工作站配置保留 Windows 沙盒</value></data>
+  <data name="Profile.Reason.Developer.Telemetry" xml:space="preserve"><value>开发工作站减少广告与推荐内容</value></data>
+  <data name="Profile.Reason.Developer.UI" xml:space="preserve"><value>开发工作站清理建议类界面</value></data>
   <data name="Profile.Reason.Gaming.Codecs" xml:space="preserve"><value>游戏优先配置保留媒体编解码支持</value></data>
   <data name="Profile.Reason.Gaming.GameDvr" xml:space="preserve"><value>游戏优先配置保留游戏录制与游戏栏</value></data>
   <data name="Profile.Reason.Gaming.Media" xml:space="preserve"><value>游戏优先配置保留媒体播放支持</value></data>
   <data name="Profile.Reason.Gaming.Telemetry" xml:space="preserve"><value>游戏优先配置减少遥测与建议体验</value></data>
   <data name="Profile.Reason.Gaming.Trim" xml:space="preserve"><value>游戏优先配置精简无关消费类应用</value></data>
+  <data name="Profile.Reason.Gaming.UI" xml:space="preserve"><value>游戏优先精简推广与建议类界面</value></data>
   <data name="Profile.Reason.Gaming.Xbox" xml:space="preserve"><value>游戏优先配置保留 Xbox / Game Pass 相关功能</value></data>
   <data name="Profile.Reason.Gaming.XboxServices" xml:space="preserve"><value>游戏优先配置保留 Xbox 服务基础</value></data>
   <data name="Profile.Reason.Keep" xml:space="preserve"><value>所选配置建议保留</value></data>
@@ -893,18 +908,33 @@
   <data name="Profile.Reason.Office.Meetings" xml:space="preserve"><value>办公稳定配置保留会议与协作应用</value></data>
   <data name="Profile.Reason.Office.OneDrive" xml:space="preserve"><value>办公稳定配置保留 OneDrive 同步</value></data>
   <data name="Profile.Reason.Office.Printing" xml:space="preserve"><value>办公稳定配置保留打印与扫描支持</value></data>
+  <data name="Profile.Reason.Office.Privacy" xml:space="preserve"><value>办公稳定应用低风险隐私默认</value></data>
   <data name="Profile.Reason.Office.RemoteAssist" xml:space="preserve"><value>办公稳定配置保留远程协助</value></data>
+  <data name="Profile.Reason.Office.UI" xml:space="preserve"><value>办公稳定减少开始菜单建议</value></data>
+  <data name="Profile.Reason.PrintingScanning.Keep" xml:space="preserve"><value>打印/扫描需要打印、扫描与 XPS 服务</value></data>
+  <data name="Profile.Reason.RemoteDesktop.Keep" xml:space="preserve"><value>远程桌面需要 SSH 与远程协助支持</value></data>
   <data name="Profile.Reason.Requirement" xml:space="preserve"><value>所选配置需要此项</value></data>
   <data name="Profile.Reason.Safety" xml:space="preserve"><value>受保护——WinForge 绝不修改</value></data>
+  <data name="Profile.Reason.TouchPen.Keep" xml:space="preserve"><value>触屏/手写需要触摸键盘与手写服务</value></data>
   <data name="Profile.Reason.Trim" xml:space="preserve"><value>所选配置建议精简</value></data>
   <data name="Profile.Reason.UserOverride" xml:space="preserve"><value>你已手动更改——推荐不会覆盖你的选择</value></data>
+  <data name="Profile.Reason.WslDocker.Keep" xml:space="preserve"><value>WSL / Docker 需要虚拟化、终端与 SSH 工具</value></data>
+  <data name="Profile.Reason.XboxGamePass.Keep" xml:space="preserve"><value>Game Pass 需要 Xbox 应用与服务</value></data>
+  <data name="Profile.RemoteDesktop.Description" xml:space="preserve"><value>需要 SSH 远程连接与远程协助</value></data>
+  <data name="Profile.RemoteDesktop.DisplayName" xml:space="preserve"><value>远程桌面</value></data>
   <data name="Profile.Subtitle" xml:space="preserve"><value>选择一个或多个使用场景，WinForge 会据此调整各标签页的推荐。在你明确采用方案前，不会更改任何内容。</value></data>
   <data name="Profile.Summary.Adopt" xml:space="preserve"><value>建议执行</value></data>
   <data name="Profile.Summary.Confirm" xml:space="preserve"><value>需确认</value></data>
   <data name="Profile.Summary.Conflict" xml:space="preserve"><value>存在冲突</value></data>
   <data name="Profile.Summary.Keep" xml:space="preserve"><value>建议保留</value></data>
-  <data name="Profile.Summary.Unsupported" xml:space="preserve"><value>暂不支持应用</value></data>
+  <data name="Profile.Summary.Unsupported" xml:space="preserve"><value>当前不可执行</value></data>
   <data name="Profile.Title" xml:space="preserve"><value>推荐配置</value></data>
+  <data name="Profile.TouchPen.Description" xml:space="preserve"><value>需要触摸键盘与手写输入</value></data>
+  <data name="Profile.TouchPen.DisplayName" xml:space="preserve"><value>触屏 / 手写</value></data>
   <data name="Profile.Why" xml:space="preserve"><value>原因</value></data>
+  <data name="Profile.WslDocker.Description" xml:space="preserve"><value>需要 Linux 子系统与容器虚拟化</value></data>
+  <data name="Profile.WslDocker.DisplayName" xml:space="preserve"><value>WSL / Docker</value></data>
+  <data name="Profile.XboxGamePass.Description" xml:space="preserve"><value>需要 Xbox 应用与服务以游玩 Game Pass</value></data>
+  <data name="Profile.XboxGamePass.DisplayName" xml:space="preserve"><value>Xbox / Game Pass</value></data>
 <!-- WINFORGE_STAGE113_BLOCK_END -->
 </root>

@@ -23,10 +23,11 @@ public sealed class RecommendationContextService
     private readonly IRecommendationEngine _engine;
     private readonly IAppState _appState;
     private readonly List<ProfileDefinition> _profiles;
-    private readonly List<string> _selectedProfileIds = new();
+    private readonly List<string> _extraProfileIds = new();
     private readonly HashSet<string> _userOverrides = new(StringComparer.Ordinal);
     private HashSet<string> _presentIds = new(StringComparer.Ordinal);
     private ImageWorkspace? _lastWorkspace;
+    private string? _primaryProfileId;
 
     public event EventHandler? Changed;
 
@@ -45,45 +46,56 @@ public sealed class RecommendationContextService
     public IReadOnlyList<ProfileDefinition> AllProfiles => _profiles;
 
     /// <summary>
-    /// Profiles that actually drive recommendations. <c>Custom</c> is EXCLUDED —
-    /// it means "no profile-driven overrides": the engine falls back to catalog
-    /// defaults while explicit manual checkbox selections are preserved.
+    /// Profiles that actually drive recommendations: the ONE primary profile
+    /// (radio selection, Part 1 — <c>Custom</c> excluded, it means manual mode)
+    /// plus any EXTRA scenarios (independent checkboxes, Part 2). The engine
+    /// keeps full multi-scenario combination internally.
     /// </summary>
     public IReadOnlyList<ProfileDefinition> SelectedProfiles =>
-        _profiles.Where(p => _selectedProfileIds.Contains(p.Id) && p.Id != "Custom").ToList();
+        _profiles.Where(p =>
+            (p.Id == _primaryProfileId && p.Id != "Custom") || _extraProfileIds.Contains(p.Id)).ToList();
 
-    public IReadOnlyList<string> SelectedProfileIds => _selectedProfileIds;
+    /// <summary>Primary profile id (radio choice; "Custom" or null = manual mode).</summary>
+    public string? PrimaryProfileId => _primaryProfileId;
 
-    /// <summary>True when at least one NON-Custom profile is active (Custom = manual mode).</summary>
-    public bool HasActiveProfiles => _selectedProfileIds.Any(id => id != "Custom");
+    /// <summary>True when a NON-Custom primary profile is active (Custom = manual mode).</summary>
+    public bool HasActiveProfiles => _primaryProfileId is not null && _primaryProfileId != "Custom";
 
-    public bool IsProfileSelected(string profileId) => _selectedProfileIds.Contains(profileId);
+    public bool IsProfileSelected(string profileId) =>
+        profileId == _primaryProfileId || _extraProfileIds.Contains(profileId);
+
+    public bool IsExtraSelected(string profileId) => _extraProfileIds.Contains(profileId);
 
     /// <summary>
-    /// Toggles a profile. The <c>Custom</c> profile is exclusive: selecting it
-    /// clears every preset; selecting any preset clears Custom (Part B/D).
+    /// Radio semantics for PRIMARY profiles (Part 1): selecting one replaces the
+    /// current primary. Custom is just another primary (manual mode).
     /// </summary>
     public void ToggleProfile(string profileId)
     {
-        var profile = _profiles.FirstOrDefault(p => p.Id == profileId);
-        if (profile is null)
+        if (_profiles.FirstOrDefault(p => p.Id == profileId) is not { Kind: ProfileKind.Primary } profile)
         {
             return;
         }
 
-        if (profileId == "Custom")
+        _primaryProfileId = profile.Id;
+        RaiseChanged();
+    }
+
+    /// <summary>Independent secondary scenario checkbox (Part 2).</summary>
+    public void ToggleExtraScenario(string profileId)
+    {
+        if (_profiles.FirstOrDefault(p => p.Id == profileId) is not { Kind: ProfileKind.ExtraScenario })
         {
-            _selectedProfileIds.Clear();
-            _selectedProfileIds.Add("Custom");
+            return;
         }
-        else if (_selectedProfileIds.Contains(profileId))
+
+        if (_extraProfileIds.Contains(profileId))
         {
-            _selectedProfileIds.Remove(profileId);
+            _extraProfileIds.Remove(profileId);
         }
         else
         {
-            _selectedProfileIds.Remove("Custom");
-            _selectedProfileIds.Add(profileId);
+            _extraProfileIds.Add(profileId);
         }
 
         RaiseChanged();
@@ -91,12 +103,13 @@ public sealed class RecommendationContextService
 
     public void ClearProfiles()
     {
-        if (_selectedProfileIds.Count == 0)
+        if (_primaryProfileId is null && _extraProfileIds.Count == 0)
         {
             return;
         }
 
-        _selectedProfileIds.Clear();
+        _primaryProfileId = null;
+        _extraProfileIds.Clear();
         RaiseChanged();
     }
 
@@ -136,7 +149,8 @@ public sealed class RecommendationContextService
     /// <summary>Part Q — a new image workspace starts a clean recommendation session.</summary>
     public void ResetForNewWorkflow()
     {
-        _selectedProfileIds.Clear();
+        _primaryProfileId = null;
+        _extraProfileIds.Clear();
         _userOverrides.Clear();
         _presentIds.Clear();
         RaiseChanged();

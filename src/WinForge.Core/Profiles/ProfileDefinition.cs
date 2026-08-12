@@ -48,6 +48,12 @@ public sealed class ProfileDefinition
     /// <summary>Stable id, e.g. <c>Gaming</c>, <c>Developer</c>, <c>Lightweight</c>.</summary>
     public string Id { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Primary (mutually-exclusive radio card) or ExtraScenario (independent
+    /// secondary checkbox, Part 2). Both feed the same engine rule model.
+    /// </summary>
+    public ProfileKind Kind { get; init; } = ProfileKind.Primary;
+
     public string DisplayNameKey { get; init; } = string.Empty;
     public string DescriptionKey { get; init; } = string.Empty;
 

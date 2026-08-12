@@ -54,6 +54,12 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
 
     public string LogicalId => Entry.LogicalId;
 
+    /// <summary>Apps tab = AppX rows; Windows Components = features/capabilities.</summary>
+    public OptimizationTab Tab =>
+        (Entry.Definition?.Category ?? Entry.RepresentativeRaw?.Category ?? ComponentCategory.Unknown) == ComponentCategory.AppX
+            ? OptimizationTab.Apps
+            : OptimizationTab.WindowsComponents;
+
     public bool IsPresent => Entry.RawItems.Count > 0;
 
     public bool WasOverridden => Effective.WasOverridden;
@@ -74,6 +80,7 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
         OnPropertyChanged(nameof(HasConflict));
         OnPropertyChanged(nameof(ReasonText));
         OnPropertyChanged(nameof(ConflictText));
+        OnPropertyChanged(nameof(AdvisedByText));
         OnPropertyChanged(nameof(WhyPoints));
     }
 
@@ -105,6 +112,24 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
             }
 
             return resolved.Count > 0 ? string.Join("; ", resolved) : string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Part 13 — "配置建议: 游戏优先 → 建议保留": which profile drove the decision
+    /// and the resulting action-aware caption. Empty when the default won.
+    /// </summary>
+    public string AdvisedByText
+    {
+        get
+        {
+            if (!Effective.WasProfileDriven || Effective.AdvisedByProfileIds.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var names = string.Join(" + ", Effective.AdvisedByProfileIds.Select(id => _loc["Profile." + id + ".DisplayName"]));
+            return $"{_loc["Profile.AdvisedBy"]}: {names} → {RecommendationCaption}";
         }
     }
 
@@ -414,6 +439,11 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
             if (Effective.WasProfileDriven || Effective.HasConflict)
             {
                 pts.Add(_loc["Profile.Why"] + ": " + ReasonText);
+            }
+
+            if (!string.IsNullOrEmpty(AdvisedByText))
+            {
+                pts.Add(AdvisedByText);
             }
 
             if (Effective.WasOverridden)

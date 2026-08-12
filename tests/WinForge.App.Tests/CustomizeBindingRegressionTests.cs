@@ -433,10 +433,12 @@ public class CustomizeBindingRegressionTests
         // are intentionally NOT listed — they collide with settable model
         // properties on other pages (e.g. Setting.Description) and would produce
         // false positives in this audit.
-        "ActiveProfileCaption", "HasActiveProfiles", "TrimCount", "ManualCount",
+        "ActiveProfileCaption", "HasActiveProfiles", "CanToggleExtras", "HasExtraScenarios",
+        "HasUnsupported", "TrimCount", "ManualCount",
         "KeepCount", "ConflictCount", "UnsupportedCount", "HasConflicts", "HasPreviewItems",
         "SummaryAdoptLabel", "SummaryConfirmLabel", "SummaryKeepLabel", "SummaryConflictLabel",
-        "ReapplyVisible", "IsPreviewOpen", "Profiles", "PreviewGroups", "ShowPreviewCommand",
+        "SummaryUnsupportedLabel", "ReapplyVisible", "IsPreviewOpen", "Profiles", "ExtraScenarios",
+        "PreviewGroups", "ShowPreviewCommand",
         "AdoptCommand", "ReapplyCommand", "Items",
         // Phase 10 BuildStepViewModel display-only getter-only properties (Defect 2 audit).
         "ProgressPercent", "CurrentStageText", "BuildModeText", "OutputPath",
@@ -479,8 +481,8 @@ public class CustomizeBindingRegressionTests
             profileView.Measure(new Size(1200, 700));
             profileView.Arrange(new Rect(0, 0, 1200, 700));
             profileView.UpdateLayout();
-            Assert.True(profileView.DesiredSize.Height <= 200,
-                $"ProfileView is {profileView.DesiredSize.Height}px tall — must stay <= 200px.");
+            Assert.True(profileView.DesiredSize.Height <= 260,
+                $"ProfileView is {profileView.DesiredSize.Height}px tall — must stay compact.");
 
             // 2) Customize (WITH the profile panel wired) keeps the tabs list visible.
             var customize = BuildCustomizeWithProfiles();

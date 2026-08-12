@@ -112,6 +112,9 @@ SHARED = [
     ("Opt.Mechanism.RemoveCapability", "Capability (DISM)", "功能能力（DISM）"),
     # Stage 11.4 — Scenario profiles (recommended configuration engine)
     ("Customize.Rescan", "Rescan", "重新扫描"),
+    ("Profile.Primary.Title", "Primary use", "主要用途"),
+    ("Profile.Extras.Title", "Additional needs", "额外需求"),
+    ("Profile.AdvisedBy", "Configuration advice", "配置建议"),
     ("Profile.Title", "Recommended configuration", "推荐配置"),
     ("Profile.Subtitle", "Pick one or more usage scenarios — WinForge adjusts recommendations across every tab. Nothing changes until you explicitly adopt a plan.", "选择一个或多个使用场景，WinForge 会据此调整各标签页的推荐。在你明确采用方案前，不会更改任何内容。"),
     ("Profile.None", "No profile selected — manual mode", "未选择推荐配置——手动模式"),
@@ -120,7 +123,7 @@ SHARED = [
     ("Profile.Summary.Confirm", "Review manually", "需确认"),
     ("Profile.Summary.Keep", "Suggested to keep", "建议保留"),
     ("Profile.Summary.Conflict", "Conflicts", "存在冲突"),
-    ("Profile.Summary.Unsupported", "Apply not supported", "暂不支持应用"),
+    ("Profile.Summary.Unsupported", "Cannot apply now", "当前不可执行"),
     ("Profile.Preview", "Preview recommendation plan", "查看推荐方案"),
     ("Profile.Preview.Group.Adopt", "Recommended to apply", "推荐执行"),
     ("Profile.Preview.Group.Keep", "Recommended to keep", "建议保留"),
@@ -282,26 +285,47 @@ UNSUPPORTED = [
 PROFILES = [
     dict(id="Balanced", name=("Balanced", "均衡推荐"),
          desc=("Balanced defaults — keep the experience close to Windows as shipped", "均衡默认——尽量保持 Windows 出厂体验"),
-         scen=("Balanced",), required=(), preferred=(), keep=(), trim=(), avoided=()),
+         scen=("Balanced",), required=(), preferred=("Calculator", "Notepad", "Paint", "Terminal"),
+         keep=(), avoided=(),
+         trim=[("FeedbackHub", "Balanced.Consumer"), ("Solitaire", "Balanced.Consumer"),
+               ("Maps", "Balanced.Consumer"), ("PhoneLink", "Balanced.Consumer"),
+               ("AdvertisingId", "Balanced.Ads"), ("TailoredExperiences", "Balanced.Ads"),
+               ("FeedbackNotifications", "Balanced.Ads"), ("Tips", "Balanced.UI"),
+               ("HideStartRecommended", "Balanced.UI"), ("HideStartRecentlyAdded", "Balanced.UI")]),
     dict(id="Gaming", name=("Gaming", "游戏优先"),
          desc=("Game compatibility, controller input, codecs and Game Pass in mind", "优先游戏兼容、手柄输入、媒体编解码与 Game Pass"),
-         scen=("Gaming", "XboxGamePass"), required=(), preferred=(),
+         scen=("Gaming", "XboxGamePass"), required=(), preferred=("MediaPlayer",),
          keep=[("XboxApp", "Gaming.Xbox"), ("AV1VideoExtension", "Gaming.Codecs"),
                ("AVCEncoderVideoExtension", "Gaming.Codecs"), ("XboxGipSvc", "Gaming.XboxServices"),
                ("XboxNetApiSvc", "Gaming.XboxServices"), ("XblAuthManager", "Gaming.XboxServices"),
-               ("GameDvr", "Gaming.GameDvr"), ("MediaPlayer", "Gaming.Media")],
+               ("GameDvr", "Gaming.GameDvr")],
+         avoided=(),
          trim=[("FeedbackHub", "Gaming.Trim"), ("Solitaire", "Gaming.Trim"),
                ("Weather", "Gaming.Trim"), ("Maps", "Gaming.Trim"), ("PhoneLink", "Gaming.Trim"),
                ("AdvertisingId", "Gaming.Telemetry"), ("TailoredExperiences", "Gaming.Telemetry"),
-               ("FeedbackNotifications", "Gaming.Telemetry")],
-         avoided=()),
+               ("FeedbackNotifications", "Gaming.Telemetry"), ("SpotlightFeatures", "Gaming.Telemetry"),
+               ("Tips", "Gaming.UI"), ("HideStartRecommended", "Gaming.UI"),
+               ("HideStartRecentlyAdded", "Gaming.UI"), ("HideTaskbarWidgets", "Gaming.UI"),
+               ("TaskbarSearchIcon", "Gaming.UI"), ("DisableSpotlight", "Gaming.UI")]),
     dict(id="Developer", name=("Developer", "开发工作站"),
          desc=("WSL, virtualization, Terminal, OpenSSH and dev tooling", "优先 WSL、虚拟化、终端、OpenSSH 与开发工具链"),
          scen=("Developer", "Wsl", "Docker", "HyperV", "WindowsSandbox"),
          required=("Wsl", "VirtualMachinePlatform", "HyperV", "HypervisorPlatform",
                    "Terminal", "DesktopAppInstaller", "OpenSshClient"),
          preferred=("WindowsSandbox",),
-         keep=[("WindowsSandbox", "Developer.Sandbox")], trim=(), avoided=()),
+         keep=[("WindowsSandbox", "Developer.Sandbox")], avoided=(),
+         trim=[("Weather", "Developer.Consumer"), ("Clipchamp", "Developer.Consumer"),
+               ("GetHelp", "Developer.Consumer"), ("FeedbackHub", "Developer.Consumer"),
+               ("Maps", "Developer.Consumer"), ("PhoneLink", "Developer.Consumer"),
+               ("Solitaire", "Developer.Consumer"), ("BingNews", "Developer.Consumer"),
+               ("BingSearch", "Developer.Consumer"),
+               ("AdvertisingId", "Developer.Telemetry"), ("TailoredExperiences", "Developer.Telemetry"),
+               ("ActivityHistory", "Developer.Telemetry"), ("AppLaunchTracking", "Developer.Telemetry"),
+               ("FeedbackNotifications", "Developer.Telemetry"), ("WebSearchStart", "Developer.Telemetry"),
+               ("Tips", "Developer.UI"), ("HideStartRecommended", "Developer.UI"),
+               ("HideStartRecentlyAdded", "Developer.UI"), ("HideTaskbarWidgets", "Developer.UI"),
+               ("DisableSpotlight", "Developer.UI"),
+               ("ShowFileExtensions", "Developer.Explorer"), ("ShowHiddenFiles", "Developer.Explorer")]),
     dict(id="Office", name=("Office / Productivity", "办公稳定"),
          desc=("Office compatibility, printing/scanning, OneDrive and stable defaults", "优先 Office 兼容、打印扫描、OneDrive 与稳定默认"),
          scen=("Office", "PrintingScanning"), required=(), preferred=(),
@@ -310,7 +334,10 @@ PROFILES = [
                ("PrintDriverDownload", "Office.Printing"), ("Teams", "Office.Meetings"),
                ("ToDo", "Office.Keep"), ("Calculator", "Office.Keep"), ("Notepad", "Office.Keep"),
                ("QuickAssist", "Office.RemoteAssist"), ("RemoteAssistance", "Office.RemoteAssist")],
-         trim=(), avoided=()),
+         avoided=(),
+         trim=[("AdvertisingId", "Office.Privacy"), ("TailoredExperiences", "Office.Privacy"),
+               ("FeedbackNotifications", "Office.Privacy"),
+               ("HideStartRecommended", "Office.UI"), ("HideStartRecentlyAdded", "Office.UI")]),
     dict(id="Lightweight", name=("Lightweight", "轻量系统"),
          desc=("Fewer optional apps and background experiences; servicing and security kept", "精简可选应用与后台体验；保留系统服务与安全"),
          scen=("Lightweight",), required=(), preferred=(),
@@ -330,7 +357,9 @@ PROFILES = [
                ("XboxNetApiSvc", "Lightweight.Background"), ("XblAuthManager", "Lightweight.Background"),
                ("MapsBroker", "Lightweight.Background"),
                ("HideStartRecommended", "Lightweight.UI"), ("HideStartRecentlyAdded", "Lightweight.UI"),
-               ("HideTaskbarWidgets", "Lightweight.UI"), ("DisableSpotlight", "Lightweight.UI")],
+               ("HideTaskbarWidgets", "Lightweight.UI"), ("DisableSpotlight", "Lightweight.UI"),
+               ("TaskbarSearchIcon", "Lightweight.UI"), ("HideRecentQuickAccess", "Lightweight.UI"),
+               ("HideFrequentQuickAccess", "Lightweight.UI"), ("DisableTransparency", "Lightweight.UI")],
          avoided=()),
     dict(id="DedicatedMinimal", name=("Dedicated / Minimal", "专用精简"),
          desc=("Aggressive trims for kiosks and special-purpose systems; critical changes stay manual", "面向自助终端与专用系统的激进精简；关键更改仍需手动"),
@@ -363,6 +392,36 @@ PROFILES = [
     dict(id="Custom", name=("Custom", "自定义"),
          desc=("No preset — decide every change yourself", "不使用预设——一切由你手动决定"),
          scen=(), required=(), preferred=(), keep=(), trim=(), avoided=()),
+    # ---- Extra scenarios (Part 2): independent secondary checkboxes ----
+    dict(id="XboxGamePass", kind="extra", name=("Xbox / Game Pass", "Xbox / Game Pass"),
+         desc=("Xbox app and services for Game Pass play", "需要 Xbox 应用与服务以游玩 Game Pass"),
+         scen=("XboxGamePass",), required=(), preferred=(),
+         keep=[("XboxApp", "XboxGamePass.Keep"), ("XboxGipSvc", "XboxGamePass.Keep"),
+               ("XboxNetApiSvc", "XboxGamePass.Keep"), ("XblAuthManager", "XboxGamePass.Keep"),
+               ("GameDvr", "XboxGamePass.Keep")],
+         trim=(), avoided=()),
+    dict(id="WslDocker", kind="extra", name=("WSL / Docker", "WSL / Docker"),
+         desc=("Linux subsystem and container virtualization", "需要 Linux 子系统与容器虚拟化"),
+         scen=("Wsl", "Docker"), required=("Wsl", "VirtualMachinePlatform", "HypervisorPlatform"),
+         preferred=(), keep=[("Terminal", "WslDocker.Keep"), ("OpenSshClient", "WslDocker.Keep"),
+                             ("WindowsSandbox", "WslDocker.Keep")],
+         trim=(), avoided=()),
+    dict(id="PrintingScanning", kind="extra", name=("Printing / Scanning", "打印 / 扫描"),
+         desc=("Printers, scanners and XPS services", "需要打印机、扫描仪与 XPS 服务"),
+         scen=("PrintingScanning",), required=(), preferred=(),
+         keep=[("InternetPrinting", "PrintingScanning.Keep"), ("ScanManagement", "PrintingScanning.Keep"),
+               ("PrintDriverDownload", "PrintingScanning.Keep"), ("XpsServices", "PrintingScanning.Keep")],
+         trim=(), avoided=()),
+    dict(id="TouchPen", kind="extra", name=("Touch / Pen", "触屏 / 手写"),
+         desc=("Touch keyboard and pen input", "需要触摸键盘与手写输入"),
+         scen=("TouchPen",), required=(), preferred=("TabletInputService",),
+         keep=[("TabletInputService", "TouchPen.Keep")], trim=(), avoided=()),
+    dict(id="RemoteDesktop", kind="extra", name=("Remote Desktop", "远程桌面"),
+         desc=("SSH to remote machines and remote assistance", "需要 SSH 远程连接与远程协助"),
+         scen=("RemoteDesktop",), required=(), preferred=(),
+         keep=[("OpenSshClient", "RemoteDesktop.Keep"), ("QuickAssist", "RemoteDesktop.Keep"),
+               ("RemoteAssistance", "RemoteDesktop.Keep")],
+         trim=(), avoided=()),
 ]
 
 # Reason text for every override suffix used above (key suffix -> (en, zh)).
@@ -387,6 +446,26 @@ PROFILE_REASONS = {
     "Lightweight.UI": ("Lightweight trims unnecessary UI suggestions", "轻量系统精简不必要的界面建议"),
     "Dedicated.Aggressive": ("Dedicated trims aggressively for special-purpose systems", "专用精简面向专用系统激进精简"),
     "Dedicated.Keep": ("Dedicated keeps essential tools", "专用精简保留必要工具"),
+    # Balanced (Part 10)
+    "Balanced.Consumer": ("Balanced trims obvious optional consumer clutter", "均衡推荐精简明显的可选消费类内容"),
+    "Balanced.Ads": ("Balanced disables low-risk advertising / recommendation controls", "均衡推荐关闭低风险广告与推荐控制"),
+    "Balanced.UI": ("Balanced applies safe UI cleanup", "均衡推荐执行安全的界面清理"),
+    # Gaming multi-tab trims
+    "Gaming.UI": ("Gaming trims promotional / suggestion UI", "游戏优先精简推广与建议类界面"),
+    # Developer quality
+    "Developer.Consumer": ("Developer trims unrelated consumer / promotional apps", "开发工作站精简无关消费与推广应用"),
+    "Developer.Telemetry": ("Developer reduces advertising and recommendation content", "开发工作站减少广告与推荐内容"),
+    "Developer.UI": ("Developer cleans up suggestion UI", "开发工作站清理建议类界面"),
+    "Developer.Explorer": ("Developer enables explorer-friendly settings (file extensions)", "开发工作站启用资源管理器友好设置（显示文件扩展名）"),
+    # Office quality
+    "Office.Privacy": ("Office applies low-risk privacy defaults", "办公稳定应用低风险隐私默认"),
+    "Office.UI": ("Office reduces start suggestions", "办公稳定减少开始菜单建议"),
+    # Extra scenarios (Part 2)
+    "XboxGamePass.Keep": ("Game Pass needs the Xbox app and services", "Game Pass 需要 Xbox 应用与服务"),
+    "WslDocker.Keep": ("WSL / Docker need virtualization, Terminal and SSH tooling", "WSL / Docker 需要虚拟化、终端与 SSH 工具"),
+    "PrintingScanning.Keep": ("Printing / scanning needs print, scan and XPS services", "打印/扫描需要打印、扫描与 XPS 服务"),
+    "TouchPen.Keep": ("Touch / pen needs the touch keyboard and pen services", "触屏/手写需要触摸键盘与手写服务"),
+    "RemoteDesktop.Keep": ("Remote desktop needs SSH and remote-assistance support", "远程桌面需要 SSH 与远程协助支持"),
 }
 
 # ---------------------------------------------------------------------------
@@ -694,6 +773,7 @@ def emit_profile_cs():
         lines.append("            new ProfileDefinition")
         lines.append("            {")
         lines.append("                Id = {},".format(cs_string(pid)))
+        lines.append("                Kind = {},".format("ProfileKind.ExtraScenario" if p.get("kind") == "extra" else "ProfileKind.Primary"))
         lines.append("                DisplayNameKey = {},".format(cs_string("Profile.{}.DisplayName".format(pid))))
         lines.append("                DescriptionKey = {},".format(cs_string("Profile.{}.Description".format(pid))))
         lines.append("                IconKey = string.Empty,")
@@ -845,14 +925,15 @@ def emit_matrix():
     L.append("")
     L.append("## Profiles (Stage 11.4 — recommended configuration engine)")
     L.append("")
-    L.append("| Profile | Scenarios | Required (hard keep, present-gated) | Keep overrides | Trim overrides |")
-    L.append("|---|---|---|---|---|")
+    L.append("| Profile | Kind | Scenarios | Required (hard keep, present-gated) | Keep overrides | Trim overrides |")
+    L.append("|---|---|---|---|---|---|")
     for p in PROFILES:
         scen = ", ".join(p["scen"]) or "—"
         req = ", ".join(p["required"]) or "—"
         keep = ", ".join(t for t, _ in p["keep"]) or "—"
         trim = ", ".join(t for t, _ in p["trim"]) or "—"
-        L.append("| {} | {} | {} | {} | {} |".format(p["name"][0], scen, req, keep, trim))
+        kind = "Primary" if p.get("kind") != "extra" else "Extra scenario"
+        L.append("| {} | {} | {} | {} | {} | {} |".format(p["name"][0], kind, scen, req, keep, trim))
     L.append("")
     L.append("All targets are logical WinForge ids from the implemented Stage 11.3 catalogs "
              "(Apps / Windows Components / Services / Privacy / System / Personalization). "

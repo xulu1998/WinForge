@@ -84,6 +84,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
         var reasons = new List<string>();
         var sourceRules = new List<string>();
         var conflicts = new List<RecommendationConflict>();
+        var advisedBy = new List<ProfileDefinition>();
 
         EffectiveRecommendationLevel level;
         if (dependencyKeptBy is not null)
@@ -92,6 +93,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
             level = EffectiveRecommendationLevel.RecommendKeep;
             reasons.Add("Profile.Reason.Dependency");
             sourceRules.Add($"dependency:{input.LogicalId}");
+            advisedBy.Add(dependencyKeptBy);
         }
         else if (hasRequirement)
         {
@@ -99,6 +101,11 @@ public sealed class RecommendationEngine : IRecommendationEngine
             level = EffectiveRecommendationLevel.RecommendKeep;
             reasons.Add("Profile.Reason.Requirement");
             sourceRules.Add("requirement:" + input.LogicalId);
+            var reqProfile = FirstRequiringProfile(context, input.LogicalId);
+            if (reqProfile is not null)
+            {
+                advisedBy.Add(reqProfile);
+            }
         }
         else if (hasKeepIntent || hasTrimIntent)
         {
@@ -112,6 +119,13 @@ public sealed class RecommendationEngine : IRecommendationEngine
             sourceRules.Add(hasKeepIntent
                 ? $"override:keep:{input.LogicalId}"
                 : $"override:trim:{input.LogicalId}");
+            var advising = hasKeepIntent
+                ? keepIntents.FirstOrDefault().Profile ?? preferredKeep.FirstOrDefault()
+                : trimIntents.FirstOrDefault().Profile ?? avoidedTrim.FirstOrDefault();
+            if (advising is not null)
+            {
+                advisedBy.Add(advising);
+            }
         }
         else
         {
@@ -167,6 +181,7 @@ public sealed class RecommendationEngine : IRecommendationEngine
             HasConflict = conflicts.Count > 0,
             ReasonKeys = reasons,
             SourceRuleIds = sourceRules,
+            AdvisedByProfileIds = advisedBy.Select(p => p.Id).Distinct(StringComparer.Ordinal).ToList(),
             Conflicts = conflicts,
         };
     }

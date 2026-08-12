@@ -55,6 +55,12 @@ public sealed class EffectiveRecommendation
     /// <summary>Rule ids that fired (for debugging / tests), e.g. <c>Gaming|keep:XboxApp</c>.</summary>
     public IReadOnlyList<string> SourceRuleIds { get; init; } = new List<string>();
 
+    /// <summary>
+    /// Profile ids that drove the decision (Part 13 — "配置建议: 游戏优先 → 建议保留").
+    /// Empty when the component default won.
+    /// </summary>
+    public IReadOnlyList<string> AdvisedByProfileIds { get; init; } = new List<string>();
+
     public IReadOnlyList<RecommendationConflict> Conflicts { get; init; } = new List<RecommendationConflict>();
 
     /// <summary>

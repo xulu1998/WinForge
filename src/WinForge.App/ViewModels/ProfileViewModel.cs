@@ -82,16 +82,22 @@ public sealed class RecommendationPreviewGroup
 {
     public RecommendationPreviewGroupKind Kind { get; init; }
     public string HeaderKey { get; init; } = string.Empty;
+
+    /// <summary>Per-tab count breakdown, e.g. "Apps 5 · Privacy 4" (Part 11).</summary>
+    public string TabBreakdown { get; set; } = string.Empty;
+
     public ObservableCollection<RecommendationPreviewItem> Items { get; } = new();
 }
 
 /// <summary>
 /// Stage 11.4 profile selector + preview + adopt (ADR-057..060). Sits at the top
-/// of Customize. Selecting one or more profiles recomputes every tab's effective
-/// recommendation; NOTHING is selected into the plan until the user explicitly
-/// clicks "采用推荐选择" — and even then only low-risk, apply-supported,
-/// conflict-free, present items are auto-selected (Part J). Manual toggles are
-/// recorded as user overrides (Part K) and survive recalculation / reapply.
+/// of Customize. ONE primary profile (mutually exclusive radio cards, Part 1)
+/// plus optional EXTRA scenarios (independent checkboxes, Part 2) recompute
+/// every tab's effective recommendation; NOTHING is selected into the plan until
+/// the user explicitly clicks "采用推荐选择" — and even then only low-risk,
+/// apply-supported, conflict-free, present items are auto-selected (Part J).
+/// Manual toggles are recorded as user overrides (Part K) and survive
+/// recalculation / reapply.
 /// </summary>
 public sealed class ProfileViewModel : ViewModelBase
 {
@@ -116,7 +122,11 @@ public sealed class ProfileViewModel : ViewModelBase
         _recompute = recompute ?? throw new ArgumentNullException(nameof(recompute));
 
         Profiles = new ObservableCollection<ProfileItemViewModel>(
-            ctx.AllProfiles.Select(p => new ProfileItemViewModel(p, _loc, this)));
+            ctx.AllProfiles.Where(p => p.Kind == ProfileKind.Primary)
+                .Select(p => new ProfileItemViewModel(p, _loc, this)));
+        ExtraScenarios = new ObservableCollection<ProfileItemViewModel>(
+            ctx.AllProfiles.Where(p => p.Kind == ProfileKind.ExtraScenario)
+                .Select(p => new ProfileItemViewModel(p, _loc, this)));
         RefreshSelectionFlags();
 
         ShowPreviewCommand = new RelayCommand(_ => ShowPreview());
@@ -126,7 +136,18 @@ public sealed class ProfileViewModel : ViewModelBase
         _ctx.Changed += (_, _) => OnContextChanged();
     }
 
+    /// <summary>Primary profiles — mutually exclusive radio cards (Part 1).</summary>
     public ObservableCollection<ProfileItemViewModel> Profiles { get; }
+
+    /// <summary>Extra scenarios — independent secondary checkboxes (Part 2).</summary>
+    public ObservableCollection<ProfileItemViewModel> ExtraScenarios { get; }
+
+    /// <summary>Extras are additional requirements on top of a primary profile.</summary>
+    public bool CanToggleExtras => _ctx.HasActiveProfiles;
+
+    public bool HasExtraScenarios => ExtraScenarios.Count > 0;
+
+    public bool HasUnsupported => UnsupportedCount > 0;
 
     public ObservableCollection<RecommendationPreviewGroup> PreviewGroups { get; } = new();
 
@@ -146,7 +167,7 @@ public sealed class ProfileViewModel : ViewModelBase
 
     /// <summary>
     /// 当前推荐配置 caption. Custom counts as "自定义" (manual mode); with no
-    /// profile at all it is the manual-mode text.
+    /// primary profile at all it is the manual-mode text.
     /// </summary>
     public string ActiveProfileCaption
     {
@@ -154,10 +175,13 @@ public sealed class ProfileViewModel : ViewModelBase
         {
             if (_ctx.HasActiveProfiles)
             {
-                return string.Join(" + ", _ctx.SelectedProfiles.Select(p => _loc[p.DisplayNameKey]));
+                var primary = _loc[_ctx.SelectedProfiles.First(p => p.Kind == ProfileKind.Primary).DisplayNameKey];
+                var extras = _ctx.SelectedProfiles.Where(p => p.Kind == ProfileKind.ExtraScenario)
+                    .Select(p => _loc[p.DisplayNameKey]);
+                return extras.Any() ? $"{primary} + {string.Join(" + ", extras)}" : primary;
             }
 
-            return _ctx.IsProfileSelected("Custom")
+            return _ctx.PrimaryProfileId == "Custom"
                 ? _loc["Profile.Custom.DisplayName"]
                 : _loc["Profile.None"];
         }
@@ -188,12 +212,33 @@ public sealed class ProfileViewModel : ViewModelBase
     public string SummaryConfirmLabel => _loc["Profile.Summary.Confirm"];
     public string SummaryKeepLabel => _loc["Profile.Summary.Keep"];
     public string SummaryConflictLabel => _loc["Profile.Summary.Conflict"];
+    public string SummaryUnsupportedLabel => _loc["Profile.Summary.Unsupported"];
 
     // ---- Profile selection (routed from the cards) ----
 
-    internal void Select(string profileId) => _ctx.ToggleProfile(profileId);
+    internal void Select(string profileId)
+    {
+        var kind = _ctx.AllProfiles.FirstOrDefault(p => p.Id == profileId)?.Kind;
+        if (kind == ProfileKind.ExtraScenario)
+        {
+            _ctx.ToggleExtraScenario(profileId);
+        }
+        else
+        {
+            _ctx.ToggleProfile(profileId);
+        }
+    }
 
-    internal void Deselect(string profileId) => _ctx.ToggleProfile(profileId);
+    internal void Deselect(string profileId)
+    {
+        var kind = _ctx.AllProfiles.FirstOrDefault(p => p.Id == profileId)?.Kind;
+        if (kind == ProfileKind.ExtraScenario)
+        {
+            _ctx.ToggleExtraScenario(profileId);
+        }
+        // Primary radio cards are never user-deselected (radio semantics); the
+        // silent sync below handles context-driven resets.
+    }
 
     // ---- Recompute plumbing ----
 
@@ -209,6 +254,9 @@ public sealed class ProfileViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(HasActiveProfiles));
         OnPropertyChanged(nameof(ActiveProfileCaption));
+        OnPropertyChanged(nameof(CanToggleExtras));
+        OnPropertyChanged(nameof(HasExtraScenarios));
+        OnPropertyChanged(nameof(HasUnsupported));
         OnPropertyChanged(nameof(TrimCount));
         OnPropertyChanged(nameof(ManualCount));
         OnPropertyChanged(nameof(KeepCount));
@@ -219,6 +267,7 @@ public sealed class ProfileViewModel : ViewModelBase
         OnPropertyChanged(nameof(SummaryConfirmLabel));
         OnPropertyChanged(nameof(SummaryKeepLabel));
         OnPropertyChanged(nameof(SummaryConflictLabel));
+        OnPropertyChanged(nameof(SummaryUnsupportedLabel));
         OnPropertyChanged(nameof(ReapplyVisible));
         if (AdoptCommand is RelayCommand a) a.RaiseCanExecuteChanged();
         if (ReapplyCommand is RelayCommand r) r.RaiseCanExecuteChanged();
@@ -227,11 +276,16 @@ public sealed class ProfileViewModel : ViewModelBase
     private void RefreshSelectionFlags()
     {
         // Silently mirror the context's selection — never routes back through
-        // Select/Deselect, otherwise a profile change would re-enter ToggleProfile
-        // and recurse (Custom's clear-presets path exposed this).
+        // Select/Deselect, otherwise a profile change would re-enter the context
+        // toggle and recurse.
         foreach (var p in Profiles)
         {
             p.SetSelectedSilently(_ctx.IsProfileSelected(p.Definition.Id));
+        }
+
+        foreach (var e in ExtraScenarios)
+        {
+            e.SetSelectedSilently(_ctx.IsExtraSelected(e.Definition.Id));
         }
     }
 
@@ -269,7 +323,8 @@ public sealed class ProfileViewModel : ViewModelBase
     private void AddGroup(RecommendationPreviewGroupKind kind, string headerKey, IEnumerable<IRecommendationSubject> items)
     {
         var group = new RecommendationPreviewGroup { Kind = kind, HeaderKey = headerKey };
-        foreach (var s in items.OrderBy(i => i.DisplayName, StringComparer.OrdinalIgnoreCase))
+        var materialized = items.ToList();
+        foreach (var s in materialized.OrderBy(i => i.DisplayName, StringComparer.OrdinalIgnoreCase))
         {
             group.Items.Add(new RecommendationPreviewItem
             {
@@ -278,6 +333,12 @@ public sealed class ProfileViewModel : ViewModelBase
                 ReasonText = s.ReasonText,
             });
         }
+
+        // Part 11 — per-tab breakdown: "Apps 5 · Privacy 4".
+        group.TabBreakdown = string.Join(" · ", materialized
+            .GroupBy(s => s.Tab)
+            .OrderBy(g => g.Key)
+            .Select(g => $"{_loc["Customize.Tab." + g.Key]} {g.Count()}"));
 
         PreviewGroups.Add(group);
     }
@@ -345,7 +406,7 @@ public sealed class ProfileViewModel : ViewModelBase
         RefreshSummary();
     }
 
-    /// <summary>Deterministic signature of the active profile set (sorted, Custom excluded).</summary>
+    /// <summary>Deterministic signature of the active profile set (primary + extras, sorted).</summary>
     private string ContextSignature()
         => string.Join("|", _ctx.SelectedProfiles.Select(p => p.Id).OrderBy(id => id, StringComparer.Ordinal));
 

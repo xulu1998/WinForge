@@ -1,5 +1,19 @@
 namespace WinForge.Core.Profiles;
 
+/// <summary>
+/// What kind of selector a profile appears as in the UI. PRIMARY profiles are
+/// mutually exclusive radio choices ("what is this Windows for?"); EXTRA
+/// scenarios are independent secondary checkboxes ("additional needs") that the
+/// engine combines with the primary profile (Part 2 — the engine keeps full
+/// multi-scenario capability; the UI presents one primary + optional extras).
+/// </summary>
+public enum ProfileKind
+{
+    Unknown = 0,
+    Primary,
+    ExtraScenario
+}
+
 /// <summary>Usage scenario tags a profile is built around (descriptive, not rules).</summary>
 public enum ProfileScenario
 {
@@ -15,7 +29,9 @@ public enum ProfileScenario
     Docker,
     HyperV,
     WindowsSandbox,
-    PrintingScanning
+    PrintingScanning,
+    TouchPen,
+    RemoteDesktop
 }
 
 /// <summary>What a profile wants done with a logical item.</summary>

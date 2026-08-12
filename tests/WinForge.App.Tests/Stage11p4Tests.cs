@@ -586,6 +586,169 @@ public sealed class Stage11p4Tests
     }
 
     [Fact]
+    public void Primary_Profiles_Are_Mutually_Exclusive()
+    {
+        // Part 1: primary profiles are radio choices — selecting one replaces the other.
+        var (_, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp"));
+        var vm = customize.Profiles!;
+
+        vm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+        Assert.True(vm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected);
+
+        vm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
+        Assert.True(vm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected);
+        Assert.False(vm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected);
+        Assert.Equal(1, vm.Profiles.Count(p => p.IsSelected));
+    }
+
+    [Fact]
+    public void Extra_Scenarios_Are_Independently_Selectable()
+    {
+        // Part 2: extras are independent secondary checkboxes on top of the primary.
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp"));
+        var vm = customize.Profiles!;
+        vm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
+
+        Assert.False(vm.ExtraScenarios.Single(e => e.Definition.Id == "XboxGamePass").IsSelected);
+        vm.ExtraScenarios.Single(e => e.Definition.Id == "XboxGamePass").IsSelected = true;
+        vm.ExtraScenarios.Single(e => e.Definition.Id == "PrintingScanning").IsSelected = true;
+
+        Assert.True(vm.ExtraScenarios.Single(e => e.Definition.Id == "XboxGamePass").IsSelected);
+        Assert.True(vm.ExtraScenarios.Single(e => e.Definition.Id == "PrintingScanning").IsSelected);
+        Assert.True(vm.CanToggleExtras);
+        _ = state;
+    }
+
+    [Fact]
+    public void Engine_Combines_Primary_And_Extra_Scenarios()
+    {
+        // The engine still combines internally: primary Gaming + extra WslDocker
+        // keeps WSL via the extra's requirement (Part 2).
+        var catalog = new ProfileCatalog().GetProfiles().ToList();
+        var gaming = catalog.Single(p => p.Id == "Gaming");
+        var wslDocker = catalog.Single(p => p.Id == "WslDocker");
+
+        var result = Eval(Input("Wsl", RecommendationLevel.OptionalRemove, RiskLevel.Medium),
+            presentIds: new[] { "Wsl", "VirtualMachinePlatform", "HypervisorPlatform" },
+            profiles: new[] { gaming, wslDocker });
+
+        Assert.Equal(EffectiveRecommendationLevel.RecommendKeep, result.Level);
+        Assert.Contains("WslDocker", result.AdvisedByProfileIds);
+    }
+
+    [Theory]
+    [InlineData("Gaming")]
+    [InlineData("Developer")]
+    [InlineData("Office")]
+    [InlineData("Lightweight")]
+    [InlineData("DedicatedMinimal")]
+    public void Primary_Profile_Is_Meaningfully_Different_From_Balanced(string id)
+    {
+        // Part 4: a profile with only 1-3 executable changes is a product smell.
+        var balanced = EvaluateProfile("Balanced");
+        var profile = EvaluateProfile(id);
+
+        Assert.True(profile.Auto >= 5,
+            $"{id} automatic actions = {profile.Auto} — profile too weak (Part 4).");
+        Assert.True(profile.Auto != balanced.Auto || profile.Manual != balanced.Manual,
+            $"{id} must differ meaningfully from Balanced.");
+    }
+
+    [Fact]
+    public void Recommendation_Reason_Includes_Profile_Source()
+    {
+        // Part 13: the advising profile is attributed.
+        var input = Input("XboxApp", RecommendationLevel.OptionalRemove, RiskLevel.Low);
+        var result = Eval(input, profiles: CatalogProfiles()["Gaming"]);
+
+        Assert.Equal(EffectiveRecommendationLevel.RecommendKeep, result.Level);
+        Assert.Contains("Gaming", result.AdvisedByProfileIds);
+    }
+
+    [Fact]
+    public void Preview_Buckets_Show_Manual_And_Unsupported()
+    {
+        // Part 11/12: medium-risk trims appear in 需要确认; unsupported items in
+        // 冲突/不可执行 — they never disappear merely because they cannot be auto-selected.
+        var (state, customize) = BuildCustomize(MixedInventory());
+        var vm = customize.Profiles!;
+        vm.Profiles.Single(p => p.Definition.Id == "Lightweight").IsSelected = true;
+
+        vm.ShowPreview();
+
+        var manual = vm.PreviewGroups.Single(g => g.Kind == RecommendationPreviewGroupKind.Manual);
+        Assert.Contains(manual.Items, i => i.DisplayName.Contains("VirtualMachinePlatform", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(manual.Items, i => i.DisplayName.Contains("OpenSSH", StringComparison.OrdinalIgnoreCase));
+
+        var conflict = vm.PreviewGroups.Single(g => g.Kind == RecommendationPreviewGroupKind.Conflict);
+        Assert.Contains(conflict.Items, i => i.DisplayName.Contains("OpenSSH", StringComparison.OrdinalIgnoreCase));
+        Assert.True(vm.UnsupportedCount >= 1);
+        _ = state;
+    }
+
+    [Fact]
+    public void Preview_Groups_Show_Per_Tab_Breakdown()
+    {
+        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingWeather"));
+        var vm = customize.Profiles!;
+        vm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
+        vm.ShowPreview();
+
+        var adopt = vm.PreviewGroups.Single(g => g.Kind == RecommendationPreviewGroupKind.Adopt);
+        Assert.NotEmpty(adopt.TabBreakdown); // e.g. "Apps 1 · Privacy 4 · ..."
+        Assert.Contains("Apps", adopt.TabBreakdown);
+        _ = state;
+    }
+
+    [Fact]
+    public void Profile_Impact_Report_Is_Generated()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("# Stage 11.4 — Profile Impact Report");
+        sb.AppendLine();
+        sb.AppendLine("> Modeled fixture: all 22 Apps + 12 Windows Components + 12 Services + 11 Privacy +");
+        sb.AppendLine("> 10 System + 14 Personalization items present/applicable. Computed with the real");
+        sb.AppendLine("> RecommendationEngine (Part 15 profile quality diagnostic).");
+        sb.AppendLine();
+
+        foreach (var profile in new ProfileCatalog().GetProfiles().Where(p => p.Kind == ProfileKind.Primary))
+        {
+            var counts = EvaluateProfile(profile.Id);
+            sb.AppendLine("## " + profile.Id);
+            sb.AppendLine("- Automatic (low-risk, adoptable): " + counts.Auto);
+            sb.AppendLine("- Manual review: " + counts.Manual);
+            sb.AppendLine("- Keep: " + counts.Keep);
+            sb.AppendLine("- Unsupported: " + counts.Unsupported);
+            sb.AppendLine("- Conflict: " + counts.Conflict);
+            foreach (var tab in new[] { OptimizationTab.Apps, OptimizationTab.WindowsComponents, OptimizationTab.Services,
+                OptimizationTab.Privacy, OptimizationTab.System, OptimizationTab.Personalization })
+            {
+                var (auto, manual) = counts.ByTab.TryGetValue(tab, out var t) ? t : (0, 0);
+                sb.AppendLine($"  - {tab}: auto {auto} · manual {manual}");
+            }
+
+            if (counts.Auto <= 3)
+            {
+                sb.AppendLine("- **WARNING**: Automatic <= 3 — profile too weak (Part 4); needs evidence-backed rule expansion.");
+            }
+
+            sb.AppendLine();
+        }
+
+        var root = RepoRoot();
+        var dir = System.IO.Path.Combine(root, ".tmp", "phase11");
+        System.IO.Directory.CreateDirectory(dir);
+        var path = System.IO.Path.Combine(dir, "stage11.4-profile-impact.md");
+        System.IO.File.WriteAllText(path, sb.ToString());
+
+        Assert.True(System.IO.File.Exists(path));
+        var text = System.IO.File.ReadAllText(path);
+        Assert.Contains("## Gaming", text);
+        Assert.Contains("## Balanced", text);
+        Assert.Contains("Automatic (low-risk, adoptable):", text);
+    }
+
+    [Fact]
     public void Profile_Change_Does_Not_Mutate_Plan()
     {
         var (state, customize) = BuildCustomize(AppxInventory("Microsoft.XboxApp", "Microsoft.BingNews"));
@@ -743,6 +906,166 @@ public sealed class Stage11p4Tests
                             FeatureStateValue = f.State,
                         } as IRawInventoryItem)
                         .ToList(),
+                },
+            },
+        };
+
+    private sealed record ProfileCounts(
+        int Auto, int Manual, int Keep, int Unsupported, int Conflict,
+        IReadOnlyDictionary<OptimizationTab, (int Auto, int Manual)> ByTab);
+
+    /// <summary>
+    /// Part 4/15 diagnostic: evaluates one primary profile (+ optional extras)
+    /// against the full modeled fixture with the REAL engine and buckets every
+    /// decision (automatic = Part J eligibility, manual review, keep, unsupported,
+    /// conflict), with a per-tab breakdown.
+    /// </summary>
+    private static ProfileCounts EvaluateProfile(string primaryId, params string[] extraIds)
+    {
+        var engine = new RecommendationEngine();
+        var catalog = new ProfileCatalog().GetProfiles().ToList();
+        var profiles = new List<ProfileDefinition> { catalog.Single(p => p.Id == primaryId) };
+        profiles.AddRange(catalog.Where(p => extraIds.Contains(p.Id)));
+        var fixture = FullFixture();
+        var presentIds = fixture.Select(f => f.LogicalId).ToHashSet(StringComparer.Ordinal);
+
+        int auto = 0, manual = 0, keep = 0, unsupported = 0, conflict = 0;
+        var byTab = new Dictionary<OptimizationTab, (int Auto, int Manual)>();
+        foreach (var f in fixture)
+        {
+            var eff = engine.Evaluate(
+                new RecommendationInput
+                {
+                    LogicalId = f.LogicalId,
+                    Action = f.Action,
+                    DefaultRecommendation = f.Recommendation,
+                    Risk = f.Risk,
+                    Removal = f.Removal,
+                    IsPresent = true,
+                    IsApplySupported = f.ApplySupported,
+                    Dependencies = f.Dependencies,
+                },
+                new RecommendationContext
+                {
+                    SelectedProfiles = profiles,
+                    PresentIds = presentIds,
+                    UserOverrides = new HashSet<string>(),
+                });
+
+            var (a, m) = byTab.TryGetValue(f.Tab, out var t) ? t : (0, 0);
+            if (!eff.IsApplySupported)
+            {
+                unsupported++;
+            }
+            else if (eff.HasConflict)
+            {
+                conflict++;
+            }
+            else if (eff.Level == EffectiveRecommendationLevel.RecommendKeep)
+            {
+                keep++;
+            }
+            else if (eff.IsApplySupported && eff.Risk == RiskLevel.Low && !eff.HasConflict &&
+                     eff.Level is EffectiveRecommendationLevel.RecommendRemove
+                         or EffectiveRecommendationLevel.RecommendDisable
+                         or EffectiveRecommendationLevel.RecommendSet)
+            {
+                auto++;
+                a++;
+            }
+            else
+            {
+                manual++;
+                m++;
+            }
+
+            byTab[f.Tab] = (a, m);
+        }
+
+        return new ProfileCounts(auto, manual, keep, unsupported, conflict, byTab);
+    }
+
+    private sealed record FixtureItem(
+        string LogicalId,
+        OptimizationTab Tab,
+        OptimizationAction Action,
+        RecommendationLevel Recommendation,
+        RiskLevel Risk,
+        RemovalSupport Removal,
+        bool ApplySupported,
+        IReadOnlyList<ComponentDependency> Dependencies);
+
+    /// <summary>All Stage 11.3 modeled items treated as present/applicable.</summary>
+    private static List<FixtureItem> FullFixture()
+    {
+        var items = new List<FixtureItem>();
+        foreach (var d in new CuratedComponentCatalog().GetDefinitions())
+        {
+            items.Add(new FixtureItem(d.Id, OptimizationTab.Apps, d.Action, d.Recommendation, d.Risk,
+                d.Removal, true, d.Dependencies));
+        }
+
+        foreach (var d in new WindowsFeaturesCatalog().GetDefinitions())
+        {
+            var isCapability = d.Category == ComponentCategory.Capability;
+            items.Add(new FixtureItem(d.Id, OptimizationTab.WindowsComponents, d.Action, d.Recommendation,
+                d.Risk, d.Removal, !isCapability, d.Dependencies));
+        }
+
+        foreach (var o in new OptimizationCatalog().GetEntries())
+        {
+            items.Add(new FixtureItem(o.Id, o.Tab, o.Action, o.Recommendation, o.Risk, o.Removal, true, o.Dependencies));
+        }
+
+        return items;
+    }
+
+    private static string RepoRoot()
+    {
+        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "WinForge.sln")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? AppContext.BaseDirectory;
+    }
+
+    private static ComponentInventory MixedInventory()
+        => new()
+        {
+            Discovered = true,
+            Categories = new[]
+            {
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.OptionalFeature,
+                    Status = InventoryStatus.Success,
+                    Items = new List<IRawInventoryItem>
+                    {
+                        new RawOptionalFeature
+                        {
+                            Category = ComponentCategory.OptionalFeature,
+                            RawIdentity = "VirtualMachinePlatform",
+                            DisplayName = "VirtualMachinePlatform",
+                            FeatureStateValue = FeatureState.Enabled,
+                        },
+                    },
+                },
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.Capability,
+                    Status = InventoryStatus.Success,
+                    Items = new List<IRawInventoryItem>
+                    {
+                        new RawCapability
+                        {
+                            Category = ComponentCategory.Capability,
+                            RawIdentity = "OpenSSH.Client~~~~0.0.1.0",
+                            DisplayName = "OpenSSH Client",
+                            CapState = CapabilityState.Installed,
+                        },
+                    },
                 },
             },
         };

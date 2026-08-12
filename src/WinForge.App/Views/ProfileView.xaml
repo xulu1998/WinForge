@@ -9,31 +9,88 @@
     <Border Background="#F5F7FA" BorderBrush="#E4E7EB" BorderThickness="1" CornerRadius="6"
             Padding="12,8" Margin="0,10,0,0">
         <StackPanel>
-            <!-- Compact profile cards: one row, name + very short subtitle (UX fix) -->
+            <!-- Primary use (Part 1): one mutually-exclusive radio choice, 3-column equal-width cards -->
+            <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#3E4C59" Margin="0,0,0,4">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Profile.Primary.Title"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
             <ItemsControl ItemsSource="{Binding Profiles, Mode=OneWay}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <WrapPanel/>
+                        <UniformGrid Columns="3"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:ProfileItemViewModel}">
-                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                  VerticalAlignment="Top" Margin="0,0,8,0"
-                                  ToolTip="{Binding Description, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Margin="2,0,6,0">
-                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933"
-                                           Text="{Binding DisplayName, Mode=OneWay}"/>
-                                <TextBlock FontSize="11" Foreground="#7B8794" Margin="8,2,0,0"
-                                           Text="{Binding Description, Mode=OneWay}"/>
-                            </StackPanel>
-                        </CheckBox>
+                        <!-- Radio semantics: GroupName makes the primary choice mutually exclusive -->
+                        <RadioButton GroupName="PrimaryProfile"
+                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                     ToolTip="{Binding Description, Mode=OneWay}"
+                                     Margin="0,0,6,6" Padding="8,4"
+                                     HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center"
+                                     Background="White" BorderBrush="#CBD2D9" BorderThickness="1">
+                            <RadioButton.Template>
+                                <ControlTemplate TargetType="RadioButton">
+                                    <Border x:Name="Card" Background="White" BorderBrush="#CBD2D9"
+                                            BorderThickness="1" CornerRadius="5" Padding="8,4">
+                                        <StackPanel>
+                                            <TextBlock x:Name="TitleText" FontSize="12" FontWeight="SemiBold"
+                                                       Foreground="#1F2933" Text="{Binding DisplayName, Mode=OneWay}"/>
+                                            <TextBlock FontSize="10" Foreground="#7B8794" TextTrimming="CharacterEllipsis"
+                                                       Text="{Binding Description, Mode=OneWay}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Card" Property="BorderBrush" Value="#2F855A"/>
+                                            <Setter TargetName="Card" Property="BorderThickness" Value="2"/>
+                                            <Setter TargetName="Card" Property="Background" Value="#F0FDF4"/>
+                                            <Setter TargetName="TitleText" Property="Foreground" Value="#22543D"/>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Card" Property="BorderBrush" Value="#3B82F6"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </RadioButton.Template>
+                        </RadioButton>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
+            <!-- Extra scenarios (Part 2): independent secondary checkboxes, enabled once a primary is chosen -->
+            <StackPanel Margin="0,2,0,0"
+                        Visibility="{Binding HasExtraScenarios, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#3E4C59" Margin="0,2,0,2">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Profile.Extras.Title"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <ItemsControl ItemsSource="{Binding ExtraScenarios, Mode=OneWay}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ProfileItemViewModel}">
+                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      IsEnabled="{Binding DataContext.CanToggleExtras, Mode=OneWay, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                      Margin="0,0,14,3" FontSize="11" Foreground="#1F2933"
+                                      Content="{Binding DisplayName, Mode=OneWay}"
+                                      ToolTip="{Binding Description, Mode=OneWay}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
             <!-- Compact summary + primary action row -->
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
                         Visibility="{Binding HasActiveProfiles, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                 <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" VerticalAlignment="Center"
                            Text="{Binding ActiveProfileCaption, Mode=OneWay}"/>
@@ -48,6 +105,11 @@
                 <TextBlock FontSize="12" Foreground="#3E4C59" Margin="12,0,0,0" VerticalAlignment="Center">
                     <Run Text="{Binding ManualCount, Mode=OneWay}"/><Run Text=" "/>
                     <Run Text="{Binding SummaryConfirmLabel, Mode=OneWay}"/>
+                </TextBlock>
+                <TextBlock FontSize="12" Foreground="#9A3412" Margin="12,0,0,0" VerticalAlignment="Center"
+                           Visibility="{Binding HasUnsupported, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <Run Text="{Binding UnsupportedCount, Mode=OneWay}"/><Run Text=" "/>
+                    <Run Text="{Binding SummaryUnsupportedLabel, Mode=OneWay}"/>
                 </TextBlock>
                 <TextBlock FontSize="12" Foreground="#B45309" Margin="12,0,0,0" VerticalAlignment="Center"
                            Visibility="{Binding HasConflicts, Mode=OneWay, Converter={StaticResource BoolToVis}}">
@@ -92,25 +154,29 @@
                 </Button>
             </StackPanel>
 
-            <!-- Manual-mode / Custom caption when no preset profile drives recommendations -->
-            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,6,0,0"
+            <!-- Manual-mode / Custom caption when no primary profile drives recommendations -->
+            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,4,0,0"
                        Text="{Binding ActiveProfileCaption, Mode=OneWay}"
                        Visibility="{Binding HasActiveProfiles, Mode=OneWay, Converter={StaticResource BoolToVisInv}}"/>
 
-            <!-- Preview panel (Part I) — non-destructive, shows what WOULD be selected -->
+            <!-- Detail view (Part 11): decisions grouped by bucket, with per-tab breakdown -->
             <StackPanel Margin="0,10,0,0"
                         Visibility="{Binding IsPreviewOpen, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                 <ItemsControl ItemsSource="{Binding PreviewGroups, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:RecommendationPreviewGroup}">
                             <StackPanel Margin="0,0,0,8">
-                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933">
-                                    <TextBlock.Text>
-                                        <MultiBinding Converter="{StaticResource locKey}">
-                                            <Binding Path="HeaderKey" Mode="OneWay"/><Binding Source="{StaticResource Loc}" Mode="OneWay"/>
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933">
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{StaticResource locKey}">
+                                                <Binding Path="HeaderKey" Mode="OneWay"/><Binding Source="{StaticResource Loc}" Mode="OneWay"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                    <TextBlock FontSize="12" Foreground="#7B8794" Margin="10,0,0,0"
+                                               Text="{Binding TabBreakdown, Mode=OneWay}"/>
+                                </StackPanel>
                                 <ItemsControl ItemsSource="{Binding Items, Mode=OneWay}" Margin="12,2,0,0">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type vm:RecommendationPreviewItem}">
