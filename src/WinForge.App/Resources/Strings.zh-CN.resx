@@ -109,6 +109,31 @@
   <data name="Settings.Language" xml:space="preserve"><value>显示语言</value></data>
   <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>
   <data name="Settings.Language.Chinese" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Build.Finish.Cleaned" xml:space="preserve"><value>ISO 已生成 — 已清理临时文件：{0}</value></data>
+  <data name="Build.Finish.Partial" xml:space="preserve"><value>ISO 已生成 — 部分临时文件未能清理：{0}</value></data>
+  <data name="Build.Finish.Retained" xml:space="preserve"><value>ISO 已生成 — 保留恢复数据：{0}</value></data>
+  <data name="Build.Finish.RetryCleanup" xml:space="preserve"><value>立即重试清理</value></data>
+  <data name="Storage.Root.Title" xml:space="preserve"><value>临时工作区位置</value></data>
+  <data name="Storage.Root.Change" xml:space="preserve"><value>更改位置</value></data>
+  <data name="Storage.Root.Restore" xml:space="preserve"><value>恢复默认位置</value></data>
+  <data name="Storage.Root.Free" xml:space="preserve"><value>可用空间：{0}</value></data>
+  <data name="Storage.Root.Warning" xml:space="preserve"><value>所选驱动器可用空间不足（{0}）</value></data>
+  <data name="Storage.Root.Invalid" xml:space="preserve"><value>该位置不可用（驱动器根或用户配置目录根）。</value></data>
+  <data name="Storage.Root.NotWritable" xml:space="preserve"><value>无法创建或写入该位置。</value></data>
+  <data name="Storage.Root.Mounted" xml:space="preserve"><value>当前映像处于挂载状态，无法更改工作区位置——请先卸载。</value></data>
+  <data name="Storage.Title" xml:space="preserve"><value>存储</value></data>
+  <data name="Storage.Description" xml:space="preserve"><value>WinForge 会将临时服务工作区保存在本地应用数据目录下。在此查看用量并安全清理。活动挂载、可恢复检查点与最终 ISO 输出绝不会被删除。</value></data>
+  <data name="Storage.Scan" xml:space="preserve"><value>扫描磁盘用量</value></data>
+  <data name="Storage.Scanning" xml:space="preserve"><value>正在扫描…</value></data>
+  <data name="Storage.TotalTemporary" xml:space="preserve"><value>WinForge 临时文件</value></data>
+  <data name="Storage.Active" xml:space="preserve"><value>活动工作区</value></data>
+  <data name="Storage.Recoverable" xml:space="preserve"><value>可恢复构建数据</value></data>
+  <data name="Storage.Disposable" xml:space="preserve"><value>旧版可清理工作区</value></data>
+  <data name="Storage.SafeToClean" xml:space="preserve"><value>可安全清理</value></data>
+  <data name="Storage.WillKeep" xml:space="preserve"><value>将保留：活动挂载、可恢复检查点与最终 ISO 输出。</value></data>
+  <data name="Storage.Clean" xml:space="preserve"><value>清理临时文件</value></data>
+  <data name="Storage.Cleaned" xml:space="preserve"><value>已清理 {0}</value></data>
+  <data name="Storage.Legacy" xml:space="preserve"><value>旧版残留</value></data>
   <data name="Settings.Language.Note" xml:space="preserve"><value>更改会即时应用到整个应用。</value></data>
   <data name="Settings.About.Link" xml:space="preserve"><value>关于 WinForge</value></data>
 
@@ -190,6 +215,14 @@
   <data name="Review.Services" xml:space="preserve"><value>服务：</value></data>
   <data name="Review.PageTitle" xml:space="preserve"><value>计划审核</value></data>
   <data name="Review.Warnings" xml:space="preserve"><value>校验警告</value></data>
+  <data name="Review.ValidatePassed" xml:space="preserve"><value>计划校验通过，可以应用修改。</value></data>
+  <data name="Review.ValidateFailed" xml:space="preserve"><value>计划校验失败：{0} 个阻塞问题。请查看下方列表。</value></data>
+  <data name="Apply.Summary" xml:space="preserve"><value>应用完成：{0} 项成功，{1} 项失败。</value></data>
+  <data name="Apply.SummaryAllSucceeded" xml:space="preserve"><value>应用完成：{0} 项全部成功。</value></data>
+  <data name="Apply.FailedItemsHeader" xml:space="preserve"><value>失败项</value></data>
+  <data name="Apply.FailedItemsToggle" xml:space="preserve"><value>查看失败项</value></data>
+  <data name="Apply.FailedItemsHide" xml:space="preserve"><value>收起失败项</value></data>
+  <data name="Review.ValidateError" xml:space="preserve"><value>计划校验失败：{0}</value></data>
   <data name="Review.NoWarnings" xml:space="preserve"><value>没有校验警告。</value></data>
   <data name="Review.Validate" xml:space="preserve"><value>校验计划</value></data>
   <data name="Review.Apply" xml:space="preserve"><value>应用到已挂载镜像</value></data>
@@ -232,6 +265,9 @@
   <data name="Build.Stage.Failed" xml:space="preserve"><value>失败</value></data>
   <data name="Build.Stage.Cancelled" xml:space="preserve"><value>已取消</value></data>
   <data name="Build.Status.Starting" xml:space="preserve"><value>构建已开始…</value></data>
+  <data name="Build.Status.LowDisk" xml:space="preserve"><value>可用磁盘空间不足</value></data>
+  <data name="Build.Status.LowDiskDetail" xml:space="preserve"><value>此构建需要约 {0} 可用空间；当前仅 {1}。请释放空间后重试。</value></data>
+  <data name="Build.Status.CleanedTemps" xml:space="preserve"><value>已清理临时文件：{0}</value></data>
   <data name="Build.Status.Completed" xml:space="preserve"><value>构建完成。最终的 ISO 已生成。</value></data>
   <data name="Build.Status.Failed" xml:space="preserve"><value>构建失败</value></data>
   <data name="Build.Status.Cancelled" xml:space="preserve"><value>构建已取消</value></data>

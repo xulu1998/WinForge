@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
+using WinForge.Core.WorkspaceLifecycle;
 using WinForge.Infrastructure.ImageMetadata;
 
 namespace WinForge.Infrastructure.Servicing;
@@ -33,14 +34,18 @@ public sealed class ImageServicingService : IImageServicingService
         IIsoMountService isoMount,
         IWorkspacePathProvider paths,
         IWorkspaceSafeDelete safeDelete,
-        ILoggerService logger)
+        ILoggerService logger,
+        IWorkspaceLifecycleManager lifecycle)
     {
         _processRunner = processRunner ?? throw new ArgumentNullException(nameof(processRunner));
         _isoMount = isoMount ?? throw new ArgumentNullException(nameof(isoMount));
         _paths = paths ?? throw new ArgumentNullException(nameof(paths));
         _safeDelete = safeDelete ?? throw new ArgumentNullException(nameof(safeDelete));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _lifecycle = lifecycle ?? throw new ArgumentNullException(nameof(lifecycle));
     }
+
+    private readonly IWorkspaceLifecycleManager _lifecycle;
 
     public async Task<ServicingResult> PrepareWorkingImageAsync(
         ImageWorkspace source,
@@ -67,6 +72,8 @@ public sealed class ImageServicingService : IImageServicingService
         var workingDir = _paths.GetOrCreateWorkspaceDirectory(workspaceId);
         var workingImagePath = _paths.GetWorkingImagePath(workspaceId);
         var mountDir = _paths.GetMountDirectory(workspaceId);
+        // Phase 12: durable lifecycle manifest (idempotent — re-prepare keeps the id).
+        _lifecycle.CreateWorkspace(workspaceId, source.SourceIsoPath);
 
         var workspace = new ImageServicingWorkspace
         {
@@ -135,6 +142,7 @@ public sealed class ImageServicingService : IImageServicingService
 
             workspace.State = ServicingWorkspaceState.Prepared;
             workspace.LastError = null;
+            _lifecycle.Transition(workspaceId, WorkspaceLifecycleState.Prepared, "Prepared");
             _logger.Info($"Servicing: workspace prepared (working index 1, source index {source.SelectedIndex}).");
             return ServicingResult.Ok(workspace, ServicingHealth.Prepared);
         }
@@ -199,6 +207,7 @@ public sealed class ImageServicingService : IImageServicingService
 
             workspace.State = ServicingWorkspaceState.Mounted;
             workspace.LastError = null;
+            _lifecycle.Transition(WorkspaceIdOf(workspace), WorkspaceLifecycleState.Mounted, "Mounted");
             _logger.Info("Servicing: working image mounted.");
             return ServicingResult.Ok(workspace, ServicingHealth.Mounted);
         }
@@ -257,6 +266,7 @@ public sealed class ImageServicingService : IImageServicingService
 
             workspace.State = ServicingWorkspaceState.Prepared;
             workspace.LastError = null;
+            _lifecycle.Transition(WorkspaceIdOf(workspace), WorkspaceLifecycleState.Cancelled, "UnmountDiscarded");
             _logger.Info("Servicing: working image unmounted (changes discarded); working image retained.");
             return ServicingResult.Ok(workspace, ServicingHealth.Prepared);
         }
@@ -321,6 +331,7 @@ public sealed class ImageServicingService : IImageServicingService
 
             workspace.State = ServicingWorkspaceState.Prepared;
             workspace.LastError = null;
+            _lifecycle.Transition(WorkspaceIdOf(workspace), WorkspaceLifecycleState.Committed, "UnmountCommitted");
             _logger.Info("Servicing: working image committed and unmounted; working image retained.");
             return ServicingResult.Ok(workspace, ServicingHealth.Prepared);
         }
@@ -532,10 +543,16 @@ public sealed class ImageServicingService : IImageServicingService
         }
     }
 
+    private static string WorkspaceIdOf(ImageServicingWorkspace workspace)
+        => string.IsNullOrWhiteSpace(workspace.WorkingDirectory)
+            ? string.Empty
+            : Path.GetFileName(workspace.WorkingDirectory.TrimEnd('\\', '/')) ?? string.Empty;
+
     private ServicingResult MarkFailed(ImageServicingWorkspace workspace, string error)
     {
         workspace.State = ServicingWorkspaceState.Failed;
         workspace.LastError = error;
+        _lifecycle.Transition(WorkspaceIdOf(workspace), WorkspaceLifecycleState.FailedDisposable, "PrepareFailed");
         _logger.Warning($"Servicing: {error}");
         return ServicingResult.Fail(workspace, error, ServicingHealth.Failed);
     }
@@ -558,6 +575,7 @@ public sealed class ImageServicingService : IImageServicingService
 
         workspace.State = ServicingWorkspaceState.Failed;
         workspace.LastError = error;
+        _lifecycle.Transition(WorkspaceIdOf(workspace), WorkspaceLifecycleState.FailedDisposable, "PrepareFailed");
         _logger.Warning($"Servicing: {error}");
         return ServicingResult.Fail(workspace, error, ServicingHealth.Failed);
     }

@@ -16,10 +16,14 @@ public sealed class SettingsViewModel : ViewModelBase
     private readonly ILocalizationService _localization;
     private readonly ILanguageSettingsStore _store;
 
-    public SettingsViewModel(ILocalizationService localization, ILanguageSettingsStore store)
+    public SettingsViewModel(
+        ILocalizationService localization,
+        ILanguageSettingsStore store,
+        StorageViewModel storage)
     {
         _localization = localization;
         _store = store;
+        Storage = storage ?? throw new System.ArgumentNullException(nameof(storage));
 
         _localization.CultureChanged += (_, _) =>
         {
@@ -38,6 +42,9 @@ public sealed class SettingsViewModel : ViewModelBase
     public bool IsChinese => Equals(_localization.CurrentCulture.Name, "zh-CN");
 
     public ICommand SetLanguageCommand { get; }
+
+    /// <summary>Phase 12 disk-usage surface (Parts H/I).</summary>
+    public StorageViewModel Storage { get; }
 
     private void SetLanguage(string cultureName)
     {

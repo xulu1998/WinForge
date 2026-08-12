@@ -22,6 +22,8 @@ using WinForge.Infrastructure.ComponentIntelligence;
 using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.Logging;
 using WinForge.Infrastructure.Profiles;
+using WinForge.Infrastructure.Servicing;
+using WinForge.Infrastructure.WorkspaceLifecycle;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -200,6 +202,144 @@ public class CustomizeBindingRegressionTests
                 () => new OptimizationKnowledgeView { DataContext = c.Tabs[4].Content }, culture));
             cases.Add(new("OptimizationKnowledgeView.Personalization",
                 () => new OptimizationKnowledgeView { DataContext = c.Tabs[5].Content }, culture));
+            // Phase 12 — Settings/Storage disk-usage surface (Parts H/I/Q).
+            // Phase 12.2 blocker regression: ScanAsync activates the scanned state so the
+            // usage-summary TextBlock (previously a <Run> inline list that threw
+            // 'System.Windows.Documents.Run.Text' on the real desktop) becomes VISIBLE during
+            // the layout pass and its binding is forced to execute.
+            cases.Add(new("SettingsView.Storage.Scanned",
+                () =>
+                {
+                    var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "wf12_render_" + Guid.NewGuid().ToString("N"));
+                    var paths = new WorkspacePathProvider(root);
+                    var runner = new FakeProcessRunner
+                    {
+                        Responder = req => new ProcessResult { ExitCode = 0, StandardOutput = "No mounted images found." },
+                    };
+                    var lifecycle = new WorkspaceLifecycleManager(paths, runner, new WorkspaceSafeDelete(), new InMemoryLoggerService());
+                    var storage = new StorageViewModel(lifecycle, new FakeLoc());
+                    storage.ScanAsync().GetAwaiter().GetResult();
+                    return new StorageView { DataContext = storage };
+                }, culture));
+            cases.Add(new("SettingsView.Storage.RootErrorState",
+                () =>
+                {
+                    var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "wf12_render_" + Guid.NewGuid().ToString("N"));
+                    var paths = new WorkspacePathProvider(root);
+                    var runner = new FakeProcessRunner
+                    {
+                        Responder = req => new ProcessResult { ExitCode = 0, StandardOutput = "No mounted images found." },
+                    };
+                    var lifecycle = new WorkspaceLifecycleManager(paths, runner, new WorkspaceSafeDelete(), new InMemoryLoggerService());
+                    var settings = new WorkspaceRootSettingsService(
+                        System.IO.Path.Combine(System.IO.Path.GetTempPath(), "wf12_roots_" + Guid.NewGuid().ToString("N") + ".json"));
+                    var storage = new StorageViewModel(lifecycle, new FakeLoc(), settings);
+                    storage.ScanAsync().GetAwaiter().GetResult();
+                    // Drive-root candidate is rejected -> RootErrorText renders (red) inline.
+                    storage.TrySetRoot(System.IO.Path.GetPathRoot(System.IO.Path.GetTempPath()) ?? "C:\\");
+                    return new StorageView { DataContext = storage };
+                }, culture));
+            // Phase 12.3 — Review page validation-feedback bindings (success + failure
+            // states render, incl. the new ValidationPassed / ValidationMessage /
+            // HasValidationFailure TextBlocks and the Warnings list visibility).
+            cases.Add(new("PlanReviewView.Validated",
+                () =>
+                {
+                    var state = new AppState();
+                    state.CurrentImageWorkspace = new ImageWorkspace();
+                    state.CurrentServicingWorkspace = new ImageServicingWorkspace
+                    {
+                        WorkingDirectory = @"C:\wf\ws",
+                        MountDirectory = @"C:\wf\ws\mount",
+                        WorkingImagePath = @"C:\wf\ws\image\install.wim",
+                        State = ServicingWorkspaceState.Mounted,
+                    };
+                    var plan = PlanSync.EnsureDraftPlan(state);
+                    plan.AddOperation(new CustomizationOperation
+                    {
+                        OperationId = "op-1",
+                        OperationType = CustomizationOperationType.RemoveProvisionedAppx,
+                        TargetIdentifier = "AppA",
+                        DisplayName = "App A",
+                        Risk = RiskClass.Removable,
+                        IsSelected = true,
+                    });
+                    var vm = new PlanReviewViewModel(state, new InMemoryLoggerService(),
+                        new FakeCustomizationExecutionService(), new FakeLoc());
+                    vm.ValidatePlan();
+                    return new PlanReviewView { DataContext = vm };
+                }, culture));
+            cases.Add(new("PlanReviewView.ApplyFailed",
+                () =>
+                {
+                    var state = new AppState();
+                    state.CurrentImageWorkspace = new ImageWorkspace();
+                    state.CurrentServicingWorkspace = new ImageServicingWorkspace
+                    {
+                        WorkingDirectory = @"C://wf//ws",
+                        MountDirectory = @"C://wf//ws//mount",
+                        WorkingImagePath = @"C://wf//ws//image//install.wim",
+                        State = ServicingWorkspaceState.Mounted,
+                    };
+                    var plan = PlanSync.EnsureDraftPlan(state);
+                    plan.AddOperation(new CustomizationOperation
+                    {
+                        OperationId = "op-1",
+                        OperationType = CustomizationOperationType.SetOfflineRegistryValue,
+                        DisplayName = "隐藏小组件按钮",
+                        RegistryHive = "DEFAULT_USER", RegistryKeyPath = @"Software\Policies\Microsoft\Dsh",
+                        RegistryValueName = "EnableWebContent", RegistryValueKind = OfflineRegistryValueKind.DWord,
+                        RegistryValueData = "0", Scope = OptimizationScope.OfflineDefaultUser,
+                        Risk = RiskClass.Safe, IsSelected = true,
+                    });
+                    plan.Validate();
+                    var failed = plan.SelectedOperations.Single();
+                    failed.ExecutionStatus = CustomizationOperationStatus.FailedRecoverable;
+                    failed.ErrorDetails = "Attempted to perform an unauthorized operation.";
+                    var fake = new FakeCustomizationExecutionService
+                    {
+                        Result = new CustomizationResult { TotalOperations = 1, Succeeded = 0, FailedOperations = 1 },
+                    };
+                    var vm = new PlanReviewViewModel(state, new InMemoryLoggerService(), fake, new FakeLoc());
+                    vm.ApplyAsync().GetAwaiter().GetResult();
+                    return new PlanReviewView { DataContext = vm };
+                }, culture));
+            cases.Add(new("PlanReviewView.ValidationFailed",
+                () =>
+                {
+                    var state = new AppState();
+                    state.CurrentImageWorkspace = new ImageWorkspace();
+                    state.CurrentServicingWorkspace = new ImageServicingWorkspace
+                    {
+                        WorkingDirectory = @"C:\wf\ws",
+                        MountDirectory = @"C:\wf\ws\mount",
+                        WorkingImagePath = @"C:\wf\ws\image\install.wim",
+                        State = ServicingWorkspaceState.Mounted,
+                    };
+                    var plan = PlanSync.EnsureDraftPlan(state);
+                    plan.AddOperation(new CustomizationOperation
+                    {
+                        OperationId = "op-1",
+                        OperationType = CustomizationOperationType.RemoveProvisionedAppx,
+                        TargetIdentifier = "AppA",
+                        DisplayName = "App A",
+                        Risk = RiskClass.Removable,
+                        IsSelected = true,
+                    });
+                    plan.AddOperation(new CustomizationOperation
+                    {
+                        OperationId = "op-dup",
+                        OperationType = CustomizationOperationType.RemoveProvisionedAppx,
+                        TargetIdentifier = "AppA",
+                        DisplayName = "App A (again)",
+                        Risk = RiskClass.Removable,
+                        IsSelected = true,
+                    });
+                    var vm = new PlanReviewViewModel(state, new InMemoryLoggerService(),
+                        new FakeCustomizationExecutionService(), new FakeLoc());
+                    vm.ValidatePlan();
+                    return new PlanReviewView { DataContext = vm };
+                }, culture));
             // Stage 11.4 — profile selector panel (recommended configuration engine).
             cases.Add(new("ProfileView",
                 () =>

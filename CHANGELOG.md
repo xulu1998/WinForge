@@ -3,7 +3,193 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 12 CLOSEOUT — Workspace Lifecycle & Disk Safety (2026-08-12)
+
+**STATUS: PHASE 12 — COMPLETED · REAL DESKTOP VALIDATION — PASSED · MERGED TO `main` (--no-ff).**
+All seven stages (12.1 lifecycle manifests + disk safety, 12.2 Finish cleanup + workspace-root settings,
+12.3 Review validation UX, 12.4 plan normalization/dedupe, 12.5 Build→Finish state sync, 12.6 Hide Widgets
+Dsh-policy fix + apply-result UX, 12.7 one authoritative creation root) are REAL-DESKTOP VALIDATED on
+Windows 11 25H2. Original incident resolved: ~30 stale workspaces + temp ≈ 249 GB → deterministic lifecycle
+with authoritative DISM mount safety, CurrentRoot-only creation (KnownRoots scan/recover/clean-only), safe
+Finish/Discard cleanup, ISO preserved, Storage cleanup UI with owning-root display, no repeated-run leak.
+Non-blocking follow-ups recorded (ADR-072). Final suite baseline: 767 tests (Core 53, App 714), 0 errors,
+0 warnings (Release).
+
 ## [Unreleased]
+
+### Added (Phase 12 — Workspace Lifecycle & Disk Safety — phase/12-workspace-lifecycle)
+
+- **Workspace lifecycle (ADR-062).** Every workspace now has a durable `workspace.json` manifest and an
+  explicit lifecycle state (Created → Prepared → Mounted → Committed → BuildCheckpoint → Completed, plus
+  FailedDisposable / Cancelled / Cleaned). The servicing service records transitions automatically, and a
+  completed build records its final ISO path.
+- **Cleanup safety (ADR-063).** The live DISM mount registration is authoritative: actively mounted
+  workspaces are never deleted, a mount-query failure fails closed, needs-remount workspaces are surfaced
+  for recovery, and recoverable checkpoints are retained. Cleanup handles ReadOnly/System/Hidden files,
+  reports reclaimed space, and records exact leftovers on partial failure.
+- **Output vs temp (ADR-064).** Final ISOs now default to `Documents\WinForge` and are never treated as
+  disposable temp data. Cleanup only ever touches the WinForge workspace root.
+- **Storage surface.** Settings → 存储 scans all workspaces (temp / recoverable / active / disposable),
+  shows safe-cleanup candidates (including 旧版残留 legacy leftovers), and cleans with one click.
+- **Disk guard (ADR-065).** Builds estimate required space (working WIM + media staging + final ISO +
+  safety margin) and stop with a clear message before the drive fills up.
+- **Incident regression.** A repeated-workflow test proves disposable workspaces no longer accumulate
+  across sessions (the ~249 GB stale-workspace incident becomes impossible under normal use).
+
+### Fixed (Phase 12 Stage 12.7 — workspace root not honored: shadow C: workspace leak)
+
+- **Real-desktop:** CurrentRoot=F://WinForgeWorkspaces, but a ~6.9 GB workspace (wf-a9bac38c7259) kept
+  reappearing under the OLD C: default root after Finish (F: became empty).
+- **Root cause (SPLIT workspace):** `WorkspacePathProvider` was registered with a standalone default
+  root (%LOCALAPPDATA%\WinForge\Workspaces) and NEVER consulted
+  `IWorkspaceRootSettingsService.CurrentRoot`. Prepare created the SERVICING data under C: while the
+  lifecycle MANIFEST went to the configured F: root (lifecycle.WorkspaceRoot uses CurrentRoot) — two
+  same-id directories. Finish cleaned by manifest (F: shell) and LEAKED the C: data (no manifest).
+- **Fix (ADR-071):** `WorkspacePathProvider` now resolves the CURRENT root at runtime
+  (fixed test override → current root → platform default); Bootstrapper wires it to the settings
+  service so EVERY new workflow service (Prepare/Apply/Commit/Export/checkpoint/Build) creates under
+  CurrentRoot only. KnownRoots remain scan/recover/clean-only — never a creation destination.
+  Finish now cleans the one unified workspace (manifest + data together); the final ISO (outside the
+  workspace) survives. Storage candidates display their OWNING root (RootPath) so a size is never
+  mistaken for the current root.
+- **Regression:** Stage12p7WorkspaceRootTests (9) — current root is the only creation root; old
+  KnownRoot scanned but never created into; changing root C→F affects new workflows live; recovery
+  respects original root; no duplicate/shadow workspace across roots; Storage candidate shows source
+  root; repeated workflows do not grow the old root; full incident reproduction
+  (KnownRoots=[C,F], CurrentRoot=F → F-only creation, F cleaned, C untouched, ISO preserved).
+  Full suite **767 pass (Core 53, App 714), 0 errors, 0 warnings**.
+
+### Fixed (Phase 12 Stage 12.6 — Hide Widgets offline registry UnauthorizedAccessException + apply-result UX)
+
+- **Real-desktop:** applying 「隐藏小组件按钮」(SetOfflineRegistryValue, OfflineDefaultUser) failed with
+  "Attempted to perform an unauthorized operation" (UnauthorizedAccessException) while the sibling
+  「任务栏搜索仅显示图标」 (TaskbarSearch, same hive, same Explorer\Advanced key) succeeded.
+- **Root cause:** the old target Explorer\Advanced\TaskbarDa lives in the PROTECTED Explorer subtree
+  of the Default User template — its template ACLs reject offline writes (the sibling only worked
+  because TaskbarSearch already exists in the template). Execution: EnsureKeyPath fell into
+  CreateSubKey on an existing-but-read-only key and surfaced the bare exception.
+- **Fix (Case D — policy-based offline-safe equivalent; ADR-070):** HideTaskbarWidgets now targets
+  the official user-policy branch Software\Policies\Microsoft\Dsh → EnableWebContent = 0
+  (Windows 11 25H2 supported mechanism). `EnsureKeyPath` now probes read-only keys and raises an
+  explicit, contextual "read-only template ACL" failure instead of a bare UnauthorizedAccessException
+  (WinForge NEVER takes ownership / rewrites ACLs on offline user keys).
+- **Apply-result UX:** localized summary 「应用完成：{0} 项成功，{1} 项失败。」/ "Application
+  completed: {0} succeeded, {1} failed." plus a visible failed-operations panel (name + reason,
+  expandable). Per-operation outcomes are now written back from the execution SNAPSHOT onto the
+  LIVE plan (previously the frozen-snapshot execution left live operations Pending, so the failure
+  panel could never populate). Partial apply is never silently treated as full success.
+- **Regression:** Stage12p6HideWidgetsTests (10) — model targets Dsh policy; sibling TaskbarSearch
+  unchanged; old TaskbarDa target gone; corrected target executes successfully through the engine
+  (fake offline registry); no ACL-rewrite code exists; localized summary counts; failed item + reason
+  visible; partial-failure state deterministic (CompletedWithErrors unlocks Build with the panel
+  shown). Binding audit gains PlanReviewView.ApplyFailed render case. Full suite
+  **758 pass (Core 53, App 705), 0 errors, 0 warnings**.
+
+### Fixed (Phase 12 Stage 12.5 — build completed but wizard step stayed InProgress / Finish disabled)
+
+- **Real-desktop:** full build succeeded (构建完成 / 100% / 已完成, final 7.62 GB ISO at
+  Documents\WinForge) but the top stepper still showed 构建镜像 · 进行中 and 完成 stayed disabled.
+- **Root cause (two defects in WorkflowViewModel):** (1) `OnBuildChanged` refreshed CanFinish on
+  `BuildStepViewModel.CurrentStage` changes but never called `RecomputeStates()`, so the Build step
+  stayed `Current` (InProgress) forever — the step graph was only recomputed from app-state changes;
+  (2) it raised FinishCommand via an `is RelayCommand` type check, but `FinishCommand` is an
+  `AsyncRelayCommand` — so `RaiseCanExecuteChanged()` was NEVER invoked and the 完成 button stayed
+  disabled even though `CanFinish` (IsFinalStep && CurrentStage == Completed) was true.
+- **Fix:** `OnBuildChanged` now calls `RecomputeStates()` on `CurrentStage` changes; the Build step
+  branch maps a CURRENT step whose `_build.CurrentStage == Completed` to `Completed`
+  (构建镜像 → 已完成) instead of `Current`; both `RecomputeStates` and the refresh path raise
+  FinishCommand via the correct `AsyncRelayCommand` type. Finish gating unchanged (NotStarted /
+  Failed / Cancelled / Verifying-failed all keep Finish disabled — one coherent source of truth:
+  `CanFinish => IsFinalStep && _build.CurrentStage == BuildState.Completed`). Stage 12.2 Finish
+  cleanup untouched (authoritative DISM check, ISO preserved, reclaimed bytes reported, Home nav).
+- **Regression:** `Stage12p5BuildFinishStateTests` (9) — Build start → step InProgress; success →
+  step Completed + Finish enabled immediately + CanExecuteChanged fires; failure / cancellation /
+  verification-failure keep Finish disabled; success survives navigate-back-and-forward; Finish
+  cleanup still deletes the completed workspace while the final ISO path survives; Finish returns
+  Home; zh/en StepState strings. Full suite **748 pass (Core 53, App 695), 0 errors, 0 warnings**.
+
+### Fixed (Phase 12 Stage 12.4 — plan compiler emitted duplicate identical registry operations)
+
+- **Real-desktop report:** after the Stage 12.3 validation-UX fix, the validator correctly surfaced
+  "Duplicate operations target the same change: reg|SOFTWARE\Policies\Microsoft\Windows\CloudContent|
+  DisableWindowsSpotlightFeatures" and Apply stayed disabled — but the duplicate should never reach
+  the validator: the PLAN COMPILER emitted two identical physical operations.
+- **Exact sources:** Privacy "Windows 聚焦内容" (`SpotlightFeatures`, OptimizationCatalog) and
+  Personalization "Windows 聚焦（锁屏内容）" (`DisableSpotlight`) both compile to the SAME mutation —
+  `SetOfflineRegistryValue` on SOFTWARE\Policies\Microsoft\Windows\CloudContent
+  \DisableWindowsSpotlightFeatures = DWord 1, Scope OfflineMachine. Only the OperationId differed
+  (`opt|SpotlightFeatures|0` vs `opt|DisableSpotlight|0`), so ConflictKey collided and the validator
+  (correctly) flagged it.
+- **Fix (normalization layer, validator NOT weakened):** `CustomizationOperation` gains a canonical
+  effective-target identity — registry SCOPE + normalized hive + normalized key path + normalized
+  value name (case-insensitive, separator-normalized, scope is part of identity so OfflineMachine and
+  OfflineDefaultUser never merge) — and a mutation-semantics comparison (operation type + value kind +
+  normalized data; DWord/QWord compared numerically so "1" == "0x1" == "01"). `CustomizationPlan
+  .AddOperation` now MERGES identical effective registry changes into ONE physical operation,
+  retaining provenance (every originating definition id / operation id in `SourceDefinitionIds`);
+  semantically DIFFERENT mutations of the same target stay as two operations and remain blocking
+  conflicts. `ConflictKey` now includes the scope, so the validator never false-positives across
+  scopes. `OptimizationKnowledgeItem` records `Definition.Id` as operation provenance.
+- **Regression:** `Stage12p4PlanNormalizationTests` (15) — identical dedupe to 1, different value
+  stays blocking, different scope / DefaultUser-vs-machine never merge, provenance retains both
+  sources, totals reflect deduped executable count, validator still rejects AppX duplicate, true
+  conflict UI visible, real DisableWindowsSpotlightFeatures target dedupes + validates, Gaming /
+  Lightweight / Developer selection sets compile + validate, manual true conflict blocked, numeric
+  and path-case normalization. Full suite **739 pass (Core 53, App 686), 0 errors, 0 warnings**.
+
+### Fixed (Phase 12 Stage 12.3 — REAL DESKTOP BLOCKER: Review 校验计划 no-op / Apply disabled)
+
+- **Root cause:** 「校验计划」gave no visible response and 「应用到已挂载镜像」stayed disabled.
+  (1) A successful validation set the plan Validated but showed NO success feedback, so the run
+  looked dead; (2) a FAILED validation (blocking issues such as duplicate/conflicting operations —
+  e.g. two selected ops sharing a ConflictKey) kept displaying 「没有校验警告」 because
+  `PlanReviewViewModel.Warnings` was replaced without notifying the derived `HasWarnings`, so the
+  real blocking reason stayed invisible while Apply (keyed on `Plan.Status == Validated`) stayed
+  disabled; (3) a throwing validator was swallowed silently. Next staying disabled until Apply is
+  EXECUTED is the intended contract (the Apply step is NotAvailable before execution succeeds).
+- **Fix:** `ValidatePlan` now sets explicit localized outcome state — `ValidationPassed` /
+  `ValidationMessage` / `HasValidationFailure` — shown as green success
+  「计划校验通过，可以应用修改。」or red blocking failure 「计划校验失败：N 个阻塞问题…」;
+  Warnings notifies HasWarnings; exceptions surface the exact error (localized, logged, never
+  silent); ApplyCommand/NextCommand re-evaluate immediately (no timing hacks). New resx keys
+  Review.ValidatePassed/ValidateFailed/ValidateError (zh + en).
+- **Regression:** `Stage12p3ReviewValidationTests` (14) cover: plan exists, ValidateCommand
+  executes through the ICommand surface, Validated state set, visible success feedback (real resx),
+  Apply disabled before / enabled immediately after validation, non-blocking unselected issue,
+  blocking duplicate keeps Apply disabled + shows reason, validation exception surfaces error +
+  logged, CanExecuteChanged fires, mounted-state gating, zh/en strings. WPF binding audit gains
+  PlanReviewView.Validated and PlanReviewView.ValidationFailed render cases (0 binding errors).
+
+### Fixed (Phase 12 Stage 12.2 — REAL DESKTOP BLOCKER: Storage page Run.Text exception)
+
+- **Root cause:** the Settings → 存储 usage line was composed from multiple `<Run>` inlines
+  (including `Run.Text` MultiBindings). Compile-time checks passed (legal XAML) and the render
+  smoke test missed it because the scanned-state StackPanel was still Collapsed at layout time, so
+  WPF skipped the Inlines. On the real desktop the moment the scanned state became visible WPF
+  materialized the inlines during layout and threw while setting
+  'System.Windows.Documents.Run.Text' — repeated global error dialogs.
+- **Fix:** the usage line is now a single stable `TextBlock.Text` binding to a fully formatted,
+  localized `StorageViewModel.UsageSummaryText` (active · recoverable · disposable). `StorageView.xaml`
+  no longer contains any `Run`/`Inline`. Storage labels (`ActiveLabel`/`RecoverableLabel`/
+  `DisposableLabel`) moved into the view model with the same resx keys.
+- **Second defect found & fixed while testing:** `CleanAsync` set 已清理 X but immediately reset it
+  via the follow-up `ScanAsync()`. `ScanAsync(clearResultText:)` now keeps the cleanup result line
+  visible (only user-initiated scans reset it).
+- **Regression:** `StorageViewRenderRegressionTests` (9 new, zh-CN + en-US) build the real
+  `StorageViewModel` against the real resx service, activate the scanned state, force a full layout
+  pass, and assert every display state (root, free space, low-space, validation error, cleanup
+  result) renders without exception; a guard test asserts StorageView.xaml never contains `<Run`
+  again. The WPF binding audit's Storage cases now also activate the scanned/error states.
+
+### Added (Phase 12 Stage 12.2 — Finish cleanup + workspace-root settings)
+
+- **Workspace-root settings.** Settings → 存储 now shows the temporary workspace location with free space;
+  [更改位置] / [恢复默认位置] persist across restarts, reject invalid/unwritable roots and block the change
+  while an image is mounted. Old roots are remembered so cleanup still finds leftovers there.
+- **Finish auto-cleanup.** Completing a build now cleans the completed workspace automatically (final ISO is
+  always preserved; recoverable checkpoints are retained). The Build step reports 已清理临时文件：X GB,
+  or 保留恢复数据：X GB, or 部分未能清理 with [立即重试清理]. A cleanup failure never fails the build.
+- **Discard auto-cleanup.** Unmount/Discard cleans the disposable workspace in the background.
 
 ### Phase 11 — COMPLETED (2026-08-12)
 

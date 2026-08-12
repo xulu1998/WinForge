@@ -176,6 +176,22 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
             return BuildResult(snapshot, succeeded, failed, completed,
                 $"Execution failed: {ex.Message}");
         }
+        finally
+        {
+            // Stage 12.6: execution runs on a FROZEN snapshot; write every
+            // per-operation outcome back onto the LIVE plan so the Review page can
+            // surface exactly which operations failed and why (counts alone are
+            // not enough — the user must never hunt through the Logs page).
+            foreach (var snapOp in ordered)
+            {
+                var live = plan.Operations.FirstOrDefault(o => o.OperationId == snapOp.OperationId);
+                if (live is not null)
+                {
+                    live.ExecutionStatus = snapOp.ExecutionStatus;
+                    live.ErrorDetails = snapOp.ErrorDetails;
+                }
+            }
+        }
     }
 
     // ---- operation dispatch ----

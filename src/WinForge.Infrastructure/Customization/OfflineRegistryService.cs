@@ -368,13 +368,48 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
     {
         // Recreate the relative path under the loaded root, creating sub-keys as
         // needed (so a registry setting can be written even if the key is absent).
+        // Stage 12.6: an existing-but-read-only key (e.g. the protected Explorer
+        // subtree of the Default User template) must NOT be force-created via
+        // CreateSubKey — that throws a bare UnauthorizedAccessException. Instead
+        // surface an explicit, contextual error naming the hive key path so the
+        // failed operation is understandable (WinForge never rewrites ACLs).
         RegistryKey current = root;
         var segments = keyPath.Split('\\', StringSplitOptions.RemoveEmptyEntries);
         foreach (var segment in segments)
         {
-            var next = current.OpenSubKey(segment, writable: true) ?? current.CreateSubKey(segment);
+            var readOnlyProbe = current.OpenSubKey(segment, writable: false);
+            if (readOnlyProbe is not null)
+            {
+                // Key exists: upgrade to a writable handle; a protected ACL yields
+                // null (or throws) — report it explicitly rather than mutating ACLs.
+                try
+                {
+                    var writable = current.OpenSubKey(segment, writable: true);
+                    readOnlyProbe.Dispose();
+                    if (writable is null)
+                    {
+                        current.Dispose();
+                        throw new UnauthorizedAccessException(
+                            $"Offline registry key '{root.Name}\\{segment}' exists but is NOT writable in the loaded hive (read-only template ACL). " +
+                            "WinForge does not take ownership or rewrite ACLs on offline user keys; the operation is reported as failed.");
+                    }
+
+                    current.Dispose();
+                    current = writable;
+                    continue;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    readOnlyProbe.Dispose();
+                    current.Dispose();
+                    throw;
+                }
+            }
+
+            readOnlyProbe?.Dispose();
+            var created = current.CreateSubKey(segment);
             current.Dispose();
-            current = next;
+            current = created;
         }
 
         return current;

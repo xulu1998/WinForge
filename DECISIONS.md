@@ -1583,3 +1583,194 @@ All decisions are `ACCEPTED` unless noted.
 - **Consequences:** Phase 11 work is complete and merged; the Custom + Extra Scenarios hint mode is a
   candidate for a later phase (tracked in ROADMAP follow-ups). No changes were made to the recommendation
   engine for this closeout.
+
+
+## ADR-062: Workspace lifecycle — durable manifest + explicit state (Phase 12)
+
+- **Context:** A real-desktop incident leaked ~249 GB (≈30 stale `wf-*` workspaces × ~6.81 GB + temp output)
+  because workspaces had no durable lifecycle and nothing ever cleaned them. Product decision: WinForge must
+  own a deterministic workspace lifecycle; users must never be required to delete AppData folders manually.
+- **Decision:**
+  - Every workspace persists a `workspace.json` manifest (WorkspaceId / CreatedAt / LastUsedAt / CurrentState /
+    SourceIsoPath / WorkingWimPath / MountPath / IsMountedKnown / HasBuildCheckpoint / FinalOutputPath /
+    RecoveryRequired / CanDeleteSafely / WinForgeVersion / RetentionReason / transition log).
+  - Lifecycle states: Created → Preparing/Prepared → Mounted → Customized → Committed → BuildCheckpoint →
+    Completed; terminal: FailedDisposable / FailedRecoverable / Cancelled / Orphaned / Cleaning / Cleaned.
+  - The servicing service transitions the manifest on Prepare/Mount/UnmountDiscard/UnmountCommitted/PrepareFailed;
+    the build view marks Completed + FinalOutputPath after a successful build.
+  - Cleanup classification NEVER trusts directory existence alone: the live DISM mount registration is
+    authoritative (`/Get-MountedImageInfo`), and a query failure fails closed (no deletion decisions).
+- **Consequences:** pre-Phase-12 workspaces (no manifest) are classified LegacyUnknown; they are offered as
+  cleanup candidates in the Storage UI but deletion still re-checks DISM. Cleanup bytes are measured and
+  reported; partial failures record the exact leftover path and are retryable.
+
+## ADR-063: Cleanup safety policy — active mounts and recoverable checkpoints never auto-deleted
+
+- **Context:** deleting the wrong workspace can destroy an active mount or a resumable build checkpoint.
+- **Decision:**
+  - A workspace is NEVER deleted when DISM registers its mount path (or any mount nested under the workspace
+    dir — covers legacy workspaces without manifests); the deletion is refused with a clear result.
+  - NeedsRemount (manifest expects a mount but DISM does not register it) → classified Recoverable; a recovery
+    action is surfaced, never a silent delete.
+  - Mount-query failure → fail closed: classification Unknown and cleanup refused.
+  - Recoverable states (BuildCheckpoint / FailedRecoverable / Completed-without-output) are retained and
+    excluded from cleanup candidates. Completed-with-recorded-FinalOutputPath is disposable (output preserved
+    outside the workspace).
+  - Cleanup strips ReadOnly/System/Hidden before deleting; a partial failure never claims success (leftover
+    path recorded, retry later).
+- **Consequences:** the 249 GB incident class of leak becomes impossible under normal use — every
+  discarded/failed-disposable/completed workflow is a cleanup candidate that the Storage UI removes in one
+  action, and the repeated-workflow regression test proves non-accumulation.
+
+## ADR-064: Output vs temp separation — user ISO is never disposable
+
+- **Context:** the default final-ISO destination was `%LOCALAPPDATA%\Temp\WinForge\Output`, which treated a
+  user-created ISO as disposable temp data and blurred cleanup boundaries.
+- **Decision:**
+  - Final ISO output defaults to `Documents\WinForge` (fallback: temp Output only when the profile documents
+    folder is unavailable) and is user-visible/configurable in the Build page.
+  - Cleanup operates ONLY on WinForge-owned temp (workspace root); `FinalOutputPath` (or any user output) is
+    never a cleanup target — verified by test.
+- **Consequences:** temp vs output are strictly separated by artifact classification, not by "created by
+  WinForge".
+
+## ADR-065: Disk-space guard — conservative estimates block before Prepare/Build
+
+- **Context:** builds can need tens of GB; waiting until the system drive reaches zero corrupts outputs.
+- **Decision:**
+  - `DiskSpaceEstimator` (pure, testable): Prepare ≈ working WIM × 4 (unpacked mount) + 2 GiB margin;
+    Build ≈ working WIM + media staging (≈ source ISO) + final ISO + 2 GiB margin.
+  - BuildStepViewModel checks free space on the output drive before starting and blocks with a localized
+    "需要约 X GB 可用；当前 Y GB" message when insufficient.
+- **Consequences:** operations stop before filling the drive; estimates are conservative by construction.
+
+
+## ADR-066: Stage 12.2 — configurable workspace root + Finish/Discard auto-cleanup
+
+- **Context:** two product gaps remained before real-desktop validation: users with small C: SSDs could not
+  relocate the workspace root, and completed/discarded workspaces still required a manual Storage visit.
+- **Decision:**
+  - `IWorkspaceRootSettingsService` (persisted `workspace-roots.json`): current root + known previous roots.
+    Root changes affect NEW workflows only; existing workspaces are never moved; an actively mounted session
+    blocks the change; candidate roots are validated (drive/profile roots rejected, creatable+writable probe);
+    a low-free-space drive shows a warning (not a block). Cleanup/orphan scanning covers ALL known roots
+    (Part G) so old roots are never orphaned.
+  - `WorkflowViewModel.FinishAsync` runs the authoritative DISM-safe cleanup of the completed workspace:
+    final ISO preserved, recoverable checkpoints retained (minimal-retention), reclaimed bytes reported on the
+    Build step; a partial failure is a WARNING with an explicit [立即重试清理] — never a build failure.
+  - A successful Unmount/Discard auto-cleans the disposable workspace in the background (failures surface in
+    the Storage UI).
+- **Consequences:** repeated Prepare→Customize→Build→Finish (or →Discard) cycles no longer accumulate stale
+  workspaces and never require manual AppData cleanup.
+
+
+## ADR-068: Plan compiler normalization — identical registry operations merge, true conflicts stay
+
+- **Context:** real desktop produced "Duplicate operations target the same change:
+  reg|...CloudContent|DisableWindowsSpotlightFeatures" — two independent customization items
+  (Privacy `SpotlightFeatures` "Windows 聚焦内容", Personalization `DisableSpotlight`
+  "Windows 聚焦（锁屏内容）") compile to the exact same registry mutation. The validator was right;
+  the plan COMPILER was wrong to emit two identical physical operations.
+- **Decision:**
+  - `CustomizationOperation.CanonicalRegistryTarget()` = SCOPE + normalized hive + normalized key
+    path + normalized value name (case-insensitive, '/'↔'\' separators; scope is identity —
+    OfflineMachine and OfflineDefaultUser never merge even with identical key text).
+  - `HasSameEffectiveChangeAs()` compares mutation semantics: operation type + registry value kind +
+    normalized data (DWord/QWord numeric equivalence: "1" == "0x1" == "01"; others case-insensitive).
+  - `CustomizationPlan.AddOperation` merges identical effective changes into ONE physical operation
+    (first wins, provenance merged); semantically DIFFERENT mutations of the same target remain two
+    operations and stay validator-blocking. The validator is NOT weakened and still flags any
+    duplicate that bypasses normalization as an internal-plan defect.
+  - `ConflictKey` includes the scope so the validator cannot false-positive across scopes.
+  - Provenance: `SourceDefinitionIds` retains every originating definition/operation id; the
+    customization VM records `Definition.Id` on every generated operation.
+- **Consequences:** identical recommendation intents produce one executable operation; Review counts
+  reflect executable operations; true conflicts (same target, different value) still block Apply with
+  visible warnings; rollback/explainability data keeps all sources.
+
+
+## ADR-069: Build→Finish workflow state synchronization
+
+- **Context:** real desktop: the build pipeline completed successfully (verified ISO, 100%,
+  已完成) but the wizard stepper kept 构建镜像 · 进行中 and 完成 stayed disabled. BuildStep internal
+  state was Completed; the wizard never learned about it.
+- **Root cause:** `WorkflowViewModel.OnBuildChanged` (a) refreshed `CanFinish` but never called
+  `RecomputeStates()`, so the Build step's `State` never flipped from `Current` to `Completed`; and
+  (b) refreshed FinishCommand via `if (FinishCommand is RelayCommand finish)` — but FinishCommand is
+  an `AsyncRelayCommand`, so `RaiseCanExecuteChanged()` was NEVER called and the button stayed
+  disabled even though `CanFinish` (IsFinalStep && CurrentStage == Completed) was already true.
+- **Decision:** `OnBuildChanged` on `CurrentStage` changes now calls `RecomputeStates()`; the Build
+  step maps a CURRENT step with `_build.CurrentStage == Completed` to `Completed`; command refresh
+  uses the correct `AsyncRelayCommand` type in both `RecomputeStates` and the refresh path. Finish
+  gating keeps ONE source of truth (`CanFinish`); NotStarted / Failed / Cancelled / verification
+  failure all keep Finish disabled. Stage 12.2 Finish cleanup is untouched (authoritative DISM
+  mount check, final ISO preserved, reclaimed bytes reported, navigate Home).
+- **Consequences:** at the moment the build log reaches "Build completed" the stepper flips to
+  已完成, 完成 enables immediately (no navigation/restart/rescan), Finish cleanup runs, ISO stays,
+  Home returns.
+
+
+## ADR-070: Hide Widgets offline registry target — policy-based equivalent + apply-result UX
+
+- **Context:** real desktop: 「隐藏小组件按钮」 (OfflineDefaultUser SetOfflineRegistryValue) threw
+  UnauthorizedAccessException while the sibling 「任务栏搜索仅显示图标」 (same hive, same
+  Explorer\Advanced key) succeeded.
+- **Root cause:** the old target Explorer\Advanced\TaskbarDa sits in the PROTECTED Explorer subtree
+  of the Default User template; template ACLs reject offline writes (the sibling worked only because
+  TaskbarSearch already exists in the template). EnsureKeyPath fell through to CreateSubKey on the
+  existing-but-read-only key and surfaced the bare exception.
+- **Decision (Case D):**
+  - HideTaskbarWidgets now targets the official USER POLICY branch
+    Software\Policies\Microsoft\Dsh → EnableWebContent = 0 (Windows 11 25H2 supported mechanism),
+    written into the offline Default User NTUSER.DAT. Policy branches are offline-writable by design.
+  - EnsureKeyPath probes read-only keys and raises an explicit contextual "read-only template ACL"
+    error (never forces writes, never takes ownership, never rewrites ACLs).
+  - Apply result UX: localized summary 应用完成：{0} 项成功，{1} 项失败。 and a visible
+    failed-operations panel (name + reason). Execution writes per-operation outcomes back from the
+    frozen snapshot onto the LIVE plan so the panel can populate.
+  - Partial apply semantics: CompletedWithErrors unlocks Apply/Build but is NEVER presented as full
+    success — the failure panel is shown and the user proceeds only after seeing it.
+- **Consequences:** the operation remains offline-supported (policy branch), siblings unaffected, no
+  ACL hacks; failed operations are visible with exact reasons on the Review page.
+
+
+## ADR-071: One authoritative creation root (CurrentRoot) — shadow workspace leak fix
+
+- **Context:** real desktop: CurrentRoot=F://WinForgeWorkspaces, yet a ~6.9 GB workspace
+  (wf-a9bac38c7259) kept reappearing under the old C: default root after Finish emptied F:.
+- **Root cause:** WorkspacePathProvider was registered standalone (default
+  %LOCALAPPDATA%\WinForge\Workspaces) and never consulted IWorkspaceRootSettingsService.CurrentRoot.
+  ImageServicingService created SERVICING data under C: while WorkspaceLifecycleManager wrote the
+  MANIFEST under the configured F: root (its WorkspaceRoot property reads CurrentRoot) — two same-id
+  directories. Finish cleaned by manifest (F: shell) and leaked the C: data (manifest-less).
+- **Decision:**
+  - WorkspacePathProvider resolves the CURRENT root at runtime (fixed override → current root →
+    platform default), wired in Bootstrapper to the settings service. Every new workflow creation
+    path (Prepare/Apply/Commit/Export/checkpoint/Build) then lands under CurrentRoot only.
+  - KnownRoots are historical: scanned / recovered / cleaned, NEVER a creation destination.
+  - Finish cleans the single unified workspace (manifest + data together); the final ISO (outside
+    the workspace) survives; recoverable checkpoints retained only as required.
+  - Storage candidates display their owning RootPath so a size is never attributed to the current
+    root by mistake.
+- **Consequences:** no shadow/split workspaces; C:/old-root disk usage stays flat across repeated
+  workflows; root changes affect all new workflows immediately (provider reads live).
+
+
+## ADR-072: Phase 12 closeout — status, architecture confirmation, non-blocking follow-ups
+
+- **Status:** PHASE 12 — COMPLETED; REAL DESKTOP VALIDATION — PASSED (Windows 11 25H2); MERGED TO
+  `main` via `--no-ff` (branch `phase/12-workspace-lifecycle` retained). Original incident
+  (~30 stale workspaces + temp ≈ 249 GB) RESOLVED by the lifecycle architecture.
+- **Architecture confirmed (12 items):** lifecycle manifests; DISM-authoritative mount safety;
+  CurrentRoot-only creation vs KnownRoots scan/recover/clean; safe cleanup policy; Finish/Discard
+  auto-cleanup; final-ISO vs temp separation; disk-space guard; Storage cleanup UI; canonical
+  plan-operation normalization; Apply partial-failure reporting; Build→Finish state sync;
+  shadow-workspace root split fix.
+- **Non-blocking follow-ups (do NOT reopen Phase 12):**
+  1. long-running operation periodic disk-space checks are less comprehensive than pre-operation checks;
+  2. recoverable checkpoint minimization may be improved further;
+  3. startup automatic cleanup stays conservative — Storage UI / Finish / Discard already provide safe
+     cleanup paths;
+  4. Finish cleanup may synchronously wait while deleting a large workspace; future UX may improve
+     progress/cancellation;
+  5. Custom profile + Extra Scenarios polish remains a separate Phase 11 follow-up (ADR-061).

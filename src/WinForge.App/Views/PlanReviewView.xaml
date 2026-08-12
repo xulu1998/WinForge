@@ -161,6 +161,17 @@
                 </TextBlock.Text>
             </TextBlock>
 
+            <!-- Stage 12.2/12.3 blocker fix: explicit validation outcome. The old
+                 flow gave no visible response at all — a successful validation
+                 merely enabled Apply and a failed one kept showing
+                 "没有校验警告" because HasWarnings was never notified. -->
+            <TextBlock Foreground="#2F855A" FontSize="13" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap"
+                       Visibility="{Binding ValidationPassed, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                       Text="{Binding ValidationMessage, Mode=OneWay}"/>
+            <TextBlock Foreground="#9B1C1C" FontSize="13" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap"
+                       Visibility="{Binding HasValidationFailure, Mode=OneWay, Converter={StaticResource BoolToVis}}"
+                       Text="{Binding ValidationMessage, Mode=OneWay}"/>
+
             <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
                 <Button Style="{StaticResource PrimaryButton}" Background="#487EB0" Command="{Binding ValidateCommand}">
                     <TextBlock>
@@ -188,6 +199,35 @@
             <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,8,0,0" TextWrapping="Wrap"
                        Visibility="{Binding ResultSummary, Mode=OneWay, Converter={StaticResource NullToVis}}"
                        Text="{Binding ResultSummary, Mode=OneWay}"/>
+
+            <!-- Stage 12.6: failed apply operations are explicit and visible —
+                 a partial apply is never silently treated as full success. -->
+            <StackPanel Margin="0,12,0,0"
+                        Visibility="{Binding HasFailedOperations, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                <Button Background="Transparent" BorderThickness="0" Padding="0" HorizontalAlignment="Left"
+                        Cursor="Hand" Command="{Binding ToggleFailedItemsCommand, Mode=OneWay}">
+                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#9B1C1C">
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{StaticResource locKey}">
+                                <Binding Mode="OneWay" Source="Apply.FailedItemsHeader"/><Binding Mode="OneWay" Source="{StaticResource Loc}"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </Button>
+                <ItemsControl ItemsSource="{Binding FailedOperations, Mode=OneWay}" Margin="0,6,0,0"
+                              Visibility="{Binding FailedItemsExpanded, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ReviewFailedOperationItem}">
+                            <StackPanel Margin="0,3,0,0">
+                                <TextBlock FontSize="12.5" FontWeight="SemiBold" Foreground="#9B1C1C"
+                                           Text="{Binding DisplayName, Mode=OneWay}"/>
+                                <TextBlock FontSize="12" Foreground="#7B8794" TextWrapping="Wrap"
+                                           Text="{Binding Reason, Mode=OneWay}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
 
             <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,16,0,0" TextWrapping="Wrap">
                 <TextBlock.Text>

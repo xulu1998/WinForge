@@ -435,6 +435,26 @@ WinForge.Infrastructure  (Windows only)
   profile change never mutates the plan); ProfileView added to the WPF binding audit. Full suite
   **662 pass (Core 53, App 609), 0 errors, 0 warnings (Release)**.
 
+## Phase 12 — Workspace Lifecycle & Disk Safety (2026-08-12)
+
+`IWorkspaceLifecycleManager` (Core contract; DISM-backed `WorkspaceLifecycleManager` in Infrastructure) owns
+durable `workspace.json` manifests (explicit lifecycle states + transition log). Every cleanup decision is
+guarded by the LIVE `/Get-MountedImageInfo` registration (fail closed on query failure; a registered mount —
+or any mount nested in the workspace dir — is never deleted). Discard / failed-disposable / completed-with-
+output workspaces are cleanup candidates; recoverable checkpoints and completed-without-output workspaces
+are retained. Cleanup strips ReadOnly/System/Hidden, reports reclaimed bytes, and records exact leftover
+paths on partial failure. The final ISO defaults to `Documents\WinForge` (user output — never a cleanup
+target; temp is strictly the workspace root). `BuildStepViewModel` marks Completed + FinalOutputPath and
+runs a conservative disk-space guard (`DiskSpaceEstimator`) before building. Settings hosts a **Storage**
+surface (`StorageViewModel`/`StorageView`): async, cancellable workspace scan grouped into temp /
+recoverable / active / disposable totals with a safe-cleanup preview and one-click 清理临时文件, plus the
+workspace-root editor (change/restore default, validation, active-mount block, persisted via
+`workspace-roots.json`); multi-root cleanup discovery scans every known root (Part G). Stage 12.2:
+`WorkflowViewModel.FinishAsync` runs the Finish auto-cleanup (authoritative DISM-safe; final ISO preserved,
+recoverable checkpoints retained, reclaimed bytes reported on the Build step with [立即重试清理] on partial
+failure — a cleanup failure is a WARNING, never a build failure); a successful Unmount/Discard auto-cleans
+the disposable workspace in the background (Part E).
+
 ## Phase 11 — COMPLETED (2026-08-12)
 
 Stage 11.1–11.4 all passed real-desktop validation on the Windows 11 25H2 zh-CN x64 Consumer image and
@@ -448,3 +468,55 @@ close/back; the header count reads the shared plan (`PlanSync.PlanChanged`); row
 Custom mode as keep/recommendation hints without a primary preset.
 
 See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 / ADR-057 / ADR-058 / ADR-059 / ADR-060 / ADR-061 for the full rationale.
+
+
+## Phase 12 — Final Architecture (closeout, 2026-08-12)
+
+All Stages 12.1–12.7 are REAL-DESKTOP VALIDATED (Windows 11 25H2) and MERGED to `main`.
+
+1. **Workspace lifecycle manifests** — every workspace persists `workspace.json`
+   (`IWorkspaceLifecycleManager` / `WorkspaceLifecycleManager`): explicit states
+   Created→Preparing→Mounted→…→Completed/FailedDisposable/Cancelled/Cleaned with a transition log;
+   the servicing service transitions on Prepare/Mount/UnmountDiscard/UnmountCommitted/PrepareFailed,
+   the build view marks Completed + FinalOutputPath. Manifest and data live in the SAME directory
+   (Stage 12.7 unification).
+2. **Authoritative DISM mount safety** — the live `/Get-MountedImageInfo` registration is the
+   authority: a registered mount (or any mount nested in the workspace dir) is never deleted;
+   mount-query failure fails closed; NeedsRemount surfaced for recovery.
+3. **CurrentRoot vs KnownRoots** — `IWorkspaceRootSettingsService.CurrentRoot` is the ONLY creation
+   root (`WorkspacePathProvider` resolves it live; fixed test override wins, then current root, then
+   platform default). `KnownRoots` (historical, including old roots) are scanned / recovered /
+   cleaned only — NEVER a creation destination.
+4. **Safe cleanup policy** — ReadOnly/System/Hidden stripped before delete; reclaimed bytes reported;
+   exact leftover paths recorded on partial failure; retried later; recoverable checkpoints and
+   completed-without-output workspaces retained (minimal-retention rule).
+5. **Finish / Discard automatic cleanup** — Finish runs the authoritative DISM-safe cleanup of the
+   completed workspace (ISO preserved, bytes reported, failure is a warning); a successful
+   Unmount/Discard cleans the disposable workspace in the background.
+6. **Final ISO vs temporary artifacts** — final ISO defaults to `Documents\WinForge` (user output,
+   never a cleanup target); disposable temp is strictly the workspace root.
+7. **Disk-space guard** — `DiskSpaceEstimator` (Prepare ≈ WIM×4+2GiB; Build ≈ WIM+media+ISO+2GiB)
+   blocks before Prepare/Build with a localized insufficient-space message.
+8. **Storage cleanup UI** — Settings → 存储: async scan of wf-* workspaces grouped into temp /
+   recoverable / active / disposable totals, safe-cleanup preview, one-click 清理临时文件, legacy
+   leftovers flagged 旧版残留, workspace-root editor (change/restore, validation, active-mount
+   block, persisted), and every cleanup candidate displays its OWNING ROOT.
+9. **Canonical plan-operation normalization** — `CustomizationOperation.CanonicalRegistryTarget()`
+   (scope + normalized hive/key/value-name) + mutation-semantics comparison; `CustomizationPlan
+   .AddOperation` merges identical effective registry changes into one physical operation with
+   provenance (`SourceDefinitionIds`); true conflicts remain validator-blocking; `ConflictKey`
+   includes scope.
+10. **Apply partial-failure reporting** — localized summary 应用完成：{0} 项成功，{1} 项失败。plus a
+    visible failed-operations panel (name + reason); per-operation outcomes are written back from the
+    execution snapshot onto the live plan; partial apply is never silently treated as success.
+11. **Build→Finish state synchronization** — `WorkflowViewModel.OnBuildChanged` recomputes the step
+    graph on `CurrentStage` changes; a CURRENT Build step with `CurrentStage == Completed` maps to
+    Completed; FinishCommand refreshes via the correct AsyncRelayCommand type; Finish gating stays
+    one source of truth (`CanFinish`).
+12. **Shadow-workspace root split fix** — the split (servicing data under a standalone default root
+    vs manifest under CurrentRoot) is eliminated by the live-resolving path provider; no duplicate
+    workspace ids across roots; repeated workflows do not grow old-root disk usage.
+
+Non-blocking follow-ups (ADR-072): periodic long-run disk-space checks; recoverable-checkpoint
+minimization; conservative startup auto-cleanup (Storage/Finish/Discard cover safe paths); Finish
+cleanup synchronous-wait UX for large deletes; Custom profile + Extra Scenarios polish (ADR-061).

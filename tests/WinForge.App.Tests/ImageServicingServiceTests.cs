@@ -7,6 +7,7 @@ using WinForge.Core.Models;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.Logging;
 using WinForge.Infrastructure.Servicing;
+using WinForge.Infrastructure.WorkspaceLifecycle;
 using Xunit;
 
 namespace WinForge.App.Tests;
@@ -62,7 +63,8 @@ Edition : Professional
         iso = new FakeIsoMountService();
         paths = new WorkspacePathProvider(safeRoot ?? Path.Combine(AppContext.BaseDirectory, "wf_paths_" + Guid.NewGuid().ToString("N")));
         var safe = new WorkspaceSafeDelete();
-        return new ImageServicingService(runner, iso, paths, safe, new InMemoryLoggerService());
+        var lifecycle = new WorkspaceLifecycleManager(paths, runner, safe, new InMemoryLoggerService());
+        return new ImageServicingService(runner, iso, paths, safe, new InMemoryLoggerService(), lifecycle);
     }
 
     private static FakeProcessRunner ExportThenGetInfo(int getInfoExit = 0, string getInfoOut = SingleIndexPro)

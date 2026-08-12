@@ -15,6 +15,8 @@ using WinForge.Core.Models;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.ComponentIntelligence;
 using WinForge.Infrastructure.Logging;
+using WinForge.Infrastructure.Servicing;
+using WinForge.Infrastructure.WorkspaceLifecycle;
 using Xunit;
 
 namespace WinForge.App.Tests;
@@ -147,7 +149,11 @@ public sealed class WizardFinishNavigationTests
 
         var home = new HomeViewModel(state, nav);
         var logs = new LogsViewModel(logger);
-        var settings = new SettingsViewModel(loc, new NullLanguageSettingsStore());
+        var storage = new StorageViewModel(
+            new WorkspaceLifecycleManager(new WorkspacePathProvider(
+                System.IO.Path.Combine(System.IO.Path.GetTempPath(), "wf_test_nav_" + Guid.NewGuid().ToString("N"))),
+                new FakeProcessRunner(), new WorkspaceSafeDelete(), logger), loc);
+        var settings = new SettingsViewModel(loc, new NullLanguageSettingsStore(), storage);
         var about = new AboutViewModel();
 
         var ci = new ComponentIntelligenceViewModel(

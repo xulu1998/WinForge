@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+             xmlns:views="clr-namespace:WinForge.App.Views"
              xmlns:conv="clr-namespace:WinForge.App.Converters"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:SettingsViewModel}">
@@ -58,6 +59,8 @@
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>
+
+            <views:StorageView DataContext="{Binding Storage, Mode=OneWay}"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

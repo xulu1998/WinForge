@@ -83,6 +83,36 @@ public sealed class CustomizationPlan : INotifyPropertyChanged
             throw new InvalidOperationException("Cannot modify a plan that has started or finished.");
         }
 
+        // Stage 12.4 plan normalization (real-desktop blocker): two selected
+        // customization items can compile to the EXACT SAME registry mutation
+        // (e.g. Privacy "Windows 聚焦内容" and Personalization "Windows 聚焦（锁屏
+        // 内容）" both set CloudContent\DisableWindowsSpotlightFeatures = 1).
+        // Identical effective changes MERGE into one physical operation with
+        // provenance retained; only semantically DIFFERENT mutations of the same
+        // target are kept as two operations (the validator still reports them as
+        // blocking conflicts). Scope is part of the identity, so OfflineMachine
+        // and DefaultUser never merge even when the key text matches.
+        if (operation.OperationType == CustomizationOperationType.SetOfflineRegistryValue)
+        {
+            foreach (var existing in _operations)
+            {
+                if (!existing.TargetsSameRegistryAs(operation))
+                {
+                    continue;
+                }
+
+                if (existing.HasSameEffectiveChangeAs(operation))
+                {
+                    existing.MergeIdentical(operation);
+                    RaiseSelectionChanged();
+                    return; // deduped — no new physical operation
+                }
+
+                // Same target, different intended mutation: keep both. The
+                // validator classifies this as a blocking conflict.
+            }
+        }
+
         _operations.Add(operation);
         RaiseSelectionChanged();
     }
