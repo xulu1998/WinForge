@@ -6,6 +6,8 @@ using WinForge.App.Localization;
 using WinForge.App.Services;
 using WinForge.App.Workflow;
 using WinForge.App.ViewModels;
+using WinForge.Core.Models;
+using WinForge.Core.Profiles;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.ImageMetadata;
@@ -15,6 +17,8 @@ using WinForge.Infrastructure.Execution;
 using WinForge.Infrastructure.Logging;
 using WinForge.Infrastructure.Servicing;
 using WinForge.Infrastructure.Build;
+using WinForge.Infrastructure.ComponentIntelligence;
+using WinForge.Infrastructure.Profiles;
 
 namespace WinForge.App.Services;
 
@@ -79,11 +83,29 @@ public static class Bootstrapper
         services.AddSingleton<IBuildVerifier, BuildVerifier>();
         services.AddSingleton<IBuildService, ImageBuildService>();
 
+        // Phase 11 — Component Intelligence (Stage 11.1, read-only discovery + catalog)
+        // Stage 11.3: the shared catalog composes the AppX catalog with the Windows
+        // Features catalog so one discovery classifies both (Apps tab = AppX;
+        // Windows Components tab = capabilities/optional features).
+        services.AddSingleton<IComponentCatalogProvider>(_ =>
+            new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog()));
+        services.AddSingleton<IComponentIntelligenceService, WindowsComponentIntelligenceService>();
+
+        // Stage 11.3 — reviewed optimization catalog (Services / Privacy / System / Personalization).
+        services.AddSingleton<IOptimizationCatalogProvider, OptimizationCatalog>();
+
+        // Stage 11.4 — scenario profile engine (recommended configuration).
+        services.AddSingleton<IProfileCatalogProvider, ProfileCatalog>();
+        services.AddSingleton<IRecommendationEngine, RecommendationEngine>();
+        services.AddSingleton<RecommendationContextService>();
+
         // View models (singletons, shared across navigation)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<HomeViewModel>();
         services.AddSingleton<ImageViewModel>();
         services.AddSingleton<ComponentsViewModel>();
+        services.AddSingleton<ComponentIntelligenceViewModel>();
+        services.AddSingleton<ComponentKnowledgeViewModel>();
         services.AddSingleton<PrivacyViewModel>();
         services.AddSingleton<SystemViewModel>();
         services.AddSingleton<PlanReviewViewModel>();
@@ -93,7 +115,40 @@ public static class Bootstrapper
         services.AddSingleton<AboutViewModel>();
 
         // Wizard / Stepper workflow (singletons; the coordinator reuses the page VMs above)
-        services.AddSingleton<CustomizeStepViewModel>();
+        // Stage 11.3: the Customize step owns six knowledge-backed tabs. The four
+        // catalog-driven tabs (Services / Privacy / System / Personalization) share one
+        // OptimizationKnowledgeViewModel engine and are constructed here so each gets
+        // its own catalog slice; the Windows Components tab reuses ComponentKnowledgeViewModel
+        // over the shared classified inventory with a capability/feature category filter.
+        services.AddSingleton(sp =>
+        {
+            var components = sp.GetRequiredService<ComponentsViewModel>();
+            var appState = sp.GetRequiredService<IAppState>();
+            var logger = sp.GetRequiredService<ILoggerService>();
+            var loc = sp.GetRequiredService<ILocalizationService>();
+            var catalog = sp.GetRequiredService<IOptimizationCatalogProvider>();
+
+            var knowledge = sp.GetRequiredService<ComponentKnowledgeViewModel>();
+
+            var ciVm = sp.GetRequiredService<ComponentIntelligenceViewModel>();
+            var profileCtx = sp.GetRequiredService<RecommendationContextService>();
+            var componentsKnowledge = new ComponentKnowledgeViewModel(ciVm, appState, logger, loc,
+                new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability }, profileCtx);
+
+            OptimizationKnowledgeViewModel KnowledgeFor(OptimizationTab tab)
+                => new(appState, logger, loc, catalog, tab, profileCtx);
+
+            return new CustomizeStepViewModel(
+                components,
+                knowledge,
+                componentsKnowledge,
+                KnowledgeFor(OptimizationTab.Services),
+                KnowledgeFor(OptimizationTab.Privacy),
+                KnowledgeFor(OptimizationTab.System),
+                KnowledgeFor(OptimizationTab.Personalization),
+                profileCtx,
+                loc);
+        });
         services.AddSingleton<BuildStepViewModel>();
         services.AddSingleton<WorkflowViewModel>();
 

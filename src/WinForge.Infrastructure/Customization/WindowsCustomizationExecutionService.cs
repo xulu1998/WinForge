@@ -30,7 +30,7 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
     // plan validation, and this execution-time defense-in-depth guard.
 
     // Deterministic execution ordering: registry first, then services, then appx,
-    // then packages, then files.
+    // then packages/features, then files.
     private static readonly Dictionary<CustomizationOperationType, int> TypePriority = new()
     {
         [CustomizationOperationType.SetOfflineRegistryValue] = 0,
@@ -38,6 +38,8 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
         [CustomizationOperationType.ConfigureOfflineService] = 1,
         [CustomizationOperationType.RemoveProvisionedAppx] = 2,
         [CustomizationOperationType.RemovePackage] = 3,
+        [CustomizationOperationType.DisableOptionalFeature] = 3,
+        [CustomizationOperationType.RemoveCapability] = 3,
         [CustomizationOperationType.RemoveOfflineFile] = 4,
         [CustomizationOperationType.DisableOfflineScheduledTask] = 5
     };
@@ -195,6 +197,10 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
                     return await ApplyAppxRemovalAsync(op, workspace, cancellationToken);
                 case CustomizationOperationType.RemovePackage:
                     return await ApplyPackageRemovalAsync(op, workspace, cancellationToken);
+                case CustomizationOperationType.DisableOptionalFeature:
+                    return await ApplyFeatureDisableAsync(op, workspace, cancellationToken);
+                case CustomizationOperationType.RemoveCapability:
+                    return await ApplyCapabilityRemovalAsync(op, workspace, cancellationToken);
                 default:
                     return (CustomizationOperationStatus.Skipped, "Unsupported operation type.");
             }
@@ -394,6 +400,63 @@ public sealed class WindowsCustomizationExecutionService : ICustomizationExecuti
             FileName = "dism.exe",
             Arguments = $"/English /Image:\"{workspace.MountDirectory}\" /Remove-Package " +
                         $"/PackageName:\"{op.TargetIdentifier}\""
+        }, cancellationToken);
+
+        return run.ExitCode == 0
+            ? (CustomizationOperationStatus.Succeeded, null)
+            : (CustomizationOperationStatus.FailedRecoverable, $"DISM exit {run.ExitCode}.");
+    }
+
+    private async Task<(CustomizationOperationStatus, string?)> ApplyFeatureDisableAsync(
+        CustomizationOperation op, ImageServicingWorkspace workspace, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(op.TargetIdentifier))
+        {
+            return (CustomizationOperationStatus.FailedRecoverable, "Missing feature name.");
+        }
+
+        // Hard safety (ADR-051, final defense-in-depth guard): never disable an
+        // optional feature outside the explicit allowlist. By policy such an
+        // operation should already be non-selectable and rejected by plan
+        // validation, but if one ever reaches here it is skipped rather than applied.
+        if (!FeatureConfigPolicy.IsFeatureAllowed(op.TargetIdentifier))
+        {
+            return (CustomizationOperationStatus.Skipped, "Feature is not on the configuration allowlist.");
+        }
+
+        var run = await _processRunner.RunAsync(new ProcessRequest
+        {
+            FileName = "dism.exe",
+            Arguments = $"/English /Image:\"{workspace.MountDirectory}\" /Disable-Feature " +
+                        $"/FeatureName:\"{op.TargetIdentifier}\""
+        }, cancellationToken);
+
+        return run.ExitCode == 0
+            ? (CustomizationOperationStatus.Succeeded, null)
+            : (CustomizationOperationStatus.FailedRecoverable, $"DISM exit {run.ExitCode}.");
+    }
+
+    private async Task<(CustomizationOperationStatus, string?)> ApplyCapabilityRemovalAsync(
+        CustomizationOperation op, ImageServicingWorkspace workspace, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(op.TargetIdentifier))
+        {
+            return (CustomizationOperationStatus.FailedRecoverable, "Missing capability identity.");
+        }
+
+        // Hard safety (ADR-051): capabilities are not offered in the first tranche
+        // (the allowlist is empty), so any capability removal reaching here is
+        // skipped rather than applied.
+        if (!FeatureConfigPolicy.IsCapabilityAllowed(op.TargetIdentifier))
+        {
+            return (CustomizationOperationStatus.Skipped, "Capability is not on the configuration allowlist.");
+        }
+
+        var run = await _processRunner.RunAsync(new ProcessRequest
+        {
+            FileName = "dism.exe",
+            Arguments = $"/English /Image:\"{workspace.MountDirectory}\" /Remove-Capability " +
+                        $"/CapabilityName:\"{op.TargetIdentifier}\""
         }, cancellationToken);
 
         return run.ExitCode == 0

@@ -13,6 +13,7 @@ using WinForge.App.ViewModels;
 using WinForge.App.Workflow;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
+using WinForge.Infrastructure.ComponentIntelligence;
 using WinForge.Infrastructure.Logging;
 using Xunit;
 
@@ -138,10 +139,7 @@ public sealed class WizardFinishNavigationTests
         var image = new ImageViewModel(state, logger, new NullInspection(), new NullFilePicker(),
             new NullWorkspaceFactory(), new NullWimService(), servicing);
         var components = new ComponentsViewModel(state, logger, new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider());
-        var privacy = new PrivacyViewModel(state, logger, new FakeCustomizationDefinitionProvider());
-        var system = new SystemViewModel(state, logger, new FakeCustomizationDefinitionProvider());
-        var comingSoon = new ComingSoonViewModel();
-        var customize = new CustomizeStepViewModel(components, privacy, system, comingSoon);
+        var customize = ComponentKnowledgeTestFactory.MakeCustomize(state, logger);
         var plan = new PlanReviewViewModel(state, logger, new FakeCustomizationExecutionService());
         var build = new BuildStepViewModel(state, buildService, fs, new NullFilePicker(),
             new FakeAdkToolLocator(), logger, loc);
@@ -152,8 +150,14 @@ public sealed class WizardFinishNavigationTests
         var settings = new SettingsViewModel(loc, new NullLanguageSettingsStore());
         var about = new AboutViewModel();
 
+        var ci = new ComponentIntelligenceViewModel(
+            state, logger, new NotDiscoveredComponentIntelligenceService(), new CuratedComponentCatalog(), loc);
+
+        // MainViewModel still hosts the (unused) Coming Soon page VM for the nav shell.
+        var comingSoon = new ComingSoonViewModel();
+
         // The real shell, wired through the single navigation coordinator.
-        var main = new MainViewModel(nav, home, logs, settings, about, comingSoon, wf);
+        var main = new MainViewModel(nav, home, logs, settings, about, comingSoon, wf, ci);
         return (main, nav, wf, state, build, fs, servicing, logger);
     }
 
@@ -444,4 +448,12 @@ public sealed class WizardFinishNavigationTests
         Assert.True(main.IsWorkflowActive);
         Assert.IsType<WorkflowViewModel>(main.ActiveView);
     }
+}
+
+/// <summary>Minimal <see cref="IComponentIntelligenceService"/> stub for shell wiring tests.</summary>
+internal sealed class NotDiscoveredComponentIntelligenceService : IComponentIntelligenceService
+{
+    public Task<ComponentInventory> DiscoverAsync(
+        ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
+        => Task.FromResult(new ComponentInventory { Discovered = false });
 }

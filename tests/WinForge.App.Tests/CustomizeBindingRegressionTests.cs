@@ -5,16 +5,23 @@ using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
 using System.Windows.Threading;
 using WinForge.App.Converters;
+using WinForge.App.Services;
 using WinForge.App.ViewModels;
 using WinForge.App.Views;
 using WinForge.Core.Models;
+using WinForge.Core.Profiles;
 using WinForge.Core.Services;
+using WinForge.Infrastructure.ComponentIntelligence;
+using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.Logging;
-using System.Windows.Data;
+using WinForge.Infrastructure.Profiles;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -117,7 +124,17 @@ public class CustomizeBindingRegressionTests
         if (!res.Contains("BoolToVis")) res.Add("BoolToVis", new BooleanToVisibilityConverter());
         if (!res.Contains("BoolToVisInv")) res.Add("BoolToVisInv", new BooleanToVisibilityInverseConverter());
         if (!res.Contains("NullToVis")) res.Add("NullToVis", new NullToVisibilityConverter());
+        // App.xaml-level resources the knowledge views resolve (missing when the
+        // test Application never loads App.xaml). Register them so this class is
+        // self-contained regardless of xUnit class ordering.
+        if (!res.Contains("NullEmptyToVis")) res.Add("NullEmptyToVis", new StringNullOrEmptyToVisibilityConverter());
+        if (!res.Contains("recColor")) res.Add("recColor", new RecommendationToColorConverter());
+        if (!res.Contains("riskColor")) res.Add("riskColor", new RiskToColorConverter());
         if (!res.Contains("StatusTile")) res.Add("StatusTile", new Style(typeof(Border)));
+        // The real App.xaml maps view models to views via implicit DataTemplates;
+        // the test Application never loads App.xaml, so register them here to make
+        // CustomizeView tab/content rendering truthful in layout tests.
+        InstallCustomizeDataTemplates(res);
         if (!res.Contains("PrimaryButton")) res.Add("PrimaryButton", new Style(typeof(Button)));
         // BuildView references FieldLabel (TargetType=TextBlock); the other
         // Customize views don't, so it must be registered here for the Build page
@@ -127,6 +144,26 @@ public class CustomizeBindingRegressionTests
     }
 
     private sealed record Case(string Name, Func<FrameworkElement> Factory, CultureInfo Culture);
+
+    /// <summary>
+    /// Mirrors App.xaml's implicit view-model → view DataTemplates so CustomizeView
+    /// actually renders the profile panel and the six knowledge tabs in tests.
+    /// </summary>
+    private static void InstallCustomizeDataTemplates(ResourceDictionary res)
+    {
+        void Ensure(Type vmType, Type viewType)
+        {
+            var key = new DataTemplateKey(vmType);
+            if (res.Contains(key)) return;
+            var template = new DataTemplate(vmType);
+            template.VisualTree = new FrameworkElementFactory(viewType);
+            res.Add(key, template);
+        }
+
+        Ensure(typeof(ProfileViewModel), typeof(ProfileView));
+        Ensure(typeof(ComponentKnowledgeViewModel), typeof(ComponentKnowledgeView));
+        Ensure(typeof(OptimizationKnowledgeViewModel), typeof(OptimizationKnowledgeView));
+    }
 
     [Fact]
     public void AllCustomizeTabs_WithRealViewModels_HaveNoBindingErrors()
@@ -138,15 +175,43 @@ public class CustomizeBindingRegressionTests
         var cases = new List<Case>();
         foreach (var culture in new[] { CultureInfo.GetCultureInfo("en"), CultureInfo.GetCultureInfo("zh-CN") })
         {
-            cases.Add(new("PrivacyView", () => new PrivacyView { DataContext = c.Privacy }, culture));
-            cases.Add(new("SystemView", () => new SystemView { DataContext = c.System }, culture));
+            cases.Add(new("PrivacyView", () => new PrivacyView { DataContext = new PrivacyViewModel(state, new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider()) }, culture));
+            cases.Add(new("SystemView", () => new SystemView { DataContext = new SystemViewModel(state, new InMemoryLoggerService(), new FakeCustomizationDefinitionProvider()) }, culture));
             cases.Add(new("ComponentsView", () => new ComponentsView { DataContext = c.Components }, culture));
             cases.Add(new("ComponentListTabView.Apps",
                 () => new ComponentListTabView { DataContext = new ComponentListTabViewModel(c.Components, ComponentListKind.Apps, "Customize.Tab.Apps") }, culture));
             cases.Add(new("ComponentListTabView.Services",
                 () => new ComponentListTabView { DataContext = new ComponentListTabViewModel(c.Components, ComponentListKind.Services, "Customize.Tab.Services") }, culture));
             cases.Add(new("PlanReviewView", () => new PlanReviewView { DataContext = plan }, culture));
-            cases.Add(new("ComingSoonView", () => new ComingSoonView { DataContext = c.Experience }, culture));
+            cases.Add(new("ComingSoonView", () => new ComingSoonView { DataContext = new ComingSoonViewModel() }, culture));
+            // Stage 11.3 knowledge surfaces: Apps + Windows components share
+            // ComponentKnowledgeView; Services/Privacy/System/Personalization share
+            // OptimizationKnowledgeView. Render each with the REAL tab view model so
+            // binding errors surface (Part T / Part L reuse).
+            cases.Add(new("ComponentKnowledgeView.Apps",
+                () => new ComponentKnowledgeView { DataContext = c.Tabs[0].Content }, culture));
+            cases.Add(new("ComponentKnowledgeView.Components",
+                () => new ComponentKnowledgeView { DataContext = c.Tabs[1].Content }, culture));
+            cases.Add(new("OptimizationKnowledgeView.Services",
+                () => new OptimizationKnowledgeView { DataContext = c.Tabs[2].Content }, culture));
+            cases.Add(new("OptimizationKnowledgeView.Privacy",
+                () => new OptimizationKnowledgeView { DataContext = c.Tabs[3].Content }, culture));
+            cases.Add(new("OptimizationKnowledgeView.System",
+                () => new OptimizationKnowledgeView { DataContext = c.Tabs[4].Content }, culture));
+            cases.Add(new("OptimizationKnowledgeView.Personalization",
+                () => new OptimizationKnowledgeView { DataContext = c.Tabs[5].Content }, culture));
+            // Stage 11.4 — profile selector panel (recommended configuration engine).
+            cases.Add(new("ProfileView",
+                () =>
+                {
+                    var ctx = new RecommendationContextService(
+                        new RecommendationEngine(), new ProfileCatalog(), new AppState());
+                    return new ProfileView
+                    {
+                        DataContext = new ProfileViewModel(
+                            ctx, new FakeLoc(), () => Array.Empty<IRecommendationSubject>(), () => { }),
+                    };
+                }, culture));
             // Phase 10 Build page (Defect 2 audit): render BuildView with the
             // real BuildStepViewModel under both ADK-present and ADK-missing
             // states so the read-only binding audit catches any TwoWay/OneWayToSource
@@ -386,11 +451,25 @@ public class CustomizeBindingRegressionTests
 
     private static readonly HashSet<string> GetterOnlyProps = new(StringComparer.Ordinal)
     {
-        "SelectedTotal", "TotalSelected", "TotalApps", "TotalPackages",
+            "SelectedTotal", "TotalSelected", "TotalApps", "TotalPackages",
         "TotalRegistry", "TotalServices", "IsDiscovering", "HasInventory",
         "StatusMessage", "HasWarnings", "ProgressText", "ResultSummary",
         "IsMounted", "CanDiscover", "CanValidate", "CanApply",
         "ExecutionState", "ShowProtectedVisible", "Items", "Plan", "DiscoverCommand",
+        // Stage 11.3 OptimizationKnowledgeViewModel display-only getter-only properties.
+        "IsEmpty", "EmptyStateText", "FilterOptions", "ItemCount",
+        // Stage 11.4 ProfileViewModel display-only getter-only properties. NOTE:
+        // generic model tokens ("DisplayName", "Description", "Items", "HeaderKey")
+        // are intentionally NOT listed — they collide with settable model
+        // properties on other pages (e.g. Setting.Description) and would produce
+        // false positives in this audit.
+        "ActiveProfileCaption", "HasActiveProfiles", "CanToggleExtras", "HasExtraScenarios",
+        "HasUnsupported", "TrimCount", "ManualCount",
+        "KeepCount", "ConflictCount", "UnsupportedCount", "HasConflicts", "HasPreviewItems",
+        "SummaryAdoptLabel", "SummaryConfirmLabel", "SummaryKeepLabel", "SummaryConflictLabel",
+        "SummaryUnsupportedLabel", "RestoreVisible", "IsPreviewOpen", "Profiles", "ExtraScenarios",
+        "PreviewGroups", "ShowPreviewCommand", "ClosePreviewCommand", "RestoreCommand",
+        "Items",
         // Phase 10 BuildStepViewModel display-only getter-only properties (Defect 2 audit).
         "ProgressPercent", "CurrentStageText", "BuildModeText", "OutputPath",
         "OutputSizeText", "IsIndeterminate", "HasOutput", "AdkMissing",
@@ -413,6 +492,254 @@ public class CustomizeBindingRegressionTests
         return dir.FullName;
     }
 
+    /// <summary>
+    /// Stage 11.4 final layout (approved): two-panel profile area — PRIMARY on the
+    /// LEFT (~75%), EXTRA scenarios on the RIGHT (~25%) — side by side, all 7
+    /// primary radio cards + all 5 extra checkboxes visible at once, compact total
+    /// height, no horizontal scrollbar.
+    /// </summary>
+    [Fact]
+    public void ProfilePanel_TwoColumn_Layout_Is_Compact()
+    {
+        RunWpf(() =>
+        {
+            InstallAppResources(CultureInfo.GetCultureInfo("en"));
+
+            var ctx = new RecommendationContextService(new RecommendationEngine(), new ProfileCatalog(), new AppState());
+            var profileVm = new ProfileViewModel(ctx, new FakeLoc(), () => Array.Empty<IRecommendationSubject>(), () => { });
+            var profileView = new ProfileView { DataContext = profileVm };
+            profileView.Measure(new Size(1200, 700));
+            profileView.Arrange(new Rect(0, 0, 1200, 700));
+            profileView.UpdateLayout();
+
+            // Compact total footprint (two-panel + one summary row).
+            Console.WriteLine($"[layout] ProfileView total height = {profileView.DesiredSize.Height}px");
+            Assert.True(profileView.DesiredSize.Height <= 260,
+                $"ProfileView is {profileView.DesiredSize.Height}px tall — must stay compact.");
+
+            // 7 primary profiles as RADIO cards (mutually exclusive semantics).
+            var radios = FindVisuals<RadioButton>(profileView)
+                .Where(r => r.GroupName == "PrimaryProfile").ToList();
+            Assert.Equal(7, radios.Count);
+            radios[1].IsChecked = true;
+            Assert.True(radios[1].IsChecked == true);
+            Assert.False(radios[0].IsChecked == true);
+
+            // All 5 extra scenarios visible at once (independent checkboxes).
+            var checks = FindVisuals<CheckBox>(profileView).ToList();
+            Assert.Equal(5, checks.Count);
+
+            // Two columns side by side; primary column wider than extras column.
+            var twoCol = FindVisuals<Grid>(profileView)
+                .FirstOrDefault(g => g.ColumnDefinitions.Count == 2);
+            Assert.NotNull(twoCol);
+            Console.WriteLine($"[layout] primary col = {twoCol!.ColumnDefinitions[0].ActualWidth}px, extras col = {twoCol.ColumnDefinitions[1].ActualWidth}px");
+            Assert.True(twoCol.ColumnDefinitions[0].ActualWidth > twoCol.ColumnDefinitions[1].ActualWidth,
+                $"Primary col {twoCol.ColumnDefinitions[0].ActualWidth}px must exceed extras col {twoCol.ColumnDefinitions[1].ActualWidth}px.");
+            Assert.True(twoCol.ColumnDefinitions[1].ActualWidth >= 200,
+                $"Extras column {twoCol.ColumnDefinitions[1].ActualWidth}px too narrow.");
+
+            // No horizontal scrollbar inside the profile panel.
+            var scrolls = FindVisuals<ScrollViewer>(profileView)
+                .Where(sv => sv.HorizontalScrollBarVisibility != ScrollBarVisibility.Disabled).ToList();
+            Assert.True(scrolls.Count == 0,
+                "Profile panel must not introduce horizontal scrollbars.");
+        });
+    }
+
+    /// <summary>
+    /// Stage 11.4 Part A: title + subtitle + scan/selected share ONE compact
+    /// header block (target ~35-45% smaller than the previous layout).
+    /// </summary>
+    [Fact]
+    public void Customize_Header_Is_Compact()
+    {
+        RunWpf(() =>
+        {
+            InstallAppResources(CultureInfo.GetCultureInfo("en"));
+
+            var customize = BuildCustomizeWithProfiles();
+            var view = new CustomizeView { DataContext = customize };
+            view.Measure(new Size(1200, 700));
+            view.Arrange(new Rect(0, 0, 1200, 700));
+            view.UpdateLayout();
+
+            var root = Assert.IsType<Grid>(view.Content);
+            Assert.True(root.RowDefinitions.Count == 5, "Customize root must be a 5-row Grid (Auto header rows + star TabControl row).");
+            // Rows 0..2 = title + subtitle + scan/selected. Keep the whole block compact.
+            var headerHeight = root.RowDefinitions[0].ActualHeight
+                               + root.RowDefinitions[1].ActualHeight
+                               + root.RowDefinitions[2].ActualHeight;
+            Console.WriteLine($"[layout] header rows = {root.RowDefinitions[0].ActualHeight:F0}+{root.RowDefinitions[1].ActualHeight:F0}+{root.RowDefinitions[2].ActualHeight:F0} = {headerHeight:F0}px");
+            Assert.True(headerHeight <= 130,
+                $"Header block is {headerHeight}px tall — must be compact (Part A).");
+            // The TabControl row must be the star row (consumes remaining height).
+            var star = root.RowDefinitions[4];
+            Assert.True(star.Height == new GridLength(1, GridUnitType.Star),
+                "TabControl row must be star-sized so the list gets the majority of the page.");
+        });
+    }
+
+    /// <summary>
+    /// Stage 11.4 Part F: the TabControl/list gets star height and shows several
+    /// component rows at a normal 1200x700 viewport (acceptance: >= 6 rows).
+    /// </summary>
+    [Fact]
+    public void Customize_List_Shows_Multiple_Rows_At_Normal_Size()
+    {
+        RunWpf(() =>
+        {
+            InstallAppResources(CultureInfo.GetCultureInfo("en"));
+
+            var customize = BuildCustomizeWithRows();
+            customize.SelectedTab = customize.Tabs[0]; // render the Apps knowledge tab
+            var view = new CustomizeView { DataContext = customize };
+            view.Measure(new Size(1200, 700));
+            view.Arrange(new Rect(0, 0, 1200, 700));
+            view.UpdateLayout();
+
+            var tabs = FindVisuals<TabControl>(view).FirstOrDefault();
+            Assert.NotNull(tabs);
+            Assert.True(tabs.ActualHeight >= 250,
+                $"TabControl height {tabs.ActualHeight}px too small — the component list is squeezed.");
+
+            var list = FindVisuals<ListView>(view).FirstOrDefault();
+            Assert.NotNull(list);
+            Console.WriteLine($"[layout] TabControl = {tabs.ActualHeight:F0}px, ListView viewport = {list.ActualHeight:F0}px (~{list.ActualHeight / 38.0:F1} rows of 38px)");
+            // Knowledge row ~38px tall -> >= 6 rows needs >= ~230px of list viewport.
+            Assert.True(list.ActualHeight >= 225,
+                $"ListView height {list.ActualHeight}px — need >= ~225px for >= 6 visible rows.");
+            Assert.True(list.ActualHeight >= 225 / 38.0 * 6 * 0.99,
+                $"ListView {list.ActualHeight}px does not show ~6 rows (38px each).");
+        });
+    }
+
+    /// <summary>Profile-wired Customize graph with populated AppX rows (row-count test).</summary>
+    private static CustomizeStepViewModel BuildCustomizeWithRows()
+    {
+        var state = new AppState
+        {
+            CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C://wf//mount",
+            },
+        };
+        var logger = new InMemoryLoggerService();
+        var loc = new FakeLoc();
+        var ctx = new RecommendationContextService(new RecommendationEngine(), new ProfileCatalog(), state);
+        var ciService = new StaticCiService
+        {
+            Inventory = new ComponentInventory
+            {
+                Discovered = true,
+                Categories = new[]
+                {
+                    new CategoryDiscoveryResult
+                    {
+                        Category = ComponentCategory.AppX,
+                        Status = InventoryStatus.Success,
+                        Items = new[] { "Microsoft.XboxApp", "Microsoft.BingWeather", "Microsoft.BingNews",
+                                "Microsoft.BingSearch", "Microsoft.MicrosoftSolitaireCollection", "Microsoft.WindowsMaps",
+                                "Microsoft.YourPhone", "Microsoft.WindowsFeedbackHub", "Microsoft.GetHelp",
+                                "Microsoft.WindowsCalculator", "Microsoft.WindowsNotepad", "Microsoft.WindowsTerminal" }
+                            .Select(id => new RawAppxPackage
+                            {
+                                Category = ComponentCategory.AppX,
+                                RawIdentity = id,
+                                DisplayName = id,
+                            } as IRawInventoryItem)
+                            .ToList(),
+                    },
+                },
+            },
+        };
+        var ciVm = new ComponentIntelligenceViewModel(state, logger, ciService,
+            new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog()), loc);
+        var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc, null, ctx);
+        var componentsKnowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability }, ctx);
+        var catalog = new OptimizationCatalog();
+        var customize = new CustomizeStepViewModel(
+            new ComponentsViewModel(state, logger, new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider()),
+            knowledge,
+            componentsKnowledge,
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Services, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Privacy, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.System, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Personalization, ctx),
+            ctx,
+            loc);
+        knowledge.DiscoverAsync().GetAwaiter().GetResult();
+        return customize;
+    }
+
+    private sealed class StaticCiService : IComponentIntelligenceService
+    {
+        public ComponentInventory Inventory { get; set; } = new();
+
+        public Task<ComponentInventory> DiscoverAsync(
+            ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
+            => Task.FromResult(Inventory);
+    }
+
+    /// <summary>Profile-wired Customize graph (Stage 11.4 UX layout test).</summary>
+    private static CustomizeStepViewModel BuildCustomizeWithProfiles()
+    {
+        var state = new AppState
+        {
+            CurrentServicingWorkspace = new ImageServicingWorkspace
+            {
+                State = ServicingWorkspaceState.Mounted,
+                MountDirectory = @"C://wf//mount",
+            },
+        };
+        var logger = new InMemoryLoggerService();
+        var loc = new FakeLoc();
+        var ctx = new RecommendationContextService(new RecommendationEngine(), new ProfileCatalog(), state);
+        var ciVm = new ComponentIntelligenceViewModel(state, logger, new NoopCiService(),
+            new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog()), loc);
+        var knowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc, null, ctx);
+        var componentsKnowledge = new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability }, ctx);
+        var catalog = new OptimizationCatalog();
+        return new CustomizeStepViewModel(
+            new ComponentsViewModel(state, logger, new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider()),
+            knowledge,
+            componentsKnowledge,
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Services, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Privacy, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.System, ctx),
+            new OptimizationKnowledgeViewModel(state, logger, loc, catalog, OptimizationTab.Personalization, ctx),
+            ctx,
+            loc);
+    }
+
+    private sealed class NoopCiService : IComponentIntelligenceService
+    {
+        public Task<ComponentInventory> DiscoverAsync(
+            ImageServicingWorkspace workspace, CancellationToken cancellationToken = default)
+            => Task.FromResult(new ComponentInventory());
+    }
+
+    private static List<T> FindVisuals<T>(DependencyObject root) where T : DependencyObject
+    {
+        var found = new List<T>();
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T match)
+            {
+                found.Add(match);
+            }
+
+            found.AddRange(FindVisuals<T>(child));
+        }
+
+        return found;
+    }
+
     [Fact]
     public void All_DisplayOnly_GetterOnly_Bindings_Use_ModeOneWay()
     {
@@ -421,7 +748,8 @@ public class CustomizeBindingRegressionTests
         {
             "CustomizeView.xaml", "ComponentsView.xaml", "PrivacyView.xaml",
             "SystemView.xaml", "PlanReviewView.xaml", "ComponentListTabView.xaml",
-            "ComingSoonView.xaml", "BuildView.xaml"
+            "ComingSoonView.xaml", "BuildView.xaml", "OptimizationKnowledgeView.xaml",
+            "ProfileView.xaml"
         };
 
         // Matches {Binding <body>} capturing the body (path + optional Mode/Converter).

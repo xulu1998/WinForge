@@ -24,8 +24,9 @@ namespace WinForge.Core.Services;
     Plan,
     Build,
     Logs,
-    Settings,
-    About
+        Settings,
+        About,
+        ComponentIntelligence
 }
 
 /// <summary>

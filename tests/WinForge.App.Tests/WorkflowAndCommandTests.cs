@@ -57,10 +57,7 @@ public class WorkflowAndCommandTests
             new FakeWorkspaceFactory(), new FakeWimService(),
             new FakeImageServicingService());
         var components = new ComponentsViewModel(state, logger, new FakeCustomizationDiscoveryService(), new FakeCustomizationDefinitionProvider());
-        var privacy = new PrivacyViewModel(state, logger, new FakeCustomizationDefinitionProvider());
-        var system = new SystemViewModel(state, logger, new FakeCustomizationDefinitionProvider());
-        var comingSoon = new ComingSoonViewModel();
-        var customize = new CustomizeStepViewModel(components, privacy, system, comingSoon);
+        var customize = ComponentKnowledgeTestFactory.MakeCustomize(state, logger);
         var plan = new PlanReviewViewModel(state, logger, new FakeCustomizationExecutionService());
         var build = new BuildStepViewModel(
             state, new FakeBuildService(), new FakeFileSystem(), new FakeFilePicker(),

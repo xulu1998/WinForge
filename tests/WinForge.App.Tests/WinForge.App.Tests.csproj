@@ -7,6 +7,14 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+
+    <!-- WPF/XAML regression tests must execute synchronously on a dedicated STA
+         thread (RunSta). When a test also needs an async discovery pass, the only
+         safe way to block is .GetAwaiter().GetResult() inside that STA action.
+         xUnit1031 (avoid blocking task calls in tests) is therefore suppressed for
+         this project: the alternative (a real async test on xUnit's MTA thread)
+         cannot host WPF's Application/Dispatcher. -->
+    <NoWarn>$(NoWarn);xUnit1031</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

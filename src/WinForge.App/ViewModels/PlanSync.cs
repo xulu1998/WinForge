@@ -14,6 +14,13 @@ namespace WinForge.App.ViewModels;
 public static class PlanSync
 {
     /// <summary>
+    /// Raised after every plan mutation (add / select / remove). Lets aggregate
+    /// surfaces (e.g. the Customize header "已选 N 项") refresh from the shared
+    /// plan regardless of which page or profile pass changed a selection.
+    /// </summary>
+    public static event System.EventHandler? PlanChanged;
+
+    /// <summary>
     /// Returns a draft plan, creating a fresh one when none exists or the existing
     /// plan has already started / finished (so further editing always works
     /// against a mutable Draft).
@@ -84,5 +91,7 @@ public static class PlanSync
         {
             plan.RemoveOperation(operationId);
         }
+
+        PlanChanged?.Invoke(null, System.EventArgs.Empty);
     }
 }

@@ -1,0 +1,321 @@
+<UserControl x:Class="WinForge.App.Views.ComponentIntelligenceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+             xmlns:conv="clr-namespace:WinForge.App.Converters"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:ComponentIntelligenceViewModel}">
+    <DockPanel>
+        <!-- Header + controls -->
+        <StackPanel DockPanel.Dock="Top" Margin="24,20,24,0">
+            <TextBlock FontSize="24" FontWeight="Bold" Foreground="#1F2933">
+                <TextBlock.Text>
+                    <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                        <Binding Source="ComponentIntelligence.Title"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="900">
+                <TextBlock.Text>
+                    <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                        <Binding Source="ComponentIntelligence.Intro"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+
+            <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                <Button Style="{StaticResource PrimaryButton}" Command="{Binding DiscoverCommand, Mode=OneWay}">
+                    <TextBlock>
+                        <TextBlock.Text>
+                            <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                <Binding Source="ComponentIntelligence.Discover"/><Binding Source="{StaticResource Loc}"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </Button>
+                <TextBlock Foreground="#3B82F6" VerticalAlignment="Center" Margin="12,0,0,0"
+                           Visibility="{Binding IsDiscovering, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <TextBlock.Text>
+                        <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                            <Binding Source="ComponentIntelligence.Discovering"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <CheckBox IsChecked="{Binding StandardMode, Mode=TwoWay}" VerticalAlignment="Center" Margin="20,0,0,0"
+                          ToolTip="Standard (curated) hides raw discovered objects.">
+                    <TextBlock>
+                        <TextBlock.Text>
+                            <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                <Binding Source="ComponentIntelligence.StandardMode"/><Binding Source="{StaticResource Loc}"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </CheckBox>
+            </StackPanel>
+
+            <TextBlock Text="{Binding StatusMessage, Mode=OneWay}" FontSize="12" Foreground="#52606D" Margin="0,8,0,0" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding Counts, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,4,0,0"
+                       Visibility="{Binding HasInventory, Mode=OneWay, Converter={StaticResource BoolToVis}}"/>
+        </StackPanel>
+
+        <!-- List + detail -->
+        <Grid Margin="24,12,24,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ListView Grid.Column="0" ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
+                      BorderBrush="#CBD2D9" BorderThickness="1">
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:ComponentListItem}">
+                        <StackPanel Margin="6">
+                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <TextBlock Text="{Binding Recommendation}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{Binding RecommendationLevel, Converter={StaticResource recColor}}"/>
+                                <TextBlock Text=" · " FontSize="11" Foreground="#9AA5B1"/>
+                                <TextBlock Text="{Binding Risk}" FontSize="11" Foreground="{Binding RiskLevel, Converter={StaticResource riskColor}}"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ClassificationCaption}" FontSize="10" Foreground="#7B8794"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <ContentControl Grid.Column="1" Margin="16,0,0,0" Content="{Binding SelectedEntry}">
+                <ContentControl.ContentTemplate>
+                    <DataTemplate DataType="{x:Type vm:ComponentListItem}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel MaxWidth="640">
+                                <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="Bold" Foreground="#1F2933" TextWrapping="Wrap"/>
+                                <TextBlock Margin="0,4,0,0" FontSize="12" Foreground="#7B8794" TextWrapping="Wrap">
+                                    <Run>
+                                        <Run.Text>
+                                            <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                <Binding Source="Component.Present"/><Binding Source="{StaticResource Loc}"/>
+                                            </MultiBinding>
+                                        </Run.Text>
+                                    </Run>
+                                    <Run Text=": "/>
+                                    <Run Text="{Binding PresentText, Mode=OneWay}"/>
+                                </TextBlock>
+
+                                <!-- What is this -->
+                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,14,0,4">
+                                    <TextBlock.Text>
+                                        <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                            <Binding Source="Component.WhatIsThis"/><Binding Source="{StaticResource Loc}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock Text="{Binding ShortDescription}" FontSize="13" Foreground="#1F2933" TextWrapping="Wrap"/>
+
+                                <!-- Recommendation + Risk -->
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <StackPanel Margin="0,0,24,0">
+                                        <TextBlock FontSize="11" Foreground="#7B8794">
+                                            <TextBlock.Text>
+                                                <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                    <Binding Source="Component.Recommendation"/><Binding Source="{StaticResource Loc}"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Recommendation}" FontSize="14" FontWeight="SemiBold"
+                                                   Foreground="{Binding RecommendationLevel, Converter={StaticResource recColor}}"/>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock FontSize="11" Foreground="#7B8794">
+                                            <TextBlock.Text>
+                                                <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                    <Binding Source="Component.Risk"/><Binding Source="{StaticResource Loc}"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Risk}" FontSize="14" FontWeight="SemiBold"
+                                                   Foreground="{Binding RiskLevel, Converter={StaticResource riskColor}}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Scenarios -->
+                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,14,0,4">
+                                    <TextBlock.Text>
+                                        <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                            <Binding Source="Component.Scenarios"/><Binding Source="{StaticResource Loc}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <ItemsControl ItemsSource="{Binding Scenarios}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate><TextBlock Text="{Binding Path=.}" FontSize="13" Margin="0,2,0,0" TextWrapping="Wrap"/></DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- KeepIf / RemoveIf / Impact -->
+                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#2F855A" Margin="0,14,0,4">
+                                    <TextBlock.Text>
+                                        <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                            <Binding Source="Component.KeepIf"/><Binding Source="{StaticResource Loc}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <ItemsControl ItemsSource="{Binding KeepIf}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate><TextBlock Text="{Binding Path=.}" FontSize="13" Margin="0,2,0,0" TextWrapping="Wrap" Foreground="#1F2933"/></DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#B7790E" Margin="0,14,0,4">
+                                    <TextBlock.Text>
+                                        <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                            <Binding Source="Component.RemoveIf"/><Binding Source="{StaticResource Loc}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <ItemsControl ItemsSource="{Binding RemoveIf}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate><TextBlock Text="{Binding Path=.}" FontSize="13" Margin="0,2,0,0" TextWrapping="Wrap" Foreground="#1F2933"/></DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#9B1C1C" Margin="0,14,0,4">
+                                    <TextBlock.Text>
+                                        <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                            <Binding Source="Component.Impact"/><Binding Source="{StaticResource Loc}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <ItemsControl ItemsSource="{Binding KnownImpact}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate><TextBlock Text="{Binding Path=.}" FontSize="13" Margin="0,2,0,0" TextWrapping="Wrap" Foreground="#1F2933"/></DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Restoration + Savings + Dependencies -->
+                                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                    <StackPanel Margin="0,0,24,0">
+                                        <TextBlock FontSize="11" Foreground="#7B8794">
+                                            <TextBlock.Text>
+                                                <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                    <Binding Source="Component.Restoration"/><Binding Source="{StaticResource Loc}"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Restoration}" FontSize="13" Foreground="#1F2933" TextWrapping="Wrap" MaxWidth="280"/>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock FontSize="11" Foreground="#7B8794">
+                                            <TextBlock.Text>
+                                                <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                    <Binding Source="Component.Savings"/><Binding Source="{StaticResource Loc}"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding SavingsText}" FontSize="13" Foreground="#1F2933" TextWrapping="Wrap" MaxWidth="280"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,14,0,4">
+                                    <TextBlock.Text>
+                                        <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                            <Binding Source="Component.Dependencies"/><Binding Source="{StaticResource Loc}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <ItemsControl ItemsSource="{Binding Dependencies}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate><TextBlock Text="{Binding Path=.}" FontSize="13" Margin="0,2,0,0" TextWrapping="Wrap" Foreground="#1F2933"/></DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Technical details (collapsed) -->
+                                <Expander Margin="0,16,0,0">
+                                    <Expander.HeaderTemplate>
+                                        <DataTemplate>
+                                            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#52606D">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                        <Binding Source="Component.TechnicalDetails"/><Binding Source="{StaticResource Loc}"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </Expander.HeaderTemplate>
+                                    <StackPanel Margin="4,6,4,4">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" FontSize="12" Foreground="#7B8794">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                        <Binding Source="Component.RawCategory"/><Binding Source="{StaticResource Loc}"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="1" FontSize="12" Foreground="#1F2933" TextWrapping="Wrap" Text="{Binding RawCategory}"/>
+                                        </Grid>
+                                        <Grid Margin="0,4,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" FontSize="12" Foreground="#7B8794">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                        <Binding Source="Component.RawIdentity"/><Binding Source="{StaticResource Loc}"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="1" FontSize="12" Foreground="#1F2933" TextWrapping="Wrap" Text="{Binding RawIdentity}"/>
+                                        </Grid>
+                                        <Grid Margin="0,4,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" FontSize="12" Foreground="#7B8794">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                        <Binding Source="Component.RawState"/><Binding Source="{StaticResource Loc}"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="1" FontSize="12" Foreground="#1F2933" TextWrapping="Wrap" Text="{Binding RawState}"/>
+                                        </Grid>
+                                        <Grid Margin="0,4,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" FontSize="12" Foreground="#7B8794">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                        <Binding Source="Component.RawVersion"/><Binding Source="{StaticResource Loc}"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="1" FontSize="12" Foreground="#1F2933" TextWrapping="Wrap" Text="{Binding RawVersion}"/>
+                                        </Grid>
+                                        <Grid Margin="0,4,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" FontSize="12" Foreground="#7B8794">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Mode="OneWay" Converter="{StaticResource locKey}">
+                                                        <Binding Source="Component.MatchRule"/><Binding Source="{StaticResource Loc}"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="1" FontSize="12" Foreground="#1F2933" TextWrapping="Wrap" Text="{Binding MatchRuleText}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DataTemplate>
+                </ContentControl.ContentTemplate>
+            </ContentControl>
+        </Grid>
+    </DockPanel>
+</UserControl>

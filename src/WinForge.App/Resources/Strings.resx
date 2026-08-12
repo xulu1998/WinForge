@@ -162,6 +162,7 @@
   <data name="Customize.Discovering" xml:space="preserve"><value>Discovering components from the mounted image…</value></data>
   <data name="Customize.NeedsMount" xml:space="preserve"><value>Discovery requires a mounted working image.</value></data>
   <data name="Customize.Selected" xml:space="preserve"><value>Selected</value></data>
+  <data name="Customize.SelectedItems" xml:space="preserve"><value>items</value></data>
   <data name="Customize.Tab.Apps" xml:space="preserve"><value>Apps</value></data>
   <data name="Customize.Tab.Components" xml:space="preserve"><value>Windows components</value></data>
   <data name="Customize.Tab.Services" xml:space="preserve"><value>Services</value></data>
@@ -321,4 +322,628 @@
   <data name="Servicing.Msg.PrepareFailedUnexpected" xml:space="preserve"><value>Preparation failed unexpectedly.</value></data>
   <data name="Servicing.Msg.MountFailedUnexpected" xml:space="preserve"><value>Mount failed unexpectedly.</value></data>
   <data name="Servicing.Msg.UnmountFailedUnexpected" xml:space="preserve"><value>Unmount failed unexpectedly.</value></data>
+
+
+
+<!-- WINFORGE_CATALOG_BLOCK_START -->
+  <data name="Nav.ComponentIntelligence" xml:space="preserve"><value>Component Inspector</value></data>
+  <data name="ComponentIntelligence.Title" xml:space="preserve"><value>Component Inspector</value></data>
+  <data name="ComponentIntelligence.Intro" xml:space="preserve"><value>Understand what each Windows component does, whether you need it, and what happens if you remove it. Read-only analysis prototype.</value></data>
+  <data name="ComponentIntelligence.Discover" xml:space="preserve"><value>Discover from mounted image</value></data>
+  <data name="ComponentIntelligence.Discovering" xml:space="preserve"><value>Discovering…</value></data>
+  <data name="ComponentIntelligence.StandardMode" xml:space="preserve"><value>Standard (curated only)</value></data>
+  <data name="ComponentIntelligence.AdvancedMode" xml:space="preserve"><value>Advanced (all discovered)</value></data>
+  <data name="ComponentIntelligence.NoImage" xml:space="preserve"><value>Mount a working image to inventory real components. Showing the curated catalog only.</value></data>
+  <data name="ComponentIntelligence.StatusEmpty" xml:space="preserve"><value>No components discovered.</value></data>
+  <data name="ComponentIntelligence.Summary" xml:space="preserve"><value>Discovered {0} AppX, {1} capabilities, {2} optional features, {3} packages.</value></data>
+  <data name="ComponentIntelligence.Counts" xml:space="preserve"><value>Curated: {0} · Unclassified: {1} · Protected: {2} · Unsupported: {3}</value></data>
+  <data name="Recommendation.RecommendedRemove" xml:space="preserve"><value>Recommended trim</value></data>
+  <data name="Recommendation.OptionalRemove" xml:space="preserve"><value>Trim if wanted</value></data>
+  <data name="Recommendation.UsuallyKeep" xml:space="preserve"><value>Recommended keep</value></data>
+  <data name="Recommendation.AdvancedOnly" xml:space="preserve"><value>Advanced only</value></data>
+  <data name="Recommendation.NeverRemove" xml:space="preserve"><value>Do not remove</value></data>
+  <data name="Recommendation.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Risk.Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Risk.Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="Risk.High" xml:space="preserve"><value>High</value></data>
+  <data name="Risk.Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="Risk.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Removal.Supported" xml:space="preserve"><value>Supported</value></data>
+  <data name="Removal.Conditional" xml:space="preserve"><value>Conditional</value></data>
+  <data name="Removal.Experimental" xml:space="preserve"><value>Experimental</value></data>
+  <data name="Removal.Blocked" xml:space="preserve"><value>Blocked</value></data>
+  <data name="Removal.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Restore.Easy" xml:space="preserve"><value>Easy (reinstall / re-enable)</value></data>
+  <data name="Restore.RequiresSource" xml:space="preserve"><value>Requires Windows install source</value></data>
+  <data name="Restore.RequiresWindowsUpdate" xml:space="preserve"><value>Requires Windows Update</value></data>
+  <data name="Restore.ReinstallWindows" xml:space="preserve"><value>Requires reinstalling Windows</value></data>
+  <data name="Restore.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Classification.Curated" xml:space="preserve"><value>Curated</value></data>
+  <data name="Classification.DiscoveredUnclassified" xml:space="preserve"><value>Unclassified</value></data>
+  <data name="Classification.Protected" xml:space="preserve"><value>Protected</value></data>
+  <data name="Classification.Unsupported" xml:space="preserve"><value>Unsupported</value></data>
+  <data name="Category.AppX" xml:space="preserve"><value>Provisioned AppX</value></data>
+  <data name="Category.Capability" xml:space="preserve"><value>Capability</value></data>
+  <data name="Category.OptionalFeature" xml:space="preserve"><value>Optional Feature</value></data>
+  <data name="Category.CbsPackage" xml:space="preserve"><value>Windows Package</value></data>
+  <data name="Category.Service" xml:space="preserve"><value>Service</value></data>
+  <data name="Category.ScheduledTask" xml:space="preserve"><value>Scheduled Task</value></data>
+  <data name="Category.Driver" xml:space="preserve"><value>Driver</value></data>
+  <data name="Category.Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Category.WinRecovery" xml:space="preserve"><value>Windows Recovery</value></data>
+  <data name="Category.SystemApp" xml:space="preserve"><value>System App</value></data>
+  <data name="Category.Protected" xml:space="preserve"><value>Protected</value></data>
+  <data name="Category.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Classification.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Component.WhatIsThis" xml:space="preserve"><value>What is this?</value></data>
+  <data name="Component.ShortDescription" xml:space="preserve"><value>Description</value></data>
+  <data name="Component.Recommendation" xml:space="preserve"><value>Recommendation</value></data>
+  <data name="Component.Risk" xml:space="preserve"><value>Risk if removed</value></data>
+  <data name="Component.Scenarios" xml:space="preserve"><value>Relevant if you…</value></data>
+  <data name="Component.KeepIf" xml:space="preserve"><value>Keep it if</value></data>
+  <data name="Component.RemoveIf" xml:space="preserve"><value>You can remove it if</value></data>
+  <data name="Component.Impact" xml:space="preserve"><value>What stops working</value></data>
+  <data name="Component.Restoration" xml:space="preserve"><value>Restoration</value></data>
+  <data name="Component.Savings" xml:space="preserve"><value>Space saved</value></data>
+  <data name="Component.TechnicalDetails" xml:space="preserve"><value>Technical details</value></data>
+  <data name="Component.RawCategory" xml:space="preserve"><value>Raw category</value></data>
+  <data name="Component.RawIdentity" xml:space="preserve"><value>Windows identity</value></data>
+  <data name="Component.RawState" xml:space="preserve"><value>State</value></data>
+  <data name="Component.RawVersion" xml:space="preserve"><value>Version</value></data>
+  <data name="Component.MatchRule" xml:space="preserve"><value>Matching rule</value></data>
+  <data name="Component.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Component.NotInventoried" xml:space="preserve"><value>Not yet inventoried</value></data>
+  <data name="Component.Present" xml:space="preserve"><value>Present in image</value></data>
+  <data name="Component.ListHeader" xml:space="preserve"><value>Components</value></data>
+  <data name="Component.Why" xml:space="preserve"><value>Why?</value></data>
+  <data name="Component.Evidence" xml:space="preserve"><value>Evidence</value></data>
+  <data name="Component.Blocked" xml:space="preserve"><value>Cannot be removed</value></data>
+  <data name="Component.NotConfirmed" xml:space="preserve"><value>WinForge has not confirmed this</value></data>
+  <data name="KnowledgeSource.MicrosoftOfficial" xml:space="preserve"><value>Microsoft official</value></data>
+  <data name="KnowledgeSource.WindowsImageDiscovery" xml:space="preserve"><value>Current Windows image</value></data>
+  <data name="KnowledgeSource.CommunityProject" xml:space="preserve"><value>Community reference</value></data>
+  <data name="KnowledgeSource.WinForgeCurated" xml:space="preserve"><value>WinForge reviewed</value></data>
+  <data name="KnowledgeSource.EmpiricalValidation" xml:space="preserve"><value>Empirical validation</value></data>
+  <data name="KnowledgeSource.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Confidence.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Confidence.Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Confidence.Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="Confidence.High" xml:space="preserve"><value>High</value></data>
+  <data name="Confidence.Verified" xml:space="preserve"><value>Verified</value></data>
+  <data name="Knowledge.Filter.All" xml:space="preserve"><value>All</value></data>
+  <data name="Knowledge.Filter.RecommendedRemove" xml:space="preserve"><value>Recommended remove</value></data>
+  <data name="Knowledge.Filter.OptionalRemove" xml:space="preserve"><value>Trim if wanted</value></data>
+  <data name="Knowledge.Filter.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
+  <data name="Knowledge.Filter.AdvancedOnly" xml:space="preserve"><value>Advanced only</value></data>
+  <data name="Knowledge.Filter.NeverRemove" xml:space="preserve"><value>Do not remove</value></data>
+  <data name="Knowledge.Detail" xml:space="preserve"><value>Details</value></data>
+  <data name="Knowledge.WhyRecommended" xml:space="preserve"><value>Why is this recommended?</value></data>
+  <data name="Knowledge.SortNote" xml:space="preserve"><value>Sorted by recommendation, then risk.</value></data>
+  <data name="Knowledge.PresentInImage" xml:space="preserve"><value>Present in this image</value></data>
+  <data name="Knowledge.CatalogOnly" xml:space="preserve"><value>Catalog entry (not detected in this image)</value></data>
+  <data name="Knowledge.EmptyAwaitDiscovery" xml:space="preserve"><value>Discover the components in this image first.</value></data>
+  <data name="Knowledge.EmptyNoCurated" xml:space="preserve"><value>No reviewed components to show in this image yet.</value></data>
+  <data name="ComponentIntelligence.StatusCancelled" xml:space="preserve"><value>Discovery was cancelled.</value></data>
+  <data name="Dependency.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Dependency.Requires" xml:space="preserve"><value>Requires</value></data>
+  <data name="Dependency.RequiredBy" xml:space="preserve"><value>Required by</value></data>
+  <data name="Dependency.RelatedTo" xml:space="preserve"><value>Related to</value></data>
+  <data name="Dependency.ConflictsWith" xml:space="preserve"><value>Conflicts with</value></data>
+  <data name="Dependency.RecommendsKeeping" xml:space="preserve"><value>Recommends keeping</value></data>
+  <data name="Savings.None" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Savings.Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Savings.Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="Savings.High" xml:space="preserve"><value>High</value></data>
+  <data name="ComponentScenario.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="ComponentScenario.Gaming" xml:space="preserve"><value>Gaming</value></data>
+  <data name="ComponentScenario.Office" xml:space="preserve"><value>Office</value></data>
+  <data name="ComponentScenario.Developer" xml:space="preserve"><value>Developer</value></data>
+  <data name="ComponentScenario.Laptop" xml:space="preserve"><value>Laptop</value></data>
+  <data name="ComponentScenario.TouchPen" xml:space="preserve"><value>Touch / Pen</value></data>
+  <data name="ComponentScenario.PrintingScanning" xml:space="preserve"><value>Printing &amp; Scanning</value></data>
+  <data name="ComponentScenario.Wsl" xml:space="preserve"><value>WSL</value></data>
+  <data name="ComponentScenario.Docker" xml:space="preserve"><value>Docker</value></data>
+  <data name="ComponentScenario.HyperV" xml:space="preserve"><value>Hyper-V</value></data>
+  <data name="ComponentScenario.WindowsSandbox" xml:space="preserve"><value>Windows Sandbox</value></data>
+  <data name="ComponentScenario.XboxGamePass" xml:space="preserve"><value>Xbox Game Pass</value></data>
+  <data name="ComponentScenario.MixedReality" xml:space="preserve"><value>Mixed Reality</value></data>
+  <data name="ComponentScenario.Accessibility" xml:space="preserve"><value>Accessibility</value></data>
+  <data name="ComponentScenario.EnterpriseDomain" xml:space="preserve"><value>Enterprise / Domain</value></data>
+  <data name="ComponentScenario.RemoteDesktop" xml:space="preserve"><value>Remote Desktop</value></data>
+  <data name="ComponentScenario.Bluetooth" xml:space="preserve"><value>Bluetooth</value></data>
+  <data name="ComponentScenario.WiFi" xml:space="preserve"><value>Wi-Fi</value></data>
+  <data name="ComponentScenario.Biometrics" xml:space="preserve"><value>Biometrics</value></data>
+  <data name="ComponentScenario.WindowsHello" xml:space="preserve"><value>Windows Hello</value></data>
+  <data name="Comp.Weather.DisplayName" xml:space="preserve"><value>Microsoft Weather</value></data>
+  <data name="Comp.Weather.Short" xml:space="preserve"><value>Microsoft's weather application, provisioned for new users.</value></data>
+  <data name="Comp.Weather.Long" xml:space="preserve"><value>The built-in Weather app. Its removal only affects the app itself; it does not disable Windows networking or any weather APIs used by the OS.</value></data>
+  <data name="Comp.Weather.KeepIf" xml:space="preserve"><value>You actively use the Microsoft Weather app.</value></data>
+  <data name="Comp.Weather.RemoveIf" xml:space="preserve"><value>You never check weather in the built-in app and use a website or another app.</value></data>
+  <data name="Comp.Weather.Impact" xml:space="preserve"><value>The Weather app is unavailable for newly created users. No core Windows feature is removed.</value></data>
+  <data name="Comp.Clipchamp.DisplayName" xml:space="preserve"><value>Clipchamp</value></data>
+  <data name="Comp.Clipchamp.Short" xml:space="preserve"><value>Microsoft's video editor, provisioned for new users.</value></data>
+  <data name="Comp.Clipchamp.Long" xml:space="preserve"><value>A consumer video-editing and capture tool. Removal only affects the app; it is reinstallable from the Microsoft Store.</value></data>
+  <data name="Comp.Clipchamp.KeepIf" xml:space="preserve"><value>You edit or record video with Clipchamp.</value></data>
+  <data name="Comp.Clipchamp.RemoveIf" xml:space="preserve"><value>You never use Clipchamp and prefer another editor.</value></data>
+  <data name="Comp.Clipchamp.Impact" xml:space="preserve"><value>Clipchamp is unavailable for new users. No system video capability is removed.</value></data>
+  <data name="Comp.GetHelp.DisplayName" xml:space="preserve"><value>Get Help</value></data>
+  <data name="Comp.GetHelp.Short" xml:space="preserve"><value>Microsoft's help viewer / contact-support app.</value></data>
+  <data name="Comp.GetHelp.Long" xml:space="preserve"><value>Launches help articles and can open a support contact flow. Removing it does not disable Windows troubleshooting or Settings search.</value></data>
+  <data name="Comp.GetHelp.KeepIf" xml:space="preserve"><value>You use the built-in Help app to reach Microsoft support.</value></data>
+  <data name="Comp.GetHelp.RemoveIf" xml:space="preserve"><value>You never use the Help app and search the web instead.</value></data>
+  <data name="Comp.GetHelp.Impact" xml:space="preserve"><value>The Get Help app is unavailable. Windows Settings and troubleshooting remain.</value></data>
+  <data name="Comp.XboxApp.DisplayName" xml:space="preserve"><value>Xbox / Gaming</value></data>
+  <data name="Comp.XboxApp.Short" xml:space="preserve"><value>Xbox app plus gaming overlays, providers and services.</value></data>
+  <data name="Comp.XboxApp.Long" xml:space="preserve"><value>The Xbox app, game overlay and identity provider, plus the Gaming Services runtime used by Xbox Game Pass and PC games. Several raw Xbox identities collapse into this one logical component. Removal is safe for users who do not game on Xbox.</value></data>
+  <data name="Comp.XboxApp.KeepIf" xml:space="preserve"><value>You use Xbox Game Pass or play Xbox titles on this PC.</value></data>
+  <data name="Comp.XboxApp.RemoveIf" xml:space="preserve"><value>You do not use Xbox apps or PC gaming.</value></data>
+  <data name="Comp.XboxApp.Impact" xml:space="preserve"><value>Xbox app, game overlay, Xbox sign-in provider and Gaming Services are removed. Non-gaming apps are unaffected.</value></data>
+  <data name="Comp.XboxApp.Prov0" xml:space="preserve"><value>Xbox / Gaming bundles the Xbox app, game overlay, identity provider and Gaming Services runtime.</value></data>
+  <data name="Comp.XboxApp.Prov1" xml:space="preserve"><value>Optional to remove for users who do not use Xbox / PC gaming.</value></data>
+  <data name="Comp.XboxApp.Scen.Gaming" xml:space="preserve"><value>Kept because you selected a Gaming profile; Xbox Game Pass and PC gaming depend on it.</value></data>
+  <data name="Comp.Photos.DisplayName" xml:space="preserve"><value>Photos</value></data>
+  <data name="Comp.Photos.Short" xml:space="preserve"><value>Microsoft's default photo viewer/editor.</value></data>
+  <data name="Comp.Photos.Long" xml:space="preserve"><value>The default Photos app. Many users rely on it as the shell image viewer; removing it leaves the OS without a built-in photo viewer (files still open via other apps).</value></data>
+  <data name="Comp.Photos.KeepIf" xml:space="preserve"><value>You use Photos as your default image viewer.</value></data>
+  <data name="Comp.Photos.RemoveIf" xml:space="preserve"><value>You use a different photo app and never the built-in one.</value></data>
+  <data name="Comp.Photos.Impact" xml:space="preserve"><value>The built-in Photos viewer is removed. Image files remain on disk and open via other apps.</value></data>
+  <data name="Comp.FeedbackHub.DisplayName" xml:space="preserve"><value>Feedback Hub</value></data>
+  <data name="Comp.FeedbackHub.Short" xml:space="preserve"><value>Microsoft's Windows feedback app.</value></data>
+  <data name="Comp.FeedbackHub.Long" xml:space="preserve"><value>Used to send feedback to Microsoft. Not required by any Windows feature.</value></data>
+  <data name="Comp.FeedbackHub.KeepIf" xml:space="preserve"><value>You submit feedback to Microsoft through the app.</value></data>
+  <data name="Comp.FeedbackHub.RemoveIf" xml:space="preserve"><value>You never use the Feedback Hub.</value></data>
+  <data name="Comp.FeedbackHub.Impact" xml:space="preserve"><value>The Feedback Hub is unavailable. No Windows function depends on it.</value></data>
+  <data name="Comp.Maps.DisplayName" xml:space="preserve"><value>Maps</value></data>
+  <data name="Comp.Maps.Short" xml:space="preserve"><value>Microsoft's Maps application.</value></data>
+  <data name="Comp.Maps.Long" xml:space="preserve"><value>The built-in Maps app. Offline maps and location APIs used by other apps are separate Windows features and are NOT removed with this app.</value></data>
+  <data name="Comp.Maps.KeepIf" xml:space="preserve"><value>You use the built-in Maps app for navigation.</value></data>
+  <data name="Comp.Maps.RemoveIf" xml:space="preserve"><value>You use a web map or another maps app.</value></data>
+  <data name="Comp.Maps.Impact" xml:space="preserve"><value>The Maps app is removed. Location services and other apps' maps still work.</value></data>
+  <data name="Comp.PhoneLink.DisplayName" xml:space="preserve"><value>Phone Link</value></data>
+  <data name="Comp.PhoneLink.Short" xml:space="preserve"><value>Microsoft's app that links your phone to your PC.</value></data>
+  <data name="Comp.PhoneLink.Long" xml:space="preserve"><value>Phone Link (Your Phone) mirrors notifications, photos and calls from an Android phone. Removing it only affects that integration.</value></data>
+  <data name="Comp.PhoneLink.KeepIf" xml:space="preserve"><value>You use Phone Link to connect an Android phone.</value></data>
+  <data name="Comp.PhoneLink.RemoveIf" xml:space="preserve"><value>You do not link a phone to this PC.</value></data>
+  <data name="Comp.PhoneLink.Impact" xml:space="preserve"><value>Phone Link integration is removed. Your phone and PC otherwise work normally.</value></data>
+  <data name="Comp.Solitaire.DisplayName" xml:space="preserve"><value>Solitaire Collection</value></data>
+  <data name="Comp.Solitaire.Short" xml:space="preserve"><value>Microsoft's Solitaire / Casual Games app.</value></data>
+  <data name="Comp.Solitaire.Long" xml:space="preserve"><value>A casual games bundle. Purely optional entertainment; no system dependency.</value></data>
+  <data name="Comp.Solitaire.KeepIf" xml:space="preserve"><value>You play the built-in Solitaire or casual games.</value></data>
+  <data name="Comp.Solitaire.RemoveIf" xml:space="preserve"><value>You never play the bundled games.</value></data>
+  <data name="Comp.Solitaire.Impact" xml:space="preserve"><value>The Solitaire Collection is removed. No Windows function depends on it.</value></data>
+  <data name="Comp.Teams.DisplayName" xml:space="preserve"><value>Microsoft Teams</value></data>
+  <data name="Comp.Teams.Short" xml:space="preserve"><value>Microsoft's consumer/work chat and meetings app.</value></data>
+  <data name="Comp.Teams.Long" xml:space="preserve"><value>Teams for personal and work communication. Files shared in Teams are stored in OneDrive; the two are associated (see the dependency note) but Teams works without OneDrive.</value></data>
+  <data name="Comp.Teams.KeepIf" xml:space="preserve"><value>You use Teams for chat, calls or meetings.</value></data>
+  <data name="Comp.Teams.RemoveIf" xml:space="preserve"><value>You do not use Teams on this PC.</value></data>
+  <data name="Comp.Teams.Impact" xml:space="preserve"><value>The Teams app is removed. Web Teams still works in a browser.</value></data>
+  <data name="Comp.OneDrive.DisplayName" xml:space="preserve"><value>OneDrive</value></data>
+  <data name="Comp.OneDrive.Short" xml:space="preserve"><value>Microsoft's file-sync client.</value></data>
+  <data name="Comp.OneDrive.Long" xml:space="preserve"><value>OneDrive syncs your files to the cloud and is deeply integrated with Office and the shell. Removal is possible but can affect file sync and Teams/Office storage; treat as Conditional and verify before removing.</value></data>
+  <data name="Comp.OneDrive.KeepIf" xml:space="preserve"><value>You rely on OneDrive to sync or back up your files.</value></data>
+  <data name="Comp.OneDrive.RemoveIf" xml:space="preserve"><value>You do not use cloud file sync and keep files local only.</value></data>
+  <data name="Comp.OneDrive.Impact" xml:space="preserve"><value>OneDrive sync stops; locally cached files may need re-downloading. Office and shell integration are reduced.</value></data>
+  <data name="Comp.AV1VideoExtension.DisplayName" xml:space="preserve"><value>AV1 Video Extension</value></data>
+  <data name="Comp.AV1VideoExtension.Short" xml:space="preserve"><value>Codec that lets Windows play AV1-encoded video.</value></data>
+  <data name="Comp.AV1VideoExtension.Long" xml:space="preserve"><value>Provides AV1 hardware/software playback. Optional: most content still plays via other codecs; removing it only affects AV1 playback.</value></data>
+  <data name="Comp.AV1VideoExtension.KeepIf" xml:space="preserve"><value>You watch AV1 video or need maximum codec coverage.</value></data>
+  <data name="Comp.AV1VideoExtension.RemoveIf" xml:space="preserve"><value>You do not play AV1 video and want to free space.</value></data>
+  <data name="Comp.AV1VideoExtension.Impact" xml:space="preserve"><value>AV1 video will not play (other formats are unaffected).</value></data>
+  <data name="Comp.AV1VideoExtension.Prov0" xml:space="preserve"><value>AV1 Video Extension provides AV1 media playback support.</value></data>
+  <data name="Comp.AV1VideoExtension.Prov1" xml:space="preserve"><value>Optional to remove for users who do not play AV1 video.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.DisplayName" xml:space="preserve"><value>AVC Encoder Video Extension</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Short" xml:space="preserve"><value>Codec that lets apps encode H.264/AVC video.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Long" xml:space="preserve"><value>Provides AVC encoding used by some capture/share apps. Optional: removing it only affects apps that depend on this specific encoder.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.KeepIf" xml:space="preserve"><value>You use screen/capture apps that encode AVC video.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.RemoveIf" xml:space="preserve"><value>You do not use AVC encoding apps.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Impact" xml:space="preserve"><value>Apps relying on the AVC encoder may lose export options.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Prov0" xml:space="preserve"><value>AVC Encoder Video Extension provides H.264/AVC video encoding.</value></data>
+  <data name="Comp.AVCEncoderVideoExtension.Prov1" xml:space="preserve"><value>Optional to remove for users who do not encode AVC video.</value></data>
+  <data name="Comp.BingNews.DisplayName" xml:space="preserve"><value>Microsoft News</value></data>
+  <data name="Comp.BingNews.Short" xml:space="preserve"><value>Microsoft's news aggregation app.</value></data>
+  <data name="Comp.BingNews.Long" xml:space="preserve"><value>A consumer news reader. Purely optional; no Windows feature depends on it.</value></data>
+  <data name="Comp.BingNews.KeepIf" xml:space="preserve"><value>You read news in the built-in app.</value></data>
+  <data name="Comp.BingNews.RemoveIf" xml:space="preserve"><value>You never use the News app.</value></data>
+  <data name="Comp.BingNews.Impact" xml:space="preserve"><value>The News app is unavailable. Web news still works.</value></data>
+  <data name="Comp.BingNews.Prov0" xml:space="preserve"><value>Microsoft News is a consumer news aggregation app provisioned for new users.</value></data>
+  <data name="Comp.BingNews.Prov1" xml:space="preserve"><value>Optional to remove; no system dependency.</value></data>
+  <data name="Comp.BingSearch.DisplayName" xml:space="preserve"><value>Search (Bing)</value></data>
+  <data name="Comp.BingSearch.Short" xml:space="preserve"><value>The Windows Search / Bing app used by Start and taskbar search.</value></data>
+  <data name="Comp.BingSearch.Long" xml:space="preserve"><value>Provides web results inside Windows Search. Local file/settings search is a separate OS service and continues to work after removal; only the web layer is affected.</value></data>
+  <data name="Comp.BingSearch.KeepIf" xml:space="preserve"><value>You rely on web results inside Windows Search.</value></data>
+  <data name="Comp.BingSearch.RemoveIf" xml:space="preserve"><value>You only search local files and settings.</value></data>
+  <data name="Comp.BingSearch.Impact" xml:space="preserve"><value>Web results disappear from Windows Search; local search is unaffected.</value></data>
+  <data name="Comp.BingSearch.Prov0" xml:space="preserve"><value>Bing Search provides web results inside the Windows Search experience.</value></data>
+  <data name="Comp.BingSearch.Prov1" xml:space="preserve"><value>Optional to remove; local search continues to work.</value></data>
+  <data name="Comp.Calculator.DisplayName" xml:space="preserve"><value>Calculator</value></data>
+  <data name="Comp.Calculator.Short" xml:space="preserve"><value>Microsoft's calculator app.</value></data>
+  <data name="Comp.Calculator.Long" xml:space="preserve"><value>A widely used utility. Removal is possible but many users expect it; keep unless you replace it with another calculator.</value></data>
+  <data name="Comp.Calculator.KeepIf" xml:space="preserve"><value>You use the built-in Calculator regularly.</value></data>
+  <data name="Comp.Calculator.RemoveIf" xml:space="preserve"><value>You use a different calculator app.</value></data>
+  <data name="Comp.Calculator.Impact" xml:space="preserve"><value>The Calculator app is removed. No OS function depends on it.</value></data>
+  <data name="Comp.Calculator.Prov0" xml:space="preserve"><value>Calculator is a built-in utility app used by many users.</value></data>
+  <data name="Comp.Calculator.Prov1" xml:space="preserve"><value>Usually keep; removal is safe but unexpected by many users.</value></data>
+  <data name="Comp.Notepad.DisplayName" xml:space="preserve"><value>Notepad</value></data>
+  <data name="Comp.Notepad.Short" xml:space="preserve"><value>Microsoft's plain-text editor.</value></data>
+  <data name="Comp.Notepad.Long" xml:space="preserve"><value>A long-standing utility many users and scripts rely on. Keep unless replaced.</value></data>
+  <data name="Comp.Notepad.KeepIf" xml:space="preserve"><value>You or your scripts use Notepad.</value></data>
+  <data name="Comp.Notepad.RemoveIf" xml:space="preserve"><value>You use another text editor exclusively.</value></data>
+  <data name="Comp.Notepad.Impact" xml:space="preserve"><value>Notepad is removed. Many users and tools expect it.</value></data>
+  <data name="Comp.Notepad.Prov0" xml:space="preserve"><value>Notepad is a built-in plain-text editor relied on by users and scripts.</value></data>
+  <data name="Comp.Notepad.Prov1" xml:space="preserve"><value>Usually keep; removal is safe but widely unexpected.</value></data>
+  <data name="Comp.Paint.DisplayName" xml:space="preserve"><value>Paint</value></data>
+  <data name="Comp.Paint.Short" xml:space="preserve"><value>Microsoft's classic raster graphics editor.</value></data>
+  <data name="Comp.Paint.Long" xml:space="preserve"><value>A familiar drawing tool. Optional: alternatives (Paint.NET, Photos) exist; removal only affects the app itself.</value></data>
+  <data name="Comp.Paint.KeepIf" xml:space="preserve"><value>You use Paint for quick image edits.</value></data>
+  <data name="Comp.Paint.RemoveIf" xml:space="preserve"><value>You use another image editor.</value></data>
+  <data name="Comp.Paint.Impact" xml:space="preserve"><value>Paint is removed. Image files remain and open via other apps.</value></data>
+  <data name="Comp.Paint.Prov0" xml:space="preserve"><value>Paint is a classic raster graphics editor included with Windows.</value></data>
+  <data name="Comp.Paint.Prov1" xml:space="preserve"><value>Optional to remove; alternatives exist.</value></data>
+  <data name="Comp.Terminal.DisplayName" xml:space="preserve"><value>Windows Terminal</value></data>
+  <data name="Comp.Terminal.Short" xml:space="preserve"><value>Microsoft's modern multi-tab terminal.</value></data>
+  <data name="Comp.Terminal.Long" xml:space="preserve"><value>Preferred terminal for developers and IT. Keep unless you use another; removal is safe but inconvenient for power users.</value></data>
+  <data name="Comp.Terminal.KeepIf" xml:space="preserve"><value>You use Windows Terminal for command-line work.</value></data>
+  <data name="Comp.Terminal.RemoveIf" xml:space="preserve"><value>You use another terminal emulator.</value></data>
+  <data name="Comp.Terminal.Impact" xml:space="preserve"><value>Windows Terminal is removed; classic Console Host still works.</value></data>
+  <data name="Comp.Terminal.Prov0" xml:space="preserve"><value>Windows Terminal is the modern multi-tab terminal for Windows.</value></data>
+  <data name="Comp.Terminal.Prov1" xml:space="preserve"><value>Usually keep; valuable for developers.</value></data>
+  <data name="Comp.ToDo.DisplayName" xml:space="preserve"><value>Microsoft To Do</value></data>
+  <data name="Comp.ToDo.Short" xml:space="preserve"><value>Microsoft's task / to-do list app.</value></data>
+  <data name="Comp.ToDo.Long" xml:space="preserve"><value>A consumer productivity app. Optional; no Windows feature depends on it.</value></data>
+  <data name="Comp.ToDo.KeepIf" xml:space="preserve"><value>You manage tasks in Microsoft To Do.</value></data>
+  <data name="Comp.ToDo.RemoveIf" xml:space="preserve"><value>You use another task app.</value></data>
+  <data name="Comp.ToDo.Impact" xml:space="preserve"><value>Microsoft To Do is removed. Web/phone versions still work.</value></data>
+  <data name="Comp.ToDo.Prov0" xml:space="preserve"><value>Microsoft To Do is a consumer task-management app.</value></data>
+  <data name="Comp.ToDo.Prov1" xml:space="preserve"><value>Optional to remove; no system dependency.</value></data>
+  <data name="Comp.QuickAssist.DisplayName" xml:space="preserve"><value>Quick Assist</value></data>
+  <data name="Comp.QuickAssist.Short" xml:space="preserve"><value>Microsoft's app for giving/receiving remote help.</value></data>
+  <data name="Comp.QuickAssist.Long" xml:space="preserve"><value>Lets a helper view and control the screen to assist. Optional; not required for normal use or for standard Remote Desktop.</value></data>
+  <data name="Comp.QuickAssist.KeepIf" xml:space="preserve"><value>You (or help desk) use Quick Assist for remote help.</value></data>
+  <data name="Comp.QuickAssist.RemoveIf" xml:space="preserve"><value>You never use remote assistance.</value></data>
+  <data name="Comp.QuickAssist.Impact" xml:space="preserve"><value>Quick Assist is removed. Standard Remote Desktop is unaffected.</value></data>
+  <data name="Comp.QuickAssist.Prov0" xml:space="preserve"><value>Quick Assist provides view/control screen sharing for remote help.</value></data>
+  <data name="Comp.QuickAssist.Prov1" xml:space="preserve"><value>Optional to remove; not required for normal use.</value></data>
+  <data name="Comp.DesktopAppInstaller.DisplayName" xml:space="preserve"><value>App Installer (winget)</value></data>
+  <data name="Comp.DesktopAppInstaller.Short" xml:space="preserve"><value>Provides the winget package manager and .msix/.appx installer.</value></data>
+  <data name="Comp.DesktopAppInstaller.Long" xml:space="preserve"><value>Hosts winget and the AppX/MSIX installer. Removing it breaks package management and Store-based installs; treat as Conditional and keep unless you have a reason.</value></data>
+  <data name="Comp.DesktopAppInstaller.KeepIf" xml:space="preserve"><value>You use winget or install .msix/.appx packages.</value></data>
+  <data name="Comp.DesktopAppInstaller.RemoveIf" xml:space="preserve"><value>You never use winget or sideloaded packages.</value></data>
+  <data name="Comp.DesktopAppInstaller.Impact" xml:space="preserve"><value>winget and AppX/MSIX install are unavailable; some installs break.</value></data>
+  <data name="Comp.DesktopAppInstaller.Prov0" xml:space="preserve"><value>App Installer provides the winget package manager and MSIX/AppX installer.</value></data>
+  <data name="Comp.DesktopAppInstaller.Prov1" xml:space="preserve"><value>Usually keep; removal breaks package management.</value></data>
+<!-- WINFORGE_CATALOG_BLOCK_END -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- WINFORGE_STAGE113_BLOCK_START -->
+  <data name="Customize.Rescan" xml:space="preserve"><value>Rescan</value></data>
+  <data name="Customize.Tab.Personalization" xml:space="preserve"><value>Personalization</value></data>
+  <data name="Feat.HyperV.DisplayName" xml:space="preserve"><value>Hyper-V</value></data>
+  <data name="Feat.HyperV.KeepIf" xml:space="preserve"><value>You use Hyper-V</value></data>
+  <data name="Feat.HyperV.Short" xml:space="preserve"><value>Virtual machine platform for running Windows/Linux VMs</value></data>
+  <data name="Feat.HypervisorPlatform.DisplayName" xml:space="preserve"><value>Windows Hypervisor Platform</value></data>
+  <data name="Feat.HypervisorPlatform.KeepIf" xml:space="preserve"><value>You use Windows Hypervisor Platform</value></data>
+  <data name="Feat.HypervisorPlatform.Short" xml:space="preserve"><value>Lets third-party VMs use the Windows hypervisor</value></data>
+  <data name="Feat.InternetPrinting.DisplayName" xml:space="preserve"><value>Internet Printing Client</value></data>
+  <data name="Feat.InternetPrinting.KeepIf" xml:space="preserve"><value>You use Internet Printing Client</value></data>
+  <data name="Feat.InternetPrinting.Short" xml:space="preserve"><value>Print over the network using Internet Printing Protocol (IPP)</value></data>
+  <data name="Feat.MediaPlayer.DisplayName" xml:space="preserve"><value>Windows Media Player (legacy)</value></data>
+  <data name="Feat.MediaPlayer.KeepIf" xml:space="preserve"><value>You use Windows Media Player (legacy)</value></data>
+  <data name="Feat.MediaPlayer.Short" xml:space="preserve"><value>Legacy media player for local audio/video files</value></data>
+  <data name="Feat.OpenSshClient.DisplayName" xml:space="preserve"><value>OpenSSH Client</value></data>
+  <data name="Feat.OpenSshClient.KeepIf" xml:space="preserve"><value>You use OpenSSH Client</value></data>
+  <data name="Feat.OpenSshClient.Short" xml:space="preserve"><value>Connect to remote servers over SSH from this PC</value></data>
+  <data name="Feat.OpenSshServer.DisplayName" xml:space="preserve"><value>OpenSSH Server</value></data>
+  <data name="Feat.OpenSshServer.KeepIf" xml:space="preserve"><value>You use OpenSSH Server</value></data>
+  <data name="Feat.OpenSshServer.Short" xml:space="preserve"><value>Accept incoming SSH connections to this PC (opens a network port)</value></data>
+  <data name="Feat.PowerShell2.DisplayName" xml:space="preserve"><value>PowerShell 2.0 Engine (legacy)</value></data>
+  <data name="Feat.PowerShell2.KeepIf" xml:space="preserve"><value>You use PowerShell 2.0 Engine (legacy)</value></data>
+  <data name="Feat.PowerShell2.Short" xml:space="preserve"><value>Deprecated engine for very old scripts; current PowerShell does not need it</value></data>
+  <data name="Feat.ScanManagement.DisplayName" xml:space="preserve"><value>Scan Management Console</value></data>
+  <data name="Feat.ScanManagement.KeepIf" xml:space="preserve"><value>You use Scan Management Console</value></data>
+  <data name="Feat.ScanManagement.Short" xml:space="preserve"><value>Manage scanners and scanning from Windows</value></data>
+  <data name="Feat.VirtualMachinePlatform.DisplayName" xml:space="preserve"><value>Virtual Machine Platform</value></data>
+  <data name="Feat.VirtualMachinePlatform.KeepIf" xml:space="preserve"><value>You use Virtual Machine Platform</value></data>
+  <data name="Feat.VirtualMachinePlatform.Short" xml:space="preserve"><value>Shared virtualization platform used by WSL2, Sandbox and Android apps</value></data>
+  <data name="Feat.WindowsSandbox.DisplayName" xml:space="preserve"><value>Windows Sandbox</value></data>
+  <data name="Feat.WindowsSandbox.KeepIf" xml:space="preserve"><value>You use Windows Sandbox</value></data>
+  <data name="Feat.WindowsSandbox.Short" xml:space="preserve"><value>Disposable isolated desktop for testing untrusted software</value></data>
+  <data name="Feat.Wsl.DisplayName" xml:space="preserve"><value>Linux / WSL support</value></data>
+  <data name="Feat.Wsl.KeepIf" xml:space="preserve"><value>You use Linux / WSL support</value></data>
+  <data name="Feat.Wsl.Short" xml:space="preserve"><value>Run a Linux environment inside Windows (Windows Subsystem for Linux)</value></data>
+  <data name="Feat.XpsServices.DisplayName" xml:space="preserve"><value>XPS Services</value></data>
+  <data name="Feat.XpsServices.KeepIf" xml:space="preserve"><value>You use XPS Services</value></data>
+  <data name="Feat.XpsServices.Short" xml:space="preserve"><value>Create and print XPS documents</value></data>
+  <data name="Opt.Action.Configure" xml:space="preserve"><value>Configure</value></data>
+  <data name="Opt.Action.Disable" xml:space="preserve"><value>Disable</value></data>
+  <data name="Opt.Action.Feature" xml:space="preserve"><value>Feature</value></data>
+  <data name="Opt.Action.Remove" xml:space="preserve"><value>Remove</value></data>
+  <data name="Opt.Action.Service" xml:space="preserve"><value>Service</value></data>
+  <data name="Opt.Action.Unknown" xml:space="preserve"><value>Change</value></data>
+  <data name="Opt.ApplyUnsupported" xml:space="preserve"><value>Apply is not supported for this item in this version</value></data>
+  <data name="Opt.Blocked" xml:space="preserve"><value>Cannot be changed</value></data>
+  <data name="Opt.CoreNeverChange" xml:space="preserve"><value>Core infrastructure — never modified by WinForge</value></data>
+  <data name="Opt.Dep.hvplatform-dep" xml:space="preserve"><value>Shared virtualization / platform dependency — verify before disabling.</value></data>
+  <data name="Opt.Dep.hyperv-dep" xml:space="preserve"><value>Shared virtualization / platform dependency — verify before disabling.</value></data>
+  <data name="Opt.Dep.print-dep" xml:space="preserve"><value>Shared virtualization / platform dependency — verify before disabling.</value></data>
+  <data name="Opt.Dep.ps2-dep" xml:space="preserve"><value>Shared virtualization / platform dependency — verify before disabling.</value></data>
+  <data name="Opt.Dep.sandbox-dep" xml:space="preserve"><value>Shared virtualization / platform dependency — verify before disabling.</value></data>
+  <data name="Opt.Dep.scan-dep" xml:space="preserve"><value>Shared virtualization / platform dependency — verify before disabling.</value></data>
+  <data name="Opt.Dep.wsl-dep" xml:space="preserve"><value>Shared virtualization / platform dependency — verify before disabling.</value></data>
+  <data name="Opt.Dep.xps-dep" xml:space="preserve"><value>Shared virtualization / platform dependency — verify before disabling.</value></data>
+  <data name="Opt.Detail.ProposedStart" xml:space="preserve"><value>Proposed startup type</value></data>
+  <data name="Opt.Detail.Reversal" xml:space="preserve"><value>How to revert</value></data>
+  <data name="Opt.Detail.Scope" xml:space="preserve"><value>Applies to</value></data>
+  <data name="Opt.Detail.Target" xml:space="preserve"><value>Technical target</value></data>
+  <data name="Opt.Empty" xml:space="preserve"><value>No reviewed controls in this category yet.</value></data>
+  <data name="Opt.Mechanism.DisableOptionalFeature" xml:space="preserve"><value>Optional feature (DISM)</value></data>
+  <data name="Opt.Mechanism.ExplorerPreference" xml:space="preserve"><value>Explorer preference</value></data>
+  <data name="Opt.Mechanism.PrivacyPolicy" xml:space="preserve"><value>Privacy policy</value></data>
+  <data name="Opt.Mechanism.RegistryPolicy" xml:space="preserve"><value>Registry policy (machine)</value></data>
+  <data name="Opt.Mechanism.RemoveCapability" xml:space="preserve"><value>Capability (DISM)</value></data>
+  <data name="Opt.Mechanism.ServiceStartup" xml:space="preserve"><value>Service startup type</value></data>
+  <data name="Opt.Mechanism.StartPreference" xml:space="preserve"><value>Start preference</value></data>
+  <data name="Opt.Mechanism.SystemPolicy" xml:space="preserve"><value>System policy</value></data>
+  <data name="Opt.Mechanism.TaskbarPreference" xml:space="preserve"><value>Taskbar preference</value></data>
+  <data name="Opt.Mechanism.VisualPreference" xml:space="preserve"><value>Visual preference</value></data>
+  <data name="Opt.NoChangeRecommended" xml:space="preserve"><value>No change recommended — Windows default kept</value></data>
+  <data name="Opt.NotApplicable" xml:space="preserve"><value>Not applicable to the selected image</value></data>
+  <data name="Opt.Personalization.DarkMode.DisplayName" xml:space="preserve"><value>Dark mode</value></data>
+  <data name="Opt.Personalization.DarkMode.Short" xml:space="preserve"><value>Use the dark theme for apps and system</value></data>
+  <data name="Opt.Personalization.DisableAnimations.DisplayName" xml:space="preserve"><value>Disable animation effects</value></data>
+  <data name="Opt.Personalization.DisableAnimations.Short" xml:space="preserve"><value>Turn off window and menu animation effects</value></data>
+  <data name="Opt.Personalization.DisableSpotlight.DisplayName" xml:space="preserve"><value>Windows Spotlight (lock screen content)</value></data>
+  <data name="Opt.Personalization.DisableSpotlight.Short" xml:space="preserve"><value>Disable Spotlight lock-screen content (uses a plain image)</value></data>
+  <data name="Opt.Personalization.DisableTransparency.DisplayName" xml:space="preserve"><value>Disable transparency effects</value></data>
+  <data name="Opt.Personalization.DisableTransparency.Short" xml:space="preserve"><value>Turn off window transparency / blur effects</value></data>
+  <data name="Opt.Personalization.HideFrequentQuickAccess.DisplayName" xml:space="preserve"><value>Hide frequent folders in Quick access</value></data>
+  <data name="Opt.Personalization.HideFrequentQuickAccess.Short" xml:space="preserve"><value>Stop showing frequently used folders in Quick access</value></data>
+  <data name="Opt.Personalization.HideRecentQuickAccess.DisplayName" xml:space="preserve"><value>Hide recent files in Quick access</value></data>
+  <data name="Opt.Personalization.HideRecentQuickAccess.Short" xml:space="preserve"><value>Stop showing recently opened files in Quick access</value></data>
+  <data name="Opt.Personalization.HideStartRecentlyAdded.DisplayName" xml:space="preserve"><value>Hide recently added apps in Start</value></data>
+  <data name="Opt.Personalization.HideStartRecentlyAdded.Short" xml:space="preserve"><value>Stop showing recently added apps in the Start menu</value></data>
+  <data name="Opt.Personalization.HideStartRecommended.DisplayName" xml:space="preserve"><value>Hide Recommended in Start</value></data>
+  <data name="Opt.Personalization.HideStartRecommended.Short" xml:space="preserve"><value>Remove the Recommended section from the Start menu</value></data>
+  <data name="Opt.Personalization.HideTaskbarTaskView.DisplayName" xml:space="preserve"><value>Hide Task View button</value></data>
+  <data name="Opt.Personalization.HideTaskbarTaskView.Short" xml:space="preserve"><value>Remove the Task View button from the taskbar</value></data>
+  <data name="Opt.Personalization.HideTaskbarWidgets.DisplayName" xml:space="preserve"><value>Hide Widgets button</value></data>
+  <data name="Opt.Personalization.HideTaskbarWidgets.Short" xml:space="preserve"><value>Remove the Widgets button from the taskbar</value></data>
+  <data name="Opt.Personalization.OpenToThisPC.DisplayName" xml:space="preserve"><value>Open File Explorer to This PC</value></data>
+  <data name="Opt.Personalization.OpenToThisPC.Short" xml:space="preserve"><value>Open File Explorer to This PC instead of Home</value></data>
+  <data name="Opt.Personalization.ShowFileExtensions.DisplayName" xml:space="preserve"><value>Show file extensions</value></data>
+  <data name="Opt.Personalization.ShowFileExtensions.Short" xml:space="preserve"><value>Show file name extensions in File Explorer</value></data>
+  <data name="Opt.Personalization.ShowHiddenFiles.DisplayName" xml:space="preserve"><value>Show hidden files</value></data>
+  <data name="Opt.Personalization.ShowHiddenFiles.Short" xml:space="preserve"><value>Show hidden files and folders in File Explorer</value></data>
+  <data name="Opt.Personalization.TaskbarSearchIcon.DisplayName" xml:space="preserve"><value>Taskbar search as icon</value></data>
+  <data name="Opt.Personalization.TaskbarSearchIcon.Short" xml:space="preserve"><value>Show the taskbar search as an icon instead of a box</value></data>
+  <data name="Opt.Privacy.ActivityHistory.DisplayName" xml:space="preserve"><value>Activity history</value></data>
+  <data name="Opt.Privacy.ActivityHistory.Short" xml:space="preserve"><value>Stop collecting and uploading local activity history to the cloud</value></data>
+  <data name="Opt.Privacy.AdvertisingId.DisplayName" xml:space="preserve"><value>Advertising ID</value></data>
+  <data name="Opt.Privacy.AdvertisingId.Short" xml:space="preserve"><value>Disable the per-device advertising ID used for targeted ads</value></data>
+  <data name="Opt.Privacy.AppLaunchTracking.DisplayName" xml:space="preserve"><value>App launch tracking</value></data>
+  <data name="Opt.Privacy.AppLaunchTracking.Short" xml:space="preserve"><value>Stop storing which apps are launched (Start menu telemetry)</value></data>
+  <data name="Opt.Privacy.FeedbackNotifications.DisplayName" xml:space="preserve"><value>Feedback prompts</value></data>
+  <data name="Opt.Privacy.FeedbackNotifications.Short" xml:space="preserve"><value>Suppress Windows feedback notification prompts</value></data>
+  <data name="Opt.Privacy.FindMyDevice.DisplayName" xml:space="preserve"><value>Find My Device</value></data>
+  <data name="Opt.Privacy.FindMyDevice.Short" xml:space="preserve"><value>Disable Find My Device (device location reporting to the account)</value></data>
+  <data name="Opt.Privacy.InputPersonalization.DisplayName" xml:space="preserve"><value>Input personalization</value></data>
+  <data name="Opt.Privacy.InputPersonalization.Short" xml:space="preserve"><value>Disable cloud-backed typing insights (input personalization)</value></data>
+  <data name="Opt.Privacy.Location.DisplayName" xml:space="preserve"><value>Location services</value></data>
+  <data name="Opt.Privacy.Location.Short" xml:space="preserve"><value>Disable the location platform used by apps (maps, weather, …)</value></data>
+  <data name="Opt.Privacy.SpeechModelUpdates.DisplayName" xml:space="preserve"><value>Speech model updates</value></data>
+  <data name="Opt.Privacy.SpeechModelUpdates.Short" xml:space="preserve"><value>Stop downloading online speech recognition models</value></data>
+  <data name="Opt.Privacy.SpotlightFeatures.DisplayName" xml:space="preserve"><value>Windows Spotlight content</value></data>
+  <data name="Opt.Privacy.SpotlightFeatures.Short" xml:space="preserve"><value>Turn off all Windows Spotlight features (lock screen / desktop content)</value></data>
+  <data name="Opt.Privacy.TailoredExperiences.DisplayName" xml:space="preserve"><value>Tailored experiences</value></data>
+  <data name="Opt.Privacy.TailoredExperiences.Short" xml:space="preserve"><value>Stop Windows using diagnostics data to personalize tips and recommendations</value></data>
+  <data name="Opt.Privacy.WebSearchStart.DisplayName" xml:space="preserve"><value>Web results in Start search</value></data>
+  <data name="Opt.Privacy.WebSearchStart.Short" xml:space="preserve"><value>Keep Start search local instead of querying Bing/web results</value></data>
+  <data name="Opt.Recommendation.Configure.AdvancedOnly" xml:space="preserve"><value>Advanced users only</value></data>
+  <data name="Opt.Recommendation.Configure.NeverRemove" xml:space="preserve"><value>Never change</value></data>
+  <data name="Opt.Recommendation.Configure.OptionalRemove" xml:space="preserve"><value>Optional to enable</value></data>
+  <data name="Opt.Recommendation.Configure.RecommendedRemove" xml:space="preserve"><value>Recommended to enable</value></data>
+  <data name="Opt.Recommendation.Configure.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
+  <data name="Opt.Recommendation.Disable.AdvancedOnly" xml:space="preserve"><value>Advanced users only</value></data>
+  <data name="Opt.Recommendation.Disable.NeverRemove" xml:space="preserve"><value>Never change</value></data>
+  <data name="Opt.Recommendation.Disable.OptionalRemove" xml:space="preserve"><value>Optional to disable</value></data>
+  <data name="Opt.Recommendation.Disable.RecommendedRemove" xml:space="preserve"><value>Recommended to disable</value></data>
+  <data name="Opt.Recommendation.Disable.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
+  <data name="Opt.Recommendation.Feature.AdvancedOnly" xml:space="preserve"><value>Advanced users only</value></data>
+  <data name="Opt.Recommendation.Feature.NeverRemove" xml:space="preserve"><value>Never change</value></data>
+  <data name="Opt.Recommendation.Feature.OptionalRemove" xml:space="preserve"><value>Optional to disable</value></data>
+  <data name="Opt.Recommendation.Feature.RecommendedRemove" xml:space="preserve"><value>Recommended to disable</value></data>
+  <data name="Opt.Recommendation.Feature.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
+  <data name="Opt.Recommendation.Remove.AdvancedOnly" xml:space="preserve"><value>Advanced users only</value></data>
+  <data name="Opt.Recommendation.Remove.NeverRemove" xml:space="preserve"><value>Never remove</value></data>
+  <data name="Opt.Recommendation.Remove.OptionalRemove" xml:space="preserve"><value>Optional to remove</value></data>
+  <data name="Opt.Recommendation.Remove.RecommendedRemove" xml:space="preserve"><value>Recommended to remove</value></data>
+  <data name="Opt.Recommendation.Remove.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
+  <data name="Opt.Recommendation.Service.AdvancedOnly" xml:space="preserve"><value>Advanced users only</value></data>
+  <data name="Opt.Recommendation.Service.NeverRemove" xml:space="preserve"><value>Never change</value></data>
+  <data name="Opt.Recommendation.Service.OptionalRemove" xml:space="preserve"><value>Optional change</value></data>
+  <data name="Opt.Recommendation.Service.RecommendedRemove" xml:space="preserve"><value>Recommended change</value></data>
+  <data name="Opt.Recommendation.Service.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
+  <data name="Opt.Recommendation.Unknown.AdvancedOnly" xml:space="preserve"><value>Advanced users only</value></data>
+  <data name="Opt.Recommendation.Unknown.NeverRemove" xml:space="preserve"><value>Never change</value></data>
+  <data name="Opt.Recommendation.Unknown.OptionalRemove" xml:space="preserve"><value>Optional</value></data>
+  <data name="Opt.Recommendation.Unknown.RecommendedRemove" xml:space="preserve"><value>Recommended</value></data>
+  <data name="Opt.Recommendation.Unknown.UsuallyKeep" xml:space="preserve"><value>Usually keep</value></data>
+  <data name="Opt.Scope.MountedImageFeature" xml:space="preserve"><value>Offline image feature (DISM)</value></data>
+  <data name="Opt.Scope.OfflineAllUsers" xml:space="preserve"><value>All users in the offline image</value></data>
+  <data name="Opt.Scope.OfflineDefaultUser" xml:space="preserve"><value>New users (Default User profile)</value></data>
+  <data name="Opt.Scope.OfflineMachine" xml:space="preserve"><value>Machine-wide (offline image)</value></data>
+  <data name="Opt.Scope.PostInstallRequired" xml:space="preserve"><value>After first logon only — not applied to the image</value></data>
+  <data name="Opt.Scope.ProvisionedApp" xml:space="preserve"><value>Provisioned app in the offline image</value></data>
+  <data name="Opt.Scope.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Opt.Scope.UnsupportedOffline" xml:space="preserve"><value>Not supported on an offline image</value></data>
+  <data name="Opt.Services.DiagTrack.DisplayName" xml:space="preserve"><value>Connected User Experiences and Telemetry</value></data>
+  <data name="Opt.Services.DiagTrack.Short" xml:space="preserve"><value>Microsoft telemetry service; commonly disabled on privacy-focused images</value></data>
+  <data name="Opt.Services.Lfsvc.DisplayName" xml:space="preserve"><value>Geolocation Service</value></data>
+  <data name="Opt.Services.Lfsvc.Short" xml:space="preserve"><value>Monitors the current location for apps; only needed when apps use location</value></data>
+  <data name="Opt.Services.MapsBroker.DisplayName" xml:space="preserve"><value>Downloaded Maps Manager</value></data>
+  <data name="Opt.Services.MapsBroker.Short" xml:space="preserve"><value>Manages offline map downloads for the Maps app; only needed if you use offline maps</value></data>
+  <data name="Opt.Services.PcaSvc.DisplayName" xml:space="preserve"><value>Program Compatibility Assistant Service</value></data>
+  <data name="Opt.Services.PcaSvc.Short" xml:space="preserve"><value>Detects and prompts about compatibility issues; can cause prompts on old installers</value></data>
+  <data name="Opt.Services.RetailDemo.DisplayName" xml:space="preserve"><value>Retail Demo Service</value></data>
+  <data name="Opt.Services.RetailDemo.Short" xml:space="preserve"><value>Runs retail/kiosk demo mode; never used on normal PCs</value></data>
+  <data name="Opt.Services.RpcSs.DisplayName" xml:space="preserve"><value>Remote Procedure Call (RPC)</value></data>
+  <data name="Opt.Services.RpcSs.Short" xml:space="preserve"><value>Core Windows IPC infrastructure — almost every component depends on it</value></data>
+  <data name="Opt.Services.TabletInputService.DisplayName" xml:space="preserve"><value>Touch Keyboard and Handwriting Panel</value></data>
+  <data name="Opt.Services.TabletInputService.Short" xml:space="preserve"><value>Touch keyboard and handwriting input; desktop users without touch can set it to manual</value></data>
+  <data name="Opt.Services.WMPNetworkSvc.DisplayName" xml:space="preserve"><value>Windows Media Player Network Sharing</value></data>
+  <data name="Opt.Services.WMPNetworkSvc.Short" xml:space="preserve"><value>Shares media libraries over the network; only needed for WMP sharing</value></data>
+  <data name="Opt.Services.WerSvc.DisplayName" xml:space="preserve"><value>Windows Error Reporting Service</value></data>
+  <data name="Opt.Services.WerSvc.Short" xml:space="preserve"><value>Reports crashes to Microsoft; keeping it off reduces background reporting</value></data>
+  <data name="Opt.Services.XblAuthManager.DisplayName" xml:space="preserve"><value>Xbox Live Auth Manager</value></data>
+  <data name="Opt.Services.XblAuthManager.Short" xml:space="preserve"><value>Sign-in for Xbox Live titles; only needed for Xbox Live gaming</value></data>
+  <data name="Opt.Services.XboxGipSvc.DisplayName" xml:space="preserve"><value>Xbox Accessory Management Service</value></data>
+  <data name="Opt.Services.XboxGipSvc.Short" xml:space="preserve"><value>Manages Xbox accessories (controllers, headsets); only needed for Xbox accessories</value></data>
+  <data name="Opt.Services.XboxNetApiSvc.DisplayName" xml:space="preserve"><value>Xbox Live Networking Service</value></data>
+  <data name="Opt.Services.XboxNetApiSvc.Short" xml:space="preserve"><value>Networking for Xbox Live on PC; only needed for Xbox Live gaming</value></data>
+  <data name="Opt.StartType.Automatic" xml:space="preserve"><value>Automatic</value></data>
+  <data name="Opt.StartType.Boot" xml:space="preserve"><value>Boot</value></data>
+  <data name="Opt.StartType.Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="Opt.StartType.Manual" xml:space="preserve"><value>Manual</value></data>
+  <data name="Opt.StartType.System" xml:space="preserve"><value>System</value></data>
+  <data name="Opt.System.Cortana.DisplayName" xml:space="preserve"><value>Consumer Cortana</value></data>
+  <data name="Opt.System.Cortana.Short" xml:space="preserve"><value>Turn off the consumer Cortana integration</value></data>
+  <data name="Opt.System.DeliveryOptimization.DisplayName" xml:space="preserve"><value>Delivery Optimization downloads</value></data>
+  <data name="Opt.System.DeliveryOptimization.Short" xml:space="preserve"><value>Stop Windows Update downloading from other PCs on the network</value></data>
+  <data name="Opt.System.DeviceMetadata.DisplayName" xml:space="preserve"><value>Device metadata downloads</value></data>
+  <data name="Opt.System.DeviceMetadata.Short" xml:space="preserve"><value>Prevent automatic device metadata downloads from the network</value></data>
+  <data name="Opt.System.GameDvr.DisplayName" xml:space="preserve"><value>Game DVR background recording</value></data>
+  <data name="Opt.System.GameDvr.Short" xml:space="preserve"><value>Prevent the Game DVR service from recording in the background</value></data>
+  <data name="Opt.System.Hibernation.DisplayName" xml:space="preserve"><value>Hibernation</value></data>
+  <data name="Opt.System.Hibernation.Short" xml:space="preserve"><value>Disable hibernation (frees hiberfil.sys; prevents fast startup)</value></data>
+  <data name="Opt.System.OneDriveSync.DisplayName" xml:space="preserve"><value>OneDrive file sync</value></data>
+  <data name="Opt.System.OneDriveSync.Short" xml:space="preserve"><value>Disable OneDrive file sync (app stays; sync off)</value></data>
+  <data name="Opt.System.PrintDriverDownload.DisplayName" xml:space="preserve"><value>Web print driver downloads</value></data>
+  <data name="Opt.System.PrintDriverDownload.Short" xml:space="preserve"><value>Do not automatically download print drivers from the web</value></data>
+  <data name="Opt.System.RemoteAssistance.DisplayName" xml:space="preserve"><value>Remote Assistance invitations</value></data>
+  <data name="Opt.System.RemoteAssistance.Short" xml:space="preserve"><value>Disable Remote Assistance invitations (Remote Desktop stays available)</value></data>
+  <data name="Opt.System.Tips.DisplayName" xml:space="preserve"><value>Windows tips / suggestions</value></data>
+  <data name="Opt.System.Tips.Short" xml:space="preserve"><value>Suppress cloud-backed tips and suggestions</value></data>
+  <data name="Opt.System.WindowsAi.DisplayName" xml:space="preserve"><value>AI features data analysis (Recall / Click To Do)</value></data>
+  <data name="Opt.System.WindowsAi.Short" xml:space="preserve"><value>Disable AI-driven on-device data analysis (Windows AI; Windows 11 24H2+)</value></data>
+  <data name="Plan.Action" xml:space="preserve"><value>Action</value></data>
+  <data name="Plan.Empty" xml:space="preserve"><value>No changes selected yet.</value></data>
+  <data name="Plan.Ops" xml:space="preserve"><value>Selected changes</value></data>
+  <data name="Plan.Reversal" xml:space="preserve"><value>How to revert</value></data>
+  <data name="Plan.Reversal.Generic" xml:space="preserve"><value>Restore to the Windows default recorded by WinForge</value></data>
+  <data name="Plan.Scope" xml:space="preserve"><value>Applies to</value></data>
+  <data name="Plan.Target" xml:space="preserve"><value>Change</value></data>
+  <data name="Profile.Active" xml:space="preserve"><value>Current configuration</value></data>
+  <data name="Profile.Adopt" xml:space="preserve"><value>Adopt recommended selections</value></data>
+  <data name="Profile.AdvisedBy" xml:space="preserve"><value>Configuration advice</value></data>
+  <data name="Profile.BackToCustomize" xml:space="preserve"><value>Back to Customize</value></data>
+  <data name="Profile.Balanced.Description" xml:space="preserve"><value>Balanced defaults — keep the experience close to Windows as shipped</value></data>
+  <data name="Profile.Balanced.DisplayName" xml:space="preserve"><value>Balanced</value></data>
+  <data name="Profile.Conflict.Summary" xml:space="preserve"><value>Resolved — keeping wins when another selected configuration needs the component</value></data>
+  <data name="Profile.Custom.Description" xml:space="preserve"><value>No preset — decide every change yourself</value></data>
+  <data name="Profile.Custom.DisplayName" xml:space="preserve"><value>Custom</value></data>
+  <data name="Profile.DedicatedMinimal.Description" xml:space="preserve"><value>Aggressive trims for kiosks and special-purpose systems; critical changes stay manual</value></data>
+  <data name="Profile.DedicatedMinimal.DisplayName" xml:space="preserve"><value>Dedicated / Minimal</value></data>
+  <data name="Profile.Details" xml:space="preserve"><value>View recommendation details</value></data>
+  <data name="Profile.Developer.Description" xml:space="preserve"><value>WSL, virtualization, Terminal, OpenSSH and dev tooling</value></data>
+  <data name="Profile.Developer.DisplayName" xml:space="preserve"><value>Developer</value></data>
+  <data name="Profile.Empty.Preview" xml:space="preserve"><value>Select a configuration to preview its recommendation plan.</value></data>
+  <data name="Profile.Extras.Title" xml:space="preserve"><value>Additional needs</value></data>
+  <data name="Profile.Gaming.Description" xml:space="preserve"><value>Game compatibility, controller input, codecs and Game Pass in mind</value></data>
+  <data name="Profile.Gaming.DisplayName" xml:space="preserve"><value>Gaming</value></data>
+  <data name="Profile.Lightweight.Description" xml:space="preserve"><value>Fewer optional apps and background experiences; servicing and security kept</value></data>
+  <data name="Profile.Lightweight.DisplayName" xml:space="preserve"><value>Lightweight</value></data>
+  <data name="Profile.None" xml:space="preserve"><value>No profile selected — manual mode</value></data>
+  <data name="Profile.Office.Description" xml:space="preserve"><value>Office compatibility, printing/scanning, OneDrive and stable defaults</value></data>
+  <data name="Profile.Office.DisplayName" xml:space="preserve"><value>Office / Productivity</value></data>
+  <data name="Profile.Origin.Auto" xml:space="preserve"><value>Auto-selected by {0}</value></data>
+  <data name="Profile.Origin.Manual" xml:space="preserve"><value>Manually selected</value></data>
+  <data name="Profile.Preview" xml:space="preserve"><value>Preview recommendation plan</value></data>
+  <data name="Profile.Preview.Group.Adopt" xml:space="preserve"><value>Recommended to apply</value></data>
+  <data name="Profile.Preview.Group.Conflict" xml:space="preserve"><value>Conflicts / blocked</value></data>
+  <data name="Profile.Preview.Group.Keep" xml:space="preserve"><value>Recommended to keep</value></data>
+  <data name="Profile.Preview.Group.Manual" xml:space="preserve"><value>Review manually</value></data>
+  <data name="Profile.Primary.Title" xml:space="preserve"><value>Primary use</value></data>
+  <data name="Profile.PrintingScanning.Description" xml:space="preserve"><value>Printers, scanners and XPS services</value></data>
+  <data name="Profile.PrintingScanning.DisplayName" xml:space="preserve"><value>Printing / Scanning</value></data>
+  <data name="Profile.Reapply" xml:space="preserve"><value>Reapply recommendations</value></data>
+  <data name="Profile.Reason.Balanced.Ads" xml:space="preserve"><value>Balanced disables low-risk advertising / recommendation controls</value></data>
+  <data name="Profile.Reason.Balanced.Consumer" xml:space="preserve"><value>Balanced trims obvious optional consumer clutter</value></data>
+  <data name="Profile.Reason.Balanced.UI" xml:space="preserve"><value>Balanced applies safe UI cleanup</value></data>
+  <data name="Profile.Reason.Conflict.KeepWins" xml:space="preserve"><value>Keeping wins — another selected configuration needs this component</value></data>
+  <data name="Profile.Reason.Dedicated.Aggressive" xml:space="preserve"><value>Dedicated trims aggressively for special-purpose systems</value></data>
+  <data name="Profile.Reason.Dedicated.Keep" xml:space="preserve"><value>Dedicated keeps essential tools</value></data>
+  <data name="Profile.Reason.Dependency" xml:space="preserve"><value>Required by another component that must be kept</value></data>
+  <data name="Profile.Reason.Developer.Consumer" xml:space="preserve"><value>Developer trims unrelated consumer / promotional apps</value></data>
+  <data name="Profile.Reason.Developer.Explorer" xml:space="preserve"><value>Developer enables explorer-friendly settings (file extensions)</value></data>
+  <data name="Profile.Reason.Developer.Sandbox" xml:space="preserve"><value>Developer keeps Windows Sandbox</value></data>
+  <data name="Profile.Reason.Developer.Telemetry" xml:space="preserve"><value>Developer reduces advertising and recommendation content</value></data>
+  <data name="Profile.Reason.Developer.UI" xml:space="preserve"><value>Developer cleans up suggestion UI</value></data>
+  <data name="Profile.Reason.Gaming.Codecs" xml:space="preserve"><value>Gaming keeps media codec support</value></data>
+  <data name="Profile.Reason.Gaming.GameDvr" xml:space="preserve"><value>Gaming keeps Game DVR / Game Bar</value></data>
+  <data name="Profile.Reason.Gaming.Media" xml:space="preserve"><value>Gaming keeps media playback support</value></data>
+  <data name="Profile.Reason.Gaming.Telemetry" xml:space="preserve"><value>Gaming reduces telemetry / suggestion experiences</value></data>
+  <data name="Profile.Reason.Gaming.Trim" xml:space="preserve"><value>Gaming trims unrelated consumer apps</value></data>
+  <data name="Profile.Reason.Gaming.UI" xml:space="preserve"><value>Gaming trims promotional / suggestion UI</value></data>
+  <data name="Profile.Reason.Gaming.Xbox" xml:space="preserve"><value>Gaming keeps Xbox / Game Pass features</value></data>
+  <data name="Profile.Reason.Gaming.XboxServices" xml:space="preserve"><value>Gaming keeps Xbox service infrastructure</value></data>
+  <data name="Profile.Reason.Keep" xml:space="preserve"><value>Recommended to keep by the selected configuration</value></data>
+  <data name="Profile.Reason.Lightweight.Background" xml:space="preserve"><value>Lightweight trims background / consumer services</value></data>
+  <data name="Profile.Reason.Lightweight.Consumer" xml:space="preserve"><value>Lightweight trims optional consumer apps</value></data>
+  <data name="Profile.Reason.Lightweight.Telemetry" xml:space="preserve"><value>Lightweight reduces telemetry and consumer content</value></data>
+  <data name="Profile.Reason.Lightweight.UI" xml:space="preserve"><value>Lightweight trims unnecessary UI suggestions</value></data>
+  <data name="Profile.Reason.Lightweight.Virtualization" xml:space="preserve"><value>Lightweight trims virtualization capabilities</value></data>
+  <data name="Profile.Reason.Office.Keep" xml:space="preserve"><value>Office keeps productivity apps and stable defaults</value></data>
+  <data name="Profile.Reason.Office.Meetings" xml:space="preserve"><value>Office keeps meeting / collaboration apps</value></data>
+  <data name="Profile.Reason.Office.OneDrive" xml:space="preserve"><value>Office keeps OneDrive sync</value></data>
+  <data name="Profile.Reason.Office.Printing" xml:space="preserve"><value>Office keeps printing and scanning support</value></data>
+  <data name="Profile.Reason.Office.Privacy" xml:space="preserve"><value>Office applies low-risk privacy defaults</value></data>
+  <data name="Profile.Reason.Office.RemoteAssist" xml:space="preserve"><value>Office keeps remote assistance</value></data>
+  <data name="Profile.Reason.Office.UI" xml:space="preserve"><value>Office reduces start suggestions</value></data>
+  <data name="Profile.Reason.PrintingScanning.Keep" xml:space="preserve"><value>Printing / scanning needs print, scan and XPS services</value></data>
+  <data name="Profile.Reason.RemoteDesktop.Keep" xml:space="preserve"><value>Remote desktop needs SSH and remote-assistance support</value></data>
+  <data name="Profile.Reason.Requirement" xml:space="preserve"><value>Required by the selected configuration</value></data>
+  <data name="Profile.Reason.Safety" xml:space="preserve"><value>Protected — WinForge never changes it</value></data>
+  <data name="Profile.Reason.TouchPen.Keep" xml:space="preserve"><value>Touch / pen needs the touch keyboard and pen services</value></data>
+  <data name="Profile.Reason.Trim" xml:space="preserve"><value>Recommended to trim by the selected configuration</value></data>
+  <data name="Profile.Reason.UserOverride" xml:space="preserve"><value>You changed this manually — recommendations will not overwrite your choice</value></data>
+  <data name="Profile.Reason.WslDocker.Keep" xml:space="preserve"><value>WSL / Docker need virtualization, Terminal and SSH tooling</value></data>
+  <data name="Profile.Reason.XboxGamePass.Keep" xml:space="preserve"><value>Game Pass needs the Xbox app and services</value></data>
+  <data name="Profile.RemoteDesktop.Description" xml:space="preserve"><value>SSH to remote machines and remote assistance</value></data>
+  <data name="Profile.RemoteDesktop.DisplayName" xml:space="preserve"><value>Remote Desktop</value></data>
+  <data name="Profile.Restore" xml:space="preserve"><value>Restore this configuration's recommendations</value></data>
+  <data name="Profile.Subtitle" xml:space="preserve"><value>Pick one or more usage scenarios — WinForge adjusts recommendations across every tab. Nothing changes until you explicitly adopt a plan.</value></data>
+  <data name="Profile.Summary.Adopt" xml:space="preserve"><value>Suggested to apply</value></data>
+  <data name="Profile.Summary.Confirm" xml:space="preserve"><value>Review manually</value></data>
+  <data name="Profile.Summary.Conflict" xml:space="preserve"><value>Conflicts</value></data>
+  <data name="Profile.Summary.Keep" xml:space="preserve"><value>Suggested to keep</value></data>
+  <data name="Profile.Summary.Unsupported" xml:space="preserve"><value>Cannot apply now</value></data>
+  <data name="Profile.Title" xml:space="preserve"><value>Recommended configuration</value></data>
+  <data name="Profile.TouchPen.Description" xml:space="preserve"><value>Touch keyboard and pen input</value></data>
+  <data name="Profile.TouchPen.DisplayName" xml:space="preserve"><value>Touch / Pen</value></data>
+  <data name="Profile.Why" xml:space="preserve"><value>Why</value></data>
+  <data name="Profile.WslDocker.Description" xml:space="preserve"><value>Linux subsystem and container virtualization</value></data>
+  <data name="Profile.WslDocker.DisplayName" xml:space="preserve"><value>WSL / Docker</value></data>
+  <data name="Profile.XboxGamePass.Description" xml:space="preserve"><value>Xbox app and services for Game Pass play</value></data>
+  <data name="Profile.XboxGamePass.DisplayName" xml:space="preserve"><value>Xbox / Game Pass</value></data>
+<!-- WINFORGE_STAGE113_BLOCK_END -->
 </root>

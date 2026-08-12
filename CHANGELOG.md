@@ -5,6 +5,95 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Phase 11 — COMPLETED (2026-08-12)
+
+- **Phase 11 (Component Intelligence Foundation) is complete and merged to `main`** — real-desktop
+  validation passed on Windows 11 25H2 zh-CN x64 Consumer: profile selection applies safe
+  recommendations immediately, the selected count updates, user overrides stay protected, the
+  recommendation-detail overlay opens and returns correctly, all six Customize tabs + Review work, and
+  Gaming / Developer / Lightweight produce meaningful differences.
+- **Non-blocking follow-up (ADR-061):** the Custom profile currently disables Extra Scenarios; a future
+  polish will let extras act as keep/recommendation hints in Custom mode without enabling a primary preset.
+
+### Added (Phase 11 Stage 11.4 — Scenario Profile / Recommended Configuration Engine — phase/11-component-intelligence)
+- **Recommended configuration selector at the top of Customize.** Pick one or more usage scenarios
+  (均衡推荐 / 游戏优先 / 开发工作站 / 办公稳定 / 轻量系统 / 专用精简 / 自定义, multi-select; Custom is
+  exclusive) and every tab's recommendation badges + "为什么" change accordingly — with NO checkbox
+  changing automatically. A summary line shows 当前推荐配置 + 建议精简 / 按需确认 / 建议保留 / 存在冲突
+  counts derived from real present items only.
+- **Deterministic, explainable recommendations.** The engine computes effective recommendations from
+  component knowledge + scenario rules + real image contents + risk + dependency constraints, with
+  documented precedence (safety > your manual choice > required dependency > profile requirement >
+  scenario override > component default). Conflicts between profiles (e.g. 轻量系统 trims
+  virtualization vs 开发工作站 requires it) are resolved visibly — KEEP wins — with a reason.
+  Every reason is a deterministic localized key, never runtime AI prose.
+- **Non-destructive preview + safe adoption.** 查看推荐方案 shows what WOULD be selected, grouped
+  推荐执行 / 建议保留 / 需要确认 / 冲突·阻止. Only 采用推荐选择 changes selections, and only for
+  present, apply-supported, low-risk (Risk==Low), conflict-free items — High/Critical, blocked,
+  incompatible, unsupported-apply and conflicted rows always stay manual. 重新应用推荐 re-runs the
+  same rules.
+- **Your manual choices are never overwritten.** After adopting, toggling any checkbox manually marks
+  it as a user override; switching profiles or re-applying recommendations leaves it untouched.
+- **Per-workflow state.** The chosen profile + overrides belong to the current workflow only; a new
+  image starts clean with no profile selected (manual mode).
+- **Compact profile panel (UX refinement).** The selector is a single compact row of profile cards
+  (name + short subtitle); 采用推荐选择 is the one clear primary action, 查看推荐详情 is a light
+  secondary link, and 重新采用推荐 only appears after you adopt and then diverge (manual change or
+  profile switch). 自定义 disables profile overrides (back to catalog defaults) while keeping your
+  manual selections. The Discover button becomes 重新扫描 after discovery, and the component lists
+  keep the majority of the page.
+- **Profile selection is now the adoption.** Picking a primary profile (or an extra scenario)
+  immediately applies its safe recommended selections — the separate "采用推荐选择" button is gone.
+  Profile-managed selections track provenance and update when you switch profiles; your manual
+  choices are never silently overwritten (an explicit 恢复此配置推荐 appears only when an override
+  exists). 查看推荐详情 opens as an overlay with × 返回自定义, and 已选 N 项 updates instantly.
+- **Final compact Customize layout.** The header (title + subtitle + scan/已选 N 项) is one compact
+  block; the profile panel is a two-column grid (primary profile cards LEFT ~75%, extra scenarios RIGHT
+  ~25%) with a single-line summary + actions row; the tab control takes the star height so the component
+  list is the primary work surface (~7 rows visible at 1200×700). The recommendation engine is unchanged.
+- **Primary profile + extra scenarios (rework).** 主要用途 is now ONE mutually-exclusive radio choice
+  (3-column aligned cards: 均衡推荐/游戏优先/开发工作站/办公稳定/轻量系统/专用精简/自定义); 额外需求
+  are independent checkboxes (Xbox/Game Pass, WSL/Docker, 打印扫描, 触屏/手写, 远程桌面) combined by
+  the same engine. Every primary profile now produces a meaningful multi-tab configuration
+  (查看方案详情 groups 推荐自动执行 / 需要确认 / 建议保留 / 冲突·不可执行 with per-tab counts), and
+  each changed recommendation explains itself: 配置建议: 游戏优先 → 建议保留.
+
+### Added (Phase 11 Stage 11.3 — Customize coverage expansion + Personalization activation — phase/11-component-intelligence)
+- **Personalization tab is live (no longer "Coming Soon").** The sixth Customize tab now shows 14
+  reviewed controls across Start/Search (hide Recommended / recently added apps), Taskbar (hide
+  Widgets / Task View, search as icon), Explorer (show file extensions / hidden files, open to This PC,
+  Quick access recents/frequent), Lock screen/Desktop (Windows Spotlight) and Appearance (dark mode,
+  transparency, animations). Each row shows purpose, recommendation, risk, offline scope and how to
+  revert; user-scope settings apply to NEW users of the offline image (Default User profile), never the
+  host registry.
+- **Windows Components tab is now knowledge-backed.** Optional features (Hyper-V, Windows Sandbox,
+  WSL, Virtual Machine Platform, legacy Media Player, IPP/scanning/XPS, PowerShell 2.0 engine,
+  Hypervisor Platform) and capabilities (OpenSSH Client/Server — `OpenSSH.Client~~~~0.0.1.0` /
+  `OpenSSH.Server~~~~0.0.1.0`, per Microsoft docs managed via Get/Add-WindowsCapability) are shown
+  with human purpose/recommendation/risk, dependency notes and exact DISM targets. Supported feature
+  rows add a strongly typed "feature disable" to the plan; capability rows are visible for knowledge
+  but their checkbox is disabled with "当前版本暂不支持应用" until capability execution is reviewed.
+- **Services / Privacy / System tabs now share one knowledge surface.** Services lists 11 reviewed
+  services (proposed startup changes only for allowlisted ones; core services shown as informational
+  and blocked); Privacy and System gained reviewed registry-policy controls (input personalization,
+  speech model updates, location, Find My Device, feedback prompts, Spotlight content; Delivery
+  Optimization, device metadata, remote assistance, hibernation, Windows AI/Recall data analysis,
+  OneDrive sync, web print drivers).
+- **Review plan now names the exact action.** Every selected change is listed with its action type
+  (移除/禁用/配置/服务/功能), category, offline scope and revert contract before Apply.
+- **Coverage matrix.** `.tmp/phase11/stage11.3-coverage-matrix.md` documents every candidate
+  (implemented/deferred/rejected/unsupported) with provenance and reason.
+
+### Fixed (Phase 11 Stage 11.3 — OpenSSH capability correction — ADR-056)
+- **OpenSSH Client/Server are CAPABILITIES, not Optional Features.** Per Microsoft official docs they
+  are managed through Get-WindowsCapability / Add-WindowsCapability with identities
+  `OpenSSH.Client~~~~0.0.1.0` / `OpenSSH.Server~~~~0.0.1.0` — they never appear in DISM `/Get-Features`.
+  The Windows Components catalog now targets the Capability inventory with exact capability identities
+  (mechanism `RemoveCapability`), and both names are removed from the feature allowlist. When present
+  on an image they stay visible for knowledge, but their checkbox is disabled with "当前版本暂不支持
+  应用" and selecting them is a no-op — no Apply operation silently Skips. Feature-shaped
+  "OpenSSH.Client" / "OpenSSH.Server" raw items no longer match these definitions.
+
 ### Added (Phase 10 — Build / ISO Export — feature/iso-build)
 - **Build / ISO Export pipeline (ADR-038):** replaces the honest placeholder Build step with a real,
   safe ISO-rebuild engine. `IBuildService` (Core) + `ImageBuildService` (Infrastructure) orchestrate

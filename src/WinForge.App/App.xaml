@@ -11,6 +11,7 @@
                 <ResourceDictionary>
                     <BooleanToVisibilityConverter x:Key="BoolToVis"/>
                     <conv:NullToVisibilityConverter x:Key="NullToVis"/>
+                    <conv:StringNullOrEmptyToVisibilityConverter x:Key="NullEmptyToVis"/>
                     <conv:BooleanToVisibilityInverseConverter x:Key="BoolToVisInv"/>
                     <conv:BooleanToFontWeightConverter x:Key="BoolToBold"/>
 
@@ -18,6 +19,8 @@
                     <conv:LocKeyMultiConverter x:Key="locKey"/>
                     <conv:StateToCaptionConverter x:Key="stateCaption"/>
                     <conv:StepBadgeConverter x:Key="stepBadge"/>
+                    <conv:RecommendationToColorConverter x:Key="recColor"/>
+                    <conv:RiskToColorConverter x:Key="riskColor"/>
 
                     <Style x:Key="StatusTile" TargetType="Border">
                         <Setter Property="Background" Value="#F5F7FA"/>
@@ -122,6 +125,18 @@
             </DataTemplate>
             <DataTemplate DataType="{x:Type vm:AboutViewModel}">
                 <views:AboutView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ComponentIntelligenceViewModel}">
+                <views:ComponentIntelligenceView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ComponentKnowledgeViewModel}">
+                <views:ComponentKnowledgeView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:OptimizationKnowledgeViewModel}">
+                <views:OptimizationKnowledgeView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ProfileViewModel}">
+                <views:ProfileView/>
             </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
