@@ -1462,6 +1462,27 @@ All decisions are `ACCEPTED` unless noted.
   to a Windows Components row; Disabled feature stays visible; AppX filter cannot affect the
   Components tab; execution allowlist does not gate visibility; unsupported apply shows a blocked
   reason + disabled checkbox; unified Discover populates Apps + Components together; catalog targets
-  pinned to the documented 25H2 `/Get-Features` identities). Full suite **590 pass (Core 53, App 537),
+  pinned to the documented 25H2 `/Get-Features` identities). Full suite **591 pass (Core 53, App 538),
   0 errors, 0 warnings (Release)**.
+
+## ADR-056: OpenSSH Client/Server are CAPABILITIES, not OptionalFeature FeatureNames
+
+- **Context:** the first-tranche Windows Components catalog modeled OpenSSH Client / OpenSSH Server
+  with `Category = OptionalFeature` and DISM FeatureNames `OpenSSH.Client` / `OpenSSH.Server`. Microsoft
+  official documentation confirms both are Windows **CAPABILITIES** managed through
+  Get-WindowsCapability / Add-WindowsCapability with the identities `OpenSSH.Client~~~~0.0.1.0` /
+  `OpenSSH.Server~~~~0.0.1.0` — they never appear in `/Get-Features`.
+- **Decision:**
+  - `TechnicalTargets` for OpenSshClient / OpenSshServer now use `Category = Capability`,
+    `MatchMethod.Exact`, patterns `OpenSSH.Client~~~~0.0.1.0` / `OpenSSH.Server~~~~0.0.1.0`, mechanism
+    `RemoveCapability`. They resolve through the Capability inventory only — a feature-shaped
+    "OpenSSH.Client" raw item must NOT match (pinned by test).
+  - `OpenSSH.Client` / `OpenSSH.Server` removed from `FeatureConfigPolicy.AllowedFeatureNames`.
+  - Because capability execution is intentionally unsupported in this tranche (ADR-051), the rows stay
+    VISIBLE when present, their checkbox is disabled, the detail shows "当前版本暂不支持应用"
+    (`Opt.ApplyUnsupported`), and selection is a no-op — no Apply operation that silently Skips.
+  - Documentation/report wording corrected (CHANGELOG, ARCHITECTURE, coverage matrix, ROADMAP).
+- **Consequences:** regression tests assert the capability identity resolution, the
+  never-OptionalFeature rule, the blocked-apply UX, and the catalog/allowlist pin; full suite
+  **591 pass (Core 53, App 538), 0 errors, 0 warnings (Release)**.
 

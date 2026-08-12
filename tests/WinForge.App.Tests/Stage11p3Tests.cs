@@ -94,14 +94,32 @@ public class Stage11p3CatalogTests
         foreach (var def in featureCatalog.GetDefinitions())
         {
             Assert.Equal(OptimizationAction.Feature, def.Action);
-            Assert.Equal(OptimizationMechanism.DisableOptionalFeature, def.Mechanism);
             Assert.Equal(OptimizationScope.MountedImageFeature, def.Scope);
-            foreach (var target in def.TechnicalTargets)
+            if (def.Mechanism == OptimizationMechanism.DisableOptionalFeature)
             {
-                Assert.Equal(ComponentCategory.OptionalFeature, target.Category);
-                Assert.Equal(MatchMethod.Exact, target.Match);
-                Assert.True(FeatureConfigPolicy.IsFeatureAllowed(target.Pattern),
-                    $"Feature '{target.Pattern}' is in the catalog but not on FeatureConfigPolicy.");
+                // OptionalFeature defs: exact FeatureName targets, all on the
+                // execution allowlist (display + apply both supported).
+                foreach (var target in def.TechnicalTargets)
+                {
+                    Assert.Equal(ComponentCategory.OptionalFeature, target.Category);
+                    Assert.Equal(MatchMethod.Exact, target.Match);
+                    Assert.True(FeatureConfigPolicy.IsFeatureAllowed(target.Pattern),
+                        $"Feature '{target.Pattern}' is in the catalog but not on FeatureConfigPolicy.");
+                }
+            }
+            else
+            {
+                // Capability defs (OpenSSH Client/Server): exact capability
+                // identities; execution allowlist intentionally empty this tranche
+                // → visible-but-blocked (never silently Skipped at Apply).
+                Assert.Equal(OptimizationMechanism.RemoveCapability, def.Mechanism);
+                foreach (var target in def.TechnicalTargets)
+                {
+                    Assert.Equal(ComponentCategory.Capability, target.Category);
+                    Assert.Equal(MatchMethod.Exact, target.Match);
+                    Assert.False(FeatureConfigPolicy.IsCapabilityAllowed(target.Pattern),
+                        $"Capability '{target.Pattern}' must not be on the (intentionally empty) execution allowlist.");
+                }
             }
         }
     }
@@ -976,8 +994,10 @@ public class Stage11p3ComponentsTabDefectTests
     [Fact]
     public void Catalog_Targets_Match_Documented_25H2_FeatureNames()
     {
-        // Pins the 12 logical Windows Components to the exact DISM /Get-Features
-        // identities on Windows 11 25H2 (evidence-backed; no fuzzy loosening).
+        // Pins the logical Windows Components to the exact DISM /Get-Features
+        // FeatureNames on Windows 11 25H2 (evidence-backed; no fuzzy loosening).
+        // OpenSSH Client/Server are CAPABILITIES (OpenSSH.Client~~~~0.0.1.0 /
+        // OpenSSH.Server~~~~0.0.1.0 per Microsoft docs), asserted separately below.
         var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "Microsoft-Hyper-V",
@@ -985,8 +1005,6 @@ public class Stage11p3ComponentsTabDefectTests
             "Containers-DisposableClientVM",
             "Microsoft-Windows-Subsystem-Linux",
             "VirtualMachinePlatform",
-            "OpenSSH.Client",
-            "OpenSSH.Server",
             "WindowsMediaPlayer",
             "Internet-Printing-Client",
             "ScanManagementConsole",
@@ -1006,5 +1024,90 @@ public class Stage11p3ComponentsTabDefectTests
         {
             Assert.Contains(expected, e => string.Equals(e, pattern, StringComparison.OrdinalIgnoreCase));
         }
+
+        // OpenSSH resolves through the CAPABILITY inventory with the documented
+        // capability identities — never through OptionalFeature FeatureNames.
+        var opensshClient = new WindowsFeaturesCatalog().GetDefinitions().Single(d => d.Id == "OpenSshClient");
+        var opensshServer = new WindowsFeaturesCatalog().GetDefinitions().Single(d => d.Id == "OpenSshServer");
+        Assert.Equal(ComponentCategory.Capability, opensshClient.Category);
+        Assert.Equal(ComponentCategory.Capability, opensshServer.Category);
+        Assert.Equal(OptimizationMechanism.RemoveCapability, opensshClient.Mechanism);
+        Assert.Equal(OptimizationMechanism.RemoveCapability, opensshServer.Mechanism);
+        Assert.Equal("OpenSSH.Client~~~~0.0.1.0", opensshClient.TechnicalTargets.Single().Pattern);
+        Assert.Equal("OpenSSH.Server~~~~0.0.1.0", opensshServer.TechnicalTargets.Single().Pattern);
+        Assert.All(opensshClient.TechnicalTargets, t => Assert.Equal(ComponentCategory.Capability, t.Category));
+        Assert.All(opensshServer.TechnicalTargets, t => Assert.Equal(ComponentCategory.Capability, t.Category));
+    }
+
+    [Fact]
+    public void OpenSSH_Resolves_Through_Capability_Inventory_Not_OptionalFeature()
+    {
+        // Regression: a raw CAPABILITY item (OpenSSH.Client~~~~0.0.1.0) maps to the
+        // reviewed OpenSSH Client row; a raw OPTIONAL FEATURE named "OpenSSH.Client"
+        // must NOT match (the definition targets the capability inventory).
+        var state = new AppState();
+        var logger = new InMemoryLoggerService();
+        var loc = new FakeLocalizationService();
+        var catalog = new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog());
+
+        // 1) Capability identity resolves → row VISIBLE but apply blocked.
+        var capabilityInventory = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new[]
+            {
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.Capability,
+                    Status = InventoryStatus.Success,
+                    Items = new List<IRawInventoryItem>
+                    {
+                        new RawCapability { Category = ComponentCategory.Capability,
+                            RawIdentity = "OpenSSH.Client~~~~0.0.1.0", DisplayName = "OpenSSH Client",
+                            CapState = CapabilityState.Installed }
+                    }
+                }
+            }
+        };
+        var ciVm = new ComponentIntelligenceViewModel(state, logger, new StaticCiService { Inventory = capabilityInventory }, catalog, loc);
+        state.CurrentServicingWorkspace = new ImageServicingWorkspace { State = ServicingWorkspaceState.Mounted, MountDirectory = @"C:\wf\mount" };
+        ciVm.DiscoverAsync().GetAwaiter().GetResult();
+        var vm = new ComponentKnowledgeViewModel(ciVm, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability });
+
+        var row = vm.Items.Single(i => i.Entry.Definition?.Id == "OpenSshClient");
+        Assert.Equal(ComponentCategory.Capability, row.Entry.RepresentativeRaw?.Category);
+        Assert.False(row.IsApplySupported);      // capability execution not supported this tranche
+        Assert.False(row.IsSelectable);          // checkbox disabled
+        Assert.Equal("Opt.ApplyUnsupported", row.BlockReason);
+        row.IsSelected = true;                   // must be a no-op — no silent-skip operation
+        Assert.Null(state.CurrentCustomizationPlan);
+
+        // 2) A feature-shaped "OpenSSH.Client" raw item must NOT match (never
+        // OptionalFeature inventory) — the definition only targets Capability.
+        var featureInventory = new ComponentInventory
+        {
+            Discovered = true,
+            Categories = new[]
+            {
+                new CategoryDiscoveryResult
+                {
+                    Category = ComponentCategory.OptionalFeature,
+                    Status = InventoryStatus.Success,
+                    Items = new List<IRawInventoryItem>
+                    {
+                        new RawOptionalFeature { Category = ComponentCategory.OptionalFeature,
+                            RawIdentity = "OpenSSH.Client", DisplayName = "OpenSSH Client",
+                            FeatureStateValue = FeatureState.Enabled }
+                    }
+                }
+            }
+        };
+        var ciVm2 = new ComponentIntelligenceViewModel(state, logger, new StaticCiService { Inventory = featureInventory }, catalog, loc);
+        ciVm2.DiscoverAsync().GetAwaiter().GetResult();
+        var vm2 = new ComponentKnowledgeViewModel(ciVm2, state, logger, loc,
+            new[] { ComponentCategory.OptionalFeature, ComponentCategory.Capability });
+
+        Assert.DoesNotContain(vm2.Items, i => i.Entry.Definition?.Id == "OpenSshClient");
     }
 }

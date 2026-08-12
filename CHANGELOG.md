@@ -14,10 +14,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   revert; user-scope settings apply to NEW users of the offline image (Default User profile), never the
   host registry.
 - **Windows Components tab is now knowledge-backed.** Optional features (Hyper-V, Windows Sandbox,
-  WSL, Virtual Machine Platform, OpenSSH client/server, legacy Media Player, IPP/scanning/XPS,
-  PowerShell 2.0 engine, Hypervisor Platform) are shown with human purpose/recommendation/risk,
-  dependency notes and exact DISM targets; selecting one adds a strongly typed "feature disable" to the
-  plan.
+  WSL, Virtual Machine Platform, legacy Media Player, IPP/scanning/XPS, PowerShell 2.0 engine,
+  Hypervisor Platform) and capabilities (OpenSSH Client/Server — `OpenSSH.Client~~~~0.0.1.0` /
+  `OpenSSH.Server~~~~0.0.1.0`, per Microsoft docs managed via Get/Add-WindowsCapability) are shown
+  with human purpose/recommendation/risk, dependency notes and exact DISM targets. Supported feature
+  rows add a strongly typed "feature disable" to the plan; capability rows are visible for knowledge
+  but their checkbox is disabled with "当前版本暂不支持应用" until capability execution is reviewed.
 - **Services / Privacy / System tabs now share one knowledge surface.** Services lists 11 reviewed
   services (proposed startup changes only for allowlisted ones; core services shown as informational
   and blocked); Privacy and System gained reviewed registry-policy controls (input personalization,
@@ -28,6 +30,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   (移除/禁用/配置/服务/功能), category, offline scope and revert contract before Apply.
 - **Coverage matrix.** `.tmp/phase11/stage11.3-coverage-matrix.md` documents every candidate
   (implemented/deferred/rejected/unsupported) with provenance and reason.
+
+### Fixed (Phase 11 Stage 11.3 — OpenSSH capability correction — ADR-056)
+- **OpenSSH Client/Server are CAPABILITIES, not Optional Features.** Per Microsoft official docs they
+  are managed through Get-WindowsCapability / Add-WindowsCapability with identities
+  `OpenSSH.Client~~~~0.0.1.0` / `OpenSSH.Server~~~~0.0.1.0` — they never appear in DISM `/Get-Features`.
+  The Windows Components catalog now targets the Capability inventory with exact capability identities
+  (mechanism `RemoveCapability`), and both names are removed from the feature allowlist. When present
+  on an image they stay visible for knowledge, but their checkbox is disabled with "当前版本暂不支持
+  应用" and selecting them is a no-op — no Apply operation silently Skips. Feature-shaped
+  "OpenSSH.Client" / "OpenSSH.Server" raw items no longer match these definitions.
 
 ### Added (Phase 10 — Build / ISO Export — feature/iso-build)
 - **Build / ISO Export pipeline (ADR-038):** replaces the honest placeholder Build step with a real,

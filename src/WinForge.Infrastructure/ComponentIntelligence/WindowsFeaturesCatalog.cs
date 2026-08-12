@@ -8,8 +8,9 @@ namespace WinForge.Infrastructure.ComponentIntelligence;
 
 /// <summary>
 /// Curated Windows Components catalog (Stage 11.3, ADR-051/ADR-053). Maps a small set
-/// of well-understood optional features / capabilities onto exact DISM FeatureNames.
-/// A component only becomes Curated when a discovered item actually matches (ComponentMatcher).
+/// of well-understood optional features / capabilities onto exact DISM FeatureNames
+/// or capability identities (e.g. OpenSSH.Client~~~~0.0.1.0). A component only becomes
+/// Curated when a discovered item actually matches (ComponentMatcher).
 /// Every entry carries the operation taxonomy (Action / Mechanism / Scope), dependency
 /// edges (evidence-backed only; RelatedTo preferred over inferred Requires) and provenance.
 /// </summary>
@@ -134,7 +135,7 @@ public sealed class WindowsFeaturesCatalog : IComponentCatalogProvider
             new ComponentDefinition
             {
                 Id = "OpenSshClient",
-                Category = ComponentCategory.OptionalFeature,
+                Category = ComponentCategory.Capability,
                 DisplayNameKey = "Feat.OpenSshClient.DisplayName",
                 ShortDescriptionKey = "Feat.OpenSshClient.Short",
                 LongDescriptionKey = "Feat.OpenSshClient.Short",
@@ -143,7 +144,7 @@ public sealed class WindowsFeaturesCatalog : IComponentCatalogProvider
                 Removal = RemovalSupport.Supported,
                 Restore = RestoreSupport.Easy,
                 Action = OptimizationAction.Feature,
-                Mechanism = OptimizationMechanism.DisableOptionalFeature,
+                Mechanism = OptimizationMechanism.RemoveCapability,
                 Scope = OptimizationScope.MountedImageFeature,
                 UserScenarios = new[] {ComponentScenario.Developer, ComponentScenario.RemoteDesktop},
                 KeepIf = new[] {"Feat.OpenSshClient.KeepIf"},
@@ -151,7 +152,7 @@ public sealed class WindowsFeaturesCatalog : IComponentCatalogProvider
                 KnownImpact = new string[0],
                 Dependencies = new ComponentDependency[0],
                 Conflicts = new string[0],
-                TechnicalTargets = new[] {new TechnicalTarget { Category = ComponentCategory.OptionalFeature, Match = MatchMethod.Exact, Pattern = "OpenSSH.Client" }},
+                TechnicalTargets = new[] {new TechnicalTarget { Category = ComponentCategory.Capability, Match = MatchMethod.Exact, Pattern = "OpenSSH.Client~~~~0.0.1.0" }},
                 CompatibilityRules = new[] { new CompatibilityRule { SupportedBuildMin = "22000", KnownOnBuilds = new[] { "26100" } } },
                 Provenance = new[] {new KnowledgeClaim(KnowledgeClaimKind.Fact, "Feat.OpenSshClient.Short", new[] { new KnowledgeSource(KnowledgeSourceType.MicrosoftOfficial, "MicrosoftOfficial", ConfidenceLevel.Verified) })},
                 ScenarioRecommendations = new ScenarioRecommendation[0],
@@ -162,7 +163,7 @@ public sealed class WindowsFeaturesCatalog : IComponentCatalogProvider
             new ComponentDefinition
             {
                 Id = "OpenSshServer",
-                Category = ComponentCategory.OptionalFeature,
+                Category = ComponentCategory.Capability,
                 DisplayNameKey = "Feat.OpenSshServer.DisplayName",
                 ShortDescriptionKey = "Feat.OpenSshServer.Short",
                 LongDescriptionKey = "Feat.OpenSshServer.Short",
@@ -171,7 +172,7 @@ public sealed class WindowsFeaturesCatalog : IComponentCatalogProvider
                 Removal = RemovalSupport.Supported,
                 Restore = RestoreSupport.Easy,
                 Action = OptimizationAction.Feature,
-                Mechanism = OptimizationMechanism.DisableOptionalFeature,
+                Mechanism = OptimizationMechanism.RemoveCapability,
                 Scope = OptimizationScope.MountedImageFeature,
                 UserScenarios = new[] {ComponentScenario.Developer, ComponentScenario.EnterpriseDomain},
                 KeepIf = new[] {"Feat.OpenSshServer.KeepIf"},
@@ -179,7 +180,7 @@ public sealed class WindowsFeaturesCatalog : IComponentCatalogProvider
                 KnownImpact = new string[0],
                 Dependencies = new ComponentDependency[0],
                 Conflicts = new string[0],
-                TechnicalTargets = new[] {new TechnicalTarget { Category = ComponentCategory.OptionalFeature, Match = MatchMethod.Exact, Pattern = "OpenSSH.Server" }},
+                TechnicalTargets = new[] {new TechnicalTarget { Category = ComponentCategory.Capability, Match = MatchMethod.Exact, Pattern = "OpenSSH.Server~~~~0.0.1.0" }},
                 CompatibilityRules = new[] { new CompatibilityRule { SupportedBuildMin = "22000", KnownOnBuilds = new[] { "26100" } } },
                 Provenance = new[] {new KnowledgeClaim(KnowledgeClaimKind.Fact, "Feat.OpenSshServer.Short", new[] { new KnowledgeSource(KnowledgeSourceType.MicrosoftOfficial, "MicrosoftOfficial", ConfidenceLevel.Verified) })},
                 ScenarioRecommendations = new ScenarioRecommendation[0],

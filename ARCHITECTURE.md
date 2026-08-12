@@ -360,14 +360,18 @@ WinForge.Infrastructure  (Windows only)
   generated `OptimizationCatalog`. First tranche: Windows Components 12 · Services 12 (11 reviewed +
   RpcSs informational) · Privacy 11 · System 10 · Personalization 14 (Start/Search + Taskbar + Explorer +
   Lock screen/Desktop + Appearance). The Personalization tab replaces the Experience / Coming Soon tab
-  (ADR-054).
+  (ADR-054). **OpenSSH Client/Server are modeled as CAPABILITIES** (`OpenSSH.Client~~~~0.0.1.0` /
+  `OpenSSH.Server~~~~0.0.1.0`, Microsoft-documented capability identities, mechanism
+  `RemoveCapability`) — they resolve through the Capability inventory, stay visible when present, but
+  their checkbox is disabled with "当前版本暂不支持应用" until capability execution is reviewed
+  (display eligibility ≠ execution eligibility, ADR-055).
 - **Review plan (Part S).** `PlanReviewViewModel` lists every selected change with its exact action type
   (移除/禁用/配置/服务/功能), category, offline scope, and revert contract; per-action totals.
 - **Tests.** `Stage11p3Tests` covers content validation (name/purpose/recommendation/risk/provenance,
   no Unknown/Experimental leak, community-never-promotes, service allowlist pin, feature-policy pin),
   offline safety (host HKCU never targeted, DEFAULT_USER path), operation mapping per mechanism,
   build/edition gating, post-install-only blocking, core-service blocking, Review action types, reversal
-  round-trip, DISM feature-disable execution, capability skip. Full suite **584 pass (Core 53, App 531),
-  0 errors, 0 warnings (Release)**.
+  round-trip, DISM feature-disable execution, capability skip, OpenSSH-via-capability-inventory
+  resolution. Full suite **591 pass (Core 53, App 538), 0 errors, 0 warnings (Release)**.
 
 See DECISIONS.md ADR-045 / ADR-047 / ADR-048 / ADR-049 / ADR-051 / ADR-052 / ADR-053 / ADR-054 for the full rationale.

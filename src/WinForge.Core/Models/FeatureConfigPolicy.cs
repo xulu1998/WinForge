@@ -29,8 +29,6 @@ public static class FeatureConfigPolicy
         "Containers-DisposableClientVM",
         "Microsoft-Windows-Subsystem-Linux",
         "VirtualMachinePlatform",
-        "OpenSSH.Client",
-        "OpenSSH.Server",
         "WindowsMediaPlayer",
         "Internet-Printing-Client",
         "ScanManagementConsole",
@@ -39,7 +37,14 @@ public static class FeatureConfigPolicy
         "HypervisorPlatform"
     };
 
-    /// <summary>Capabilities are not offered in the first tranche — the allowlist is empty.</summary>
+    /// <summary>
+    /// Capabilities are not offered in the first tranche — the allowlist is empty.
+    /// NOTE: OpenSSH Client/Server are modeled as CAPABILITIES (OpenSSH.Client~~~~0.0.1.0 /
+    /// OpenSSH.Server~~~~0.0.1.0, per Microsoft docs managed via Get/Add-WindowsCapability),
+    /// so they are intentionally NOT in <see cref="AllowedFeatureNames"/> and, until the
+    /// capability allowlist is reviewed, their rows stay visible-but-blocked
+    /// ("当前版本暂不支持应用") rather than silently Skipped at Apply.
+    /// </summary>
     public static IReadOnlyList<string> AllowedCapabilityNames { get; } = Array.Empty<string>();
 
     public static bool IsFeatureAllowed(string? featureName)
