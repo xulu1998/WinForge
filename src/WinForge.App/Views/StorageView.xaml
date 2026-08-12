@@ -127,19 +127,25 @@
             <ItemsControl ItemsSource="{Binding CleanupCandidates, Mode=OneWay}" Margin="0,6,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:StorageCandidateItem}">
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                            <TextBlock FontSize="12" Foreground="#1F2933" Width="150" TextTrimming="CharacterEllipsis"
-                                       Text="{Binding WorkspaceId, Mode=OneWay}"/>
-                            <TextBlock FontSize="12" Foreground="#2F855A" Width="90"
-                                       Text="{Binding SizeText, Mode=OneWay}"/>
-                            <TextBlock FontSize="11" Foreground="#9A3412" Margin="8,0,0,0"
-                                       Visibility="{Binding IsLegacy, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                                <TextBlock.Text>
-                                    <MultiBinding Converter="{StaticResource locKey}">
-                                        <Binding Source="Storage.Legacy"/><Binding Source="{StaticResource Loc}"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
+                        <StackPanel Margin="0,2,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock FontSize="12" Foreground="#1F2933" Width="150" TextTrimming="CharacterEllipsis"
+                                           Text="{Binding WorkspaceId, Mode=OneWay}"/>
+                                <TextBlock FontSize="12" Foreground="#2F855A" Width="90"
+                                           Text="{Binding SizeText, Mode=OneWay}"/>
+                                <TextBlock FontSize="11" Foreground="#9A3412" Margin="8,0,0,0"
+                                           Visibility="{Binding IsLegacy, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource locKey}">
+                                            <Binding Source="Storage.Legacy"/><Binding Source="{StaticResource Loc}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <!-- Stage 12.7: each candidate shows its OWNING root so
+                                 the size is never mistaken for the current F: root. -->
+                            <TextBlock FontSize="10.5" Foreground="#9AA5B1" Margin="0,1,0,0"
+                                       Text="{Binding RootPath, Mode=OneWay}"/>
                         </StackPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

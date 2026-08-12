@@ -1732,3 +1732,25 @@ All decisions are `ACCEPTED` unless noted.
     success — the failure panel is shown and the user proceeds only after seeing it.
 - **Consequences:** the operation remains offline-supported (policy branch), siblings unaffected, no
   ACL hacks; failed operations are visible with exact reasons on the Review page.
+
+
+## ADR-071: One authoritative creation root (CurrentRoot) — shadow workspace leak fix
+
+- **Context:** real desktop: CurrentRoot=F://WinForgeWorkspaces, yet a ~6.9 GB workspace
+  (wf-a9bac38c7259) kept reappearing under the old C: default root after Finish emptied F:.
+- **Root cause:** WorkspacePathProvider was registered standalone (default
+  %LOCALAPPDATA%\WinForge\Workspaces) and never consulted IWorkspaceRootSettingsService.CurrentRoot.
+  ImageServicingService created SERVICING data under C: while WorkspaceLifecycleManager wrote the
+  MANIFEST under the configured F: root (its WorkspaceRoot property reads CurrentRoot) — two same-id
+  directories. Finish cleaned by manifest (F: shell) and leaked the C: data (manifest-less).
+- **Decision:**
+  - WorkspacePathProvider resolves the CURRENT root at runtime (fixed override → current root →
+    platform default), wired in Bootstrapper to the settings service. Every new workflow creation
+    path (Prepare/Apply/Commit/Export/checkpoint/Build) then lands under CurrentRoot only.
+  - KnownRoots are historical: scanned / recovered / cleaned, NEVER a creation destination.
+  - Finish cleans the single unified workspace (manifest + data together); the final ISO (outside
+    the workspace) survives; recoverable checkpoints retained only as required.
+  - Storage candidates display their owning RootPath so a size is never attributed to the current
+    root by mistake.
+- **Consequences:** no shadow/split workspaces; C:/old-root disk usage stays flat across repeated
+  workflows; root changes affect all new workflows immediately (provider reads live).

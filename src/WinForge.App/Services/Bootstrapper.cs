@@ -65,7 +65,14 @@ public static class Bootstrapper
         services.AddSingleton<IWimService, WimService>();
 
         // Phase 3 — Step 3.2 (WIM servicing workspace & mount lifecycle)
-        services.AddSingleton<IWorkspacePathProvider, WorkspacePathProvider>();
+        // Stage 12.7: the workspace path provider MUST resolve the CURRENT
+        // workspace root at runtime — a standalone default root here was the
+        // real-desktop leak (servicing data created under the old C: default
+        // while the lifecycle manifest lived under the configured F: root, so
+        // Finish cleaned the shell and leaked the data). KnownRoots are only
+        // scanned/recovered, never used as a creation destination.
+        services.AddSingleton<IWorkspacePathProvider>(sp =>
+            new WorkspacePathProvider(rootSettings: sp.GetRequiredService<IWorkspaceRootSettingsService>()));
         services.AddSingleton<IWorkspaceSafeDelete, WorkspaceSafeDelete>();
         services.AddSingleton<IWorkspaceLifecycleManager, WorkspaceLifecycleManager>();
         services.AddSingleton<IWorkspaceRootSettingsService, WorkspaceRootSettingsService>();

@@ -24,6 +24,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Incident regression.** A repeated-workflow test proves disposable workspaces no longer accumulate
   across sessions (the ~249 GB stale-workspace incident becomes impossible under normal use).
 
+### Fixed (Phase 12 Stage 12.7 — workspace root not honored: shadow C: workspace leak)
+
+- **Real-desktop:** CurrentRoot=F://WinForgeWorkspaces, but a ~6.9 GB workspace (wf-a9bac38c7259) kept
+  reappearing under the OLD C: default root after Finish (F: became empty).
+- **Root cause (SPLIT workspace):** `WorkspacePathProvider` was registered with a standalone default
+  root (%LOCALAPPDATA%\WinForge\Workspaces) and NEVER consulted
+  `IWorkspaceRootSettingsService.CurrentRoot`. Prepare created the SERVICING data under C: while the
+  lifecycle MANIFEST went to the configured F: root (lifecycle.WorkspaceRoot uses CurrentRoot) — two
+  same-id directories. Finish cleaned by manifest (F: shell) and LEAKED the C: data (no manifest).
+- **Fix (ADR-071):** `WorkspacePathProvider` now resolves the CURRENT root at runtime
+  (fixed test override → current root → platform default); Bootstrapper wires it to the settings
+  service so EVERY new workflow service (Prepare/Apply/Commit/Export/checkpoint/Build) creates under
+  CurrentRoot only. KnownRoots remain scan/recover/clean-only — never a creation destination.
+  Finish now cleans the one unified workspace (manifest + data together); the final ISO (outside the
+  workspace) survives. Storage candidates display their OWNING root (RootPath) so a size is never
+  mistaken for the current root.
+- **Regression:** Stage12p7WorkspaceRootTests (9) — current root is the only creation root; old
+  KnownRoot scanned but never created into; changing root C→F affects new workflows live; recovery
+  respects original root; no duplicate/shadow workspace across roots; Storage candidate shows source
+  root; repeated workflows do not grow the old root; full incident reproduction
+  (KnownRoots=[C,F], CurrentRoot=F → F-only creation, F cleaned, C untouched, ISO preserved).
+  Full suite **767 pass (Core 53, App 714), 0 errors, 0 warnings**.
+
 ### Fixed (Phase 12 Stage 12.6 — Hide Widgets offline registry UnauthorizedAccessException + apply-result UX)
 
 - **Real-desktop:** applying 「隐藏小组件按钮」(SetOfflineRegistryValue, OfflineDefaultUser) failed with

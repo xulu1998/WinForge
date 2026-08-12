@@ -360,4 +360,21 @@ public sealed class StorageCandidateItem
 
     public string SizeText => DiskSpaceEstimator.FormatBytes(Bytes);
     public bool IsLegacy => Classification == WorkspaceClassification.LegacyUnknown;
+
+    /// <summary>Owning workspace root (parent directory), Stage 12.7 storage UX.</summary>
+    public string RootPath
+    {
+        get
+        {
+            try
+            {
+                var parent = System.IO.Path.GetDirectoryName(Directory);
+                return string.IsNullOrWhiteSpace(parent) ? Directory : parent;
+            }
+            catch
+            {
+                return Directory;
+            }
+        }
+    }
 }
