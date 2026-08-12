@@ -1754,3 +1754,23 @@ All decisions are `ACCEPTED` unless noted.
     root by mistake.
 - **Consequences:** no shadow/split workspaces; C:/old-root disk usage stays flat across repeated
   workflows; root changes affect all new workflows immediately (provider reads live).
+
+
+## ADR-072: Phase 12 closeout — status, architecture confirmation, non-blocking follow-ups
+
+- **Status:** PHASE 12 — COMPLETED; REAL DESKTOP VALIDATION — PASSED (Windows 11 25H2); MERGED TO
+  `main` via `--no-ff` (branch `phase/12-workspace-lifecycle` retained). Original incident
+  (~30 stale workspaces + temp ≈ 249 GB) RESOLVED by the lifecycle architecture.
+- **Architecture confirmed (12 items):** lifecycle manifests; DISM-authoritative mount safety;
+  CurrentRoot-only creation vs KnownRoots scan/recover/clean; safe cleanup policy; Finish/Discard
+  auto-cleanup; final-ISO vs temp separation; disk-space guard; Storage cleanup UI; canonical
+  plan-operation normalization; Apply partial-failure reporting; Build→Finish state sync;
+  shadow-workspace root split fix.
+- **Non-blocking follow-ups (do NOT reopen Phase 12):**
+  1. long-running operation periodic disk-space checks are less comprehensive than pre-operation checks;
+  2. recoverable checkpoint minimization may be improved further;
+  3. startup automatic cleanup stays conservative — Storage UI / Finish / Discard already provide safe
+     cleanup paths;
+  4. Finish cleanup may synchronously wait while deleting a large workspace; future UX may improve
+     progress/cancellation;
+  5. Custom profile + Extra Scenarios polish remains a separate Phase 11 follow-up (ADR-061).

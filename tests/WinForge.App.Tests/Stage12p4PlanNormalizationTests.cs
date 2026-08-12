@@ -131,7 +131,7 @@ public class Stage12p4PlanNormalizationTests
         plan.AddOperation(RegistryOp("a", "SOFTWARE", "Policies\\Microsoft\\Windows\\CloudContent", "DisableWindowsSpotlightFeatures", "1"));
         plan.AddOperation(RegistryOp("b", "SOFTWARE", "Policies\\Microsoft\\Windows\\CloudContent", "DisableWindowsSpotlightFeatures", "1"));
 
-        Assert.Equal(1, plan.SelectedOperations.Count);
+        Assert.Single(plan.SelectedOperations);
         Assert.Single(plan.Operations.Where(o => o.IsSelected));
     }
 

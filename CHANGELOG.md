@@ -3,6 +3,18 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 12 CLOSEOUT — Workspace Lifecycle & Disk Safety (2026-08-12)
+
+**STATUS: PHASE 12 — COMPLETED · REAL DESKTOP VALIDATION — PASSED · MERGED TO `main` (--no-ff).**
+All seven stages (12.1 lifecycle manifests + disk safety, 12.2 Finish cleanup + workspace-root settings,
+12.3 Review validation UX, 12.4 plan normalization/dedupe, 12.5 Build→Finish state sync, 12.6 Hide Widgets
+Dsh-policy fix + apply-result UX, 12.7 one authoritative creation root) are REAL-DESKTOP VALIDATED on
+Windows 11 25H2. Original incident resolved: ~30 stale workspaces + temp ≈ 249 GB → deterministic lifecycle
+with authoritative DISM mount safety, CurrentRoot-only creation (KnownRoots scan/recover/clean-only), safe
+Finish/Discard cleanup, ISO preserved, Storage cleanup UI with owning-root display, no repeated-run leak.
+Non-blocking follow-ups recorded (ADR-072). Final suite baseline: 767 tests (Core 53, App 714), 0 errors,
+0 warnings (Release).
+
 ## [Unreleased]
 
 ### Added (Phase 12 — Workspace Lifecycle & Disk Safety — phase/12-workspace-lifecycle)

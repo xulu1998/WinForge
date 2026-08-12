@@ -493,8 +493,8 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 12 — Workspace Lifecycle & Disk Safety
 
-- **Status:** IN PROGRESS — **IMPLEMENTED (Stage 12.1 + 12.2) / PENDING REAL DESKTOP VALIDATION**
-  (2026-08-12; branch `phase/12-workspace-lifecycle`; NOT merged to `main`).
+- **Status:** **COMPLETED — REAL DESKTOP VALIDATION — PASSED** (2026-08-12; Stages 12.1–12.7 all
+  COMPLETED; merged to `main` via `--no-ff`; branch `phase/12-workspace-lifecycle` retained).
 - **Goal:** a deterministic, safe workspace lifecycle — repeated Select ISO → Prepare → Customize →
   Apply/Cancel → Build → Finish must never accumulate hundreds of GB of stale files (ADR-062..066).
 - **Scope (Stage 12.1 — lifecycle + disk safety, IMPLEMENTED):** durable `workspace.json` manifests +
