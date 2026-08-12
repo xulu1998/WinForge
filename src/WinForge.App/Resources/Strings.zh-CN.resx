@@ -109,6 +109,19 @@
   <data name="Settings.Language" xml:space="preserve"><value>显示语言</value></data>
   <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>
   <data name="Settings.Language.Chinese" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Storage.Title" xml:space="preserve"><value>存储</value></data>
+  <data name="Storage.Description" xml:space="preserve"><value>WinForge 会将临时服务工作区保存在本地应用数据目录下。在此查看用量并安全清理。活动挂载、可恢复检查点与最终 ISO 输出绝不会被删除。</value></data>
+  <data name="Storage.Scan" xml:space="preserve"><value>扫描磁盘用量</value></data>
+  <data name="Storage.Scanning" xml:space="preserve"><value>正在扫描…</value></data>
+  <data name="Storage.TotalTemporary" xml:space="preserve"><value>WinForge 临时文件</value></data>
+  <data name="Storage.Active" xml:space="preserve"><value>活动工作区</value></data>
+  <data name="Storage.Recoverable" xml:space="preserve"><value>可恢复构建数据</value></data>
+  <data name="Storage.Disposable" xml:space="preserve"><value>旧版可清理工作区</value></data>
+  <data name="Storage.SafeToClean" xml:space="preserve"><value>可安全清理</value></data>
+  <data name="Storage.WillKeep" xml:space="preserve"><value>将保留：活动挂载、可恢复检查点与最终 ISO 输出。</value></data>
+  <data name="Storage.Clean" xml:space="preserve"><value>清理临时文件</value></data>
+  <data name="Storage.Cleaned" xml:space="preserve"><value>已清理 {0}</value></data>
+  <data name="Storage.Legacy" xml:space="preserve"><value>旧版残留</value></data>
   <data name="Settings.Language.Note" xml:space="preserve"><value>更改会即时应用到整个应用。</value></data>
   <data name="Settings.About.Link" xml:space="preserve"><value>关于 WinForge</value></data>
 
@@ -232,6 +245,9 @@
   <data name="Build.Stage.Failed" xml:space="preserve"><value>失败</value></data>
   <data name="Build.Stage.Cancelled" xml:space="preserve"><value>已取消</value></data>
   <data name="Build.Status.Starting" xml:space="preserve"><value>构建已开始…</value></data>
+  <data name="Build.Status.LowDisk" xml:space="preserve"><value>可用磁盘空间不足</value></data>
+  <data name="Build.Status.LowDiskDetail" xml:space="preserve"><value>此构建需要约 {0} 可用空间；当前仅 {1}。请释放空间后重试。</value></data>
+  <data name="Build.Status.CleanedTemps" xml:space="preserve"><value>已清理临时文件：{0}</value></data>
   <data name="Build.Status.Completed" xml:space="preserve"><value>构建完成。最终的 ISO 已生成。</value></data>
   <data name="Build.Status.Failed" xml:space="preserve"><value>构建失败</value></data>
   <data name="Build.Status.Cancelled" xml:space="preserve"><value>构建已取消</value></data>

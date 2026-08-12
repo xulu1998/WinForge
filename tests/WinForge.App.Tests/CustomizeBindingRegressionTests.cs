@@ -22,6 +22,8 @@ using WinForge.Infrastructure.ComponentIntelligence;
 using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.Logging;
 using WinForge.Infrastructure.Profiles;
+using WinForge.Infrastructure.Servicing;
+using WinForge.Infrastructure.WorkspaceLifecycle;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -200,6 +202,20 @@ public class CustomizeBindingRegressionTests
                 () => new OptimizationKnowledgeView { DataContext = c.Tabs[4].Content }, culture));
             cases.Add(new("OptimizationKnowledgeView.Personalization",
                 () => new OptimizationKnowledgeView { DataContext = c.Tabs[5].Content }, culture));
+            // Phase 12 — Settings/Storage disk-usage surface (Parts H/I/Q).
+            cases.Add(new("SettingsView.Storage",
+                () =>
+                {
+                    var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "wf12_render_" + Guid.NewGuid().ToString("N"));
+                    var paths = new WorkspacePathProvider(root);
+                    var runner = new FakeProcessRunner
+                    {
+                        Responder = req => new ProcessResult { ExitCode = 0, StandardOutput = "No mounted images found." },
+                    };
+                    var lifecycle = new WorkspaceLifecycleManager(paths, runner, new WorkspaceSafeDelete(), new InMemoryLoggerService());
+                    var storage = new StorageViewModel(lifecycle, new FakeLoc());
+                    return new StorageView { DataContext = storage };
+                }, culture));
             // Stage 11.4 — profile selector panel (recommended configuration engine).
             cases.Add(new("ProfileView",
                 () =>

@@ -7,6 +7,7 @@ using WinForge.App.Mvvm;
 using WinForge.App.Services;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
+using WinForge.Core.WorkspaceLifecycle;
 
 namespace WinForge.App.ViewModels;
 
@@ -26,6 +27,7 @@ public sealed class BuildStepViewModel : ViewModelBase
     private readonly IBuildService _buildService;
     private readonly IFileSystem _fileSystem;
     private readonly IFilePicker _filePicker;
+    private readonly IWorkspaceLifecycleManager? _lifecycle;
     private readonly IAdkToolLocator _adk;
     private readonly ILoggerService _logger;
     private readonly ILocalizationService _loc;
@@ -55,13 +57,15 @@ public sealed class BuildStepViewModel : ViewModelBase
         IAdkToolLocator adk,
         ILoggerService logger,
         ILocalizationService loc,
-        IFileLauncher? launcher = null)
+        IFileLauncher? launcher = null,
+        IWorkspaceLifecycleManager? lifecycle = null)
     {
         _appState = appState;
         _buildService = buildService;
         _fileSystem = fileSystem;
         _filePicker = filePicker;
         _adk = adk;
+        _lifecycle = lifecycle;
         _logger = logger;
         _loc = loc;
         _launcher = launcher;
@@ -272,7 +276,10 @@ public sealed class BuildStepViewModel : ViewModelBase
 
         if (string.IsNullOrWhiteSpace(OutputDirectory))
         {
-            OutputDirectory = _fileSystem.PathCombine(_fileSystem.GetTempPath(), "WinForge", "Output");
+            // Part J/K: the final ISO is USER OUTPUT, never disposable Temp data.
+            // Default to Documents\WinForge (fall back to the temp Output dir only
+            // when the user profile documents folder is unavailable).
+            OutputDirectory = DefaultOutputDirectory();
         }
     }
 
@@ -398,6 +405,13 @@ public sealed class BuildStepViewModel : ViewModelBase
         }
 
         var ws = _appState.CurrentServicingWorkspace;
+        if (!EnsureBuildDiskSpace(ws, out var diskError))
+        {
+            StatusMessage = diskError;
+            Refresh();
+            return;
+        }
+
         var sourceEdition = ws.SelectedEditionName;
         var finalEdition = string.IsNullOrWhiteSpace(FinalEditionName) ? sourceEdition : FinalEditionName;
         var safeBaseName = BuildFileName.SanitizeBaseName(OutputFileName);
@@ -478,6 +492,15 @@ public sealed class BuildStepViewModel : ViewModelBase
                 }
 
                 StatusMessage = _loc["Build.Status.Completed"];
+                // Phase 12: record the completed lifecycle + final output so the
+                // workspace becomes a cleanup candidate (final ISO is never touched).
+                _lifecycle?.Transition(WorkspaceIdOf(ws), WorkspaceLifecycleState.Completed, "BuildCompleted");
+                _lifecycle?.UpdateManifest(WorkspaceIdOf(ws), m =>
+                {
+                    m.FinalOutputPath = result.OutputPath;
+                    m.HasBuildCheckpoint = true;
+                    m.CanDeleteSafely = true;
+                });
                 // The working image is now committed & unmounted; reflect reality.
                 if (ws.State == ServicingWorkspaceState.Mounted)
                 {
@@ -531,5 +554,71 @@ public sealed class BuildStepViewModel : ViewModelBase
 
         _cts?.Cancel();
         StatusMessage = _loc["Build.Status.Cancelling"];
+    }
+
+    private static string WorkspaceIdOf(ImageServicingWorkspace ws)
+        => string.IsNullOrWhiteSpace(ws.WorkingDirectory)
+            ? string.Empty
+            : System.IO.Path.GetFileName(ws.WorkingDirectory.TrimEnd('\\', '/')) ?? string.Empty;
+
+    /// <summary>Part J: user-facing default output folder (Documents\WinForge).</summary>
+    private static string DefaultOutputDirectory()
+    {
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        return string.IsNullOrWhiteSpace(documents)
+            ? System.IO.Path.Combine(System.IO.Path.GetTempPath(), "WinForge", "Output")
+            : System.IO.Path.Combine(documents, "WinForge");
+    }
+
+    /// <summary>
+    /// Part L/M: conservative pre-build disk guard. Estimates required space
+    /// (working WIM + media staging + final ISO + safety margin) against the free
+    /// space on the output drive and blocks BEFORE the build starts.
+    /// </summary>
+    private bool EnsureBuildDiskSpace(ImageServicingWorkspace ws, out string error)
+    {
+        error = string.Empty;
+        try
+        {
+            long workingWim = 0;
+            if (!string.IsNullOrWhiteSpace(ws.WorkingImagePath) && System.IO.File.Exists(ws.WorkingImagePath))
+            {
+                workingWim = new System.IO.FileInfo(ws.WorkingImagePath).Length;
+            }
+
+            long sourceIso = 0;
+            if (!string.IsNullOrWhiteSpace(ws.SourceIsoPath) && System.IO.File.Exists(ws.SourceIsoPath))
+            {
+                sourceIso = new System.IO.FileInfo(ws.SourceIsoPath).Length;
+            }
+
+            var required = WinForge.Core.WorkspaceLifecycle.DiskSpaceEstimator.EstimateBuild(sourceIso, workingWim);
+            var root = string.IsNullOrWhiteSpace(OutputDirectory)
+                ? System.IO.Path.GetPathRoot(Environment.SystemDirectory)
+                : System.IO.Path.GetPathRoot(System.IO.Path.GetFullPath(OutputDirectory));
+            long free = 0;
+            if (!string.IsNullOrWhiteSpace(root) && System.IO.Directory.Exists(root))
+            {
+                free = new System.IO.DriveInfo(root).AvailableFreeSpace;
+            }
+
+            if (WinForge.Core.WorkspaceLifecycle.DiskSpaceEstimator.IsInsufficient(free, required))
+            {
+                var req = WinForge.Core.WorkspaceLifecycle.DiskSpaceEstimator.FormatBytes(required);
+                var avail = WinForge.Core.WorkspaceLifecycle.DiskSpaceEstimator.FormatBytes(free);
+                error = _loc["Build.Status.LowDisk"] + " — " +
+                        string.Format(_loc["Build.Status.LowDiskDetail"], req, avail);
+                return false;
+            }
+
+            return true;
+        }
+        catch
+        {
+            // Fail-open on unexpected measurement errors: never block a build on
+            // a guard bug; the requirement is to stop before filling the drive,
+            // and the estimator is conservative by construction.
+            return true;
+        }
     }
 }

@@ -435,6 +435,20 @@ WinForge.Infrastructure  (Windows only)
   profile change never mutates the plan); ProfileView added to the WPF binding audit. Full suite
   **662 pass (Core 53, App 609), 0 errors, 0 warnings (Release)**.
 
+## Phase 12 — Workspace Lifecycle & Disk Safety (2026-08-12)
+
+`IWorkspaceLifecycleManager` (Core contract; DISM-backed `WorkspaceLifecycleManager` in Infrastructure) owns
+durable `workspace.json` manifests (explicit lifecycle states + transition log). Every cleanup decision is
+guarded by the LIVE `/Get-MountedImageInfo` registration (fail closed on query failure; a registered mount —
+or any mount nested in the workspace dir — is never deleted). Discard / failed-disposable / completed-with-
+output workspaces are cleanup candidates; recoverable checkpoints and completed-without-output workspaces
+are retained. Cleanup strips ReadOnly/System/Hidden, reports reclaimed bytes, and records exact leftover
+paths on partial failure. The final ISO defaults to `Documents\WinForge` (user output — never a cleanup
+target; temp is strictly the workspace root). `BuildStepViewModel` marks Completed + FinalOutputPath and
+runs a conservative disk-space guard (`DiskSpaceEstimator`) before building. Settings hosts a **Storage**
+surface (`StorageViewModel`/`StorageView`): async, cancellable workspace scan grouped into temp /
+recoverable / active / disposable totals with a safe-cleanup preview and one-click 清理临时文件.
+
 ## Phase 11 — COMPLETED (2026-08-12)
 
 Stage 11.1–11.4 all passed real-desktop validation on the Windows 11 25H2 zh-CN x64 Consumer image and

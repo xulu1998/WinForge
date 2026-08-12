@@ -50,7 +50,10 @@ public sealed class BuildStepViewModelTests
         Assert.Equal("Windows 11 Pro", vm.FinalEditionName);
         Assert.StartsWith("WinForge_Windows_11_Pro_", vm.OutputFileName);
         Assert.DoesNotContain(".iso", vm.OutputFileName);
-        Assert.Equal(fs.PathCombine(fs.GetTempPath(), "WinForge", "Output"), vm.OutputDirectory);
+        // Phase 12 Part J: the default output folder is user-facing Documents\WinForge,
+        // never disposable Temp data.
+        Assert.EndsWith("WinForge", vm.OutputDirectory, StringComparison.Ordinal);
+        Assert.NotEqual(fs.PathCombine(fs.GetTempPath(), "WinForge", "Output"), vm.OutputDirectory);
     }
 
     [Fact]

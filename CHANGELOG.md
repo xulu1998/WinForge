@@ -5,6 +5,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added (Phase 12 — Workspace Lifecycle & Disk Safety — phase/12-workspace-lifecycle)
+
+- **Workspace lifecycle (ADR-062).** Every workspace now has a durable `workspace.json` manifest and an
+  explicit lifecycle state (Created → Prepared → Mounted → Committed → BuildCheckpoint → Completed, plus
+  FailedDisposable / Cancelled / Cleaned). The servicing service records transitions automatically, and a
+  completed build records its final ISO path.
+- **Cleanup safety (ADR-063).** The live DISM mount registration is authoritative: actively mounted
+  workspaces are never deleted, a mount-query failure fails closed, needs-remount workspaces are surfaced
+  for recovery, and recoverable checkpoints are retained. Cleanup handles ReadOnly/System/Hidden files,
+  reports reclaimed space, and records exact leftovers on partial failure.
+- **Output vs temp (ADR-064).** Final ISOs now default to `Documents\WinForge` and are never treated as
+  disposable temp data. Cleanup only ever touches the WinForge workspace root.
+- **Storage surface.** Settings → 存储 scans all workspaces (temp / recoverable / active / disposable),
+  shows safe-cleanup candidates (including 旧版残留 legacy leftovers), and cleans with one click.
+- **Disk guard (ADR-065).** Builds estimate required space (working WIM + media staging + final ISO +
+  safety margin) and stop with a clear message before the drive fills up.
+- **Incident regression.** A repeated-workflow test proves disposable workspaces no longer accumulate
+  across sessions (the ~249 GB stale-workspace incident becomes impossible under normal use).
+
 ### Phase 11 — COMPLETED (2026-08-12)
 
 - **Phase 11 (Component Intelligence Foundation) is complete and merged to `main`** — real-desktop

@@ -1,0 +1,145 @@
+<UserControl x:Class="WinForge.App.Views.StorageView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:WinForge.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:StorageViewModel}">
+    <StackPanel Margin="0,20,0,0">
+        <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="#1F2933">
+            <TextBlock.Text>
+                <MultiBinding Converter="{StaticResource locKey}">
+                    <Binding Source="Storage.Title"/><Binding Source="{StaticResource Loc}"/>
+                </MultiBinding>
+            </TextBlock.Text>
+        </TextBlock>
+        <TextBlock FontSize="11.5" Foreground="#7B8794" Margin="0,2,0,0" TextWrapping="Wrap" MaxWidth="760">
+            <TextBlock.Text>
+                <MultiBinding Converter="{StaticResource locKey}">
+                    <Binding Source="Storage.Description"/><Binding Source="{StaticResource Loc}"/>
+                </MultiBinding>
+            </TextBlock.Text>
+        </TextBlock>
+
+        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+            <Button Style="{StaticResource PrimaryButton}" Background="#2F855A" Padding="12,6"
+                    Command="{Binding ScanCommand, Mode=OneWay}"
+                    IsEnabled="{Binding IsScanning, Mode=OneWay, Converter={StaticResource BoolToVisInv}}">
+                <TextBlock>
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Storage.Scan"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </Button>
+            <TextBlock VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#3B82F6" FontSize="12"
+                       Visibility="{Binding IsScanning, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Storage.Scanning"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </StackPanel>
+
+        <!-- Summary numbers -->
+        <StackPanel Orientation="Horizontal" Margin="0,14,0,0"
+                    Visibility="{Binding HasScanned, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933" VerticalAlignment="Center">
+                <Run Text="{Binding TotalBytesText, Mode=OneWay}"/>
+            </TextBlock>
+            <TextBlock FontSize="12" Foreground="#3E4C59" Margin="8,0,0,0" VerticalAlignment="Center">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Storage.TotalTemporary"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                    Visibility="{Binding HasScanned, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+            <TextBlock FontSize="12" Foreground="#3E4C59">
+                <Run Text="{Binding ActiveBytesText, Mode=OneWay}"/><Run Text=" — "/>
+                <Run>
+                    <Run.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Storage.Active"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </Run.Text>
+                </Run>
+                <Run Text=" · "/>
+                <Run Text="{Binding RecoverableBytesText, Mode=OneWay}"/><Run Text=" — "/>
+                <Run>
+                    <Run.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Storage.Recoverable"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </Run.Text>
+                </Run>
+                <Run Text=" · "/>
+                <Run Text="{Binding DisposableBytesText, Mode=OneWay}"/><Run Text=" — "/>
+                <Run>
+                    <Run.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Storage.Disposable"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </Run.Text>
+                </Run>
+            </TextBlock>
+        </StackPanel>
+
+        <!-- Cleanup preview -->
+        <StackPanel Margin="0,14,0,0"
+                    Visibility="{Binding HasCandidates, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#1F2933">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Storage.SafeToClean"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <ItemsControl ItemsSource="{Binding CleanupCandidates, Mode=OneWay}" Margin="0,6,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:StorageCandidateItem}">
+                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                            <TextBlock FontSize="12" Foreground="#1F2933" Width="150" TextTrimming="CharacterEllipsis"
+                                       Text="{Binding WorkspaceId, Mode=OneWay}"/>
+                            <TextBlock FontSize="12" Foreground="#2F855A" Width="90"
+                                       Text="{Binding SizeText, Mode=OneWay}"/>
+                            <TextBlock FontSize="11" Foreground="#9A3412" Margin="8,0,0,0"
+                                       Visibility="{Binding IsLegacy, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource locKey}">
+                                        <Binding Source="Storage.Legacy"/><Binding Source="{StaticResource Loc}"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock FontSize="11.5" Foreground="#7B8794" Margin="0,8,0,0" TextWrapping="Wrap" MaxWidth="760">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource locKey}">
+                        <Binding Source="Storage.WillKeep"/><Binding Source="{StaticResource Loc}"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <Button Style="{StaticResource PrimaryButton}" Background="#B45309" Margin="0,10,0,0" Padding="12,6"
+                    Command="{Binding CleanCommand, Mode=OneWay}"
+                    IsEnabled="{Binding IsCleaning, Mode=OneWay, Converter={StaticResource BoolToVisInv}}">
+                <TextBlock>
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource locKey}">
+                            <Binding Source="Storage.Clean"/><Binding Source="{StaticResource Loc}"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </Button>
+            <TextBlock FontSize="12" Foreground="#2F855A" Margin="0,8,0,0"
+                       Text="{Binding CleanResultText, Mode=OneWay}"/>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

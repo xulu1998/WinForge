@@ -109,6 +109,19 @@
   <data name="Settings.Language" xml:space="preserve"><value>Display language</value></data>
   <data name="Settings.Language.English" xml:space="preserve"><value>English</value></data>
   <data name="Settings.Language.Chinese" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Storage.Title" xml:space="preserve"><value>Storage</value></data>
+  <data name="Storage.Description" xml:space="preserve"><value>WinForge keeps temporary servicing workspaces under your local app data. Check usage here and clean up safely. Active mounts, recoverable checkpoints and final ISO outputs are never deleted.</value></data>
+  <data name="Storage.Scan" xml:space="preserve"><value>Scan disk usage</value></data>
+  <data name="Storage.Scanning" xml:space="preserve"><value>Scanning…</value></data>
+  <data name="Storage.TotalTemporary" xml:space="preserve"><value>WinForge temporary files</value></data>
+  <data name="Storage.Active" xml:space="preserve"><value>active workspace</value></data>
+  <data name="Storage.Recoverable" xml:space="preserve"><value>recoverable build data</value></data>
+  <data name="Storage.Disposable" xml:space="preserve"><value>old disposable workspaces</value></data>
+  <data name="Storage.SafeToClean" xml:space="preserve"><value>Safe to clean</value></data>
+  <data name="Storage.WillKeep" xml:space="preserve"><value>Will keep: active mounts, recoverable checkpoints, and final ISO outputs.</value></data>
+  <data name="Storage.Clean" xml:space="preserve"><value>Clean temporary files</value></data>
+  <data name="Storage.Cleaned" xml:space="preserve"><value>Cleaned {0}</value></data>
+  <data name="Storage.Legacy" xml:space="preserve"><value>legacy leftover</value></data>
   <data name="Settings.Language.Note" xml:space="preserve"><value>Changes apply immediately across the app.</value></data>
   <data name="Settings.About.Link" xml:space="preserve"><value>About WinForge</value></data>
 
@@ -232,6 +245,9 @@
   <data name="Build.Stage.Failed" xml:space="preserve"><value>Failed</value></data>
   <data name="Build.Stage.Cancelled" xml:space="preserve"><value>Cancelled</value></data>
   <data name="Build.Status.Starting" xml:space="preserve"><value>Build started…</value></data>
+  <data name="Build.Status.LowDisk" xml:space="preserve"><value>Insufficient free disk space</value></data>
+  <data name="Build.Status.LowDiskDetail" xml:space="preserve"><value>This build needs about {0} free; only {1} is available. Free space and try again.</value></data>
+  <data name="Build.Status.CleanedTemps" xml:space="preserve"><value>Temporary files cleaned: {0}</value></data>
   <data name="Build.Status.Completed" xml:space="preserve"><value>Build completed. The final ISO is ready.</value></data>
   <data name="Build.Status.Failed" xml:space="preserve"><value>Build failed</value></data>
   <data name="Build.Status.Cancelled" xml:space="preserve"><value>Build cancelled</value></data>

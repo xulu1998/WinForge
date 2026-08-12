@@ -9,6 +9,7 @@ using WinForge.App.ViewModels;
 using WinForge.Core.Models;
 using WinForge.Core.Profiles;
 using WinForge.Core.Services;
+using WinForge.Core.WorkspaceLifecycle;
 using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.ImageMetadata;
 using WinForge.Infrastructure.WimEngine;
@@ -16,6 +17,7 @@ using WinForge.Infrastructure.IsoInspection;
 using WinForge.Infrastructure.Execution;
 using WinForge.Infrastructure.Logging;
 using WinForge.Infrastructure.Servicing;
+using WinForge.Infrastructure.WorkspaceLifecycle;
 using WinForge.Infrastructure.Build;
 using WinForge.Infrastructure.ComponentIntelligence;
 using WinForge.Infrastructure.Profiles;
@@ -65,6 +67,7 @@ public static class Bootstrapper
         // Phase 3 — Step 3.2 (WIM servicing workspace & mount lifecycle)
         services.AddSingleton<IWorkspacePathProvider, WorkspacePathProvider>();
         services.AddSingleton<IWorkspaceSafeDelete, WorkspaceSafeDelete>();
+        services.AddSingleton<IWorkspaceLifecycleManager, WorkspaceLifecycleManager>();
         services.AddSingleton<IImageServicingService, ImageServicingService>();
 
         // Phase 3 — Step 3.3 (Offline customization plan & execution engine)
@@ -111,6 +114,7 @@ public static class Bootstrapper
         services.AddSingleton<PlanReviewViewModel>();
         services.AddSingleton<LogsViewModel>();
         services.AddSingleton<ComingSoonViewModel>();
+        services.AddSingleton<StorageViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<AboutViewModel>();
 

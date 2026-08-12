@@ -1583,3 +1583,63 @@ All decisions are `ACCEPTED` unless noted.
 - **Consequences:** Phase 11 work is complete and merged; the Custom + Extra Scenarios hint mode is a
   candidate for a later phase (tracked in ROADMAP follow-ups). No changes were made to the recommendation
   engine for this closeout.
+
+
+## ADR-062: Workspace lifecycle — durable manifest + explicit state (Phase 12)
+
+- **Context:** A real-desktop incident leaked ~249 GB (≈30 stale `wf-*` workspaces × ~6.81 GB + temp output)
+  because workspaces had no durable lifecycle and nothing ever cleaned them. Product decision: WinForge must
+  own a deterministic workspace lifecycle; users must never be required to delete AppData folders manually.
+- **Decision:**
+  - Every workspace persists a `workspace.json` manifest (WorkspaceId / CreatedAt / LastUsedAt / CurrentState /
+    SourceIsoPath / WorkingWimPath / MountPath / IsMountedKnown / HasBuildCheckpoint / FinalOutputPath /
+    RecoveryRequired / CanDeleteSafely / WinForgeVersion / RetentionReason / transition log).
+  - Lifecycle states: Created → Preparing/Prepared → Mounted → Customized → Committed → BuildCheckpoint →
+    Completed; terminal: FailedDisposable / FailedRecoverable / Cancelled / Orphaned / Cleaning / Cleaned.
+  - The servicing service transitions the manifest on Prepare/Mount/UnmountDiscard/UnmountCommitted/PrepareFailed;
+    the build view marks Completed + FinalOutputPath after a successful build.
+  - Cleanup classification NEVER trusts directory existence alone: the live DISM mount registration is
+    authoritative (`/Get-MountedImageInfo`), and a query failure fails closed (no deletion decisions).
+- **Consequences:** pre-Phase-12 workspaces (no manifest) are classified LegacyUnknown; they are offered as
+  cleanup candidates in the Storage UI but deletion still re-checks DISM. Cleanup bytes are measured and
+  reported; partial failures record the exact leftover path and are retryable.
+
+## ADR-063: Cleanup safety policy — active mounts and recoverable checkpoints never auto-deleted
+
+- **Context:** deleting the wrong workspace can destroy an active mount or a resumable build checkpoint.
+- **Decision:**
+  - A workspace is NEVER deleted when DISM registers its mount path (or any mount nested under the workspace
+    dir — covers legacy workspaces without manifests); the deletion is refused with a clear result.
+  - NeedsRemount (manifest expects a mount but DISM does not register it) → classified Recoverable; a recovery
+    action is surfaced, never a silent delete.
+  - Mount-query failure → fail closed: classification Unknown and cleanup refused.
+  - Recoverable states (BuildCheckpoint / FailedRecoverable / Completed-without-output) are retained and
+    excluded from cleanup candidates. Completed-with-recorded-FinalOutputPath is disposable (output preserved
+    outside the workspace).
+  - Cleanup strips ReadOnly/System/Hidden before deleting; a partial failure never claims success (leftover
+    path recorded, retry later).
+- **Consequences:** the 249 GB incident class of leak becomes impossible under normal use — every
+  discarded/failed-disposable/completed workflow is a cleanup candidate that the Storage UI removes in one
+  action, and the repeated-workflow regression test proves non-accumulation.
+
+## ADR-064: Output vs temp separation — user ISO is never disposable
+
+- **Context:** the default final-ISO destination was `%LOCALAPPDATA%\Temp\WinForge\Output`, which treated a
+  user-created ISO as disposable temp data and blurred cleanup boundaries.
+- **Decision:**
+  - Final ISO output defaults to `Documents\WinForge` (fallback: temp Output only when the profile documents
+    folder is unavailable) and is user-visible/configurable in the Build page.
+  - Cleanup operates ONLY on WinForge-owned temp (workspace root); `FinalOutputPath` (or any user output) is
+    never a cleanup target — verified by test.
+- **Consequences:** temp vs output are strictly separated by artifact classification, not by "created by
+  WinForge".
+
+## ADR-065: Disk-space guard — conservative estimates block before Prepare/Build
+
+- **Context:** builds can need tens of GB; waiting until the system drive reaches zero corrupts outputs.
+- **Decision:**
+  - `DiskSpaceEstimator` (pure, testable): Prepare ≈ working WIM × 4 (unpacked mount) + 2 GiB margin;
+    Build ≈ working WIM + media staging (≈ source ISO) + final ISO + 2 GiB margin.
+  - BuildStepViewModel checks free space on the output drive before starting and blocks with a localized
+    "需要约 X GB 可用；当前 Y GB" message when insufficient.
+- **Consequences:** operations stop before filling the drive; estimates are conservative by construction.
