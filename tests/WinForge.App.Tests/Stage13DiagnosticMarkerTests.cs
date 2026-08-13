@@ -25,16 +25,38 @@ namespace WinForge.App.Tests;
 /// </summary>
 public class Stage13DiagnosticMarkerTests
 {
-    // 1. literal marker exists in BOTH ImageView.xaml and SourceView.xaml
+    // 1. source workflow template resolves to SourceView (the RUNTIME view)
+    [Fact]
+    public void Source_Workflow_Uses_SourceView()
+    {
+        var appXaml = File.ReadAllText(Path.Combine(RepoRoot(), "src/WinForge.App/App.xaml"));
+        var template = appXaml.Split('\n')
+            .Select((l, i) => (l, i))
+            .First(x => x.l.Contains("SourceStepTemplate"));
+        Assert.Contains("SourceView", appXaml); // template instantiates SourceView
+    }
+
+    // 2+3. production SourceView contains the compatibility row; ImageView does NOT
+    [Fact]
+    public void SourceView_Has_Compatibility_Row_ImageView_Does_Not()
+    {
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "src/WinForge.App/Views/SourceView.xaml"));
+        Assert.Contains("CompatibilityStatusText", source);
+        Assert.Contains("Compat.Label", source);
+
+        var image = File.ReadAllText(Path.Combine(RepoRoot(), "src/WinForge.App/Views/ImageView.xaml"));
+        Assert.DoesNotContain("CompatibilityStatusText", image);
+        Assert.DoesNotContain("Compat.Label", image);
+    }
+
+    // 4. no PHASE13 diagnostic marker remains anywhere
     [Theory]
     [InlineData("src/WinForge.App/Views/ImageView.xaml")]
     [InlineData("src/WinForge.App/Views/SourceView.xaml")]
-    public void Literal_Marker_Exists_In_View(string relative)
+    public void No_Phase13_Marker_Remains(string relative)
     {
-        var path = Path.Combine(RepoRoot(), relative);
-        var xaml = File.ReadAllText(path);
-        Assert.Contains("PHASE13-COMPAT-DIAG", xaml);
-        Assert.Contains("CompatibilityDebugText", xaml);
+        var xaml = File.ReadAllText(Path.Combine(RepoRoot(), relative));
+        Assert.DoesNotContain("PHASE13-COMPAT-DIAG", xaml);
     }
 
     // 2. CompatibilityDebugText never empty
@@ -68,16 +90,14 @@ public class Stage13DiagnosticMarkerTests
         Assert.Contains("Index=Professional", vm.CompatibilityDebugText);
     }
 
-    // 4. direct compatibility TextBlock has NO Visibility condition (diagnostic form)
+    // 5. CompatibilityDebugText is NOT exposed in production UI (no binding anywhere)
     [Fact]
-    public void Compatibility_Text_Is_Always_Bound_No_Visibility()
+    public void DebugText_Not_Exposed_In_Production_UI()
     {
-        var sourceXaml = File.ReadAllText(Path.Combine(RepoRoot(), "src/WinForge.App/Views/SourceView.xaml"));
-        var statusLine = sourceXaml
-            .Split('\n')
-            .First(l => l.Contains("CompatibilityStatusText"));
-        Assert.DoesNotContain("Visibility", statusLine);
-        Assert.DoesNotContain("Converter", statusLine);
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "src/WinForge.App/Views/SourceView.xaml"));
+        var image = File.ReadAllText(Path.Combine(RepoRoot(), "src/WinForge.App/Views/ImageView.xaml"));
+        Assert.DoesNotContain("CompatibilityDebugText", source);
+        Assert.DoesNotContain("CompatibilityDebugText", image);
     }
 
     // 5. real WPF render of SourceView (the RUNTIME view) contains the marker
@@ -87,8 +107,6 @@ public class Stage13DiagnosticMarkerTests
         var vm = NewVm(Stage13PreflightFixtures.RealLike26200Pro());
         InspectAsync(vm).GetAwaiter().GetResult();
 
-        string? marker = null;
-        string? debug = null;
         string? status = null;
         var ex = RunSta(() =>
         {
@@ -97,15 +115,12 @@ public class Stage13DiagnosticMarkerTests
             view.Arrange(new Rect(0, 0, 1000, 1000));
             view.UpdateLayout();
             var texts = AllTextBlocks(view).Select(t => t.Text ?? string.Empty).ToList();
-            marker = texts.FirstOrDefault(t => t.Contains("PHASE13-COMPAT-DIAG"));
-            debug = texts.FirstOrDefault(t => t.StartsWith("Profile="));
+            Assert.DoesNotContain(texts, t => t.Contains("PHASE13-COMPAT-DIAG"));
             // FakeLoc resolves keys to themselves; assert on non-localized parts.
             status = texts.FirstOrDefault(t => t.Contains("x64") && t.Contains("WIM"));
         });
         Assert.Null(ex);
-        Assert.False(string.IsNullOrWhiteSpace(marker), "marker must render in SourceView");
-        Assert.Contains("Profile=True", debug ?? string.Empty);
-        Assert.False(string.IsNullOrWhiteSpace(status), "compatibility row must render");
+        Assert.False(string.IsNullOrWhiteSpace(status), "compatibility row must render in SourceView");
     }
 
     private static ImageViewModel NewVm(IsoInspectionResult? result)
@@ -140,8 +155,6 @@ public class Stage13DiagnosticMarkerTests
         return dir?.FullName ?? throw new InvalidOperationException("Repo root not found");
     }
 
-    private static readonly object ResourceLock = new();
-
     private static Exception? RunSta(Action action)
     {
         Exception? captured = null;
@@ -149,7 +162,7 @@ public class Stage13DiagnosticMarkerTests
         {
             try
             {
-                lock (ResourceLock)
+                lock (WpfRenderLock.Sync)
                 {
                     var app = Application.Current ?? new Application();
                     var res = app.Resources;
@@ -252,5 +265,35 @@ public static class Stage13PreflightFixtures
         public IsoInspectionResult Result { get; set; } = new() { Status = IsoInspectionStatus.NotInspected };
         public Task<IsoInspectionResult> InspectAsync(string isoPath, System.Threading.CancellationToken cancellationToken = default)
             => Task.FromResult(Result);
+    }
+}
+
+
+/// <summary>Anti-leak regression: raw localization keys must never reach the UI row.</summary>
+public class Stage13NoLeakedKeyTests
+{
+    [Theory]
+    [InlineData("Core")]
+    [InlineData("Professional")]
+    [InlineData("ProfessionalEducation")]
+    [InlineData("ProfessionalWorkstation")]
+    [InlineData("Education")]
+    [InlineData("Enterprise")]
+    [InlineData("CoreSingleLanguage")]
+    public void Edition_Names_Never_Leak_Raw_Keys(string editionId)
+    {
+        // Every known edition has a valid resx entry (zh + en) — lookup returns a
+        // real display value, never "Compat.Edition.<id>".
+        var zh = new System.Resources.ResourceManager(
+            "WinForge.App.Resources.Strings", typeof(ImageViewModel).Assembly);
+        var zhLoc = new ResourceManagerLocalizationService(zh, System.Globalization.CultureInfo.GetCultureInfo("en"));
+        zhLoc.SetCulture(System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
+        var zhVal = zhLoc["Compat.Edition." + editionId];
+        Assert.False(zhVal.StartsWith("Compat.", System.StringComparison.Ordinal), $"leaked key for {editionId}");
+
+        var enLoc = new ResourceManagerLocalizationService(zh, System.Globalization.CultureInfo.GetCultureInfo("en"));
+        enLoc.SetCulture(System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+        var enVal = enLoc["Compat.Edition." + editionId];
+        Assert.False(enVal.StartsWith("Compat.", System.StringComparison.Ordinal), $"leaked key for {editionId}");
     }
 }

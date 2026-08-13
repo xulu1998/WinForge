@@ -1877,3 +1877,21 @@ All decisions are `ACCEPTED` unless noted.
   diagnostic marker is removed and the compatibility row stays in SourceView only.
 - **Consequences:** the defect is classified (A: wrong/stale runtime view) and the next real-desktop
   pass can verify in seconds; no further speculative UI redesign.
+
+
+## ADR-082: Preflight final cleanup — SourceView-only UI, no key leaks, authoritative language/index
+
+- **Root cause confirmed (category A):** the wizard renders the Source step via SourceView; all
+  compatibility UI is now in SourceView.xaml only; ImageView carries none; diagnostics removed.
+- **`Compat.Edition.` leak:** ResourceManagerLocalizationService returns the KEY itself for missing
+  entries; an empty EditionId produced the truncated key. Fix: ImageViewModel.L() falls back whenever
+  the resolved value equals the key (or is empty); LocalizeEditionName guards empty ids. Anti-leak
+  tests assert no "Compat." prefix for every known edition in zh-CN + en-US.
+- **`Lang=?`:** profile DefaultLanguage can be null on real DISM metadata. Effective language now
+  resolves SelectedEdition.DefaultLanguage → profile.DefaultLanguage → AvailableLanguages[0] — never "?".
+- **`Index=none`:** the compact row shows "Index <n>" ONLY from the current SelectedEdition and
+  refreshes on selection (SelectedEdition setter → NotifyCompatibility) — no re-detect; the base
+  media profile is never mutated for transient selection.
+- **Final row:** 兼容性 `Windows 11 25H2 · 专业版 · x64 · zh-CN · WIM · Index 4 · ✓ 支持`
+  (media-level before selection; edition + language + index appended on selection).
+- **Test infra:** all STA render tests serialize on one shared WpfRenderLock.Sync.

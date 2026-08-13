@@ -160,12 +160,26 @@
                     <TextBlock Text="{Binding LanguagesDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
 
-                <!-- PHASE13 DIAGNOSTIC (diagnostic commit only): proves this view is
-                     the one loaded at runtime; never a binding/visibility dependency. -->
-                <TextBlock Text="PHASE13-COMPAT-DIAG · 9f4bed0" FontSize="11" Foreground="#B45309" Margin="0,4,0,0"/>
-                <TextBlock Text="{Binding CompatibilityDebugText, Mode=OneWay}" FontSize="11" Foreground="#7B8794" Margin="0,2,0,0"/>
-                <!-- Compatibility row: always bound, no Visibility/converter (diagnostic). -->
-                <TextBlock Text="{Binding CompatibilityStatusText, Mode=OneWay}" FontSize="13" Foreground="#1F2933" Margin="0,4,0,0"/>
+                <!-- Phase 13: ONE compact compatibility row (status/safety signal).
+                     Media-level facts show right after Detect, before an edition is
+                     selected; selecting an edition appends edition · language · index. -->
+                <StackPanel Orientation="Horizontal" Margin="0,4"
+                            Visibility="{Binding HasCompatibilityProfile, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Style="{StaticResource FieldLabel}">
+                        <TextBlock.Text>
+                            <MultiBinding Converter="{StaticResource locKey}">
+                                <Binding Source="Compat.Label"/><Binding Source="{StaticResource Loc}"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <TextBlock Text="{Binding CompatibilityStatusText, Mode=OneWay}" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
+                <TextBlock FontSize="12" Foreground="#B45309" Margin="76,0,0,0" TextWrapping="Wrap"
+                           Text="{Binding CompatibilityWarningsText, Mode=OneWay}"
+                           Visibility="{Binding HasCompatibilityWarnings, Mode=OneWay, Converter={StaticResource BoolToVis}}"/>
+                <TextBlock FontSize="12" Foreground="#9B1C1C" Margin="76,0,0,0" TextWrapping="Wrap"
+                           Text="{Binding CompatibilityBlockersText, Mode=OneWay}"
+                           Visibility="{Binding HasCompatibilityBlockers, Mode=OneWay, Converter={StaticResource BoolToVis}}"/>
             </StackPanel>
 
             <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,24,0,0">

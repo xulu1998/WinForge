@@ -3,6 +3,27 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 13 — Preflight final cleanup + edition/language/index display fixes (2026-08-12)
+
+- Diagnostic root cause CONFIRMED on real desktop (category A): runtime Source step renders
+  `SourceView` (App.xaml SourceStepTemplate); `ImageView.xaml` is legacy. The compatibility row is now
+  in SourceView ONLY — all diagnostic instrumentation removed (PHASE13-COMPAT-DIAG marker, commit
+  badge, CompatibilityDebugText UI, unconditional debug row); ImageView carries NO compatibility UI.
+- Real-desktop display defects fixed:
+  - `Compat.Edition.` leak: the localization service returns the KEY for missing entries, and an
+    empty EditionId produced the truncated key. `L()` now falls back instead of leaking raw keys
+    (plus `LocalizeEditionName` empty-id guard); anti-leak tests cover every known edition in zh+en.
+  - `Lang=?`: profile DefaultLanguage can be null on real DISM; language now resolves
+    SelectedEdition.DefaultLanguage → profile.DefaultLanguage → AvailableLanguages[0] → never "?".
+  - `Index=none`: the row now shows `Index <n>` only from the CURRENT SelectedEdition
+    (Professional → Index 4, Home → Index 1), refreshing instantly on selection — no re-detect.
+- Final compact row: 兼容性 `Windows 11 25H2 · 专业版 · x64 · zh-CN · WIM · Index 4 · ✓ 支持`
+  (media-level: release · arch · lang · format · status; edition + index appended on selection).
+- STA render tests serialized via a shared `WpfRenderLock.Sync` (Stage13 classes + Stage11p2 RunSta)
+  — parallel STA threads race WPF static state (Application/InputManager/HwndSource) and caused
+  intermittent failures. Full suite **823 pass (Core 53, App 770), 0 errors, 0 warnings** (OutDir,
+  run twice; in-place build blocked while WinForge.App.exe is running — user closes it first).
+
 ## Phase 13 — Compatibility UI diagnostic instrumentation (2026-08-12)
 
 - Real desktop STILL shows no compatibility status after two fixes → deterministic diagnostics

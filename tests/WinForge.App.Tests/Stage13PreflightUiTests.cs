@@ -130,7 +130,7 @@ public class Stage13PreflightUiTests
         Assert.True(vm.HasCompatibilityProfile);
     }
 
-    // 3. compatibility section Visible after detection (real WPF render)
+    // 3. compatibility section visible after detection (real WPF render of SourceView)
     [Fact]
     public void Section_Visible_After_Detection_In_Rendered_View()
     {
@@ -141,7 +141,7 @@ public class Stage13PreflightUiTests
         string? details = null;
         var ex = RunSta(() =>
         {
-            var view = new ImageView { DataContext = vm };
+            var view = new SourceView { DataContext = vm };
             view.Measure(new Size(900, 900));
             view.Arrange(new Rect(0, 0, 900, 900));
             view.UpdateLayout();
@@ -162,9 +162,10 @@ public class Stage13PreflightUiTests
         var vm = MakeVm(RealLike26200Pro());
         InspectAsync(vm).GetAwaiter().GetResult();
 
-        // Media-level row BEFORE any edition selection.
+        // Media-level row BEFORE any edition selection (release · arch · lang · format · status).
         Assert.Contains("Windows 11 25H2", vm.CompatibilityStatusText);
         Assert.Contains("x64", vm.CompatibilityStatusText);
+        Assert.Contains("zh-CN", vm.CompatibilityStatusText);
         Assert.Contains("WIM", vm.CompatibilityStatusText);
         Assert.Contains("✓ 支持", vm.CompatibilityStatusText);
         Assert.DoesNotContain("Pro", vm.CompatibilityStatusText); // no edition selected yet
@@ -177,13 +178,16 @@ public class Stage13PreflightUiTests
         var vm = MakeVm(RealLike26200Pro());
         InspectAsync(vm).GetAwaiter().GetResult();
 
-        // Select Home first — the row gains the edition identity (fallback = EditionId).
+        // Select Home first — the row gains edition · index (fallback EditionId).
         vm.SelectedEdition = vm.Editions.First(e => e.EditionId == "Core");
-        Assert.Contains("Core", vm.CompatibilityStatusText); // fallback edition name
+        Assert.Contains("Core", vm.CompatibilityStatusText);
+        Assert.Contains("Index 1", vm.CompatibilityStatusText);
 
         // Switch to Pro (index 4) — no second Detect.
         vm.SelectedEdition = vm.Editions.First(e => e.EditionId == "Professional");
-        Assert.Contains("Pro", vm.CompatibilityStatusText);
+        Assert.Contains("Professional", vm.CompatibilityStatusText);
+        Assert.Contains("Index 4", vm.CompatibilityStatusText);
+        Assert.Contains("zh-CN", vm.CompatibilityStatusText);
         Assert.Contains("Windows 11 25H2", vm.CompatibilityStatusText);
     }
 
@@ -255,13 +259,12 @@ public class Stage13PreflightUiTests
         vm.SelectedEdition = vm.Editions.First(e => e.EditionId == "Professional");
         Assert.Contains("Windows 11 25H2", vm.CompatibilityStatusText);
         Assert.Contains(culture == "zh-CN" ? "专业版" : "Pro", vm.CompatibilityStatusText);
+        Assert.Contains("Index 4", vm.CompatibilityStatusText);
         Assert.Contains(culture == "zh-CN" ? "支持" : "Supported", vm.CompatibilityStatusText);
     }
 
     // 16. real WPF render/binding audit is covered by the binding-audit suite
     //     (ImageView.CompatibilityPreflight case in CustomizeBindingRegressionTests)
-
-    private static readonly object ResourceLock = new();
 
     private static Exception? RunSta(Action action)
     {
@@ -270,7 +273,7 @@ public class Stage13PreflightUiTests
         {
             try
             {
-                lock (ResourceLock)
+                lock (WpfRenderLock.Sync)
                 {
                     var app = Application.Current ?? new Application();
                     var res = app.Resources;
@@ -392,4 +395,11 @@ internal sealed class FakeLoc : ILocalizationService
     public string this[string key] => key;
     public bool Contains(string key) => true;
     public void SetCulture(System.Globalization.CultureInfo culture) { }
+}
+
+
+/// <summary>Shared STA render lock across Stage13 test classes (parallel-safe).</summary>
+internal static class WpfRenderLock
+{
+    public static readonly object Sync = new();
 }

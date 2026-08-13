@@ -300,9 +300,7 @@ public sealed class ImageViewModel : ViewModelBase
                 _ => L("Compat.Release.Unknown", "未知版本"),
             };
 
-            var edition = SelectedEdition is { } ed
-                ? L("Compat.Edition." + ed.EditionId, ed.EditionId ?? "?")
-                : string.Empty;
+            var edition = LocalizeEditionName(SelectedEdition?.EditionId);
 
             var arch = string.IsNullOrWhiteSpace(p.Architecture) ? string.Empty : p.Architecture;
             var format = p.ImageFormat switch
@@ -313,11 +311,20 @@ public sealed class ImageViewModel : ViewModelBase
                 _ => string.Empty,
             };
 
+            // Language: reuse the authoritative image language (never "?").
+            var language = SelectedEdition?.DefaultLanguage
+                ?? p.DefaultLanguage
+                ?? p.AvailableLanguages.FirstOrDefault();
+
+            var index = SelectedEdition?.Index is { } idx ? "Index " + idx.ToString() : string.Empty;
+
             var status = ResolveStatusMark(p);
             var parts = new System.Collections.Generic.List<string> { release };
             if (!string.IsNullOrWhiteSpace(edition)) parts.Add(edition);
             if (!string.IsNullOrWhiteSpace(arch)) parts.Add(arch);
+            if (!string.IsNullOrWhiteSpace(language)) parts.Add(language);
             if (!string.IsNullOrWhiteSpace(format)) parts.Add(format);
+            if (!string.IsNullOrWhiteSpace(index)) parts.Add(index);
             parts.Add(status);
             return string.Join(" · ", parts);
         }
@@ -368,8 +375,9 @@ public sealed class ImageViewModel : ViewModelBase
             }
 
             var edition = SelectedEdition?.EditionId is { } ed ? ed : "none";
+            var lang = SelectedEdition?.DefaultLanguage ?? p.DefaultLanguage ?? p.AvailableLanguages.FirstOrDefault();
             return $"Profile=True | Status={p.Status} | Release={p.Release} | Build={p.Build?.ToString() ?? "?"} | "
-                 + $"Format={p.ImageFormat} | Arch={p.Architecture ?? "?"} | Lang={(SelectedEdition?.DefaultLanguage ?? p.DefaultLanguage) ?? "?"} | Index={edition}";
+                 + $"Format={p.ImageFormat} | Arch={p.Architecture ?? "?"} | Lang={lang ?? "?"} | Index={edition}";
         }
     }
 
@@ -642,7 +650,31 @@ public sealed class ImageViewModel : ViewModelBase
     /// when no localization service is available (e.g. in unit tests) or the key
     /// is missing. Keeps the view model usable without an injected service.
     /// </summary>
-    private string L(string key, string fallback) => _loc is null ? fallback : (_loc[key] ?? fallback);
+    private string L(string key, string fallback)
+    {
+        if (_loc is null)
+        {
+            return fallback;
+        }
+
+        // Phase 13 cleanup: a missing key must NEVER leak "Compat.Xxx" into the UI —
+        // the localization service returns the key itself for missing entries.
+        var value = _loc[key];
+        return string.IsNullOrEmpty(value) || string.Equals(value, key, System.StringComparison.Ordinal)
+            ? fallback
+            : value;
+    }
+
+    /// <summary>Localized edition display name with empty-id guard (never "Compat.Edition.").</summary>
+    private string LocalizeEditionName(string? editionId)
+    {
+        if (string.IsNullOrWhiteSpace(editionId))
+        {
+            return string.Empty;
+        }
+
+        return L("Compat.Edition." + editionId, editionId);
+    }
 
     private string TopLevelOr(
         string? consistent,
