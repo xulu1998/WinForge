@@ -531,3 +531,16 @@ recovery). `ValidationResult.AllPhasesPassed` evaluates only the phase set requi
 Level — never overclaims. Phase 13 baseline = VmInstallValidated (25H2 Pro zh-CN x64 WIM);
 FullHealthValidated becomes mandatory only when component-removal coverage becomes substantially
 more aggressive. See docs/COMPATIBILITY.md + validation/ records.
+
+
+## Phase 14 — Stage 14.1: Deep Component Classification (2026-08-13)
+
+Discovery / knowledge / planning are separate layers (ADR-085). `DeepComponentClassifier` maps raw
+discovered identities onto `DeepComponentKnowledge` via `DeepComponentCatalogData` (108 curated
+family entries): exact alias (KnownPattern), normalized family containment (KnownFamily), else null
+(Unknown stays visible). Heuristic-classified entries can never present as Low risk or unprotected.
+`ComponentNormalizer` strips ~/_ tokens, versions and .neutral with a collision guard. Risk
+(Low/Moderate/High/Critical), recommendation (RecommendedRemove/OptionalRemove/RecommendedKeep/
+RequiredKeep/ProfileDependent/Unknown), protection (None/Sensitive/Protected) and profile tags drive
+the Customize knowledge surface: classified DiscoveredUnclassified rows now show name/purpose/
+recommendation/risk instead of raw identifiers. No removal execution in this stage.

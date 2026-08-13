@@ -3,6 +3,31 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 14 — Stage 14.1: Deep Component Coverage & Classification (2026-08-13)
+
+- Durable taxonomy + classification layer (ADR-085): discovery / knowledge / planning kept SEPARATE.
+  `ComponentFunctionCategory` (25 top-level functional categories) distinct from discovery source
+  kind; `DeepComponentKnowledge` (canonical id, display name, purpose, category, risk, recommendation,
+  protection, profile tag, dependencies, confidence); risk model Low/Moderate/High/Critical;
+  recommendation RecommendedRemove/OptionalRemove/RecommendedKeep/RequiredKeep/ProfileDependent;
+  confidence Curated/KnownPattern/KnownFamily/Heuristic (heuristic NEVER lowers risk below Moderate or
+  protection below Sensitive).
+- `ComponentNormalizer` (strips ~/_ tokens, versions, .neutral; collision guard) + first-batch
+  `DeepComponentCatalogData` with **108 curated family entries** (Gaming/Xbox, consumer inbox, phone,
+  search/Bing, widgets/Spotlight/ads, diagnostics/telemetry, printing, virtualization, dev tools,
+  remote access, media, cloud, Store/runtime infrastructure, security, servicing/recovery,
+  accessibility) — protection flags for servicing/update/CBS/Defender/boot/WinRE/App Installer/Store/
+  WebView2/runtimes/DirectX/shell.
+- Gaming profile foundation metadata (Gaming PC vs Dedicated Gaming distinction; keep-list; candidate
+  safe cleanup; no placebo tweaks) — matches docs/PHASE14-INPUT.md.
+- UI: the existing Customize Apps/Windows Components knowledge surface now also ingests CLASSIFIED
+  DiscoveredUnclassified rows (name/purpose/recommendation/risk via deep catalog) — raw ids stop
+  dominating; unknown stays clearly labeled. Master-detail behavior preserved.
+- Coverage metrics model (total/curated/protected/classified/unknown, per-source) with Unknown kept
+  visible as debt. **845 tests pass (Core 53, App 792), 0 errors, 0 warnings** — incl. 21 new
+  Stage14DeepClassificationTests (taxonomy/normalization/alias/family/risk/rec/confidence/profile/
+  protected/unknown/deterministic/collision/fallback/heuristic/Gaming-safety/metrics).
+
 ## Phase 13 — CLOSEOUT: VM INSTALL VALIDATED + merged (2026-08-13)
 
 - Phase 13 baseline VM validation ACCEPTED (ADR-084): WinForge-generated ISO (25H2 Pro zh-CN x64

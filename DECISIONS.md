@@ -1931,3 +1931,25 @@ All decisions are `ACCEPTED` unless noted.
 - docs/COMPATIBILITY.md: 25H2 Pro zh-CN x64 WIM → **VM INSTALL VALIDATED**; en-US Pro / Home /
   Education / Enterprise / 24H2 / ESD / SWM stay pending; ARM64 unsupported. No fabricated checks —
   unperformed phases are recorded as "not performed".
+
+
+## ADR-085: Deep component classification — layers, taxonomy, confidence, safety
+
+- Discovery (what exists) / knowledge (what it means) / planning (what to do) are separate layers;
+  a classifier never mutates inventory and never plans removal by itself.
+- ComponentFunctionCategory (25 functional categories) is distinct from the discovery SOURCE kind
+  (ComponentCategory: AppX/Capability/OptionalFeature/CbsPackage/Service…).
+- Risk: Low/Moderate/High/Critical; "unused by Gaming profile" never implies "safe to remove".
+- Recommendation: RecommendedRemove/OptionalRemove/RecommendedKeep/RequiredKeep/ProfileDependent/
+  Unknown — localized display, stable model.
+- Confidence: Curated/KnownPattern/KnownFamily/Heuristic. A Heuristic classification can never look
+  safe on its own: risk floors at Moderate, protection floors at Sensitive; a catalog entry marked
+  Heuristic stays Heuristic regardless of match type.
+- Normalization strips ~/_ tokens, versions, .neutral; FindCollision prevents unrelated families
+  colliding; canonicalization is deterministic.
+- Protected groups (never auto-removed): servicing stack, Windows Update infrastructure, CBS,
+  WinSxS-critical, Defender/security platform, boot, WinRE/recovery, App Installer/winget, Store
+  infrastructure, WebView2, VC/runtime/framework, DirectX/gaming runtimes, shell/core login.
+- Gaming profile foundation: Gaming PC ≠ Dedicated Gaming/cybercafe minimal; keep-list and candidate
+  cleanup recorded (docs/PHASE14-INPUT.md); no placebo tweaks.
+- Unknown remains visible as technical debt; coverage metrics never massaged.

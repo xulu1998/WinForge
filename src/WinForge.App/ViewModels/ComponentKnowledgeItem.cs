@@ -32,21 +32,83 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
     private readonly IAppState _appState;
     private readonly ComponentKnowledgeViewModel _parent;
     private readonly RecommendationContextService? _ctx;
+    private readonly WinForge.Core.ComponentIntelligence.DeepComponentKnowledge? _deep;
 
     public ComponentKnowledgeItem(
         ComponentInventoryEntry entry,
         ILocalizationService loc,
         IAppState appState,
         ComponentKnowledgeViewModel parent,
-        RecommendationContextService? ctx = null)
+        RecommendationContextService? ctx = null,
+        WinForge.Core.ComponentIntelligence.DeepComponentKnowledge? deep = null)
     {
         _loc = loc ?? throw new ArgumentNullException(nameof(loc));
         _appState = appState ?? throw new ArgumentNullException(nameof(appState));
         _parent = parent ?? throw new ArgumentNullException(nameof(parent));
         _ctx = ctx;
+        _deep = deep;
         Entry = entry ?? throw new ArgumentNullException(nameof(entry));
         Effective = EffectiveRecommendation.FromDefault(RecommendationLevel);
     }
+
+    /// <summary>Phase 14 deep classification knowledge (null for curated-only rows).</summary>
+    public bool HasDeepKnowledge => _deep is not null;
+
+    /// <summary>Deep classification display name (fallback-safe).</summary>
+    public string DeepDisplayName
+    {
+        get
+        {
+            if (_deep is null)
+            {
+                return string.Empty;
+            }
+
+            var name = _loc[_deep.DisplayNameKey];
+            if (!string.IsNullOrEmpty(name) && name != _deep.DisplayNameKey)
+            {
+                return name;
+            }
+
+            return string.IsNullOrWhiteSpace(_deep.DisplayNameFallback)
+                ? _deep.CanonicalId
+                : _deep.DisplayNameFallback;
+        }
+    }
+
+    /// <summary>Deep classification purpose text (fallback-safe).</summary>
+    public string DeepPurposeText
+    {
+        get
+        {
+            if (_deep is null)
+            {
+                return string.Empty;
+            }
+
+            var s = _loc[_deep.DescriptionKey];
+            if (!string.IsNullOrEmpty(s) && s != _deep.DescriptionKey)
+            {
+                return s;
+            }
+
+            return string.IsNullOrWhiteSpace(_deep.DescriptionFallback)
+                ? _loc["Component.NotConfirmed"]
+                : _deep.DescriptionFallback;
+        }
+    }
+
+    /// <summary>Deep classification risk caption (localized; e.g. 高/中/低/严重).</summary>
+    public string DeepRiskText
+        => _deep is null ? string.Empty : _loc["Deep.Risk." + _deep.Risk];
+
+    /// <summary>Deep classification recommendation caption (localized).</summary>
+    public string DeepRecommendationText
+        => _deep is null ? string.Empty : _loc["Deep.Rec." + _deep.Recommendation];
+
+    /// <summary>Deep classification function category caption (localized).</summary>
+    public string DeepFunctionText
+        => _deep is null ? string.Empty : _loc["Deep.Function." + _deep.Function];
 
     public ComponentInventoryEntry Entry { get; }
 
@@ -195,6 +257,15 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
     {
         get
         {
+            if (_deep is not null)
+            {
+                var deepName = DeepDisplayName;
+                if (!string.IsNullOrWhiteSpace(deepName))
+                {
+                    return deepName;
+                }
+            }
+
             if (Entry.Definition is not null)
             {
                 var name = _loc[Entry.Definition.DisplayNameKey];
@@ -224,6 +295,15 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
     {
         get
         {
+            if (_deep is not null)
+            {
+                var deepPurpose = DeepPurposeText;
+                if (!string.IsNullOrWhiteSpace(deepPurpose))
+                {
+                    return deepPurpose;
+                }
+            }
+
             if (Entry.Definition is null)
             {
                 return _loc["Component.NotConfirmed"];
@@ -244,6 +324,15 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
     {
         get
         {
+            if (_deep is not null && !Effective.WasProfileDriven)
+            {
+                var deepRec = DeepRecommendationText;
+                if (!string.IsNullOrWhiteSpace(deepRec))
+                {
+                    return deepRec;
+                }
+            }
+
             if (!Effective.WasProfileDriven)
             {
                 return _loc["Recommendation." + RecommendationLevel];

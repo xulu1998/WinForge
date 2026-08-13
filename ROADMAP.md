@@ -491,6 +491,20 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ---
 
+## Phase 14 — Deep Component Coverage & Classification
+
+- **Status:** IN PROGRESS — **STAGE 14.1 (taxonomy + classification foundation) COMPLETE (2026-08-13)**;
+  branch `phase/14-deep-component-classification`; NOT merged.
+- **Stage 14.1 delivered:** taxonomy + classification layer (discovery/knowledge/planning separate);
+  ComponentFunctionCategory; DeepComponentKnowledge (risk/recommendation/protection/profile/
+  confidence); ComponentNormalizer + collision guard; first-batch DeepComponentCatalogData
+  (**108 curated families**); protected groups; Gaming profile foundation metadata (Gaming PC vs
+  Dedicated Gaming; no placebo tweaks); UI integration (classified discovered rows in Apps/Windows
+  Components knowledge tabs); coverage metrics with Unknown kept visible. **845 tests, 0 err/0 warn.**
+- **Stage 14.2+ (recommended next):** expand catalog to the remaining unknown families; per-object
+  dependency resolution; profile-driven recommendation wiring (Gaming profile upgrade per
+  docs/PHASE14-INPUT.md); deeper removal execution only after classification coverage is high.
+
 ## Phase 13 — Compatibility & Real-World Validation Matrix
 
 - **Status:** **COMPLETED (2026-08-13)** — COMPATIBILITY FOUNDATION + REAL MEDIA + VM INSTALL

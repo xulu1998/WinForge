@@ -61,3 +61,14 @@ The Gaming profile must remain **safe for personal gaming PCs**, but it should p
   (SafetyInvariantCatalog assertions must keep passing).
 - Cybercafe-like minimal mode, if ever built, is a SEPARATE explicit option —
   never part of the safe automatic Gaming recommendation.
+
+
+## Stage 14.1 progress note (2026-08-13)
+
+Stage 14.1 delivered the classification FOUNDATION: ComponentFunctionCategory taxonomy,
+DeepComponentKnowledge model (risk/recommendation/protection/profile/confidence),
+ComponentNormalizer, and a first-batch `DeepComponentCatalogData` with 108 curated family entries —
+including the Gaming-relevant groups below (candidates marked OptionalRemove/ProfileDependent,
+never auto-remove; keep-list entries marked RequiredKeep/ProfileDependent). See
+docs/COMPONENT-TAXONOMY.md and ADR-085. Stage 14.2 should wire these profile tags into the Gaming
+profile recommendation engine and expand remaining Unknown coverage.

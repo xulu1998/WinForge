@@ -57,6 +57,7 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
     private readonly List<ComponentKnowledgeItem> _all = new();
     private readonly ComponentCategory[]? _categoryFilter;
     private readonly RecommendationContextService? _ctx;
+    private readonly WinForge.Core.ComponentIntelligence.DeepComponentClassifier _deep;
     private ComponentKnowledgeFilter _filter = ComponentKnowledgeFilter.All;
     private ComponentKnowledgeItem? _activeDetail;
     private bool _isDiscovering;
@@ -68,13 +69,16 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
         ILoggerService logger,
         ILocalizationService loc,
         ComponentCategory[]? categoryFilter = null,
-        RecommendationContextService? ctx = null)
+        RecommendationContextService? ctx = null,
+        WinForge.Core.ComponentIntelligence.DeepComponentClassifier? deep = null)
     {
         _ciVm = ciVm ?? throw new ArgumentNullException(nameof(ciVm));
         _appState = appState ?? throw new ArgumentNullException(nameof(appState));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _loc = loc ?? throw new ArgumentNullException(nameof(loc));
         _ctx = ctx;
+        _deep = deep ?? new WinForge.Core.ComponentIntelligence.DeepComponentClassifier(
+            WinForge.Core.ComponentIntelligence.DeepComponentCatalogData.Entries);
         // Default = provisioned AppX only (Apps tab). The Windows Components tab
         // (Stage 11.3) passes { Capability, OptionalFeature } to reuse this exact
         // knowledge engine for a different raw category (ADR-051).
@@ -250,6 +254,19 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
                 }
 
                 _all.Add(new ComponentKnowledgeItem(entry, _loc, _appState, this, _ctx));
+
+                // Phase 14: classified DiscoveredUnclassified objects join the
+                // knowledge surface (name/purpose/recommendation/risk via the deep
+                // catalog) instead of remaining unexplained raw identifiers.
+                if (entry.Classification == ComponentClassification.DiscoveredUnclassified
+                    && entry.RawItems.Count > 0)
+                {
+                    var deep = _deep.Classify(entry.LogicalId);
+                    if (deep is not null)
+                    {
+                        _all.Add(new ComponentKnowledgeItem(entry, _loc, _appState, this, _ctx, deep));
+                    }
+                }
             }
         }
 

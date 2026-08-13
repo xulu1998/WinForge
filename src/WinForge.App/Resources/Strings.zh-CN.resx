@@ -98,6 +98,43 @@
   <data name="Compat.Edition.IoTEnterprise" xml:space="preserve"><value>IoT 企业版</value></data>
   <data name="Compat.Status.Future" xml:space="preserve"><value>⚠ 尚未完整验证</value></data>
   <data name="Compat.Status.EsdOnly" xml:space="preserve"><value>⚠ 仅检查支持</value></data>
+  <data name="Deep.Rec.RecommendedRemove" xml:space="preserve"><value>推荐移除</value></data>
+  <data name="Deep.Rec.OptionalRemove" xml:space="preserve"><value>按需移除</value></data>
+  <data name="Deep.Rec.RecommendedKeep" xml:space="preserve"><value>建议保留</value></data>
+  <data name="Deep.Rec.RequiredKeep" xml:space="preserve"><value>必须保留</value></data>
+  <data name="Deep.Rec.ProfileDependent" xml:space="preserve"><value>视配置而定</value></data>
+  <data name="Deep.Rec.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Deep.Risk.Low" xml:space="preserve"><value>低</value></data>
+  <data name="Deep.Risk.Moderate" xml:space="preserve"><value>中</value></data>
+  <data name="Deep.Risk.High" xml:space="preserve"><value>高</value></data>
+  <data name="Deep.Risk.Critical" xml:space="preserve"><value>严重</value></data>
+  <data name="Deep.Risk.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Deep.Function.Communication" xml:space="preserve"><value>通信</value></data>
+  <data name="Deep.Function.Gaming" xml:space="preserve"><value>游戏</value></data>
+  <data name="Deep.Function.Media" xml:space="preserve"><value>媒体</value></data>
+  <data name="Deep.Function.Productivity" xml:space="preserve"><value>生产力</value></data>
+  <data name="Deep.Function.Developer" xml:space="preserve"><value>开发</value></data>
+  <data name="Deep.Function.Networking" xml:space="preserve"><value>网络</value></data>
+  <data name="Deep.Function.RemoteAccess" xml:space="preserve"><value>远程访问</value></data>
+  <data name="Deep.Function.PrintingScanning" xml:space="preserve"><value>打印/扫描</value></data>
+  <data name="Deep.Function.Input" xml:space="preserve"><value>输入</value></data>
+  <data name="Deep.Function.Accessibility" xml:space="preserve"><value>辅助功能</value></data>
+  <data name="Deep.Function.Security" xml:space="preserve"><value>安全</value></data>
+  <data name="Deep.Function.Servicing" xml:space="preserve"><value>服务</value></data>
+  <data name="Deep.Function.DiagnosticsTelemetry" xml:space="preserve"><value>诊断/遥测</value></data>
+  <data name="Deep.Function.CloudIntegration" xml:space="preserve"><value>云集成</value></data>
+  <data name="Deep.Function.Search" xml:space="preserve"><value>搜索</value></data>
+  <data name="Deep.Function.ShellExperience" xml:space="preserve"><value>Shell 体验</value></data>
+  <data name="Deep.Function.HardwareSupport" xml:space="preserve"><value>硬件支持</value></data>
+  <data name="Deep.Function.Virtualization" xml:space="preserve"><value>虚拟化</value></data>
+  <data name="Deep.Function.Enterprise" xml:space="preserve"><value>企业</value></data>
+  <data name="Deep.Function.LegacyCompatibility" xml:space="preserve"><value>旧版兼容</value></data>
+  <data name="Deep.Function.Language" xml:space="preserve"><value>语言</value></data>
+  <data name="Deep.Function.Recovery" xml:space="preserve"><value>恢复</value></data>
+  <data name="Deep.Function.StoreInfrastructure" xml:space="preserve"><value>商店基础设施</value></data>
+  <data name="Deep.Function.RuntimeDependency" xml:space="preserve"><value>运行时依赖</value></data>
+  <data name="Deep.Function.SystemCore" xml:space="preserve"><value>系统核心</value></data>
+  <data name="Deep.Function.Unknown" xml:space="preserve"><value>未知</value></data>
   <data name="StepState.Current" xml:space="preserve"><value>进行中</value></data>
   <data name="StepState.Completed" xml:space="preserve"><value>已完成</value></data>
   <data name="StepState.RequiresAttention" xml:space="preserve"><value>需要关注</value></data>
