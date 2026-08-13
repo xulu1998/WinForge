@@ -59,3 +59,25 @@ and rare driver packages — Stage 14.3 expands those families with evidence.
 Classification (knowledge) is separate from planning (removal). A component can be KNOWN + High +
 Protected + RequiredKeep. Removal support is a later decision gated by protection, risk,
 dependencies and profile — never by classification alone.
+
+
+## Stage 14.3 — exact accounting + elevated capture workflow (2026-08-13)
+
+- **Exactness replaces estimation.** `CoverageAccountingService` (Core) computes exact per-source
+  coverage from production data: every raw object lands in EXACTLY ONE bucket
+  (Curated | KnownDeep | Heuristic | Unknown); Protected is a property count (subset of known,
+  matcher-protected reported separately); per-source slices reconcile to the total; heuristic
+  classification never inflates knowledge coverage (`CoverageRatio` = (Curated+KnownDeep)/Total;
+  `TotalClassifiedRatio` adds heuristic). Buckets are exported per object so no number is opaque.
+- **Elevated capture CLI** `tools/WinForge.RealCapture` (must run as Administrator): runs the EXACT
+  production pipeline (inspect → export selected index → mount → production DISM discovery →
+  matcher → DeepComponentClassifier → coverage accounting → UnknownFamilyAnalyzer top-30) and
+  writes `inventory-summary.json`, `inventory-items.json`, `unknown-items.json`,
+  `unknown-families.json`, `coverage-by-source.json`, `gaming-candidates.json` +
+  `real-derived-families.json` to `.tmp/phase14-real/`, then unmounts/discards and cleans up.
+  Source ISO read-only. Output only under `.tmp/phase14-real/`.
+- **Exact real numbers are captured ONLY by that elevated run** — no estimate is published as a
+  real number. Until then the Stage 14.2 family-level estimate (~≥60% known) remains labeled an
+  estimate, and Stage 14.3 stays `IMPLEMENTATION READY — REAL-DESKTOP ELEVATED VALIDATION REQUIRED`.
+- Real-derived regression fixture `tests/fixtures/25H2-Pro-zhCN-component-families.json`
+  (version/arch/language/host-path-stripped representatives) is refreshable from the CLI output.

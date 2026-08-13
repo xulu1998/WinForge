@@ -64,15 +64,15 @@ public class Stage14FamilyExpansionTests
     // ---- 1. real-derived fixture classification ----
     [Theory]
     [MemberData(nameof(AppxFixture))]
-    public void Appx_Fixture_Classifies(string id, ComponentCategory source, string expected)
+    public void Appx_Fixture_Classifies(string id, string expected)
         => Assert.Equal(expected, _classifier.Classify(id)?.CanonicalId);
 
     public static IEnumerable<object[]> AppxFixture()
-        => RealMediaFamilyFixture.AppxAndCapability.Select(x => new object[] { x.Id, x.Source, x.Expected });
+        => RealMediaFamilyFixture.AppxAndCapability.Select(x => new object[] { x.Id, x.Expected });
 
     [Theory]
     [MemberData(nameof(CbsFixture))]
-    public void Cbs_Fixture_Classifies_To_Conservative_Family(string id, ComponentCategory source, string expected)
+    public void Cbs_Fixture_Classifies_To_Conservative_Family(string id, string expected)
     {
         var k = _classifier.Classify(id);
         Assert.NotNull(k);
@@ -84,7 +84,7 @@ public class Stage14FamilyExpansionTests
     }
 
     public static IEnumerable<object[]> CbsFixture()
-        => RealMediaFamilyFixture.CbsFamilies.Select(x => new object[] { x.Id, x.Source, x.Expected });
+        => RealMediaFamilyFixture.CbsFamilies.Select(x => new object[] { x.Id, x.Expected });
 
     // ---- 2-4. language / architecture / resource variants share one family ----
     [Theory]
@@ -262,7 +262,7 @@ public class Stage14FamilyExpansionTests
             {
                 if (seen.TryGetValue(k, out var other) && other != e.Id)
                 {
-                    Assert.True(false, $"collision: '{k}' between '{other}' and '{e.Id}'");
+                    Assert.Fail($"collision: '{k}' between '{other}' and '{e.Id}'");
                 }
 
                 seen[k] = e.Id;

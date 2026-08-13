@@ -218,6 +218,136 @@ public sealed class ProfileViewModel : ViewModelBase
     public string SummaryConflictLabel => _loc["Profile.Summary.Conflict"];
     public string SummaryUnsupportedLabel => _loc["Profile.Summary.Unsupported"];
 
+    // ---- Phase 14.3 — knowledge-driven gaming summary (ADR-088/089) ----
+
+    private string _gamingSummaryText = string.Empty;
+
+    /// <summary>
+    /// Localized "what this Gaming profile actually does" summary: recommended
+    /// changes / kept-for-compatibility / optional choices + bounded examples.
+    /// Empty when no gaming primary profile is active. Never exposes hundreds of
+    /// technical ids (Part C §13).
+    /// </summary>
+    public string GamingSummaryText
+    {
+        get => _gamingSummaryText;
+        private set
+        {
+            if (SetField(ref _gamingSummaryText, value))
+            {
+                OnPropertyChanged(nameof(HasGamingSummary));
+            }
+        }
+    }
+
+    public bool HasGamingSummary => !string.IsNullOrEmpty(_gamingSummaryText);
+
+    private void RefreshGamingSummary()
+    {
+        var kind = _ctx.SelectedProfiles.FirstOrDefault(p => p.GamingKind is not null)?.GamingKind;
+        if (kind is null)
+        {
+            GamingSummaryText = string.Empty;
+            return;
+        }
+
+        var extras = ExtractGamingExtras(_ctx.SelectedProfiles);
+        var evaluator = new WinForge.Core.Profiles.GamingProfileEvaluationService();
+        var subjects = Subjects().OfType<IGamingEvaluationSubject>().Where(s => s.IsPresent).ToList();
+
+        var inputs = subjects
+            .Select(s => new WinForge.Core.Profiles.GamingPolicyInput
+            {
+                RawIdentity = s.RawIdentity,
+                Source = s.SourceCategory,
+                Knowledge = s.DeepKnowledge ?? new(),
+                Extras = extras,
+                IsPresent = true,
+                SupportedForRemoval = s.IsApplySupported,
+                HasUserOverride = s.WasOverridden,
+            })
+            .Where(i => i.Knowledge.CanonicalId.Length > 0 || i.Knowledge.Function != WinForge.Core.ComponentIntelligence.ComponentFunctionCategory.Unknown)
+            .ToList();
+
+        var summary = evaluator.Evaluate(inputs, kind.Value, extras);
+        var byIdentity = subjects.ToDictionary(s => s.RawIdentity, s => s.DisplayName, StringComparer.Ordinal);
+
+        string NameOf(WinForge.Core.Profiles.GamingEvaluationItem item)
+            => byIdentity.TryGetValue(item.Result.RawIdentity, out var name)
+                ? name
+                : item.Result.CanonicalId ?? item.Result.RawIdentity;
+
+        var recommended = summary.Items.Where(i => i.Result.IsAutoRecommended && !i.Result.HasUserOverride).ToList();
+        var optional = summary.Items.Where(i => i.Result.IsOptionalSuggestion && !i.Result.HasUserOverride).ToList();
+        var kept = summary.Items.Where(i => i.Result.IsKeptForCompatibility).ToList();
+
+        var lines = new List<string>
+        {
+            $"{_loc["Profile.Summary.Gaming.Recommended"]}: {recommended.Count}",
+            $"{_loc["Profile.Summary.Gaming.Kept"]}: {kept.Count}",
+            $"{_loc["Profile.Summary.Gaming.Optional"]}: {optional.Count}",
+        };
+
+        if (recommended.Count > 0 || optional.Count > 0)
+        {
+            lines.Add(string.Empty);
+            foreach (var r in recommended.Take(4))
+            {
+                lines.Add("✓ " + NameOf(r) + " — " + ReasonText(r));
+            }
+
+            foreach (var o in optional.Take(2))
+            {
+                lines.Add("◇ " + NameOf(o) + " — " + ReasonText(o));
+            }
+
+            if (recommended.Count + optional.Count > 6)
+            {
+                lines.Add("…");
+            }
+        }
+
+        if (kept.Count > 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add(_loc["Profile.Summary.Gaming.KeptExamples"] + ": " +
+                string.Join(" · ", kept.Take(6).Select(NameOf)));
+        }
+
+        GamingSummaryText = string.Join(Environment.NewLine, lines);
+    }
+
+    private string ReasonText(WinForge.Core.Profiles.GamingEvaluationItem item)
+    {
+        var key = string.IsNullOrEmpty(item.Result.ReasonKey) ? item.Result.GateReasonKey : item.Result.ReasonKey;
+        var text = string.IsNullOrEmpty(key) ? string.Empty : _loc[key];
+        return string.IsNullOrEmpty(text) || text == key ? string.Empty : text;
+    }
+
+    private static HashSet<WinForge.Core.Profiles.GamingExtra> ExtractGamingExtras(
+        IReadOnlyList<WinForge.Core.Profiles.ProfileDefinition> profiles)
+    {
+        var extras = new HashSet<WinForge.Core.Profiles.GamingExtra>();
+        foreach (var p in profiles)
+        {
+            var extra = p.Id switch
+            {
+                "XboxGamePass" => WinForge.Core.Profiles.GamingExtra.XboxGamePass,
+                "WslDocker" => WinForge.Core.Profiles.GamingExtra.WslDocker,
+                "PrintingScanning" => WinForge.Core.Profiles.GamingExtra.PrintScan,
+                "TouchPen" => WinForge.Core.Profiles.GamingExtra.TouchPen,
+                "RemoteDesktop" => WinForge.Core.Profiles.GamingExtra.RemoteDesktop,
+                _ => (WinForge.Core.Profiles.GamingExtra?)null,
+            };
+            if (extra is not null)
+            {
+                extras.Add(extra.Value);
+            }
+        }
+
+        return extras;
+    }
+
     // ---- Profile selection (routed from the cards) ----
 
     internal void Select(string profileId)
@@ -274,6 +404,7 @@ public sealed class ProfileViewModel : ViewModelBase
         OnPropertyChanged(nameof(SummaryConflictLabel));
         OnPropertyChanged(nameof(SummaryUnsupportedLabel));
         OnPropertyChanged(nameof(RestoreVisible));
+        RefreshGamingSummary();
         if (RestoreCommand is RelayCommand r) r.RaiseCanExecuteChanged();
     }
 

@@ -961,8 +961,8 @@
   <data name="Profile.Developer.DisplayName" xml:space="preserve"><value>开发工作站</value></data>
   <data name="Profile.Empty.Preview" xml:space="preserve"><value>请先选择推荐配置以预览推荐方案。</value></data>
   <data name="Profile.Extras.Title" xml:space="preserve"><value>额外需求</value></data>
-  <data name="Profile.Gaming.Description" xml:space="preserve"><value>优先游戏兼容、手柄输入、媒体编解码与 Game Pass</value></data>
-  <data name="Profile.Gaming.DisplayName" xml:space="preserve"><value>游戏优先</value></data>
+  <data name="Profile.Gaming.Description" xml:space="preserve"><value>游戏 PC：以游戏为主但仍保持日常易用的个人电脑</value></data>
+  <data name="Profile.Gaming.DisplayName" xml:space="preserve"><value>游戏 PC</value></data>
   <data name="Profile.Lightweight.Description" xml:space="preserve"><value>精简可选应用与后台体验；保留系统服务与安全</value></data>
   <data name="Profile.Lightweight.DisplayName" xml:space="preserve"><value>轻量系统</value></data>
   <data name="Profile.None" xml:space="preserve"><value>未选择推荐配置——手动模式</value></data>
@@ -999,6 +999,39 @@
   <data name="Profile.Reason.Gaming.UI" xml:space="preserve"><value>游戏优先精简推广与建议类界面</value></data>
   <data name="Profile.Reason.Gaming.Xbox" xml:space="preserve"><value>游戏优先配置保留 Xbox / Game Pass 相关功能</value></data>
   <data name="Profile.Reason.Gaming.XboxServices" xml:space="preserve"><value>游戏优先配置保留 Xbox 服务基础</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.XboxGamePass" xml:space="preserve"><value>已启用 Xbox / Game Pass，予以保留</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.WslDocker" xml:space="preserve"><value>已启用 WSL / Docker，予以保留</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.PrintScan" xml:space="preserve"><value>已启用打印 / 扫描，予以保留</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.TouchPen" xml:space="preserve"><value>已启用触控 / 手写笔输入，予以保留</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.RemoteDesktop" xml:space="preserve"><value>已启用远程桌面，予以保留</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Infrastructure" xml:space="preserve"><value>保留：核心 Windows 基础组件（服务、安全、运行时、驱动、网络、存储、外壳）</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Protection" xml:space="preserve"><value>保留：受保护的系统基础组件</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Runtime" xml:space="preserve"><value>保留：游戏与 Windows 应用依赖该运行时 / 服务</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Dependency" xml:space="preserve"><value>保留：其他已保留组件依赖它（商店 / winget / 游戏服务）</value></data>
+  <data name="Profile.Reason.Gaming.Remove.Consumer" xml:space="preserve"><value>PC 游戏不需要，可安全移除</value></data>
+  <data name="Profile.Reason.Gaming.Remove.Phone" xml:space="preserve"><value>手机连接非 PC 游戏所需，可安全移除</value></data>
+  <data name="Profile.Reason.Gaming.Remove.Search" xml:space="preserve"><value>网页 / 搜索集成非 PC 游戏所需，可安全移除</value></data>
+  <data name="Profile.Reason.Gaming.Optional.CloudStorage" xml:space="preserve"><value>可选：仅在你不用云存储（OneDrive）时移除</value></data>
+  <data name="Profile.Reason.Gaming.Optional.PrintScan" xml:space="preserve"><value>可选：仅在你不用打印 / 扫描时移除</value></data>
+  <data name="Profile.Reason.Gaming.Optional.RemoteAccess" xml:space="preserve"><value>可选：仅在你不用远程访问时移除</value></data>
+  <data name="Profile.Reason.Gaming.Optional.Developer" xml:space="preserve"><value>可选：仅在你不用开发工具时移除</value></data>
+  <data name="Profile.Reason.Gaming.Optional.Virtualization" xml:space="preserve"><value>可选：仅在你不用虚拟化（WSL / Hyper-V）时移除</value></data>
+  <data name="Profile.Reason.Gaming.Optional.Media" xml:space="preserve"><value>可选：仅在你不用此媒体应用时移除</value></data>
+  <data name="Profile.Reason.Gaming.Gate.UserOverride" xml:space="preserve"><value>已保留你的手动选择 — 配置不会更改</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Unsupported" xml:space="preserve"><value>无安全执行机制 — 分类不代表可移除</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Protected" xml:space="preserve"><value>受保护的系统基础组件 — 绝不自动移除</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Critical" xml:space="preserve"><value>严重风险 — 绝不自动移除</value></data>
+  <data name="Profile.Reason.Gaming.Gate.High" xml:space="preserve"><value>高风险 — 游戏配置绝不自动移除</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Recommendation" xml:space="preserve"><value>推荐语义要求保留此组件</value></data>
+  <data name="Profile.Reason.Gaming.Gate.ModerateOptional" xml:space="preserve"><value>中等风险 — 仅在你明确确认后移除</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Heuristic" xml:space="preserve"><value>启发式分类 — 绝不自动移除</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Optional" xml:space="preserve"><value>可选建议 — 仅在你确认后移除</value></data>
+  <data name="Profile.Summary.Gaming.Recommended" xml:space="preserve"><value>建议修改</value></data>
+  <data name="Profile.Summary.Gaming.Kept" xml:space="preserve"><value>为兼容保留</value></data>
+  <data name="Profile.Summary.Gaming.Optional" xml:space="preserve"><value>可选建议</value></data>
+  <data name="Profile.Summary.Gaming.KeptExamples" xml:space="preserve"><value>保留</value></data>
+  <data name="Profile.DedicatedGaming.DisplayName" xml:space="preserve"><value>专用游戏</value></data>
+  <data name="Profile.DedicatedGaming.Description" xml:space="preserve"><value>最小化游戏专用机；可选精简始终需要你确认</value></data>
   <data name="Profile.Reason.Keep" xml:space="preserve"><value>所选配置建议保留</value></data>
   <data name="Profile.Reason.Lightweight.Background" xml:space="preserve"><value>轻量系统精简后台与消费类服务</value></data>
   <data name="Profile.Reason.Lightweight.Consumer" xml:space="preserve"><value>轻量系统精简可选消费类应用</value></data>

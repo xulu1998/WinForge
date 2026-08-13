@@ -26,7 +26,7 @@ namespace WinForge.App.ViewModels;
 /// mutated), exposes deterministic localized reasons, and marks manual toggles as
 /// user overrides so recalculation never silently overwrites an explicit choice.</para>
 /// </summary>
-public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubject
+public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubject, IGamingEvaluationSubject
 {
     private readonly ILocalizationService _loc;
     private readonly IAppState _appState;
@@ -53,6 +53,23 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
 
     /// <summary>Phase 14 deep classification knowledge (null for curated-only rows).</summary>
     public bool HasDeepKnowledge => _deep is not null;
+
+    /// <summary>Phase 14 deep classification knowledge — the gaming pipeline's input (ADR-088).</summary>
+    public WinForge.Core.ComponentIntelligence.DeepComponentKnowledge? DeepKnowledge
+        => _parent.KnowledgeOf(this);
+
+    /// <summary>Raw deep classification attached at construction (internal; display uses this).</summary>
+    internal WinForge.Core.ComponentIntelligence.DeepComponentKnowledge? DeepKnowledgeRaw => _deep;
+
+    /// <summary>Raw discovery source of this row (AppX / Capability / OptionalFeature / …).</summary>
+    public ComponentCategory SourceCategory =>
+        Entry.Definition?.Category ??
+        Entry.RepresentativeRaw?.Category ??
+        ComponentCategory.Unknown;
+
+    /// <summary>Raw Windows identity of the row (representative), for traceability.</summary>
+    public string RawIdentity =>
+        Entry.RepresentativeRaw?.RawIdentity ?? Entry.LogicalId;
 
     /// <summary>Deep classification display name (fallback-safe).</summary>
     public string DeepDisplayName
@@ -157,6 +174,10 @@ public sealed class ComponentKnowledgeItem : ViewModelBase, IRecommendationSubje
         IsPresent = IsPresent,
         IsApplySupported = IsApplySupported,
         Dependencies = Entry.Definition?.Dependencies ?? new List<ComponentDependency>(),
+        // Phase 14.3 (ADR-088/090): post-safety-gate knowledge-driven gaming
+        // decision — null when no gaming profile is active (engine falls through
+        // to the legacy tiers unchanged).
+        GamingDecision = _parent.GetGamingDecision(this),
     };
 
     /// <summary>Deterministic localized "why" for the effective recommendation (Part F).</summary>

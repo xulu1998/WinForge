@@ -671,10 +671,11 @@ public class CustomizeBindingRegressionTests
             Assert.True(profileView.DesiredSize.Height <= 260,
                 $"ProfileView is {profileView.DesiredSize.Height}px tall — must stay compact.");
 
-            // 7 primary profiles as RADIO cards (mutually exclusive semantics).
+            // Phase 14.3 (ADR-089): 8 primary profiles as RADIO cards — Gaming PC
+            // and Dedicated Gaming are two distinct, never-aliased concepts.
             var radios = FindVisuals<RadioButton>(profileView)
                 .Where(r => r.GroupName == "PrimaryProfile").ToList();
-            Assert.Equal(7, radios.Count);
+            Assert.Equal(8, radios.Count);
             radios[1].IsChecked = true;
             Assert.True(radios[1].IsChecked == true);
             Assert.False(radios[0].IsChecked == true);

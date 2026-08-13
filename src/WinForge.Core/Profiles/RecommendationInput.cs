@@ -28,6 +28,15 @@ public sealed class RecommendationInput
     public bool IsApplySupported { get; init; } = true;
 
     public IReadOnlyList<ComponentDependency> Dependencies { get; init; } = new List<ComponentDependency>();
+
+    /// <summary>
+    /// Phase 14.3 (ADR-088/090): post-safety-gate knowledge-driven decision from the
+    /// gaming pipeline. Null when no gaming policy is active. When present it is a
+    /// PROFILE INTENT — evaluated AFTER requirement/dependency tiers and BEFORE the
+    /// legacy scenario overrides, so explicit extra-scenario rules still win. The
+    /// Safety Gate has already run; the engine never re-derives it.
+    /// </summary>
+    public GamingPolicyDecision? GamingDecision { get; init; }
 }
 
 /// <summary>

@@ -81,3 +81,16 @@ RuntimeDependency / SecurityEssential / ServicingEssential) are now carried on t
 families. Stage 14.3 wires these tags into the Gaming profile recommendation engine (keep-list vs
 candidate cleanup), plus dependency resolution and an elevated real per-object scan for exact
 coverage numbers.
+
+## Progress — Stage 14.3 implementation ready (2026-08-13)
+
+- **Gaming Profile 2.0 implemented**: the observed list from the "Problem" section is now handled
+  by the knowledge-driven policy — Phone Link / Solitaire / Get Help / Weather / Feedback Hub /
+  Bing web & news integration are LOW-RISK auto candidates for **Gaming PC**; Paint / Photos /
+  OneDrive / printing / Remote Desktop / developer tools / Hyper-V / WSL are **optional-only**
+  ("never assume") with deterministic reasons. The old Gaming profile is now the **Gaming PC**
+  concept and a new **Dedicated Gaming** primary adds optional suggestions for moderate-risk
+  consumer/media families — never kiosk, never placebo tweaks, always user-confirmed for anything
+  beyond the safe Low-risk set.
+- Elevated real capture (Part A) delivered as `tools/WinForge.RealCapture`; exact real numbers
+  still require the Administrator run (Stage 14.3 completion gate).

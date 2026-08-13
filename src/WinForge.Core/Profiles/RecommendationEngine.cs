@@ -127,6 +127,31 @@ public sealed class RecommendationEngine : IRecommendationEngine
                 advisedBy.Add(advising);
             }
         }
+        else if (input.GamingDecision is { } gaming && gaming.Verdict != GamingVerdict.NoOpinion)
+        {
+            // Tier 5b — KNOWLEDGE-DRIVEN gaming policy (Phase 14.3, ADR-088/090).
+            // The decision is already post-Safety-Gate; the gate has final authority
+            // and this tier only maps the verdict into the effective level. Explicit
+            // extra-scenario overrides (Tier 5) still win over the policy layer.
+            level = gaming.Verdict switch
+            {
+                GamingVerdict.KeepForCompatibility => EffectiveRecommendationLevel.RecommendKeep,
+                GamingVerdict.AutoRemoveCandidate => EffectiveRecommendationMappings.TrimForAction(input.Action),
+                GamingVerdict.OptionalRemoveCandidate => EffectiveRecommendationLevel.ManualReview,
+                _ => EffectiveRecommendationLevel.ManualReview,
+            };
+            if (!string.IsNullOrEmpty(gaming.ReasonKey))
+            {
+                reasons.Add(gaming.ReasonKey);
+            }
+
+            sourceRules.Add("gaming:" + input.LogicalId);
+            var gamingProfile = context.SelectedProfiles.FirstOrDefault(p => p.GamingKind == gaming.Kind);
+            if (gamingProfile is not null)
+            {
+                advisedBy.Add(gamingProfile);
+            }
+        }
         else
         {
             // Tier 6 — component default recommendation.
@@ -168,7 +193,8 @@ public sealed class RecommendationEngine : IRecommendationEngine
             s.StartsWith("override:", StringComparison.Ordinal) ||
             s.StartsWith("requirement:", StringComparison.Ordinal) ||
             s.StartsWith("dependency:", StringComparison.Ordinal) ||
-            s.StartsWith("conflict:", StringComparison.Ordinal));
+            s.StartsWith("conflict:", StringComparison.Ordinal) ||
+            s.StartsWith("gaming:", StringComparison.Ordinal));
 
         return new EffectiveRecommendation
         {

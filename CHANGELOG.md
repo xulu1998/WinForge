@@ -3,6 +3,40 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 14 — Stage 14.3: Elevated real capture + Gaming Profile 2.0 (2026-08-13)
+
+- **Elevated real-inventory capture tool** (`tools/WinForge.RealCapture`): a console CLI that runs
+  the EXACT production WinForge pipeline (ISO inspection → export selected index → mount working WIM
+  → production DISM discovery → matcher → DeepComponentClassifier → exact coverage accounting) and
+  exports `inventory-summary.json`, `inventory-items.json`, `unknown-items.json`,
+  `unknown-families.json` (top-30 ranked), `coverage-by-source.json`, `gaming-candidates.json` and
+  `real-derived-families.json` to `.tmp/phase14-real/`, then unmounts/discards/cleans up. Must run as
+  **Administrator** (DISM requires elevation; the app manifest requests it). Source ISO stays
+  read-only. **Exact real coverage numbers will be captured when the user runs it — nothing
+  estimated or fabricated.**
+- **Exact coverage accounting** (`CoverageAccountingService`): every raw object lands in exactly one
+  bucket (Curated | KnownDeep | Heuristic | Unknown); Protected is a property count (subset of known);
+  per-source slices reconcile to the total; heuristic never inflates knowledge coverage.
+- **Real-derived regression fixture** `tests/fixtures/25H2-Pro-zhCN-component-families.json` with
+  version/arch/language/host-path-stripped representatives + validation tests (refreshable from the
+  capture CLI output).
+- **Gaming Profile 2.0**: the Gaming primary profile is now the **Gaming PC** concept and a new
+  **Dedicated Gaming** primary was added (never aliases). Recommendations are knowledge-driven:
+  Inventory → Deep Knowledge → Profile Policy → Candidate → Safety Gate → Plan. The Safety Gate has
+  final authority (Protected/Critical/High block; Moderate is optional-only; Low + curated knowledge
+  may auto-recommend; heuristic classification never auto-removes; unsupported items and manual
+  choices are never touched). Extras materially influence decisions (Xbox/Game Pass, WSL/Docker,
+  printing/scanning, touch/pen, Remote Desktop force their ecosystems to keep). The keep list covers
+  servicing/update/Defender/Store/winget/Gaming Services/runtimes/DirectX/audio/networking/GPU/USB/
+  storage/shell/WinRE/boot. No placebo tweaks (HPET/BCD/tick/memory/pagefile/cargo-cult forbidden).
+- **User-facing Gaming summary** in the profile panel: 建议修改 / 为兼容保留 / 可选建议 counts with
+  bounded examples and deterministic localized reasons (en + zh-CN) — never hundreds of technical ids.
+- **Gaming PC (游戏 PC)** and **Dedicated Gaming (专用游戏)** are two distinct primary profiles
+  (8 primaries total, never aliases). Manual overrides remain authoritative
+  (profile recalculation never silently overwrites an explicit user choice; Protected stays protected).
+- **975 automated tests pass (Core 53, App 922), 0 errors, 0 warnings (Release)** — ordinary in-place
+  `dotnet build WinForge.sln`/`dotnet test WinForge.sln` both pass on this machine.
+
 ## Phase 14 — Stage 14.2: Real-media family expansion + coverage (2026-08-13)
 
 - Real source confirmed: `C:\Users\xulu1998\Downloads\Win11_25H2_Chinese_Simplified_x64_v2.iso`

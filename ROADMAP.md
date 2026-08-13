@@ -493,8 +493,10 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 14 — Deep Component Coverage & Classification
 
-- **Status:** IN PROGRESS — **STAGE 14.1 + STAGE 14.2 COMPLETE (2026-08-13)**; branch
-  `phase/14-deep-component-classification`; NOT merged.
+- **Status:** IN PROGRESS — **STAGES 14.1 + 14.2 COMPLETE · STAGE 14.3 IMPLEMENTATION READY
+  (2026-08-13)**; branch `phase/14-deep-component-classification`; NOT merged. **REAL-DESKTOP
+  ELEVATED VALIDATION REQUIRED** to close Stage 14.3 (user runs `WinForge.RealCapture` as
+  Administrator; exact real numbers captured to `.tmp/phase14-real/`).
 - **Stage 14.1 delivered:** taxonomy + classification layer (discovery/knowledge/planning separate);
   ComponentFunctionCategory; DeepComponentKnowledge (risk/recommendation/protection/profile/
   confidence); ComponentNormalizer + collision guard; first-batch DeepComponentCatalogData
@@ -504,9 +506,19 @@ Phased development plan for WinForge. Each phase records its **Status**,
 - **Stage 14.2 (complete):** real-media family expansion — 145 curated entries (+22 CBS +15 hardware
   family rules), UnknownFamilyAnalyzer, enhanced coverage metrics, restrained UI summary,
   docs/COMPONENT-COVERAGE.md. **892 tests, 0 err/0 warn.**
-- **Stage 14.3 (recommended next):** elevated real per-object scan (runbook ready) for exact
-  before/after numbers; expand remaining Unknown families; per-object dependency resolution;
-  Gaming profile recommendation wiring (docs/PHASE14-INPUT.md); removal execution only after high
+- **Stage 14.3 (implementation ready; elevated validation pending):** (A) `tools/WinForge.RealCapture`
+  elevated capture CLI — EXACT production pipeline (inspect→export→mount→DISM discovery→matcher→
+  DeepComponentClassifier→`CoverageAccountingService` no-double-count per-source buckets→top-30
+  Unknown families→6 JSON exports to `.tmp/phase14-real/`→cleanup); Core exact accounting service;
+  real-derived stable fixture `tests/fixtures/25H2-Pro-zhCN-component-families.json` + validator.
+  (C) **Gaming Profile 2.0 engine**: knowledge-driven pipeline Inventory→Deep Knowledge→Profile
+  Policy→Candidate→Safety Gate→Plan (ADR-088/089/090); `GamingPcPolicy` + `DedicatedGamingPolicy`
+  (distinct primaries); `ProfileSafetyGate` final authority; extras influence keeps; §8 keep list;
+  no placebo tweaks; deterministic localized reasons; localized Gaming summary in the profile panel;
+  manual overrides authoritative; `Gaming`=Gaming PC + new `DedicatedGaming` primary. **975 tests
+  (Core 53, App 922), 0 err/0 warn (Release; ordinary in-place build+test pass).**
+- **Stage 14.4 (recommended next, after elevated validation):** expand remaining Unknown families
+  from the real top-30 report; per-object dependency resolution; removal execution only after high
   classification coverage + protection gating.
 
 ## Phase 13 — Compatibility & Real-World Validation Matrix

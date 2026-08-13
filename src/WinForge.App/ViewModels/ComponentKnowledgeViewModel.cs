@@ -69,6 +69,11 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
         CoverageSummaryText = $"Known: {known} · Protected: {protectedCount} · Unknown: {unknown} (total {total})";
     }
     private readonly WinForge.Core.ComponentIntelligence.DeepComponentClassifier _deep;
+    private readonly WinForge.Core.Profiles.GamingProfileEvaluationService _gaming =
+        new();
+    private WinForge.Core.Profiles.GamingProfileKind? _gamingKind;
+    private IReadOnlySet<WinForge.Core.Profiles.GamingExtra> _gamingExtras =
+        new HashSet<WinForge.Core.Profiles.GamingExtra>();
     private ComponentKnowledgeFilter _filter = ComponentKnowledgeFilter.All;
     private ComponentKnowledgeItem? _activeDetail;
     private bool _isDiscovering;
@@ -278,19 +283,6 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
                 }
 
                 _all.Add(new ComponentKnowledgeItem(entry, _loc, _appState, this, _ctx));
-
-                // Phase 14: classified DiscoveredUnclassified objects join the
-                // knowledge surface (name/purpose/recommendation/risk via the deep
-                // catalog) instead of remaining unexplained raw identifiers.
-                if (entry.Classification == ComponentClassification.DiscoveredUnclassified
-                    && entry.RawItems.Count > 0)
-                {
-                    var deep = _deep.Classify(entry.LogicalId);
-                    if (deep is not null)
-                    {
-                        _all.Add(new ComponentKnowledgeItem(entry, _loc, _appState, this, _ctx, deep));
-                    }
-                }
             }
         }
 
@@ -305,6 +297,66 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
         HasInventory = inventory?.Discovered ?? false;
         ApplyFilter();
         OnPropertyChanged(nameof(CuratedCount));
+    }
+
+    /// <summary>
+    /// Knowledge of a row for the gaming pipeline (ADR-088). Prefers the row's own
+    /// deep classification when present, else classifies the raw identity on the
+    /// fly with the production classifier. Never mutates the row or its display.
+    /// </summary>
+    internal WinForge.Core.ComponentIntelligence.DeepComponentKnowledge? KnowledgeOf(ComponentKnowledgeItem item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (item.DeepKnowledgeRaw is not null)
+        {
+            return item.DeepKnowledgeRaw;
+        }
+
+        var identity = item.RawIdentity;
+        return string.IsNullOrWhiteSpace(identity) ? null : _deep.Classify(identity);
+    }
+
+    /// <summary>
+    /// Phase 14.3 — post-safety-gate gaming decision for a row (ADR-088/090).
+    /// Null when no gaming profile is active or the gate blocked the change
+    /// (the row falls through to its legacy/default evaluation).
+    /// </summary>
+    internal WinForge.Core.Profiles.GamingPolicyDecision? GetGamingDecision(ComponentKnowledgeItem item)
+    {
+        if (_gamingKind is null || item is null || !item.IsPresent)
+        {
+            return null;
+        }
+
+        var knowledge = KnowledgeOf(item);
+        if (knowledge is null)
+        {
+            return null;
+        }
+
+        return _gaming.EvaluateItem(new WinForge.Core.Profiles.GamingPolicyInput
+        {
+            RawIdentity = item.RawIdentity,
+            Source = item.SourceCategory,
+            Knowledge = knowledge,
+            Extras = _gamingExtras,
+            IsPresent = true,
+            SupportedForRemoval = item.IsApplySupported,
+            HasUserOverride = item.WasOverridden,
+        }, _gamingKind.Value);
+    }
+
+    /// <summary>
+    /// Sets the active knowledge-driven gaming context (kind + extras). Called by
+    /// the Customize coordinator before every recompute pass so rows evaluate
+    /// against the CURRENT profile selection.
+    /// </summary>
+    public void SetGamingContext(
+        WinForge.Core.Profiles.GamingProfileKind? kind,
+        IReadOnlySet<WinForge.Core.Profiles.GamingExtra> extras)
+    {
+        _gamingKind = kind;
+        _gamingExtras = extras ?? new HashSet<WinForge.Core.Profiles.GamingExtra>();
     }
 
     private void ApplyFilter()

@@ -154,24 +154,62 @@ public sealed class ClassificationCoverageMetrics
     /// <summary>Not classified — visible technical debt.</summary>
     public int UnknownUnclassified { get; init; }
 
-    /// <summary>Curated + KnownDeep over total (no double counting).</summary>
+    /// <summary>
+    /// Curated + KnownDeep over total (knowledge-backed, no double counting).
+    /// Heuristic is deliberately EXCLUDED — a heuristic classification is never
+    /// a removal rule by itself, so it must not inflate the knowledge coverage.
+    /// </summary>
     public double CoverageRatio =>
         TotalDiscovered == 0 ? 0 : (double)(Curated + KnownDeep) / TotalDiscovered;
+
+    /// <summary>
+    /// Fully-classified ratio (Curated + KnownDeep + Heuristic over total).
+    /// Reported alongside <see cref="CoverageRatio"/> so the heuristic remainder
+    /// stays visible instead of being silently counted as knowledge.
+    /// </summary>
+    public double TotalClassifiedRatio =>
+        TotalDiscovered == 0 ? 0 : (double)(Curated + KnownDeep + Heuristic) / TotalDiscovered;
+
+    /// <summary>
+    /// Objects whose matcher (production Stage 11.1) classification is
+    /// <see cref="ComponentClassification.Protected"/> — the narrow marker allowlist
+    /// count, kept distinct from the knowledge-level protection property count
+    /// (<see cref="Protected"/>) for full transparency in the real-data report.
+    /// </summary>
+    public int MatcherProtected { get; init; }
+
+    /// <summary>
+    /// Raw identity → EXACT exclusive bucket ("Curated" | "KnownDeep" | "Heuristic"
+    /// | "Unknown"). Provided for deterministic report exports; the bucket math
+    /// lives in <see cref="CoverageAccountingService"/>, never re-derived.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Buckets { get; init; } = new Dictionary<string, string>();
 
     /// <summary>Per-source breakdown (source = ComponentCategory kind).</summary>
     public IReadOnlyDictionary<ComponentCategory, SourceCoverage> BySource { get; init; } =
         new Dictionary<ComponentCategory, SourceCoverage>();
 }
 
-/// <summary>Per-source coverage slice (known/protected/heuristic/unknown, no double count).</summary>
+/// <summary>Per-source coverage slice (exact, no double count — one exclusive bucket per object).</summary>
 public sealed class SourceCoverage
 {
     public ComponentCategory Source { get; init; }
     public int Total { get; init; }
+
+    /// <summary>Production matcher Curated objects in this source.</summary>
+    public int Curated { get; init; }
+
+    /// <summary>Deep-classified (KnownPattern/KnownFamily) objects in this source.</summary>
     public int Known { get; init; }
-    public int Protected { get; init; }
+
+    /// <summary>Heuristic-classified objects in this source (never auto-removable).</summary>
     public int Heuristic { get; init; }
+
+    /// <summary>Not classified — visible technical debt.</summary>
     public int Unknown { get; init; }
+
+    /// <summary>Property count: protected objects (subset of Curated + Known).</summary>
+    public int Protected { get; init; }
 }
 
 /// <summary>

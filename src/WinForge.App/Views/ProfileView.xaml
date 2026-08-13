@@ -163,6 +163,13 @@
                 </Button>
             </StackPanel>
 
+            <!-- Phase 14.3 — knowledge-driven Gaming profile summary (ADR-088/089):
+                 what the profile actually does: recommended / kept / optional counts
+                 + bounded examples. Never exposes hundreds of technical ids. -->
+            <TextBlock FontSize="12" Foreground="#3E4C59" Margin="0,8,0,0" TextWrapping="Wrap"
+                       Text="{Binding GamingSummaryText, Mode=OneWay}"
+                       Visibility="{Binding HasGamingSummary, Mode=OneWay, Converter={StaticResource BoolToVis}}"/>
+
             <!-- Manual-mode / Custom caption when no primary profile drives recommendations -->
             <TextBlock FontSize="12" Foreground="#7B8794" Margin="0,4,0,0"
                        Text="{Binding ActiveProfileCaption, Mode=OneWay}"

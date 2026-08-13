@@ -30,6 +30,19 @@
   - System: auto 1 · manual 8
   - Personalization: auto 6 · manual 8
 
+## DedicatedGaming
+- Automatic (low-risk, adoptable): 12
+- Manual review: 53
+- Keep: 14
+- Unsupported: 2
+- Conflict: 0
+  - Apps: auto 3 · manual 10
+  - WindowsComponents: auto 0 · manual 9
+  - Services: auto 1 · manual 8
+  - Privacy: auto 6 · manual 5
+  - System: auto 0 · manual 9
+  - Personalization: auto 2 · manual 12
+
 ## Developer
 - Automatic (low-risk, adoptable): 24
 - Manual review: 44

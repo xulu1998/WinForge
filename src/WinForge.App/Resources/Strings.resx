@@ -963,8 +963,8 @@
   <data name="Profile.Developer.DisplayName" xml:space="preserve"><value>Developer</value></data>
   <data name="Profile.Empty.Preview" xml:space="preserve"><value>Select a configuration to preview its recommendation plan.</value></data>
   <data name="Profile.Extras.Title" xml:space="preserve"><value>Additional needs</value></data>
-  <data name="Profile.Gaming.Description" xml:space="preserve"><value>Game compatibility, controller input, codecs and Game Pass in mind</value></data>
-  <data name="Profile.Gaming.DisplayName" xml:space="preserve"><value>Gaming</value></data>
+  <data name="Profile.Gaming.Description" xml:space="preserve"><value>Gaming PC: a normal personal Windows PC optimized for gaming while staying convenient</value></data>
+  <data name="Profile.Gaming.DisplayName" xml:space="preserve"><value>Gaming PC</value></data>
   <data name="Profile.Lightweight.Description" xml:space="preserve"><value>Fewer optional apps and background experiences; servicing and security kept</value></data>
   <data name="Profile.Lightweight.DisplayName" xml:space="preserve"><value>Lightweight</value></data>
   <data name="Profile.None" xml:space="preserve"><value>No profile selected — manual mode</value></data>
@@ -1001,6 +1001,39 @@
   <data name="Profile.Reason.Gaming.UI" xml:space="preserve"><value>Gaming trims promotional / suggestion UI</value></data>
   <data name="Profile.Reason.Gaming.Xbox" xml:space="preserve"><value>Gaming keeps Xbox / Game Pass features</value></data>
   <data name="Profile.Reason.Gaming.XboxServices" xml:space="preserve"><value>Gaming keeps Xbox service infrastructure</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.XboxGamePass" xml:space="preserve"><value>Kept because Xbox / Game Pass support is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.WslDocker" xml:space="preserve"><value>Kept because WSL / Docker support is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.PrintScan" xml:space="preserve"><value>Kept because printing / scanning is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.TouchPen" xml:space="preserve"><value>Kept because touch / pen input is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.RemoteDesktop" xml:space="preserve"><value>Kept because Remote Desktop is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Infrastructure" xml:space="preserve"><value>Kept: core Windows infrastructure (servicing, security, runtimes, drivers, networking, storage, shell)</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Protection" xml:space="preserve"><value>Kept: protected system infrastructure</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Runtime" xml:space="preserve"><value>Kept: this runtime / service is used by games and Windows applications</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Dependency" xml:space="preserve"><value>Kept: other kept infrastructure depends on it (Store / winget / gaming services)</value></data>
+  <data name="Profile.Reason.Gaming.Remove.Consumer" xml:space="preserve"><value>Not required for PC gaming and can be removed safely</value></data>
+  <data name="Profile.Reason.Gaming.Remove.Phone" xml:space="preserve"><value>Phone Link is not required for PC gaming and can be removed safely</value></data>
+  <data name="Profile.Reason.Gaming.Remove.Search" xml:space="preserve"><value>Web / search integration is not required for PC gaming and can be removed safely</value></data>
+  <data name="Profile.Reason.Gaming.Optional.CloudStorage" xml:space="preserve"><value>Optional: remove only if you do not use cloud storage (OneDrive)</value></data>
+  <data name="Profile.Reason.Gaming.Optional.PrintScan" xml:space="preserve"><value>Optional: remove only if you do not use printing / scanning</value></data>
+  <data name="Profile.Reason.Gaming.Optional.RemoteAccess" xml:space="preserve"><value>Optional: remove only if you do not use remote access</value></data>
+  <data name="Profile.Reason.Gaming.Optional.Developer" xml:space="preserve"><value>Optional: remove only if you do not use developer tools</value></data>
+  <data name="Profile.Reason.Gaming.Optional.Virtualization" xml:space="preserve"><value>Optional: remove only if you do not use virtualization (WSL / Hyper-V)</value></data>
+  <data name="Profile.Reason.Gaming.Optional.Media" xml:space="preserve"><value>Optional: remove only if you do not use this media app</value></data>
+  <data name="Profile.Reason.Gaming.Gate.UserOverride" xml:space="preserve"><value>Manual choice preserved — not changed by the profile</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Unsupported" xml:space="preserve"><value>No safe execution mechanism — classification is not removal support</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Protected" xml:space="preserve"><value>Protected system infrastructure — never auto-removed</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Critical" xml:space="preserve"><value>Critical risk — never auto-removed</value></data>
+  <data name="Profile.Reason.Gaming.Gate.High" xml:space="preserve"><value>High risk — never auto-removed by a Gaming profile</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Recommendation" xml:space="preserve"><value>Recommendation semantics require keeping this item</value></data>
+  <data name="Profile.Reason.Gaming.Gate.ModerateOptional" xml:space="preserve"><value>Moderate risk — removable only with your explicit confirmation</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Heuristic" xml:space="preserve"><value>Heuristic classification — never auto-removed</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Optional" xml:space="preserve"><value>Optional suggestion — remove only if you confirm</value></data>
+  <data name="Profile.Summary.Gaming.Recommended" xml:space="preserve"><value>Recommended changes</value></data>
+  <data name="Profile.Summary.Gaming.Kept" xml:space="preserve"><value>Kept for compatibility</value></data>
+  <data name="Profile.Summary.Gaming.Optional" xml:space="preserve"><value>Optional choices</value></data>
+  <data name="Profile.Summary.Gaming.KeptExamples" xml:space="preserve"><value>Kept</value></data>
+  <data name="Profile.DedicatedGaming.DisplayName" xml:space="preserve"><value>Dedicated Gaming</value></data>
+  <data name="Profile.DedicatedGaming.Description" xml:space="preserve"><value>A minimal gaming-only machine; optional cleanups are always user-confirmed</value></data>
   <data name="Profile.Reason.Keep" xml:space="preserve"><value>Recommended to keep by the selected configuration</value></data>
   <data name="Profile.Reason.Lightweight.Background" xml:space="preserve"><value>Lightweight trims background / consumer services</value></data>
   <data name="Profile.Reason.Lightweight.Consumer" xml:space="preserve"><value>Lightweight trims optional consumer apps</value></data>

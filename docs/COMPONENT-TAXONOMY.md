@@ -94,3 +94,21 @@ Unknown stays **visible as technical debt** — metrics never hide it. Stage 14.
   tests); cross-entry pattern/alias collisions are eliminated and guarded.
 - Real-media scan limitation: non-elevated sandbox (DISM 740) — baseline from Phase 11 elevated
   scan; see docs/COMPONENT-COVERAGE.md.
+
+## Stage 14.3 update (2026-08-13)
+
+- **Gaming Profile 2.0 policy layer** (ADR-088/089/090): `GamingPcPolicy` + `DedicatedGamingPolicy`
+  consume the taxonomy fields (Function / Risk / RecommendationKind / Protection / ProfileTag /
+  DependencyTags) plus the selected extras and produce candidate verdicts
+  (KeepForCompatibility / AutoRemoveCandidate / OptionalRemoveCandidate / NoOpinion) with
+  deterministic reason keys. `ProfileSafetyGate` has FINAL authority: Protected/Critical/High block,
+  Moderate is optional-only, Low + curated knowledge may auto-recommend, heuristic never auto,
+  unsupported and user-overridden items are never acted on. Verdicts flow into the plan only as
+  post-gate decisions (`RecommendationInput.GamingDecision`, engine tier after requirement/
+  dependency and extra-scenario overrides, before the default).
+- Two distinct profiles, never aliases: **Gaming PC** (Gaming primary; Low-risk consumer cleanup +
+  §8 keep list + optional-only "never assume" set) and **Dedicated Gaming** (new primary; same keep
+  list, wider OPTIONAL set — moderate consumer/media families become user-confirmed suggestions).
+  No placebo tweaks: HPET/BCD/tick/memory/pagefile/cargo-cult registry tweaks, Defender or Windows
+  Update disabling, servicing-stack removal are all forbidden.
+- Every recommendation reason is a localization resource key (en + zh-CN), never runtime AI prose.

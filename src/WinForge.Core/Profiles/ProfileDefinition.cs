@@ -63,6 +63,16 @@ public sealed class ProfileDefinition
     /// <summary>Descriptive usage-scenario tags (Part C — priorities, not checkboxes).</summary>
     public IReadOnlyList<ProfileScenario> Scenarios { get; init; } = new List<ProfileScenario>();
 
+    /// <summary>
+    /// Phase 14.3: when set, this primary profile is powered by the KNOWLEDGE-DRIVEN
+    /// gaming pipeline (ADR-088/089) — the profile's per-item recommendations come
+    /// from <see cref="GamingProfileEvaluationService"/> consuming deep component
+    /// knowledge, not from hand-maintained raw-id override lists. The legacy
+    /// <see cref="RecommendationOverrides"/>/requirements may coexist as explicit
+    /// conservative keep rules, but the policy layer is the primary mechanism.
+    /// </summary>
+    public GamingProfileKind? GamingKind { get; init; }
+
     /// <summary>Explicit per-item keep/trim rules with deterministic reasons.</summary>
     public IReadOnlyList<ProfileRecommendationOverride> RecommendationOverrides { get; init; } = new List<ProfileRecommendationOverride>();
 

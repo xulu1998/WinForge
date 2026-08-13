@@ -1972,3 +1972,84 @@ All decisions are `ACCEPTED` unless noted.
   exposed on the Component Intelligence surface.
 - Classification ≠ removal: no destructive CBS/driver/servicing/Defender/Update/WinRE/Store/runtime/
   shell removal is added by classification coverage.
+
+## ADR-087: Real inventory validation — deterministic elevated capture workflow
+
+**Status:** Accepted (Phase 14 Stage 14.3).
+**Context:** Stage 14.2's coverage claims must become EXACT real-media numbers, not estimates.
+The build sandbox cannot elevate (DISM Error 740), so a deterministic elevated capture entry point
+is required and the user runs it once as Administrator.
+**Decision:**
+- New `tools/WinForge.RealCapture` console CLI (`requireAdministrator` manifest) runs the EXACT
+  production pipeline: Phase 2 inspection → `ImageWorkspaceFactory` → `ImageServicingService`
+  export selected index → mount → `WindowsComponentIntelligenceService` DISM discovery →
+  `ComponentMatcher` → `DeepComponentClassifier` → `CoverageAccountingService` exact accounting →
+  `UnknownFamilyAnalyzer` top-30 → 6 JSON exports (`inventory-summary.json`, `inventory-items.json`,
+  `unknown-items.json`, `unknown-families.json`, `coverage-by-source.json`, `gaming-candidates.json`)
+  + `real-derived-families.json` fixture to `.tmp/phase14-real/` → unmount+discard + dismount ISO +
+  workspace cleanup. The source ISO is never modified.
+- NO parallel fake discovery: every service is the production implementation.
+- Exactness rules: exclusive buckets per object (Curated | KnownDeep | Heuristic | Unknown);
+  Protected is a property count (subset of known); per-source slices reconcile; heuristic never
+  inflates knowledge coverage. If the environment cannot elevate, the stage stops at
+  `IMPLEMENTATION READY — REAL-DESKTOP ELEVATED VALIDATION REQUIRED` and the ONE command is
+  documented. No completion is fabricated.
+- The real-derived stable fixture (`tests/fixtures/25H2-Pro-zhCN-component-families.json`) is
+  refreshable from the CLI output; host paths / versions / temp mount paths are stripped.
+
+## ADR-088: Profile knowledge pipeline — Inventory → Deep Knowledge → Profile Policy → Candidate → Safety Gate → Plan
+
+**Status:** Accepted (Phase 14 Stage 14.3).
+**Context:** Gaming profiles previously operated on hand-maintained raw-id override lists. The
+recommendation mechanism must consume ComponentKnowledge (Function/Risk/RecommendationKind/
+Protection/ProfileTag/DependencyTags) plus the selected extras, not raw Windows identity strings as
+its primary decision mechanism.
+**Decision:**
+- `GamingProfileEvaluationService` (Core, pure) orchestrates: inventory raw identities → production
+  deep classification → `IGamingProfilePolicy` (knowledge rules) → candidate verdict → `ProfileSafetyGate`
+  (final authority) → post-gate decision consumed by `RecommendationEngine` as a new profile intent
+  tier (after dependency/requirement and legacy extra-scenario overrides, before the default).
+- `RecommendationInput.GamingDecision` carries the post-gate decision; the engine maps
+  Keep→RecommendKeep, AutoRemove→action trim level, Optional→ManualReview, and attributes the
+  advising profile (Gaming PC / Dedicated Gaming).
+- The pipeline is deterministic and platform-agnostic; reasons are localization resource keys, never
+  runtime AI prose. Manual overrides (Part K) remain authoritative; Protected/Critical/High and
+  unsupported items are never acted on.
+
+## ADR-089: Gaming PC vs Dedicated Gaming — two distinct profiles, never aliases
+
+**Status:** Accepted (Phase 14 Stage 14.3).
+**Context:** "Gaming PC" (a normal personal Windows PC optimized for gaming while staying convenient)
+and "Dedicated Gaming" (a minimal gaming-only machine) are different products with different
+recommendation appetites.
+**Decision:**
+- The existing `Gaming` primary profile is the **Gaming PC** concept (`GamingKind = GamingPc`;
+  display name updated to "Gaming PC"/"游戏 PC"); a NEW primary `DedicatedGaming`
+  (`GamingKind = DedicatedGaming`, "Dedicated Gaming"/"专用游戏") is added — 8 primary profiles total.
+- Gaming PC: automatic changes strictly LOW-RISK consumer content (Phone Link, Solitaire, Get Help,
+  Feedback Hub, Tips/suggestions, weather, Spotlight consumer content, advertising/tailored
+  experiences, widgets/news, Bing/web search where supported). Everything else is kept (§8 keep
+  list: servicing/update/Defender/Store/winget/Gaming Services/Xbox/runtimes/DirectX/audio/
+  networking/GPU/USB/storage/shell/WinRE/boot) or OPTIONAL ("never assume": Paint, Photos, OneDrive,
+  printing, Remote Desktop, developer tools, Hyper-V, WSL).
+- Dedicated Gaming: same keep list, wider OPTIONAL set (moderate-risk consumer/media families become
+  user-confirmed suggestions). NOT kiosk mode — nothing is forced.
+- Explicitly forbidden placebo tweaks: HPET hacks, BCD timer changes, dynamic-tick folklore, memory
+  management myths, core-parking registry superstition, forced scheduler hacks, Defender disabling,
+  Windows Update disabling, pagefile folklore, network "gaming" registry cargo-cult tweaks.
+
+## ADR-090: Profile safety gate — final authority for gaming recommendations
+
+**Status:** Accepted (Phase 14 Stage 14.3).
+**Context:** The Safety Gate must have the final say on whether a gaming candidate may act, applied
+BEFORE anything reaches the plan layer.
+**Decision:**
+- `ProfileSafetyGate.Evaluate(decision, input)` → AllowAuto | AllowOptional | Block with a
+  deterministic gate reason key.
+- Rules: Protected → Block (never); Critical → Block (never); High → Block in every Gaming profile;
+  Moderate → AllowOptional only; Low + curated knowledge support → AllowAuto; heuristic
+  classification → never auto (AllowOptional at most); unsupported (no already-supported safe
+  action) → Block (classification ≠ execution support, ADR-086); user override → Block (manual
+  choice authoritative); RequiredKeep/RecommendedKeep semantics → Block (belt-and-suspenders).
+- Blocked candidates fall through to the item's default evaluation; they are still VISIBLE in the
+  summary with the gate reason, so safety never hides intent.

@@ -555,3 +555,42 @@ distinguishes Curated / KnownDeep / Protected / Heuristic / Unknown per discover
 double counting. The build sandbox is non-elevated (DISM Error 740) — the real-media baseline is
 the Phase 11 elevated scan; an exact per-object re-scan requires elevation (see docs/COMPONENT-
 COVERAGE.md). Classification remains strictly separate from removal planning.
+
+## Phase 14 — Stage 14.3: Elevated real capture + Gaming Profile 2.0 (2026-08-13)
+
+**Real inventory capture (Part A, ADR-087).** `tools/WinForge.RealCapture` is a console CLI
+(`requireAdministrator` manifest) that runs the EXACT production pipeline elevated:
+`WindowsIsoInspectionService` → `ImageWorkspaceFactory` → `ImageServicingService` (export selected
+index to a working WIM, source ISO read-only) → mount → `WindowsComponentIntelligenceService`
+(production DISM discovery) → `ComponentMatcher` → `DeepComponentClassifier` →
+`CoverageAccountingService` → `UnknownFamilyAnalyzer` (top-30) → 6 JSON exports + a stable
+`real-derived-families.json` fixture under `.tmp/phase14-real/` → unmount/discard + ISO dismount +
+workspace cleanup. `CoverageAccountingService` (Core) is the exact accounting engine: one exclusive
+bucket per object (Curated | KnownDeep | Heuristic | Unknown), Protected as a property count
+(MatcherProtected reported separately), per-source slices that reconcile, and a heuristic-excluded
+knowledge ratio. No parallel fake discovery exists anywhere. The stage stays
+`IMPLEMENTATION READY — REAL-DESKTOP ELEVATED VALIDATION REQUIRED` until the user runs the CLI as
+Administrator and the exact real numbers are captured.
+
+**Gaming Profile 2.0 (Part C, ADR-088/089/090).** The recommendation pipeline is
+Inventory → Deep Knowledge → Profile Policy → Candidate → Safety Gate → Plan:
+
+- `IGamingProfilePolicy` (`GamingPcPolicy`, `DedicatedGamingPolicy`) consumes
+  `DeepComponentKnowledge` (Function/Risk/RecommendationKind/Protection/ProfileTag/DependencyTags)
+  + selected extras → `GamingVerdict` (KeepForCompatibility / AutoRemoveCandidate /
+  OptionalRemoveCandidate / NoOpinion) with deterministic reason keys.
+- `ProfileSafetyGate` is the FINAL authority: Protected/Critical/High block; Moderate is
+  optional-only; Low + curated knowledge may auto-recommend; heuristic never auto; unsupported and
+  user-overridden items are never acted on. Blocked candidates stay visible with the gate reason.
+- `GamingProfileEvaluationService` (Core, pure) runs the policy+gate and aggregates the
+  user-facing summary (recommended / kept-for-compatibility / optional counts + bounded examples).
+- The engine consumes ONLY post-gate decisions via `RecommendationInput.GamingDecision`
+  (`RecommendationEngine` tier after requirement/dependency and extra-scenario overrides, before
+  the default); user overrides (Part K) stay authoritative; `Gaming` primary = **Gaming PC**, new
+  `DedicatedGaming` primary = **Dedicated Gaming** (never aliases).
+- App wiring: `CustomizeStepViewModel.PushGamingContext` derives kind+extras from the selected
+  profiles; `ComponentKnowledgeViewModel.GetGamingDecision` feeds each knowledge row;
+  `ProfileViewModel.GamingSummaryText` renders the localized summary (8 primary profiles total).
+- Extras materially influence decisions (Xbox/Game Pass, WSL/Docker, print/scan, touch/pen,
+  Remote Desktop force their ecosystems to keep). No placebo tweaks (HPET/BCD/tick/memory/
+  pagefile/cargo-cult, Defender/Windows Update disabling, servicing-stack removal — all forbidden).
