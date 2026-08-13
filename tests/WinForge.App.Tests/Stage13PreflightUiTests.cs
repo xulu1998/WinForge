@@ -148,26 +148,26 @@ public class Stage13PreflightUiTests
 
             var texts = AllTextBlocks(view).Select(t => t.Text).ToList();
             status = texts.FirstOrDefault(t => t != null && t.Contains("Windows 11 25H2", StringComparison.Ordinal));
-            details = texts.FirstOrDefault(t => t != null && t.Contains("Build:", StringComparison.Ordinal));
+            details = texts.FirstOrDefault(t => t != null && t.Contains("WIM", StringComparison.Ordinal));
         });
         Assert.Null(ex);
         Assert.False(string.IsNullOrWhiteSpace(status), "compatibility status text must be visible");
-        Assert.False(string.IsNullOrWhiteSpace(details), "compatibility details must be visible");
+        Assert.False(string.IsNullOrWhiteSpace(details), "compatibility row details must be visible");
     }
 
-    // 4-10. status text + build/edition/arch/lang/wim/index render
+    // 4-10. compact row: release/arch/wim/status render; edition appears on selection
     [Fact]
-    public void Rendered_Details_Contain_Build_Edition_Arch_Lang_Wim_Index()
+    public void Compact_Row_Shows_Media_Level_Without_Edition()
     {
         var vm = MakeVm(RealLike26200Pro());
         InspectAsync(vm).GetAwaiter().GetResult();
 
-        Assert.Contains("26200", vm.CompatibilityDetailsText);
-        Assert.Contains("x64", vm.CompatibilityDetailsText);
-        Assert.Contains("zh-CN", vm.CompatibilityDetailsText);
-        Assert.Contains("Wim", vm.CompatibilityDetailsText);
-        Assert.Contains("Index: 4", vm.CompatibilityDetailsText);
+        // Media-level row BEFORE any edition selection.
         Assert.Contains("Windows 11 25H2", vm.CompatibilityStatusText);
+        Assert.Contains("x64", vm.CompatibilityStatusText);
+        Assert.Contains("WIM", vm.CompatibilityStatusText);
+        Assert.Contains("✓ 支持", vm.CompatibilityStatusText);
+        Assert.DoesNotContain("Pro", vm.CompatibilityStatusText); // no edition selected yet
     }
 
     // 11. switching edition refreshes compatibility (no re-detect)
@@ -177,15 +177,14 @@ public class Stage13PreflightUiTests
         var vm = MakeVm(RealLike26200Pro());
         InspectAsync(vm).GetAwaiter().GetResult();
 
-        // Select Home first — edition facts update to Core.
+        // Select Home first — the row gains the edition identity (fallback = EditionId).
         vm.SelectedEdition = vm.Editions.First(e => e.EditionId == "Core");
-        Assert.Contains("Core", vm.CompatibilityDetailsText);
-        Assert.Contains("Index: 1", vm.CompatibilityDetailsText);
+        Assert.Contains("Core", vm.CompatibilityStatusText); // fallback edition name
 
         // Switch to Pro (index 4) — no second Detect.
         vm.SelectedEdition = vm.Editions.First(e => e.EditionId == "Professional");
-        Assert.Contains("Professional", vm.CompatibilityDetailsText);
-        Assert.Contains("Index: 4", vm.CompatibilityDetailsText);
+        Assert.Contains("Pro", vm.CompatibilityStatusText);
+        Assert.Contains("Windows 11 25H2", vm.CompatibilityStatusText);
     }
 
     // 12. warning state renders
@@ -196,6 +195,8 @@ public class Stage13PreflightUiTests
         InspectAsync(vm).GetAwaiter().GetResult();
         Assert.True(vm.HasCompatibilityWarnings);
         Assert.False(string.IsNullOrWhiteSpace(vm.CompatibilityWarningsText));
+        Assert.Contains("ESD", vm.CompatibilityStatusText);
+        Assert.Contains("仅检查支持", vm.CompatibilityStatusText);
     }
 
     // 13. blocking state renders
@@ -206,6 +207,8 @@ public class Stage13PreflightUiTests
         InspectAsync(vm).GetAwaiter().GetResult();
         Assert.True(vm.HasCompatibilityBlockers);
         Assert.False(string.IsNullOrWhiteSpace(vm.CompatibilityBlockersText));
+        Assert.Contains("arm64", vm.CompatibilityStatusText);
+        Assert.Contains("✕ 当前不支持", vm.CompatibilityStatusText);
     }
 
     // 14. null/not-yet-detected state hides section
@@ -248,8 +251,10 @@ public class Stage13PreflightUiTests
             new WorkflowAndCommandTests.FakeWorkspaceFactory(),
             new WorkflowAndCommandTests.FakeWimService(),
             new FakeImageServicingService(), loc);
-        InspectAsync(vm).GetAwaiter().GetResult();
+        InspectAsync(vm).GetAwaiter().GetResult(); // detection first (clears edition)
+        vm.SelectedEdition = vm.Editions.First(e => e.EditionId == "Professional");
         Assert.Contains("Windows 11 25H2", vm.CompatibilityStatusText);
+        Assert.Contains(culture == "zh-CN" ? "专业版" : "Pro", vm.CompatibilityStatusText);
         Assert.Contains(culture == "zh-CN" ? "支持" : "Supported", vm.CompatibilityStatusText);
     }
 

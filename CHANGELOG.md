@@ -3,6 +3,21 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 13 — Compatibility preflight UX simplified (2026-08-12)
+
+- Product decision: retire the separate standalone compatibility card (still invisible on real
+  desktop) — compatibility is a STATUS/SAFETY SIGNAL, not a second technical section. Integrated ONE
+  compact row into the existing 「Windows information」 area, gated by HasCompatibilityProfile.
+- Row format: 「Windows 11 25H2 专业版 · x64 · WIM · ✓ 支持」. Media-level facts (release · arch ·
+  format · status) render immediately after Detect, BEFORE any edition is selected (no dependency on
+  SelectedEdition); selecting an edition appends the localized edition name (Home → 家庭版/Core,
+  Pro → 专业版/Professional…) and refreshes instantly — no second Detect.
+- Status marks stay honest (ADR-074/080): ✓ 支持 for the workflow-validated baseline (never
+  「完整验证通过」 while VM validation is pending); ⚠ 尚未完整验证 (future build); ⚠ 仅检查支持
+  (ESD/SWM); ✕ 当前不支持 (blockers, red reason below). Dead surface removed: CompatibilityDetailsText
+  deleted; one model, one status, one compact rendering. Full suite **808 pass (Core 53, App 755),
+  0 errors, 0 warnings**.
+
 ## Phase 13 — Compatibility preflight UI real-desktop blocker FIXED (2026-08-12)
 
 - Real desktop: after 检测 on Win11_25H2_Chinese_Simplified_x64_v2.iso (10.0.26200, zh-CN, Pro index 4)

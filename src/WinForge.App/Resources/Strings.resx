@@ -87,6 +87,17 @@
   <data name="Compat.Status.Partial" xml:space="preserve"><value>△ Partially supported</value></data>
   <data name="Compat.Status.Unsupported" xml:space="preserve"><value>✗ Unsupported</value></data>
   <data name="Compat.Status.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Compat.Label" xml:space="preserve"><value>Compatibility</value></data>
+  <data name="Compat.Edition.Core" xml:space="preserve"><value>Home</value></data>
+  <data name="Compat.Edition.CoreSingleLanguage" xml:space="preserve"><value>Home Single Language</value></data>
+  <data name="Compat.Edition.Professional" xml:space="preserve"><value>Pro</value></data>
+  <data name="Compat.Edition.ProfessionalEducation" xml:space="preserve"><value>Pro Education</value></data>
+  <data name="Compat.Edition.ProfessionalWorkstation" xml:space="preserve"><value>Pro for Workstations</value></data>
+  <data name="Compat.Edition.Education" xml:space="preserve"><value>Education</value></data>
+  <data name="Compat.Edition.Enterprise" xml:space="preserve"><value>Enterprise</value></data>
+  <data name="Compat.Edition.IoTEnterprise" xml:space="preserve"><value>IoT Enterprise</value></data>
+  <data name="Compat.Status.Future" xml:space="preserve"><value>⚠ Not fully validated yet</value></data>
+  <data name="Compat.Status.EsdOnly" xml:space="preserve"><value>⚠ Inspection only</value></data>
   <data name="StepState.Current" xml:space="preserve"><value>In progress</value></data>
   <data name="StepState.Completed" xml:space="preserve"><value>Completed</value></data>
   <data name="StepState.RequiresAttention" xml:space="preserve"><value>Needs attention</value></data>

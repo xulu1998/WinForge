@@ -274,7 +274,6 @@ public sealed class ImageViewModel : ViewModelBase
         OnPropertyChanged(nameof(CompatibilityStatusText));
         OnPropertyChanged(nameof(HasCompatibilityWarnings));
         OnPropertyChanged(nameof(HasCompatibilityBlockers));
-        OnPropertyChanged(nameof(CompatibilityDetailsText));
         OnPropertyChanged(nameof(CompatibilityWarningsText));
         OnPropertyChanged(nameof(CompatibilityBlockersText));
     }
@@ -287,12 +286,8 @@ public sealed class ImageViewModel : ViewModelBase
             var p = _compatibility;
             if (p is null)
             {
-                return string.Empty; // section hidden before detection
+                return string.Empty; // row hidden before detection
             }
-
-            var effectiveEditionId = SelectedEdition?.EditionId ?? p.EditionId;
-            var effectiveIndex = SelectedEdition?.Index ?? p.SelectedIndex;
-            var effectiveLanguage = SelectedEdition?.DefaultLanguage ?? p.DefaultLanguage;
 
             var release = p.Release switch
             {
@@ -303,17 +298,53 @@ public sealed class ImageViewModel : ViewModelBase
                 _ => L("Compat.Release.Unknown", "未知版本"),
             };
 
-            var status = p.Status switch
+            var edition = SelectedEdition is { } ed
+                ? L("Compat.Edition." + ed.EditionId, ed.EditionId ?? "?")
+                : string.Empty;
+
+            var arch = string.IsNullOrWhiteSpace(p.Architecture) ? string.Empty : p.Architecture;
+            var format = p.ImageFormat switch
             {
-                WinForge.Core.Compatibility.CompatibilityStatus.Supported => L("Compat.Status.Supported", "✓ 支持"),
-                WinForge.Core.Compatibility.CompatibilityStatus.SupportedWithWarnings => L("Compat.Status.SupportedWithWarnings", "⚠ 支持（有警告）"),
-                WinForge.Core.Compatibility.CompatibilityStatus.PartiallySupported => L("Compat.Status.Partial", "△ 部分支持"),
-                WinForge.Core.Compatibility.CompatibilityStatus.Unsupported => L("Compat.Status.Unsupported", "✗ 不支持"),
-                _ => L("Compat.Status.Unknown", "未知"),
+                WinForge.Core.Compatibility.ImageFormatKind.Wim => "WIM",
+                WinForge.Core.Compatibility.ImageFormatKind.Esd => "ESD",
+                WinForge.Core.Compatibility.ImageFormatKind.Swm => "SWM",
+                _ => string.Empty,
             };
 
-            return $"{release} · {status}";
+            var status = ResolveStatusMark(p);
+            var parts = new System.Collections.Generic.List<string> { release };
+            if (!string.IsNullOrWhiteSpace(edition)) parts.Add(edition);
+            if (!string.IsNullOrWhiteSpace(arch)) parts.Add(arch);
+            if (!string.IsNullOrWhiteSpace(format)) parts.Add(format);
+            parts.Add(status);
+            return string.Join(" · ", parts);
         }
+    }
+
+    private string ResolveStatusMark(WinForge.Core.Compatibility.ImageCompatibilityProfile p)
+    {
+        if (p.HasBlockers)
+        {
+            return L("Compat.Status.Unsupported", "✕ 当前不支持");
+        }
+
+        if (p.Release == WinForge.Core.Compatibility.WindowsRelease.Windows11_UnknownNewer)
+        {
+            return L("Compat.Status.Future", "⚠ 尚未完整验证");
+        }
+
+        if (p.ImageFormat is WinForge.Core.Compatibility.ImageFormatKind.Esd or WinForge.Core.Compatibility.ImageFormatKind.Swm)
+        {
+            return L("Compat.Status.EsdOnly", "⚠ 仅检查支持");
+        }
+
+        return p.Status switch
+        {
+            WinForge.Core.Compatibility.CompatibilityStatus.Supported => L("Compat.Status.Supported", "✓ 支持"),
+            WinForge.Core.Compatibility.CompatibilityStatus.SupportedWithWarnings => L("Compat.Status.SupportedWithWarnings", "⚠ 支持（有警告）"),
+            WinForge.Core.Compatibility.CompatibilityStatus.PartiallySupported => L("Compat.Status.Partial", "△ 部分支持"),
+            _ => L("Compat.Status.Unknown", "未知"),
+        };
     }
 
     public bool HasCompatibilityProfile => _compatibility is not null;
@@ -349,31 +380,7 @@ public sealed class ImageViewModel : ViewModelBase
             return string.Join(Environment.NewLine, blockers.Select(f => "✗ " + f.Message));
         }
     }
-    public string CompatibilityDetailsText
-    {
-        get
-        {
-            var p = _compatibility;
-            if (p is null)
-            {
-                return string.Empty;
-            }
 
-            var effectiveEditionId = SelectedEdition?.EditionId ?? p.EditionId;
-            var effectiveIndex = SelectedEdition?.Index ?? p.SelectedIndex;
-            var effectiveLanguage = SelectedEdition?.DefaultLanguage ?? p.DefaultLanguage;
-            var parts = new System.Collections.Generic.List<string>
-            {
-                $"Build: {p.Build?.ToString() ?? "?"}",
-                $"Index: {effectiveIndex}/{p.ImageCount}",
-                $"Edition: {effectiveEditionId ?? "?"}",
-                $"Arch: {p.Architecture ?? "?"}",
-                $"Format: {p.ImageFormat}",
-                $"Lang: {effectiveLanguage ?? string.Join(",", p.AvailableLanguages)}",
-            };
-            return string.Join("  ·  ", parts);
-        }
-    }
 
     public bool IsServicingMounted =>
         _appState.CurrentServicingWorkspace?.State == ServicingWorkspaceState.Mounted;
@@ -698,7 +705,6 @@ public sealed class ImageViewModel : ViewModelBase
         OnPropertyChanged(nameof(CompatibilityStatusText));
         OnPropertyChanged(nameof(HasCompatibilityWarnings));
         OnPropertyChanged(nameof(HasCompatibilityBlockers));
-        OnPropertyChanged(nameof(CompatibilityDetailsText));
         OnPropertyChanged(nameof(CompatibilityBlockersText));
         OnPropertyChanged(nameof(Workspace));
         OnPropertyChanged(nameof(WorkspaceStatusDisplay));

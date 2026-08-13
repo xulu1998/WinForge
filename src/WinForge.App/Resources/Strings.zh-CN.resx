@@ -87,6 +87,17 @@
   <data name="Compat.Status.Partial" xml:space="preserve"><value>△ 部分支持</value></data>
   <data name="Compat.Status.Unsupported" xml:space="preserve"><value>✗ 不支持</value></data>
   <data name="Compat.Status.Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Compat.Label" xml:space="preserve"><value>兼容性</value></data>
+  <data name="Compat.Edition.Core" xml:space="preserve"><value>家庭版</value></data>
+  <data name="Compat.Edition.CoreSingleLanguage" xml:space="preserve"><value>家庭中文版</value></data>
+  <data name="Compat.Edition.Professional" xml:space="preserve"><value>专业版</value></data>
+  <data name="Compat.Edition.ProfessionalEducation" xml:space="preserve"><value>专业教育版</value></data>
+  <data name="Compat.Edition.ProfessionalWorkstation" xml:space="preserve"><value>专业工作站版</value></data>
+  <data name="Compat.Edition.Education" xml:space="preserve"><value>教育版</value></data>
+  <data name="Compat.Edition.Enterprise" xml:space="preserve"><value>企业版</value></data>
+  <data name="Compat.Edition.IoTEnterprise" xml:space="preserve"><value>IoT 企业版</value></data>
+  <data name="Compat.Status.Future" xml:space="preserve"><value>⚠ 尚未完整验证</value></data>
+  <data name="Compat.Status.EsdOnly" xml:space="preserve"><value>⚠ 仅检查支持</value></data>
   <data name="StepState.Current" xml:space="preserve"><value>进行中</value></data>
   <data name="StepState.Completed" xml:space="preserve"><value>已完成</value></data>
   <data name="StepState.RequiresAttention" xml:space="preserve"><value>需要关注</value></data>

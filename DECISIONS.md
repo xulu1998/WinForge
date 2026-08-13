@@ -1841,3 +1841,21 @@ All decisions are `ACCEPTED` unless noted.
   "完整验证通过" until the validation report exists (ADR-074).
 - **Consequences:** the compatibility card is visible on real detection, refreshable by edition
   selection, and strictly honest about validated-vs-pending status.
+
+
+## ADR-080: Compatibility as a compact row in the existing inspection UI (UX simplification)
+
+- **Context:** the separate Phase 13 compatibility card was still not visible on real desktop, while
+  the existing Image Inspection UI already shows version/build/architecture/language/media/editions.
+- **Decision:** compatibility is a STATUS / SAFETY SIGNAL, not a second technical section. Retire the
+  standalone card and integrate ONE compact row into the existing 「Windows information」 section,
+  gated by HasCompatibilityProfile: 「Windows 11 25H2 专业版 · x64 · WIM · ✓ 支持」.
+  - Media-level facts (release · arch · format · status) appear immediately after Detect, BEFORE an
+    edition is selected — compatibility visibility must NOT depend on SelectedEdition.
+  - Selecting an edition appends the localized edition name (Home → 家庭版, Pro → 专业版 …) and
+    refreshes immediately; no second Detect.
+  - Status marks: ✓ 支持 (workflow-validated baseline; never 完整验证通过 while VM validation is
+    pending — ADR-074), ⚠ 尚未完整验证 (future build), ⚠ 仅检查支持 (ESD/SWM), ✕ 当前不支持
+    (blocking, red reason below).
+- **Consequences:** one compatibility model, one status, one compact rendering; the dead
+  CompatibilityDetailsText surface is removed (no duplicated UI).
