@@ -270,12 +270,14 @@ public sealed class ImageViewModel : ViewModelBase
 
     private void NotifyCompatibility()
     {
+        _logger.Info($"PHASE13 COMPAT: notify raised — {CompatibilityDebugText}");
         OnPropertyChanged(nameof(HasCompatibilityProfile));
         OnPropertyChanged(nameof(CompatibilityStatusText));
         OnPropertyChanged(nameof(HasCompatibilityWarnings));
         OnPropertyChanged(nameof(HasCompatibilityBlockers));
         OnPropertyChanged(nameof(CompatibilityWarningsText));
         OnPropertyChanged(nameof(CompatibilityBlockersText));
+        OnPropertyChanged(nameof(CompatibilityDebugText));
     }
 
     /// <summary>Concise preflight status line (e.g. "Windows 11 25H2 · Pro · x64 · zh-CN · WIM").</summary>
@@ -350,6 +352,26 @@ public sealed class ImageViewModel : ViewModelBase
     public bool HasCompatibilityProfile => _compatibility is not null;
     public bool HasCompatibilityWarnings => _compatibility?.HasWarnings ?? false;
     public bool HasCompatibilityBlockers => _compatibility?.HasBlockers ?? false;
+
+    /// <summary>
+    /// Deterministic diagnostic value — NEVER empty. "Profile=False" before
+    /// evaluation; otherwise a full dump of the runtime state.
+    /// </summary>
+    public string CompatibilityDebugText
+    {
+        get
+        {
+            var p = _compatibility;
+            if (p is null)
+            {
+                return "Profile=False";
+            }
+
+            var edition = SelectedEdition?.EditionId is { } ed ? ed : "none";
+            return $"Profile=True | Status={p.Status} | Release={p.Release} | Build={p.Build?.ToString() ?? "?"} | "
+                 + $"Format={p.ImageFormat} | Arch={p.Architecture ?? "?"} | Lang={(SelectedEdition?.DefaultLanguage ?? p.DefaultLanguage) ?? "?"} | Index={edition}";
+        }
+    }
 
     /// <summary>Localized warning-finding summary (Stage 13.10).</summary>
     public string CompatibilityWarningsText
@@ -479,6 +501,10 @@ public sealed class ImageViewModel : ViewModelBase
             var result = await _inspection.InspectAsync(path, CancellationToken.None);
             _result = result;
             CompatibilityProfile = _compat.Evaluate(result);
+            _logger.Info($"PHASE13 COMPAT: ProfileExists={_compatibility is not null} | Status={_compatibility?.Status} | "
+                + $"Release={_compatibility?.Release} | Build={_compatibility?.Build} | Format={_compatibility?.ImageFormat} | "
+                + $"Arch={_compatibility?.Architecture} | Language={(SelectedEdition?.DefaultLanguage ?? _compatibility?.DefaultLanguage) ?? "?"} | "
+                + $"SelectedEdition={(SelectedEdition?.EditionId ?? "none")} | StatusText=[{CompatibilityStatusText}] | Debug=[{CompatibilityDebugText}]");
             _logger.Info(result.Status == IsoInspectionStatus.Completed
                 ? "ISO inspection completed."
                 : "ISO inspection failed.");

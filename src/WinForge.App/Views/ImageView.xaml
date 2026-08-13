@@ -72,6 +72,8 @@
                 <TextBlock FontSize="12" Foreground="#9B1C1C" Margin="76,0,0,0" TextWrapping="Wrap"
                            Text="{Binding CompatibilityBlockersText, Mode=OneWay}"
                            Visibility="{Binding HasCompatibilityBlockers, Mode=OneWay, Converter={StaticResource BoolToVis}}"/>
+                <TextBlock Text="PHASE13-COMPAT-DIAG · 9f4bed0" FontSize="11" Foreground="#B45309" Margin="0,4,0,0"/>
+                <TextBlock Text="{Binding CompatibilityDebugText, Mode=OneWay}" FontSize="11" Foreground="#7B8794" Margin="0,2,0,0"/>
                 <StackPanel Orientation="Horizontal" Margin="0,4">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="Windows Version"/>
                     <TextBlock Text="{Binding WindowsVersionDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>

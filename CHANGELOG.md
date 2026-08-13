@@ -3,6 +3,25 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 13 — Compatibility UI diagnostic instrumentation (2026-08-12)
+
+- Real desktop STILL shows no compatibility status after two fixes → deterministic diagnostics
+  added instead of another speculative UI redesign.
+- ROOT CAUSE (category A): the wizard renders the Source step via `SourceView` (App.xaml
+  `SourceStepTemplate` → `views:SourceView DataContext="{Binding Content}"`) — `ImageView.xaml` is a
+  LEGACY view never referenced by any template. All earlier compatibility UI (two rounds) was added
+  to ImageView.xaml, so the running executable never showed it.
+- Diagnostic commit adds (to BOTH SourceView and ImageView): literal marker
+  `PHASE13-COMPAT-DIAG · <commit>` (no binding/visibility), always-bound `CompatibilityDebugText`
+  (never empty: `Profile=False` before evaluation, full dump after), and the compatibility row bound
+  WITHOUT any Visibility condition. `ImageViewModel.CompatibilityDebugText` + `NotifyCompatibility`
+  logging (`PHASE13 COMPAT: ...`) record the full runtime chain per evaluation/notify.
+- Compiled BAML verified to contain the marker (new build). Tests: Stage13DiagnosticMarkerTests (6)
+  — marker in both views; DebugText never empty; 26200 fixture → Profile=True full dump
+  (Status/Release/Build/Format/Arch/Lang/Index); no-Visibility bound row; real SourceView WPF render
+  shows marker + debug + compatibility row. Full suite **814 pass (Core 53, App 761), 0 errors,
+  0 warnings**. Diagnostic marker to be removed once root cause is confirmed on desktop.
+
 ## Phase 13 — Compatibility preflight UX simplified (2026-08-12)
 
 - Product decision: retire the separate standalone compatibility card (still invisible on real

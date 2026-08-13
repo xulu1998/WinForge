@@ -159,6 +159,13 @@
                     </TextBlock>
                     <TextBlock Text="{Binding LanguagesDisplay}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
+
+                <!-- PHASE13 DIAGNOSTIC (diagnostic commit only): proves this view is
+                     the one loaded at runtime; never a binding/visibility dependency. -->
+                <TextBlock Text="PHASE13-COMPAT-DIAG · 9f4bed0" FontSize="11" Foreground="#B45309" Margin="0,4,0,0"/>
+                <TextBlock Text="{Binding CompatibilityDebugText, Mode=OneWay}" FontSize="11" Foreground="#7B8794" Margin="0,2,0,0"/>
+                <!-- Compatibility row: always bound, no Visibility/converter (diagnostic). -->
+                <TextBlock Text="{Binding CompatibilityStatusText, Mode=OneWay}" FontSize="13" Foreground="#1F2933" Margin="0,4,0,0"/>
             </StackPanel>
 
             <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="#1F2933" Margin="0,24,0,0">

@@ -1859,3 +1859,21 @@ All decisions are `ACCEPTED` unless noted.
     (blocking, red reason below).
 - **Consequences:** one compatibility model, one status, one compact rendering; the dead
   CompatibilityDetailsText surface is removed (no duplicated UI).
+
+
+## ADR-081: Compatibility UI diagnostic — runtime view is SourceView, not ImageView
+
+- **Context:** after two compatibility-UI fixes the real desktop STILL showed nothing. Rather than
+  another speculative redesign, deterministic diagnostics were added: a literal
+  PHASE13-COMPAT-DIAG marker, an always-bound CompatibilityDebugText (never empty), and PHASE13
+  COMPAT runtime logging.
+- **Root cause (category A):** the wizard renders the Source step through `SourceView` — App.xaml
+  `SourceStepTemplate` → `views:SourceView DataContext="{Binding Content}"` (Content = ImageViewModel).
+  `ImageView.xaml` is a LEGACY view not referenced by any runtime template; both earlier
+  compatibility-UI rounds were added to the wrong view, so the running executable never rendered
+  them. Compiled BAML of the new build contains the marker (verified).
+- **Decision (diagnostic commit only):** marker + debug value + unconditional compatibility row in
+  BOTH views; ImageViewModel logs the full evaluation chain. After real-desktop confirmation the
+  diagnostic marker is removed and the compatibility row stays in SourceView only.
+- **Consequences:** the defect is classified (A: wrong/stale runtime view) and the next real-desktop
+  pass can verify in seconds; no further speculative UI redesign.
