@@ -19,13 +19,18 @@
 
 ## Validated
 
-| Target | Release | Edition | Language | Arch | Format | Date | Evidence |
+| Target | Release | Edition | Language | Arch | Format | Date | Evidence / Level |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 25H2-Pro-zh-CN-x64 | Windows 11 25H2 | Professional | zh-CN | x64 | install.wim | 2026-08-12 | Real desktop workflow (inspection→build→finish) PASSED on a real 25H2 image; VM install validation record PENDING (must be created before Phase 13 close). |
+| 25H2-Pro-zh-CN-x64 | Windows 11 25H2 | Professional | zh-CN | x64 | install.wim | 2026-08-13 | **VM INSTALL VALIDATED** (Level = `VmInstallValidated`, ADR-084): real workflow + generated ISO + Hyper-V Gen-2 UEFI install — boot / Setup / image install / reboot / OOBE / desktop all PASS. See `validation/25H2-Pro-zh-CN-x64-20260813-0720.{json,md}`. |
 
-> The real-desktop baseline above exercised the full pipeline; the formal VM
-> validation record for this target is the Phase 13 acceptance gate and is
-> tracked as pending (see `validation/` reports as they are produced).
+> This row is **VM INSTALL VALIDATED** — NOT `FullHealthValidated`. Deeper
+> post-install health checks (Windows Update / Defender / Store / DISM ScanHealth
+> / recovery) are intentionally out of Phase 13 scope: the current safe
+> customization surface (AppX / selected services / privacy / personalization /
+> safe registry) does not perform aggressive CBS / driver / servicing-stack
+> removal. `FullHealthValidated` becomes mandatory once component removal is
+> substantially more aggressive (later phases). Other editions/languages are NOT
+> validated by this row.
 
 ## Supported with warnings
 

@@ -3,6 +3,23 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 13 — CLOSEOUT: VM INSTALL VALIDATED + merged (2026-08-13)
+
+- Phase 13 baseline VM validation ACCEPTED (ADR-084): WinForge-generated ISO (25H2 Pro zh-CN x64
+  WIM, SHA-256 21311def…cae98) boots in Hyper-V Gen-2 UEFI, Setup launches, Windows 11 Pro installs,
+  first reboot succeeds, OOBE proceeds, desktop reached → Level = **VmInstallValidated**.
+- Validation-level semantics introduced (WorkflowValidated / VmInstallValidated / FullHealthValidated):
+  `ValidationResult.AllPhasesPassed` now evaluates the phase set required by the declared Level only.
+  Phase 13 = VmInstallValidated; deeper post-install health checks (Windows Update / Defender / Store /
+  DISM ScanHealth / recovery) are intentionally NOT required now — the safe customization surface
+  (AppX / selected services / privacy / personalization / safe registry) does no aggressive CBS /
+  driver / servicing-stack removal. FullHealthValidated becomes mandatory in later phases.
+- docs/COMPATIBILITY.md: 25H2 Pro zh-CN row → **VM INSTALL VALIDATED** (not FullHealthValidated);
+  en-US Pro / Home / Education / Enterprise / 24H2 / ESD / SWM stay pending; ARM64 unsupported.
+- Validation record: `validation/25H2-Pro-zh-CN-x64-20260813-0720.{json,md}` — Evidence=RealVmValidation,
+  Level=VmInstallValidated, PASS on IsoVerification/VmBoot/Setup/Oobe/Desktop, deeper phases
+  "not performed" (never fabricated). **824 tests pass (Core 53, App 771), 0 errors, 0 warnings**.
+
 ## Phase 13 — Real VM validation preparation + Phase 14 input (2026-08-13)
 
 - Located the most recent generated ISO: `C:\Users\xulu1998\Documents\WinForge\WinForge_Windows_11_专业版_20260812-1915.iso`

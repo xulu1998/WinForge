@@ -493,8 +493,10 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 13 — Compatibility & Real-World Validation Matrix
 
-- **Status:** IN PROGRESS — **COMPATIBILITY FOUNDATION IMPLEMENTED (2026-08-12)** /
-  PENDING REAL MEDIA + VM VALIDATION (branch `phase/13-compatibility-matrix`; NOT merged).
+- **Status:** **COMPLETED (2026-08-13)** — COMPATIBILITY FOUNDATION + REAL MEDIA + VM INSTALL
+  VALIDATION all PASSED; merged to `main` via `--no-ff` (branch `phase/13-compatibility-matrix`
+  retained). Baseline: 25H2 Pro zh-CN x64 WIM → VM INSTALL VALIDATED (Level = VmInstallValidated,
+  ADR-084); deeper FullHealthValidated deferred to aggressive component-removal phases.
 - **Goal:** turn the single-image proof into a formal compatibility + real-world validation
   system: detect release/build/edition/language/architecture/format/media BEFORE destructive
   work; durable matrix; VM install validation; clear user-facing status; future releases

@@ -1913,3 +1913,21 @@ All decisions are `ACCEPTED` unless noted.
   passes; other editions/languages remain pending regardless.
 - Phase 14 input note recorded (`docs/PHASE14-INPUT.md`): Gaming profile direction (safe-but-meaningful
   cleanup; Gaming PC vs cybercafe-like minimal distinction; keep-list and candidate cleanup list).
+
+
+## ADR-084: Validation levels + Phase 13 baseline VM install acceptance
+
+- Real VM validation (Hyper-V Gen-2 UEFI) PASSED the Phase 13 baseline: generated ISO boots, Setup
+  launches, Windows 11 Pro installs, first reboot succeeds, OOBE proceeds, desktop reached.
+- ValidationLevel introduced: WorkflowValidated / VmInstallValidated / FullHealthValidated.
+  `ValidationResult.AllPhasesPassed` requires the phases demanded by the DECLARED level — never a
+  blanket 17/25-check gate that would mislabel a healthy baseline as unvalidated.
+- Phase 13 baseline = **VmInstallValidated** — explicitly NOT FullHealthValidated. Deeper post-install
+  health checks (Windows Update / Defender / Store / DISM ScanHealth / recovery) are intentionally not
+  required now: the current safe customization surface (AppX / selected services / privacy /
+  personalization / safe registry) does no aggressive CBS / driver / servicing-stack removal.
+  FullHealthValidated becomes MANDATORY in later phases when component removal gets substantially
+  more aggressive.
+- docs/COMPATIBILITY.md: 25H2 Pro zh-CN x64 WIM → **VM INSTALL VALIDATED**; en-US Pro / Home /
+  Education / Enterprise / 24H2 / ESD / SWM stay pending; ARM64 unsupported. No fabricated checks —
+  unperformed phases are recorded as "not performed".

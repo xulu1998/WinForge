@@ -59,11 +59,61 @@ public sealed class ValidationResult
     public Dictionary<ValidationPhase, bool> Phases { get; init; } = new();
 
     /// <summary>
-    /// True only when EVERY pipeline phase is recorded AND passed — a partial
-    /// record is never a "Validated" claim (ADR-074).
+    /// Validation level achieved by this record (ADR-084). Phase 13 baseline is
+    /// <see cref="ValidationLevel.VmInstallValidated"/>; deeper post-install
+    /// health checks become mandatory in later aggressive component-removal phases.
+    /// </summary>
+    public ValidationLevel Level { get; init; } = ValidationLevel.NotAssessed;
+
+    /// <summary>
+    /// True when every phase REQUIRED BY <see cref="Level"/> is recorded AND passed.
+    /// A partial record — or a record with no assessed level — is never a
+    /// "Validated" claim (ADR-074/084).
     /// </summary>
     public bool AllPhasesPassed
-        => Enum.GetValues<ValidationPhase>().All(p => Phases.TryGetValue(p, out var ok) && ok);
+    {
+        get
+        {
+            if (Level == ValidationLevel.NotAssessed)
+            {
+                return false;
+            }
+
+            return RequiredPhases(Level).All(p => Phases.TryGetValue(p, out var ok) && ok);
+        }
+    }
+
+    /// <summary>The exact phase set a level demands (single source of truth).</summary>
+    public static IReadOnlyList<ValidationPhase> RequiredPhases(ValidationLevel level)
+        => level switch
+        {
+            ValidationLevel.WorkflowValidated => WorkflowPhases,
+            ValidationLevel.VmInstallValidated => VmInstallPhases,
+            ValidationLevel.FullHealthValidated => Enum.GetValues<ValidationPhase>(),
+            _ => Array.Empty<ValidationPhase>(),
+        };
+
+    /// <summary>Workflow stages: inspection → ISO verification (no VM involved).</summary>
+    public static readonly IReadOnlyList<ValidationPhase> WorkflowPhases = new[]
+    {
+        ValidationPhase.InspectionPassed,
+        ValidationPhase.PreparePassed,
+        ValidationPhase.DiscoveryPassed,
+        ValidationPhase.CustomizePassed,
+        ValidationPhase.ApplyPassed,
+        ValidationPhase.BuildPassed,
+        ValidationPhase.IsoVerificationPassed,
+    };
+
+    /// <summary>VM install acceptance stages (Phase 13 baseline — boot/install/OOBE/desktop).</summary>
+    public static readonly IReadOnlyList<ValidationPhase> VmInstallPhases = new[]
+    {
+        ValidationPhase.IsoVerificationPassed,
+        ValidationPhase.VmBootPassed,
+        ValidationPhase.SetupPassed,
+        ValidationPhase.OobePassed,
+        ValidationPhase.DesktopReached,
+    };
 
     public string? SourceImageMetadata { get; init; }
     public int? SelectedIndex { get; init; }
@@ -76,6 +126,20 @@ public sealed class ValidationResult
 
     /// <summary>How this result was obtained — REAL VM validation vs automated fixtures (ADR-074).</summary>
     public ValidationEvidenceKind Evidence { get; init; } = ValidationEvidenceKind.NotRecorded;
+}
+
+/// <summary>
+/// Validation depth (ADR-084): what a "Validated" claim actually covers.
+/// Phase 13 baseline = VmInstallValidated — deeper health checks (Windows
+/// Update / Defender / Store / DISM ScanHealth / recovery) are REQUIRED only
+/// once component removal becomes substantially more aggressive.
+/// </summary>
+public enum ValidationLevel
+{
+    NotAssessed,
+    WorkflowValidated,
+    VmInstallValidated,
+    FullHealthValidated,
 }
 
 /// <summary>Strict separation between real validation and automated coverage (ADR-074).</summary>

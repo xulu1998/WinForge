@@ -520,3 +520,14 @@ All Stages 12.1–12.7 are REAL-DESKTOP VALIDATED (Windows 11 25H2) and MERGED t
 Non-blocking follow-ups (ADR-072): periodic long-run disk-space checks; recoverable-checkpoint
 minimization; conservative startup auto-cleanup (Storage/Finish/Discard cover safe paths); Finish
 cleanup synchronous-wait UX for large deletes; Custom profile + Extra Scenarios polish (ADR-061).
+
+
+## Phase 13 — Closeout (2026-08-13)
+
+Validation levels (ADR-084): `WorkflowValidated` (inspection→ISO verification) ·
+`VmInstallValidated` (generated ISO boots; Setup/install/reboot/OOBE/desktop PASS) ·
+`FullHealthValidated` (everything incl. Windows Update / Defender / Store / DISM ScanHealth /
+recovery). `ValidationResult.AllPhasesPassed` evaluates only the phase set required by the declared
+Level — never overclaims. Phase 13 baseline = VmInstallValidated (25H2 Pro zh-CN x64 WIM);
+FullHealthValidated becomes mandatory only when component-removal coverage becomes substantially
+more aggressive. See docs/COMPATIBILITY.md + validation/ records.

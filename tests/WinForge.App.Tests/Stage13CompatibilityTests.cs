@@ -430,23 +430,53 @@ public class Stage13CompatibilityTests
     }
 
     [Fact]
-    public void Validation_Result_Requires_All_Phases_For_Validated()
+    public void Validation_Result_Requires_Level_For_Validated()
     {
+        // Partial record with an assessed level is never validated.
         var partial = new ValidationResult
         {
             TargetId = "t1",
             Evidence = ValidationEvidenceKind.RealVmValidation,
-            Phases = new Dictionary<ValidationPhase, bool> { [ValidationPhase.InspectionPassed] = true, [ValidationPhase.BuildPassed] = true },
+            Level = ValidationLevel.VmInstallValidated,
+            Phases = new Dictionary<ValidationPhase, bool> { [ValidationPhase.VmBootPassed] = true },
         };
         Assert.False(partial.AllPhasesPassed);
 
+        // No level at all → never validated.
+        Assert.False(new ValidationResult { TargetId = "t1", Phases = new Dictionary<ValidationPhase, bool>() }.AllPhasesPassed);
+
+        // FullHealthValidated requires EVERY phase.
         var full = new ValidationResult
         {
             TargetId = "t1",
             Evidence = ValidationEvidenceKind.RealVmValidation,
+            Level = ValidationLevel.FullHealthValidated,
             Phases = Enum.GetValues<ValidationPhase>().ToDictionary(p => p, _ => true),
         };
         Assert.True(full.AllPhasesPassed);
+    }
+
+    // ADR-084: Phase 13 baseline — VM install acceptance (boot/install/OOBE/desktop)
+    // validates at VmInstallValidated WITHOUT requiring deep health phases.
+    [Fact]
+    public void VmInstallValidated_Requires_Only_Vm_Install_Stages()
+    {
+        var baseline = new ValidationResult
+        {
+            TargetId = "25H2-Pro-zh-CN-x64",
+            Evidence = ValidationEvidenceKind.RealVmValidation,
+            Level = ValidationLevel.VmInstallValidated,
+            Phases = new Dictionary<ValidationPhase, bool>
+            {
+                [ValidationPhase.IsoVerificationPassed] = true, // generated ISO boots
+                [ValidationPhase.VmBootPassed] = true,          // UEFI boot succeeds
+                [ValidationPhase.SetupPassed] = true,           // Setup + image install + reboot
+                [ValidationPhase.OobePassed] = true,
+                [ValidationPhase.DesktopReached] = true,
+            },
+        };
+        Assert.True(baseline.AllPhasesPassed);   // baseline accepted
+        Assert.False(baseline.Level == ValidationLevel.FullHealthValidated); // NOT overclaimed
     }
 
     [Fact]
@@ -459,6 +489,7 @@ public class Stage13CompatibilityTests
             {
                 TargetId = "25H2-Pro-zh-CN-x64",
                 Evidence = ValidationEvidenceKind.AutomatedFixturesOnly,
+                Level = ValidationLevel.FullHealthValidated,
                 WinForgeVersion = "test",
                 WinForgeCommit = "abcdef",
                 IsoSha256 = "0".PadLeft(64, '0'),
