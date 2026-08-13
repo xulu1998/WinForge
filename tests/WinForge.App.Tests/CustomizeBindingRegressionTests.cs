@@ -124,6 +124,7 @@ public class CustomizeBindingRegressionTests
         var res = Application.Current!.Resources;
         if (!res.Contains("locKey")) res.Add("locKey", new LocKeyMultiConverter());
         if (!res.Contains("BoolToVis")) res.Add("BoolToVis", new BooleanToVisibilityConverter());
+        if (!res.Contains("BoolToBold")) res.Add("BoolToBold", new BooleanToFontWeightConverter());
         if (!res.Contains("BoolToVisInv")) res.Add("BoolToVisInv", new BooleanToVisibilityInverseConverter());
         if (!res.Contains("NullToVis")) res.Add("NullToVis", new NullToVisibilityConverter());
         // App.xaml-level resources the knowledge views resolve (missing when the
@@ -268,6 +269,19 @@ public class CustomizeBindingRegressionTests
                         new FakeCustomizationExecutionService(), new FakeLoc());
                     vm.ValidatePlan();
                     return new PlanReviewView { DataContext = vm };
+                }, culture));
+            cases.Add(new("ImageView.CompatibilityPreflight",
+                () =>
+                {
+                    var state = new AppState();
+                    var logger = new InMemoryLoggerService();
+                    var image = new ImageViewModel(state, logger,
+                        new Stage13CompatInspection { Result = Stage13CompatFixturesHelper.Completed25H2ProZh() },
+                        new WorkflowAndCommandTests.FakeFilePicker(),
+                        new WorkflowAndCommandTests.FakeWorkspaceFactory(),
+                        new WorkflowAndCommandTests.FakeWimService(),
+                        new FakeImageServicingService());
+                    return new ImageView { DataContext = image };
                 }, culture));
             cases.Add(new("PlanReviewView.ApplyFailed",
                 () =>
@@ -943,4 +957,60 @@ public class CustomizeBindingRegressionTests
 [CollectionDefinition("WpfSta", DisableParallelization = true)]
 public sealed class WpfStaCollection
 {
+}
+
+
+/// <summary>Audit-case fake inspection + 25H2 Pro zh-CN fixture.</summary>
+internal sealed class Stage13CompatInspection : IIsoInspectionService
+{
+    public WinForge.Core.Models.IsoInspectionResult Result { get; set; } =
+        new() { Status = WinForge.Core.Models.IsoInspectionStatus.NotInspected };
+
+    public Task<WinForge.Core.Models.IsoInspectionResult> InspectAsync(
+        string isoPath, System.Threading.CancellationToken cancellationToken = default)
+        => Task.FromResult(Result);
+}
+
+internal static class Stage13CompatFixturesHelper
+{
+    public static WinForge.Core.Models.IsoInspectionResult Completed25H2ProZh()
+    {
+        var editions = new System.Collections.Generic.List<WinForge.Core.Models.WindowsEditionInfo>
+        {
+            new()
+            {
+                Index = 1,
+                Name = "Windows 11 Professional",
+                EditionId = "Professional",
+                Architecture = "x64",
+                Version = "10.0.26100.1742",
+                Build = "26100",
+                InstallationType = "Client",
+                DefaultLanguage = "zh-CN",
+                DisplayVersion = "25H2",
+                Languages = new System.Collections.Generic.List<string> { "zh-CN" },
+            },
+        };
+        return new WinForge.Core.Models.IsoInspectionResult
+        {
+            IsoPath = @"C://media//Win11.iso",
+            Status = WinForge.Core.Models.IsoInspectionStatus.Completed,
+            DetectedType = WinForge.Core.Models.IsoDetectedType.WindowsIsoCandidate,
+            HasBootDirectory = true,
+            HasSourcesDirectory = true,
+            HasBootWim = true,
+            HasInstallWim = true,
+            InstallImageType = WinForge.Core.Models.InstallImageType.Wim,
+            SelectedIndex = 1,
+            ImageMetadata = new WinForge.Core.Models.WindowsImageMetadataResult
+            {
+                Status = WinForge.Core.Models.WindowsImageMetadataStatus.Completed,
+                Version = "10.0.26100.1742",
+                Build = "26100",
+                Architecture = "x64",
+                Languages = new System.Collections.Generic.List<string> { "zh-CN" },
+                Editions = editions,
+            },
+        };
+    }
 }

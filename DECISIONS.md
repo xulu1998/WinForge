@@ -1774,3 +1774,160 @@ All decisions are `ACCEPTED` unless noted.
   4. Finish cleanup may synchronously wait while deleting a large workspace; future UX may improve
      progress/cancellation;
   5. Custom profile + Extra Scenarios polish remains a separate Phase 11 follow-up (ADR-061).
+
+
+## ADR-073: Compatibility status model
+
+- Compatibility is DETECTED, never assumed: status (Supported / SupportedWithWarnings /
+  PartiallySupported / Unsupported / Unknown) is derived from ISO layout inspection + WIM/ESD
+  metadata + normalized release/edition/language/architecture facts — never from the ISO filename.
+  Findings carry severity (Info/Warning/Blocking) and category; the profile keeps raw build metadata
+  AND the normalized classification.
+
+## ADR-074: Validated vs automated-supported distinction
+
+- "Validated" means real media + real WinForge workflow + generated-ISO VM install validation with
+  EVERY pipeline phase passing (Inspection…RecoveryEnvironment). Synthetic fixture results are
+  recorded with `ValidationEvidenceKind.AutomatedFixturesOnly` and are NEVER called "Validated" in
+  docs or UI. `ValidationResult.AllPhasesPassed` requires every phase to be recorded and passed.
+
+## ADR-075: Validation matrix / report format
+
+- Matrix rows are `ValidationTarget` (release/build range/edition/architecture/language/image
+  format/media type); cells are `ValidationResult` (per-phase PASS/FAIL, evidence kind, provenance,
+  notes). Reports export as JSON + human-readable Markdown to `validation/` — metadata only, never
+  giant binaries. Initial targets: Tier A = 25H2 Pro zh-CN + en-US x64; Tier B = Home/Education/
+  Enterprise; Tier C = 24H2, ESD, multi-index Consumer/Business.
+
+## ADR-076: Unknown future Windows build policy
+
+- A build newer than the validated matrix (>= 27000 floor, or otherwise unclassified) degrades to
+  Windows11_UnknownNewer → SupportedWithWarnings with an explicit message ("此 Windows 版本尚未经过
+  WinForge 完整验证。可以继续，但建议使用保守配置。"). Never blocked unless a concrete incompatibility
+  is detected; risky unverified operations stay disabled where appropriate; safe generic operations
+  remain available.
+
+## ADR-077: Edition / language compatibility policy
+
+- Edition capability facts (Sandbox/Hyper-V/RDP host/BitLocker/Pro features) are modeled per
+  EditionId; edition-gated operations are never shown as universally valid (badge "专业版及以上可用"
+  style). Language matching uses stable identities only; localized strings are display-only. Media
+  classification never overclaims "official" — standard layout ⇒ MicrosoftOfficialLike wording.
+
+## ADR-078: Compatibility preflight + safety invariants
+
+- After ISO inspection the workflow shows a concise compatibility status (release · status) with
+  warnings/blockers inline and advanced detail behind the surface. Blocking examples: unsupported
+  architecture, no usable install image, missing boot.wim, unreadable metadata. Warnings (future
+  build, modified media, untested edition) never auto-block. Catalog safety invariants (update
+  services, Defender, core drivers, Store) are enforced by automated assertions.
+
+
+## ADR-079: Compatibility preflight UI visibility — notify derived properties, reflect selected edition
+
+- **Context:** real desktop: after ISO detection the legacy inspection data showed but the Phase 13
+  compatibility card was completely absent.
+- **Root cause:** the profile setter used SetField (notifies only "CompatibilityProfile"), but the
+  View binds to DERIVED properties (CompatibilityStatusText / CompatibilityDetailsText /
+  HasCompatibilityProfile / HasCompatibilityWarnings / HasCompatibilityBlockers / WarningsText /
+  BlockersText); the earlier notify block lived in the SelectedEdition setter, which executes BEFORE
+  the profile assignment (InspectAsync clears the selection first), so the derived properties were
+  never notified after evaluation.
+- **Decision:** NotifyCompatibility() fires from BOTH the profile setter and the SelectedEdition
+  setter. The section is gated by HasCompatibilityProfile (collapsed pre-detection) with details
+  always visible once detected. Edition/index/language shown in the card reflect the USER-SELECTED
+  edition and update immediately on selection change (no second Detect). Status wording is honest:
+  "支持" for the workflow-validated baseline; VM installation validation pending — never
+  "完整验证通过" until the validation report exists (ADR-074).
+- **Consequences:** the compatibility card is visible on real detection, refreshable by edition
+  selection, and strictly honest about validated-vs-pending status.
+
+
+## ADR-080: Compatibility as a compact row in the existing inspection UI (UX simplification)
+
+- **Context:** the separate Phase 13 compatibility card was still not visible on real desktop, while
+  the existing Image Inspection UI already shows version/build/architecture/language/media/editions.
+- **Decision:** compatibility is a STATUS / SAFETY SIGNAL, not a second technical section. Retire the
+  standalone card and integrate ONE compact row into the existing 「Windows information」 section,
+  gated by HasCompatibilityProfile: 「Windows 11 25H2 专业版 · x64 · WIM · ✓ 支持」.
+  - Media-level facts (release · arch · format · status) appear immediately after Detect, BEFORE an
+    edition is selected — compatibility visibility must NOT depend on SelectedEdition.
+  - Selecting an edition appends the localized edition name (Home → 家庭版, Pro → 专业版 …) and
+    refreshes immediately; no second Detect.
+  - Status marks: ✓ 支持 (workflow-validated baseline; never 完整验证通过 while VM validation is
+    pending — ADR-074), ⚠ 尚未完整验证 (future build), ⚠ 仅检查支持 (ESD/SWM), ✕ 当前不支持
+    (blocking, red reason below).
+- **Consequences:** one compatibility model, one status, one compact rendering; the dead
+  CompatibilityDetailsText surface is removed (no duplicated UI).
+
+
+## ADR-081: Compatibility UI diagnostic — runtime view is SourceView, not ImageView
+
+- **Context:** after two compatibility-UI fixes the real desktop STILL showed nothing. Rather than
+  another speculative redesign, deterministic diagnostics were added: a literal
+  PHASE13-COMPAT-DIAG marker, an always-bound CompatibilityDebugText (never empty), and PHASE13
+  COMPAT runtime logging.
+- **Root cause (category A):** the wizard renders the Source step through `SourceView` — App.xaml
+  `SourceStepTemplate` → `views:SourceView DataContext="{Binding Content}"` (Content = ImageViewModel).
+  `ImageView.xaml` is a LEGACY view not referenced by any runtime template; both earlier
+  compatibility-UI rounds were added to the wrong view, so the running executable never rendered
+  them. Compiled BAML of the new build contains the marker (verified).
+- **Decision (diagnostic commit only):** marker + debug value + unconditional compatibility row in
+  BOTH views; ImageViewModel logs the full evaluation chain. After real-desktop confirmation the
+  diagnostic marker is removed and the compatibility row stays in SourceView only.
+- **Consequences:** the defect is classified (A: wrong/stale runtime view) and the next real-desktop
+  pass can verify in seconds; no further speculative UI redesign.
+
+
+## ADR-082: Preflight final cleanup — SourceView-only UI, no key leaks, authoritative language/index
+
+- **Root cause confirmed (category A):** the wizard renders the Source step via SourceView; all
+  compatibility UI is now in SourceView.xaml only; ImageView carries none; diagnostics removed.
+- **`Compat.Edition.` leak:** ResourceManagerLocalizationService returns the KEY itself for missing
+  entries; an empty EditionId produced the truncated key. Fix: ImageViewModel.L() falls back whenever
+  the resolved value equals the key (or is empty); LocalizeEditionName guards empty ids. Anti-leak
+  tests assert no "Compat." prefix for every known edition in zh-CN + en-US.
+- **`Lang=?`:** profile DefaultLanguage can be null on real DISM metadata. Effective language now
+  resolves SelectedEdition.DefaultLanguage → profile.DefaultLanguage → AvailableLanguages[0] — never "?".
+- **`Index=none`:** the compact row shows "Index <n>" ONLY from the current SelectedEdition and
+  refreshes on selection (SelectedEdition setter → NotifyCompatibility) — no re-detect; the base
+  media profile is never mutated for transient selection.
+- **Final row:** 兼容性 `Windows 11 25H2 · 专业版 · x64 · zh-CN · WIM · Index 4 · ✓ 支持`
+  (media-level before selection; edition + language + index appended on selection).
+- **Test infra:** all STA render tests serialize on one shared WpfRenderLock.Sync.
+
+
+## ADR-083: VM validation preparation — runbook + report template, no fabricated validation
+
+- Real VM installation validation cannot execute from the build sandbox (no Hyper-V/VMware, no
+  nested virtualization). Per product rules, nothing is fabricated: the Phase 13 baseline gate
+  stays PENDING USER REAL VM VALIDATION.
+- Prepared: `docs/VM-VALIDATION.md` (Hyper-V Gen-2 UEFI creation commands; platform-neutral; 25-item
+  acceptance checklist separating PASS/WARNING/FAIL; critical vs advisory guidance) and the report
+  template `validation/25H2-Pro-zh-CN-x64-20260813-0720.{json,md}` (Evidence=NotRecorded;
+  AllPhasesPassed required before "Validated" — ADR-074).
+- Latest generated ISO recorded: 8,177,487,872 bytes; SHA-256
+  21311def83217ae42a3c867b309957f2d50e1d5d4d231052bc851fa6751cae98; 25H2 build 26200 zh-CN x64 WIM;
+  Professional index 4 (Phase 12 validation artifact).
+- docs/COMPATIBILITY.md row for 25H2 Pro zh-CN stays in the pending section until the real VM run
+  passes; other editions/languages remain pending regardless.
+- Phase 14 input note recorded (`docs/PHASE14-INPUT.md`): Gaming profile direction (safe-but-meaningful
+  cleanup; Gaming PC vs cybercafe-like minimal distinction; keep-list and candidate cleanup list).
+
+
+## ADR-084: Validation levels + Phase 13 baseline VM install acceptance
+
+- Real VM validation (Hyper-V Gen-2 UEFI) PASSED the Phase 13 baseline: generated ISO boots, Setup
+  launches, Windows 11 Pro installs, first reboot succeeds, OOBE proceeds, desktop reached.
+- ValidationLevel introduced: WorkflowValidated / VmInstallValidated / FullHealthValidated.
+  `ValidationResult.AllPhasesPassed` requires the phases demanded by the DECLARED level — never a
+  blanket 17/25-check gate that would mislabel a healthy baseline as unvalidated.
+- Phase 13 baseline = **VmInstallValidated** — explicitly NOT FullHealthValidated. Deeper post-install
+  health checks (Windows Update / Defender / Store / DISM ScanHealth / recovery) are intentionally not
+  required now: the current safe customization surface (AppX / selected services / privacy /
+  personalization / safe registry) does no aggressive CBS / driver / servicing-stack removal.
+  FullHealthValidated becomes MANDATORY in later phases when component removal gets substantially
+  more aggressive.
+- docs/COMPATIBILITY.md: 25H2 Pro zh-CN x64 WIM → **VM INSTALL VALIDATED**; en-US Pro / Home /
+  Education / Enterprise / 24H2 / ESD / SWM stay pending; ARM64 unsupported. No fabricated checks —
+  unperformed phases are recorded as "not performed".

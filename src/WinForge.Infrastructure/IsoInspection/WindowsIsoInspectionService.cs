@@ -197,12 +197,31 @@ public sealed class WindowsIsoInspectionService : IIsoInspectionService
         result.HasInstallWim = File.Exists(Path.Combine(sources, "install.wim"));
         result.HasInstallEsd = File.Exists(Path.Combine(sources, "install.esd"));
 
+        // Phase 13.8: split WIM detection (install.swm + install2.swm …). A split
+        // layout is inspectable read-only; servicing of a split image is NOT
+        // supported, so it is surfaced explicitly instead of failing later.
+        result.HasSplitSwm = false;
+        result.SwmPartCount = 0;
+        if (!result.HasInstallWim && !result.HasInstallEsd && Directory.Exists(sources))
+        {
+            var swmParts = Directory.EnumerateFiles(sources, "install*.swm", SearchOption.TopDirectoryOnly)
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (swmParts.Count > 0)
+            {
+                result.HasSplitSwm = true;
+                result.SwmPartCount = swmParts.Count;
+            }
+        }
+
         result.InstallImageType = result.HasInstallWim
             ? InstallImageType.Wim
-            : result.HasInstallEsd ? InstallImageType.Esd : InstallImageType.Unknown;
+            : result.HasInstallEsd ? InstallImageType.Esd
+            : result.HasSplitSwm ? InstallImageType.Wim // split WIM container
+            : InstallImageType.Unknown;
 
         result.DetectedType = result.HasSourcesDirectory && result.HasBootDirectory &&
-                              (result.HasInstallWim || result.HasInstallEsd)
+                              (result.HasInstallWim || result.HasInstallEsd || result.HasSplitSwm)
             ? IsoDetectedType.WindowsIsoCandidate
             : IsoDetectedType.Unknown;
     }

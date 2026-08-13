@@ -90,6 +90,14 @@ public sealed class OptimizationDefinition
     public IReadOnlyList<CompatibilityRule> CompatibilityRules { get; init; } = new List<CompatibilityRule>();
     public IReadOnlyList<KnowledgeClaim> Provenance { get; init; } = new List<KnowledgeClaim>();
 
+    /// <summary>
+    /// Edition capability required for this optimization to be applicable
+    /// (Phase 13.20). None = universally applicable; e.g. a future Windows
+    /// Sandbox tweak would set <see cref="Compatibility.EditionCapabilityRequirement.Sandbox"/>.
+    /// Recommendations never show edition-gated actions as universally valid.
+    /// </summary>
+    public Compatibility.EditionCapabilityRequirement EditionRequirement { get; init; } = Compatibility.EditionCapabilityRequirement.None;
+
     /// <summary>Registry value changes this entry performs (Privacy / System / Personalization).</summary>
     public IReadOnlyList<RegistryTarget> RegistryTargets { get; init; } = new List<RegistryTarget>();
 

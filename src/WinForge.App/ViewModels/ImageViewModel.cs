@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using WinForge.App.Mvvm;
+using WinForge.Core.Compatibility;
 using WinForge.App.Services;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
@@ -33,8 +34,10 @@ public sealed class ImageViewModel : ViewModelBase
     private readonly IImageServicingService _servicing;
     private readonly IWorkspaceLifecycleManager? _lifecycle;
     private readonly ILocalizationService? _loc;
+    private readonly IImageCompatibilityService _compat;
 
     private IsoInspectionResult? _result;
+    private WinForge.Core.Compatibility.ImageCompatibilityProfile? _compatibility;
     private bool _isInspecting;
     private bool _isServicing;
     private string _servicingMessage = string.Empty;
@@ -49,7 +52,8 @@ public sealed class ImageViewModel : ViewModelBase
         IWimService wimService,
         IImageServicingService servicing,
         ILocalizationService? loc = null,
-        IWorkspaceLifecycleManager? lifecycle = null)
+        IWorkspaceLifecycleManager? lifecycle = null,
+        IImageCompatibilityService? compat = null)
     {
         _appState = appState;
         _logger = logger;
@@ -59,6 +63,7 @@ public sealed class ImageViewModel : ViewModelBase
         _workspaceFactory = workspaceFactory;
         _wimService = wimService;
         _servicing = servicing;
+        _compat = compat ?? new WinForge.Infrastructure.Compatibility.ImageCompatibilityService();
         _loc = loc;
 
         SelectIsoCommand = new AsyncRelayCommand(_ => SelectIsoAsync());
@@ -193,6 +198,7 @@ public sealed class ImageViewModel : ViewModelBase
             UpdateWorkspace(value);
             InvalidatePreparedServicingWorkspace();
             Refresh();
+            NotifyCompatibility(); // edition-specific facts update immediately (no re-detect)
         }
     }
 
@@ -247,6 +253,164 @@ public sealed class ImageViewModel : ViewModelBase
         get => _blockedMessage;
         private set => SetField(ref _blockedMessage, value);
     }
+
+    // ---- Phase 13 compatibility (evaluated after every ISO inspection) ----
+
+    public WinForge.Core.Compatibility.ImageCompatibilityProfile? CompatibilityProfile
+    {
+        get => _compatibility;
+        private set
+        {
+            if (SetField(ref _compatibility, value))
+            {
+                NotifyCompatibility();
+            }
+        }
+    }
+
+    private void NotifyCompatibility()
+    {
+        _logger.Info($"PHASE13 COMPAT: notify raised — {CompatibilityDebugText}");
+        OnPropertyChanged(nameof(HasCompatibilityProfile));
+        OnPropertyChanged(nameof(CompatibilityStatusText));
+        OnPropertyChanged(nameof(HasCompatibilityWarnings));
+        OnPropertyChanged(nameof(HasCompatibilityBlockers));
+        OnPropertyChanged(nameof(CompatibilityWarningsText));
+        OnPropertyChanged(nameof(CompatibilityBlockersText));
+        OnPropertyChanged(nameof(CompatibilityDebugText));
+    }
+
+    /// <summary>Concise preflight status line (e.g. "Windows 11 25H2 · Pro · x64 · zh-CN · WIM").</summary>
+    public string CompatibilityStatusText
+    {
+        get
+        {
+            var p = _compatibility;
+            if (p is null)
+            {
+                return string.Empty; // row hidden before detection
+            }
+
+            var release = p.Release switch
+            {
+                WinForge.Core.Compatibility.WindowsRelease.Windows11_25H2 => L("Compat.Release.Win11_25H2", "Windows 11 25H2"),
+                WinForge.Core.Compatibility.WindowsRelease.Windows11_24H2 => L("Compat.Release.Win11_24H2", "Windows 11 24H2"),
+                WinForge.Core.Compatibility.WindowsRelease.Windows11_UnknownNewer => L("Compat.Release.Win11_Newer", "Windows 11 新版本"),
+                WinForge.Core.Compatibility.WindowsRelease.OlderWindows => L("Compat.Release.Older", "旧版 Windows"),
+                _ => L("Compat.Release.Unknown", "未知版本"),
+            };
+
+            var edition = LocalizeEditionName(SelectedEdition?.EditionId);
+
+            var arch = string.IsNullOrWhiteSpace(p.Architecture) ? string.Empty : p.Architecture;
+            var format = p.ImageFormat switch
+            {
+                WinForge.Core.Compatibility.ImageFormatKind.Wim => "WIM",
+                WinForge.Core.Compatibility.ImageFormatKind.Esd => "ESD",
+                WinForge.Core.Compatibility.ImageFormatKind.Swm => "SWM",
+                _ => string.Empty,
+            };
+
+            // Language: reuse the authoritative image language (never "?").
+            var language = SelectedEdition?.DefaultLanguage
+                ?? p.DefaultLanguage
+                ?? p.AvailableLanguages.FirstOrDefault();
+
+            var index = SelectedEdition?.Index is { } idx ? "Index " + idx.ToString() : string.Empty;
+
+            var status = ResolveStatusMark(p);
+            var parts = new System.Collections.Generic.List<string> { release };
+            if (!string.IsNullOrWhiteSpace(edition)) parts.Add(edition);
+            if (!string.IsNullOrWhiteSpace(arch)) parts.Add(arch);
+            if (!string.IsNullOrWhiteSpace(language)) parts.Add(language);
+            if (!string.IsNullOrWhiteSpace(format)) parts.Add(format);
+            if (!string.IsNullOrWhiteSpace(index)) parts.Add(index);
+            parts.Add(status);
+            return string.Join(" · ", parts);
+        }
+    }
+
+    private string ResolveStatusMark(WinForge.Core.Compatibility.ImageCompatibilityProfile p)
+    {
+        if (p.HasBlockers)
+        {
+            return L("Compat.Status.Unsupported", "✕ 当前不支持");
+        }
+
+        if (p.Release == WinForge.Core.Compatibility.WindowsRelease.Windows11_UnknownNewer)
+        {
+            return L("Compat.Status.Future", "⚠ 尚未完整验证");
+        }
+
+        if (p.ImageFormat is WinForge.Core.Compatibility.ImageFormatKind.Esd or WinForge.Core.Compatibility.ImageFormatKind.Swm)
+        {
+            return L("Compat.Status.EsdOnly", "⚠ 仅检查支持");
+        }
+
+        return p.Status switch
+        {
+            WinForge.Core.Compatibility.CompatibilityStatus.Supported => L("Compat.Status.Supported", "✓ 支持"),
+            WinForge.Core.Compatibility.CompatibilityStatus.SupportedWithWarnings => L("Compat.Status.SupportedWithWarnings", "⚠ 支持（有警告）"),
+            WinForge.Core.Compatibility.CompatibilityStatus.PartiallySupported => L("Compat.Status.Partial", "△ 部分支持"),
+            _ => L("Compat.Status.Unknown", "未知"),
+        };
+    }
+
+    public bool HasCompatibilityProfile => _compatibility is not null;
+    public bool HasCompatibilityWarnings => _compatibility?.HasWarnings ?? false;
+    public bool HasCompatibilityBlockers => _compatibility?.HasBlockers ?? false;
+
+    /// <summary>
+    /// Deterministic diagnostic value — NEVER empty. "Profile=False" before
+    /// evaluation; otherwise a full dump of the runtime state.
+    /// </summary>
+    public string CompatibilityDebugText
+    {
+        get
+        {
+            var p = _compatibility;
+            if (p is null)
+            {
+                return "Profile=False";
+            }
+
+            var edition = SelectedEdition?.EditionId is { } ed ? ed : "none";
+            var lang = SelectedEdition?.DefaultLanguage ?? p.DefaultLanguage ?? p.AvailableLanguages.FirstOrDefault();
+            return $"Profile=True | Status={p.Status} | Release={p.Release} | Build={p.Build?.ToString() ?? "?"} | "
+                 + $"Format={p.ImageFormat} | Arch={p.Architecture ?? "?"} | Lang={lang ?? "?"} | Index={edition}";
+        }
+    }
+
+    /// <summary>Localized warning-finding summary (Stage 13.10).</summary>
+    public string CompatibilityWarningsText
+    {
+        get
+        {
+            var warnings = _compatibility?.Findings.Where(f => f.Severity == WinForge.Core.Compatibility.CompatibilitySeverity.Warning).ToList();
+            if (warnings is null || warnings.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(Environment.NewLine, warnings.Select(f => "⚠ " + f.Message));
+        }
+    }
+
+    /// <summary>Localized blocking-finding summary (Stage 13.10).</summary>
+    public string CompatibilityBlockersText
+    {
+        get
+        {
+            var blockers = _compatibility?.Findings.Where(f => f.IsBlocking).ToList();
+            if (blockers is null || blockers.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(Environment.NewLine, blockers.Select(f => "✗ " + f.Message));
+        }
+    }
+
 
     public bool IsServicingMounted =>
         _appState.CurrentServicingWorkspace?.State == ServicingWorkspaceState.Mounted;
@@ -344,6 +508,11 @@ public sealed class ImageViewModel : ViewModelBase
         {
             var result = await _inspection.InspectAsync(path, CancellationToken.None);
             _result = result;
+            CompatibilityProfile = _compat.Evaluate(result);
+            _logger.Info($"PHASE13 COMPAT: ProfileExists={_compatibility is not null} | Status={_compatibility?.Status} | "
+                + $"Release={_compatibility?.Release} | Build={_compatibility?.Build} | Format={_compatibility?.ImageFormat} | "
+                + $"Arch={_compatibility?.Architecture} | Language={(SelectedEdition?.DefaultLanguage ?? _compatibility?.DefaultLanguage) ?? "?"} | "
+                + $"SelectedEdition={(SelectedEdition?.EditionId ?? "none")} | StatusText=[{CompatibilityStatusText}] | Debug=[{CompatibilityDebugText}]");
             _logger.Info(result.Status == IsoInspectionStatus.Completed
                 ? "ISO inspection completed."
                 : "ISO inspection failed.");
@@ -481,7 +650,31 @@ public sealed class ImageViewModel : ViewModelBase
     /// when no localization service is available (e.g. in unit tests) or the key
     /// is missing. Keeps the view model usable without an injected service.
     /// </summary>
-    private string L(string key, string fallback) => _loc is null ? fallback : (_loc[key] ?? fallback);
+    private string L(string key, string fallback)
+    {
+        if (_loc is null)
+        {
+            return fallback;
+        }
+
+        // Phase 13 cleanup: a missing key must NEVER leak "Compat.Xxx" into the UI —
+        // the localization service returns the key itself for missing entries.
+        var value = _loc[key];
+        return string.IsNullOrEmpty(value) || string.Equals(value, key, System.StringComparison.Ordinal)
+            ? fallback
+            : value;
+    }
+
+    /// <summary>Localized edition display name with empty-id guard (never "Compat.Edition.").</summary>
+    private string LocalizeEditionName(string? editionId)
+    {
+        if (string.IsNullOrWhiteSpace(editionId))
+        {
+            return string.Empty;
+        }
+
+        return L("Compat.Edition." + editionId, editionId);
+    }
 
     private string TopLevelOr(
         string? consistent,
@@ -566,6 +759,11 @@ public sealed class ImageViewModel : ViewModelBase
         OnPropertyChanged(nameof(EditionsDisplay));
         OnPropertyChanged(nameof(Editions));
         OnPropertyChanged(nameof(SelectedEdition));
+        OnPropertyChanged(nameof(CompatibilityProfile));
+        OnPropertyChanged(nameof(CompatibilityStatusText));
+        OnPropertyChanged(nameof(HasCompatibilityWarnings));
+        OnPropertyChanged(nameof(HasCompatibilityBlockers));
+        OnPropertyChanged(nameof(CompatibilityBlockersText));
         OnPropertyChanged(nameof(Workspace));
         OnPropertyChanged(nameof(WorkspaceStatusDisplay));
         OnPropertyChanged(nameof(WorkspaceEditionDisplay));

@@ -1546,6 +1546,17 @@ public class ComponentKnowledgeStage11p2Tests
 
         private static void RunSta(Action action)
         {
+            // Serialize ALL STA render tests in this suite against the shared
+            // Stage13 WPF lock — parallel STA threads race WPF static state
+            // (Application/InputManager/HwndSource), causing intermittent failures.
+            lock (WpfRenderLock.Sync)
+            {
+                RunStaCore(action);
+            }
+        }
+
+        private static void RunStaCore(Action action)
+        {
             Exception? captured = null;
             var thread = new Thread(() =>
             {
