@@ -79,3 +79,18 @@ Stage 14.1 implements NO aggressive removal.
 
 Unknown stays **visible as technical debt** — metrics never hide it. Stage 14.1 first batch classifies
 108 known families; the remaining unknown set is progressively reviewed in later stages.
+
+## Stage 14.2 update (2026-08-13)
+
+- **CBS family rules** (22): conservative floors Risk ≥ Moderate, Protection ≥ Sensitive, never
+  RecommendedRemove; explicit optional families (e.g. IE-Optional) are Moderate/Sensitive.
+- **Hardware/driver families** (15): Bluetooth, Wi-Fi, Ethernet, USB, Storage, Graphics, Camera,
+  Audio, SmartCard, Biometrics, Touch/Pen, Sensors, MobileBroadband, generic driver, client drivers —
+  RecommendedKeep/ProfileDependent, High/Critical; classification only, no removal.
+- **Unknown debt analysis**: `UnknownFamilyAnalyzer.Cluster` ranks remaining Unknown families.
+- **Coverage metrics**: `ClassificationCoverageMetrics` (Curated / KnownDeep / Protected / Heuristic /
+  Unknown, per source, no double counting) + restrained UI `CoverageSummaryText`.
+- **Language/architecture/resource/version variants** resolve to the same family (normalizer +
+  tests); cross-entry pattern/alias collisions are eliminated and guarded.
+- Real-media scan limitation: non-elevated sandbox (DISM 740) — baseline from Phase 11 elevated
+  scan; see docs/COMPONENT-COVERAGE.md.

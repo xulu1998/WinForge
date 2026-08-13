@@ -544,3 +544,14 @@ family entries): exact alias (KnownPattern), normalized family containment (Know
 RequiredKeep/ProfileDependent/Unknown), protection (None/Sensitive/Protected) and profile tags drive
 the Customize knowledge surface: classified DiscoveredUnclassified rows now show name/purpose/
 recommendation/risk instead of raw identifiers. No removal execution in this stage.
+
+## Phase 14 — Stage 14.2: Real-media family expansion (2026-08-13)
+
+DeepComponentCatalogData expanded to 145 curated entries: 22 CBS family rules (conservative:
+Risk ≥ Moderate unless explicitly known, Protection ≥ Sensitive, never RecommendedRemove) and 15
+hardware/driver family rules (RecommendedKeep/ProfileDependent). UnknownFamilyAnalyzer clusters
+unclassified identities into ranked families for the debt report. ClassificationCoverageMetrics
+distinguishes Curated / KnownDeep / Protected / Heuristic / Unknown per discovery source without
+double counting. The build sandbox is non-elevated (DISM Error 740) — the real-media baseline is
+the Phase 11 elevated scan; an exact per-object re-scan requires elevation (see docs/COMPONENT-
+COVERAGE.md). Classification remains strictly separate from removal planning.

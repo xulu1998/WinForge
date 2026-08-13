@@ -493,17 +493,21 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 14 — Deep Component Coverage & Classification
 
-- **Status:** IN PROGRESS — **STAGE 14.1 (taxonomy + classification foundation) COMPLETE (2026-08-13)**;
-  branch `phase/14-deep-component-classification`; NOT merged.
+- **Status:** IN PROGRESS — **STAGE 14.1 + STAGE 14.2 COMPLETE (2026-08-13)**; branch
+  `phase/14-deep-component-classification`; NOT merged.
 - **Stage 14.1 delivered:** taxonomy + classification layer (discovery/knowledge/planning separate);
   ComponentFunctionCategory; DeepComponentKnowledge (risk/recommendation/protection/profile/
   confidence); ComponentNormalizer + collision guard; first-batch DeepComponentCatalogData
   (**108 curated families**); protected groups; Gaming profile foundation metadata (Gaming PC vs
   Dedicated Gaming; no placebo tweaks); UI integration (classified discovered rows in Apps/Windows
   Components knowledge tabs); coverage metrics with Unknown kept visible. **845 tests, 0 err/0 warn.**
-- **Stage 14.2+ (recommended next):** expand catalog to the remaining unknown families; per-object
-  dependency resolution; profile-driven recommendation wiring (Gaming profile upgrade per
-  docs/PHASE14-INPUT.md); deeper removal execution only after classification coverage is high.
+- **Stage 14.2 (complete):** real-media family expansion — 145 curated entries (+22 CBS +15 hardware
+  family rules), UnknownFamilyAnalyzer, enhanced coverage metrics, restrained UI summary,
+  docs/COMPONENT-COVERAGE.md. **892 tests, 0 err/0 warn.**
+- **Stage 14.3 (recommended next):** elevated real per-object scan (runbook ready) for exact
+  before/after numbers; expand remaining Unknown families; per-object dependency resolution;
+  Gaming profile recommendation wiring (docs/PHASE14-INPUT.md); removal execution only after high
+  classification coverage + protection gating.
 
 ## Phase 13 — Compatibility & Real-World Validation Matrix
 

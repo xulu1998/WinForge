@@ -1953,3 +1953,22 @@ All decisions are `ACCEPTED` unless noted.
 - Gaming profile foundation: Gaming PC ≠ Dedicated Gaming/cybercafe minimal; keep-list and candidate
   cleanup recorded (docs/PHASE14-INPUT.md); no placebo tweaks.
 - Unknown remains visible as technical debt; coverage metrics never massaged.
+
+## ADR-086: Stage 14.2 — family rules, CBS safety floor, honest coverage
+
+- Real media confirmed (25H2 zh-CN x64 Consumer, install.wim read-only). The build sandbox is
+  non-elevated (DISM Error 740): a fresh per-object scan is impossible here; the real baseline is the
+  Phase 11 elevated real-desktop scan (758 objects). No per-object metrics are fabricated — the
+  coverage estimate is explicitly family-level and the runbook for an elevated exact scan is documented.
+- Deep catalog grows to 145 entries: 22 CBS family rules + 15 hardware/driver rules. CBS semantics
+  distinguish system core / servicing / edition / language / hardware / networking / printing /
+  media / shell / search / security / recovery / remote / virtualization / enterprise / legacy /
+  optional. Conservative floor: Risk ≥ Moderate (Moderate only for documented optional families),
+  Protection ≥ Sensitive, never RecommendedRemove for CBS-like families.
+- Hardware/driver families are classified for UNDERSTANDING only (RecommendedKeep/ProfileDependent,
+  High/Critical) — no driver removal in this stage.
+- UnknownFamilyAnalyzer + ClassificationCoverageMetrics (Curated/KnownDeep/Protected/Heuristic/Unknown
+  per source, no double counting) keep Unknown visible as debt; a restrained CoverageSummaryText is
+  exposed on the Component Intelligence surface.
+- Classification ≠ removal: no destructive CBS/driver/servicing/Defender/Update/WinRE/Store/runtime/
+  shell removal is added by classification coverage.

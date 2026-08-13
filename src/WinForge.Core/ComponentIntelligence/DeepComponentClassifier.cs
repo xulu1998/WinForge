@@ -131,29 +131,111 @@ public sealed class DeepComponentClassifier
 }
 
 /// <summary>
-/// Coverage metrics (Stage 14.1 §11). Unknown stays visible as technical debt —
-/// metrics are never massaged to look better.
+/// Coverage metrics (Stage 14.1/14.2). Unknown stays visible as technical debt —
+/// metrics are never massaged to look better, and entries are never double-counted
+/// (curated deep matches count once; protected ⊂ known).
 /// </summary>
 public sealed class ClassificationCoverageMetrics
 {
     public int TotalDiscovered { get; init; }
+
+    /// <summary>Matched a curated definition (Stage 11.2 knowledge rows).</summary>
     public int Curated { get; init; }
+
+    /// <summary>Protected objects (deep catalog protection == Protected). Subset of KnownDeep.</summary>
     public int Protected { get; init; }
-    public int ClassifiedKnown { get; init; }
+
+    /// <summary>Deep-classified via catalog (KnownPattern/KnownFamily).</summary>
+    public int KnownDeep { get; init; }
+
+    /// <summary>Deep-classified but heuristic (never a removal rule by itself).</summary>
+    public int Heuristic { get; init; }
+
+    /// <summary>Not classified — visible technical debt.</summary>
     public int UnknownUnclassified { get; init; }
 
-    public double CoverageRatio => TotalDiscovered == 0 ? 0 : (double)ClassifiedKnown / TotalDiscovered;
+    /// <summary>Curated + KnownDeep over total (no double counting).</summary>
+    public double CoverageRatio =>
+        TotalDiscovered == 0 ? 0 : (double)(Curated + KnownDeep) / TotalDiscovered;
 
     /// <summary>Per-source breakdown (source = ComponentCategory kind).</summary>
     public IReadOnlyDictionary<ComponentCategory, SourceCoverage> BySource { get; init; } =
         new Dictionary<ComponentCategory, SourceCoverage>();
 }
 
-/// <summary>Per-source coverage slice.</summary>
+/// <summary>Per-source coverage slice (known/protected/heuristic/unknown, no double count).</summary>
 public sealed class SourceCoverage
 {
     public ComponentCategory Source { get; init; }
     public int Total { get; init; }
-    public int ClassifiedKnown { get; init; }
+    public int Known { get; init; }
+    public int Protected { get; init; }
+    public int Heuristic { get; init; }
     public int Unknown { get; init; }
+}
+
+/// <summary>
+/// Family-frequency analysis of Unknown identities (Stage 14.2 §4). Derives a
+/// likely family prefix from the canonical form; clusters and counts families so
+/// the debt report ranks real Unknown groups instead of listing hundreds of ids.
+/// </summary>
+public static class UnknownFamilyAnalyzer
+{
+    /// <summary>
+    /// Best-effort family prefix of a canonical identity: for dotted/package ids
+    /// the leading two segments, for dashed servicing ids the leading segments up
+    /// to (and including) the second dash, else the whole canonical key.
+    /// </summary>
+    public static string FamilyOf(string rawIdentity)
+    {
+        var c = ComponentNormalizer.Canonical(rawIdentity);
+        if (string.IsNullOrEmpty(c))
+        {
+            return string.Empty;
+        }
+
+        if (c.Contains('-', StringComparison.Ordinal))
+        {
+            var parts = c.Split('-', StringSplitOptions.RemoveEmptyEntries);
+            // "microsoft-windows-client-foo" -> "microsoft-windows-client"
+            return parts.Length >= 3 ? string.Join('-', parts[0], parts[1], parts[2]) : c;
+        }
+
+        if (c.Contains('.', StringComparison.Ordinal))
+        {
+            var parts = c.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length >= 2 ? string.Join('.', parts[0], parts[1]) : c;
+        }
+
+        return c;
+    }
+
+    /// <summary>Cluster identities into families with counts (descending).</summary>
+    public static IReadOnlyList<FamilyFrequency> Cluster(IEnumerable<string> identities)
+    {
+        var map = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var id in identities)
+        {
+            var f = FamilyOf(id);
+            if (string.IsNullOrEmpty(f))
+            {
+                continue;
+            }
+
+            map[f] = map.TryGetValue(f, out var n) ? n + 1 : 1;
+        }
+
+        return map
+            .Select(kv => new FamilyFrequency { Family = kv.Key, Count = kv.Value })
+            .OrderByDescending(f => f.Count)
+            .ThenBy(f => f.Family, StringComparer.Ordinal)
+            .ToList();
+    }
+}
+
+/// <summary>One clustered family + its frequency.</summary>
+public sealed class FamilyFrequency
+{
+    public string Family { get; init; } = string.Empty;
+    public int Count { get; init; }
 }

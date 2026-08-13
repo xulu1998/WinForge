@@ -55,8 +55,19 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
     private readonly ComponentIntelligenceViewModel _ciVm;
 
     private readonly List<ComponentKnowledgeItem> _all = new();
+    private string _coverageSummary = string.Empty;
     private readonly ComponentCategory[]? _categoryFilter;
     private readonly RecommendationContextService? _ctx;
+
+    private void RefreshCoverageSummary()
+    {
+        var inventory = _ciVm.Inventory;
+        var total = inventory?.Entries.Count ?? 0;
+        var known = _all.Count(i => i.HasDeepKnowledge || i.Entry.Definition is not null);
+        var protectedCount = _all.Count(i => i.Entry.Classification == ComponentClassification.Protected);
+        var unknown = _all.Count(i => !i.HasDeepKnowledge && i.Entry.Definition is null);
+        CoverageSummaryText = $"Known: {known} · Protected: {protectedCount} · Unknown: {unknown} (total {total})";
+    }
     private readonly WinForge.Core.ComponentIntelligence.DeepComponentClassifier _deep;
     private ComponentKnowledgeFilter _filter = ComponentKnowledgeFilter.All;
     private ComponentKnowledgeItem? _activeDetail;
@@ -85,6 +96,9 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
         _categoryFilter = categoryFilter ?? new[] { ComponentCategory.AppX };
 
         Items = new ObservableCollection<ComponentKnowledgeItem>();
+
+        // Phase 14.2 — restrained coverage summary (Known / Protected / Unknown).
+        CoverageSummaryText = string.Empty;
         DiscoverCommand = new AsyncRelayCommand(_ => DiscoverAsync(), _ => CanDiscover);
         ShowDetailCommand = new RelayCommand(p => { if (p is ComponentKnowledgeItem it) ActiveDetail = it; });
         ClearDetailCommand = new RelayCommand(_ => ActiveDetail = null);
@@ -93,6 +107,16 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
         _loc.CultureChanged += OnCultureChanged;
 
         Rebuild();
+    }
+
+    /// <summary>
+    /// Restrained coverage summary for the Component Intelligence surface:
+    /// "Known: 512 · Protected: 146 · Unknown: 100" — unknown stays visible as debt.
+    /// </summary>
+    public string CoverageSummaryText
+    {
+        get => _coverageSummary;
+        private set => SetField(ref _coverageSummary, value);
     }
 
     public ObservableCollection<ComponentKnowledgeItem> Items { get; }
@@ -275,6 +299,8 @@ public sealed class ComponentKnowledgeViewModel : ViewModelBase
         {
             it.RefreshSelectionFromPlan();
         }
+
+        RefreshCoverageSummary();
 
         HasInventory = inventory?.Discovered ?? false;
         ApplyFilter();

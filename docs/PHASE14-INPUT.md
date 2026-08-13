@@ -72,3 +72,12 @@ including the Gaming-relevant groups below (candidates marked OptionalRemove/Pro
 never auto-remove; keep-list entries marked RequiredKeep/ProfileDependent). See
 docs/COMPONENT-TAXONOMY.md and ADR-085. Stage 14.2 should wire these profile tags into the Gaming
 profile recommendation engine and expand remaining Unknown coverage.
+
+## Stage 14.2 progress note (2026-08-13)
+
+Deep catalog expanded to 145 curated family entries (+22 CBS, +15 hardware). Gaming-relevant profile
+tags (GamingRelevant / ConsumerContent / PhoneIntegration / MediaPlayback / StoreInfrastructure /
+RuntimeDependency / SecurityEssential / ServicingEssential) are now carried on the classified
+families. Stage 14.3 wires these tags into the Gaming profile recommendation engine (keep-list vs
+candidate cleanup), plus dependency resolution and an elevated real per-object scan for exact
+coverage numbers.

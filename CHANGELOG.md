@@ -3,6 +3,24 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 14 — Stage 14.2: Real-media family expansion + coverage (2026-08-13)
+
+- Real source confirmed: `C:\Users\xulu1998\Downloads\Win11_25H2_Chinese_Simplified_x64_v2.iso`
+  (install.wim 7.58 GB, extracted read-only). The build sandbox is NON-ELEVATED — DISM returns
+  Error 740, so a fresh per-object scan is not possible here; the real baseline uses the Phase 11
+  elevated real-desktop scan (Curated 11 + DiscoveredUnclassified 734 + Protected 13 = 758).
+- Family expansion: `DeepComponentCatalogData` 108 → **145 curated entries** (+22 CBS family rules,
+  +15 hardware/driver rules). CBS semantics introduced with conservative floors Risk≥Moderate,
+  Protection≥Sensitive, never RecommendedRemove; hardware families → RecommendedKeep/ProfileDependent.
+- `UnknownFamilyAnalyzer` (ranked family debt) + enhanced `ClassificationCoverageMetrics`
+  (Curated/KnownDeep/Protected/Heuristic/Unknown, per source, no double counting) + restrained
+  `CoverageSummaryText` on the Component Intelligence surface.
+- Language/architecture/resource/version variants covered; version suffix changes do not alter
+  classification; cross-entry pattern/alias collisions eliminated and guarded.
+- docs/COMPONENT-COVERAGE.md (honest scan-capability note; ≥60% family-level coverage estimate;
+  exact per-object numbers require an elevated scan; CBS safety policy; classified ≠ removable).
+  **892 tests pass (Core 53, App 839), 0 errors, 0 warnings** — incl. 47 Stage14 tests.
+
 ## Phase 14 — Stage 14.1: Deep Component Coverage & Classification (2026-08-13)
 
 - Durable taxonomy + classification layer (ADR-085): discovery / knowledge / planning kept SEPARATE.
