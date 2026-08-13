@@ -3,6 +3,24 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 13 — Real VM validation preparation + Phase 14 input (2026-08-13)
+
+- Located the most recent generated ISO: `C:\Users\xulu1998\Documents\WinForge\WinForge_Windows_11_专业版_20260812-1915.iso`
+  (8,177,487,872 bytes, SHA-256 `21311def83217ae42a3c867b309957f2d50e1d5d4d231052bc851fa6751cae98`,
+  25H2 build 26200 zh-CN x64 WIM, Professional index 4, produced during Phase 12 validation).
+- Real VM installation validation CANNOT run from the sandbox → nothing is fabricated. Prepared:
+  `docs/VM-VALIDATION.md` (Hyper-V Gen-2 UEFI creation commands + 25-item acceptance checklist +
+  report-fill steps; platform-neutral) and the validation report template
+  `validation/25H2-Pro-zh-CN-x64-20260813-0720.{json,md}` (Evidence=NotRecorded; not validated until
+  all phases PASS with Evidence=RealVmValidation). docs/COMPATIBILITY.md row stays pending.
+- Phase 14 input note recorded (`docs/PHASE14-INPUT.md`): real user feedback — the 游戏优先 Gaming
+  profile is too conservative (Phone Link / Bing / Paint / Solitaire / Get Help / Weather / Feedback
+  Hub etc. not auto-selected). Phase 14 should keep Gaming safe-but-meaningful, distinguish
+  Gaming PC vs cybercafe-like minimal, keep Terminal/Notepad/Calc/App Installer/Store/Gaming
+  Services/WebView2/runtimes/update stack/Defender, and evaluate safe cleanup of Phone Link,
+  Solitaire, Get Help, consumer content, Tips, Spotlight, Feedback Hub, Weather, ads, Bing
+  integration. **823 tests pass (Core 53, App 770), 0 errors, 0 warnings**.
+
 ## Phase 13 — Preflight final cleanup + edition/language/index display fixes (2026-08-12)
 
 - Diagnostic root cause CONFIRMED on real desktop (category A): runtime Source step renders

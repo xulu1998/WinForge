@@ -1,0 +1,33 @@
+{
+  "targetId": "25H2-Pro-zh-CN-x64",
+  "winForgeVersion": "0.9.0-alpha",
+  "winForgeCommit": "a5a3728 (Phase 13 branch; ISO was produced during Phase 12 validation on 2026-08-12 19:15)",
+  "date": "2026-08-13T07:20:00-04:00",
+  "evidence": "NotRecorded",
+  "phases": {
+    "InspectionPassed": null,
+    "PreparePassed": null,
+    "DiscoveryPassed": null,
+    "CustomizePassed": null,
+    "ApplyPassed": null,
+    "BuildPassed": null,
+    "IsoVerificationPassed": null,
+    "VmBootPassed": null,
+    "SetupPassed": null,
+    "OobePassed": null,
+    "DesktopReached": null,
+    "WindowsUpdatePassed": null,
+    "StorePassed": null,
+    "DefenderHealthy": null,
+    "DriverInstallPassed": null,
+    "RecoveryEnvironmentPassed": null
+  },
+  "sourceImageMetadata": "Windows 11 25H2 (10.0.26200) zh-CN x64 install.wim, Professional (index 4)",
+  "selectedIndex": 4,
+  "customizationProfile": "Phase 12 real-desktop validation configuration (conservative)",
+  "operationsCount": null,
+  "buildIsoPath": "C:/Users/xulu1998/Documents/WinForge/WinForge_Windows_11_专业版_20260812-1915.iso",
+  "isoSha256": "21311def83217ae42a3c867b309957f2d50e1d5d4d231052bc851fa6751cae98",
+  "isoSizeBytes": 8177487872,
+  "notes": "Report TEMPLATE — real VM installation validation has NOT been executed yet (sandbox cannot run Hyper-V/VMware). Complete per docs/VM-VALIDATION.md: run the VM, fill the 25-item checklist, set evidence=RealVmValidation, mark all phases PASS/FAIL, then this file becomes the Phase 13 baseline validation record. Not Validated until AllPhasesPassed."
+}

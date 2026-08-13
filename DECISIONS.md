@@ -1895,3 +1895,21 @@ All decisions are `ACCEPTED` unless noted.
 - **Final row:** 兼容性 `Windows 11 25H2 · 专业版 · x64 · zh-CN · WIM · Index 4 · ✓ 支持`
   (media-level before selection; edition + language + index appended on selection).
 - **Test infra:** all STA render tests serialize on one shared WpfRenderLock.Sync.
+
+
+## ADR-083: VM validation preparation — runbook + report template, no fabricated validation
+
+- Real VM installation validation cannot execute from the build sandbox (no Hyper-V/VMware, no
+  nested virtualization). Per product rules, nothing is fabricated: the Phase 13 baseline gate
+  stays PENDING USER REAL VM VALIDATION.
+- Prepared: `docs/VM-VALIDATION.md` (Hyper-V Gen-2 UEFI creation commands; platform-neutral; 25-item
+  acceptance checklist separating PASS/WARNING/FAIL; critical vs advisory guidance) and the report
+  template `validation/25H2-Pro-zh-CN-x64-20260813-0720.{json,md}` (Evidence=NotRecorded;
+  AllPhasesPassed required before "Validated" — ADR-074).
+- Latest generated ISO recorded: 8,177,487,872 bytes; SHA-256
+  21311def83217ae42a3c867b309957f2d50e1d5d4d231052bc851fa6751cae98; 25H2 build 26200 zh-CN x64 WIM;
+  Professional index 4 (Phase 12 validation artifact).
+- docs/COMPATIBILITY.md row for 25H2 Pro zh-CN stays in the pending section until the real VM run
+  passes; other editions/languages remain pending regardless.
+- Phase 14 input note recorded (`docs/PHASE14-INPUT.md`): Gaming profile direction (safe-but-meaningful
+  cleanup; Gaming PC vs cybercafe-like minimal distinction; keep-list and candidate cleanup list).
