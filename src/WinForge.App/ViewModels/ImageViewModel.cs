@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using WinForge.App.Mvvm;
+using WinForge.Core.Compatibility;
 using WinForge.App.Services;
 using WinForge.Core.Models;
 using WinForge.Core.Services;
@@ -33,8 +34,10 @@ public sealed class ImageViewModel : ViewModelBase
     private readonly IImageServicingService _servicing;
     private readonly IWorkspaceLifecycleManager? _lifecycle;
     private readonly ILocalizationService? _loc;
+    private readonly IImageCompatibilityService _compat;
 
     private IsoInspectionResult? _result;
+    private WinForge.Core.Compatibility.ImageCompatibilityProfile? _compatibility;
     private bool _isInspecting;
     private bool _isServicing;
     private string _servicingMessage = string.Empty;
@@ -49,7 +52,8 @@ public sealed class ImageViewModel : ViewModelBase
         IWimService wimService,
         IImageServicingService servicing,
         ILocalizationService? loc = null,
-        IWorkspaceLifecycleManager? lifecycle = null)
+        IWorkspaceLifecycleManager? lifecycle = null,
+        IImageCompatibilityService? compat = null)
     {
         _appState = appState;
         _logger = logger;
@@ -59,6 +63,7 @@ public sealed class ImageViewModel : ViewModelBase
         _workspaceFactory = workspaceFactory;
         _wimService = wimService;
         _servicing = servicing;
+        _compat = compat ?? new WinForge.Infrastructure.Compatibility.ImageCompatibilityService();
         _loc = loc;
 
         SelectIsoCommand = new AsyncRelayCommand(_ => SelectIsoAsync());
@@ -248,6 +253,87 @@ public sealed class ImageViewModel : ViewModelBase
         private set => SetField(ref _blockedMessage, value);
     }
 
+    // ---- Phase 13 compatibility (evaluated after every ISO inspection) ----
+
+    public WinForge.Core.Compatibility.ImageCompatibilityProfile? CompatibilityProfile
+    {
+        get => _compatibility;
+        private set => SetField(ref _compatibility, value);
+    }
+
+    /// <summary>Concise preflight status line (e.g. "Windows 11 25H2 · Pro · x64 · zh-CN · WIM").</summary>
+    public string CompatibilityStatusText
+    {
+        get
+        {
+            var p = _compatibility;
+            if (p is null || string.IsNullOrWhiteSpace(p.EditionId))
+            {
+                return L("Compat.NotEvaluated", "兼容性未评估");
+            }
+
+            var release = p.Release switch
+            {
+                WinForge.Core.Compatibility.WindowsRelease.Windows11_25H2 => L("Compat.Release.Win11_25H2", "Windows 11 25H2"),
+                WinForge.Core.Compatibility.WindowsRelease.Windows11_24H2 => L("Compat.Release.Win11_24H2", "Windows 11 24H2"),
+                WinForge.Core.Compatibility.WindowsRelease.Windows11_UnknownNewer => L("Compat.Release.Win11_Newer", "Windows 11 新版本"),
+                WinForge.Core.Compatibility.WindowsRelease.OlderWindows => L("Compat.Release.Older", "旧版 Windows"),
+                _ => L("Compat.Release.Unknown", "未知版本"),
+            };
+
+            var status = p.Status switch
+            {
+                WinForge.Core.Compatibility.CompatibilityStatus.Supported => L("Compat.Status.Supported", "✓ 支持"),
+                WinForge.Core.Compatibility.CompatibilityStatus.SupportedWithWarnings => L("Compat.Status.SupportedWithWarnings", "⚠ 支持（有警告）"),
+                WinForge.Core.Compatibility.CompatibilityStatus.PartiallySupported => L("Compat.Status.Partial", "△ 部分支持"),
+                WinForge.Core.Compatibility.CompatibilityStatus.Unsupported => L("Compat.Status.Unsupported", "✗ 不支持"),
+                _ => L("Compat.Status.Unknown", "未知"),
+            };
+
+            return $"{release} · {status}";
+        }
+    }
+
+    public bool HasCompatibilityWarnings => _compatibility?.HasWarnings ?? false;
+    public bool HasCompatibilityBlockers => _compatibility?.HasBlockers ?? false;
+
+    /// <summary>Localized blocking-finding summary (Stage 13.10).</summary>
+    public string CompatibilityBlockersText
+    {
+        get
+        {
+            var blockers = _compatibility?.Findings.Where(f => f.IsBlocking).ToList();
+            if (blockers is null || blockers.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(Environment.NewLine, blockers.Select(f => "✗ " + f.Message));
+        }
+    }
+    public string CompatibilityDetailsText
+    {
+        get
+        {
+            var p = _compatibility;
+            if (p is null)
+            {
+                return string.Empty;
+            }
+
+            var parts = new System.Collections.Generic.List<string>
+            {
+                $"Build: {p.Build?.ToString() ?? "?"}",
+                $"Index: {p.SelectedIndex}/{p.ImageCount}",
+                $"Edition: {p.EditionId ?? "?"}",
+                $"Arch: {p.Architecture ?? "?"}",
+                $"Format: {p.ImageFormat}",
+                $"Lang: {string.Join(",", p.AvailableLanguages)}",
+            };
+            return string.Join("  ·  ", parts);
+        }
+    }
+
     public bool IsServicingMounted =>
         _appState.CurrentServicingWorkspace?.State == ServicingWorkspaceState.Mounted;
 
@@ -344,6 +430,7 @@ public sealed class ImageViewModel : ViewModelBase
         {
             var result = await _inspection.InspectAsync(path, CancellationToken.None);
             _result = result;
+            CompatibilityProfile = _compat.Evaluate(result);
             _logger.Info(result.Status == IsoInspectionStatus.Completed
                 ? "ISO inspection completed."
                 : "ISO inspection failed.");
@@ -566,6 +653,12 @@ public sealed class ImageViewModel : ViewModelBase
         OnPropertyChanged(nameof(EditionsDisplay));
         OnPropertyChanged(nameof(Editions));
         OnPropertyChanged(nameof(SelectedEdition));
+        OnPropertyChanged(nameof(CompatibilityProfile));
+        OnPropertyChanged(nameof(CompatibilityStatusText));
+        OnPropertyChanged(nameof(HasCompatibilityWarnings));
+        OnPropertyChanged(nameof(HasCompatibilityBlockers));
+        OnPropertyChanged(nameof(CompatibilityDetailsText));
+        OnPropertyChanged(nameof(CompatibilityBlockersText));
         OnPropertyChanged(nameof(Workspace));
         OnPropertyChanged(nameof(WorkspaceStatusDisplay));
         OnPropertyChanged(nameof(WorkspaceEditionDisplay));

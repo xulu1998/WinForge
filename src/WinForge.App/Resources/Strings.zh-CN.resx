@@ -76,6 +76,17 @@
   <!-- 步骤状态 -->
   <data name="StepState.NotAvailable" xml:space="preserve"><value>不可用</value></data>
   <data name="StepState.Available" xml:space="preserve"><value>可用</value></data>
+  <data name="Compat.NotEvaluated" xml:space="preserve"><value>兼容性未评估</value></data>
+  <data name="Compat.Release.Win11_25H2" xml:space="preserve"><value>Windows 11 25H2</value></data>
+  <data name="Compat.Release.Win11_24H2" xml:space="preserve"><value>Windows 11 24H2</value></data>
+  <data name="Compat.Release.Win11_Newer" xml:space="preserve"><value>Windows 11 新版本</value></data>
+  <data name="Compat.Release.Older" xml:space="preserve"><value>旧版 Windows</value></data>
+  <data name="Compat.Release.Unknown" xml:space="preserve"><value>未知版本</value></data>
+  <data name="Compat.Status.Supported" xml:space="preserve"><value>✓ 支持</value></data>
+  <data name="Compat.Status.SupportedWithWarnings" xml:space="preserve"><value>⚠ 支持（有警告）</value></data>
+  <data name="Compat.Status.Partial" xml:space="preserve"><value>△ 部分支持</value></data>
+  <data name="Compat.Status.Unsupported" xml:space="preserve"><value>✗ 不支持</value></data>
+  <data name="Compat.Status.Unknown" xml:space="preserve"><value>未知</value></data>
   <data name="StepState.Current" xml:space="preserve"><value>进行中</value></data>
   <data name="StepState.Completed" xml:space="preserve"><value>已完成</value></data>
   <data name="StepState.RequiresAttention" xml:space="preserve"><value>需要关注</value></data>

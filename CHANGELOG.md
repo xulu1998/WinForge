@@ -3,6 +3,22 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 13 — Compatibility & Real-World Validation Matrix (2026-08-12, foundation)
+
+- Compatibility model (CompatibilityStatus/Severity/ImageCompatibilityProfile/Findings),
+  release classifier (24H2/25H2/unknown-newer/older), edition capability facts (Sandbox/Hyper-V/
+  RDP host per edition), language stable-identity policy, WIM/ESD/SWM detection, multi-index
+  enumeration + selected-index persistence, conservative media classification, split-WIM
+  read-only marking.
+- Compatibility preflight surfaced after ISO inspection (concise release · status + blockers);
+  blocking vs warning rules; unknown-future-build graceful degradation (SupportedWithWarnings).
+- Validation matrix data model + initial targets (Tier A/B/C) + JSON/Markdown report export
+  (validation/) with strict Validated-vs-Automated evidence separation.
+- Safety invariants (catalog assertions): Update infrastructure, Defender, core drivers, Store
+  never disabled/removed by standard recommendations.
+- docs/COMPATIBILITY.md + ADR-073..078. **798 tests pass (Core 53, App 745), 0 errors, 0 warnings
+  (Release)** — incl. 31 new Stage13CompatibilityTests (fixtures + rules + invariants + report).
+
 ## Phase 12 CLOSEOUT — Workspace Lifecycle & Disk Safety (2026-08-12)
 
 **STATUS: PHASE 12 — COMPLETED · REAL DESKTOP VALIDATION — PASSED · MERGED TO `main` (--no-ff).**

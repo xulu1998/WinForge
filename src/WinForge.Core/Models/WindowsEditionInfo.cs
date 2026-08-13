@@ -38,6 +38,9 @@ public sealed class WindowsEditionInfo
     /// <summary>Windows build number derived from <see cref="Version"/>, e.g. <c>26100</c>.</summary>
     public string? Build { get; set; }
 
+    /// <summary>Marketing display version when reported, e.g. <c>25H2</c> (may be null).</summary>
+    public string? DisplayVersion { get; set; }
+
     /// <summary>Installation type, e.g. <c>Client</c> / <c>Server</c>.</summary>
     public string? InstallationType { get; set; }
 

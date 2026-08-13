@@ -55,6 +55,18 @@ public sealed class IsoInspectionResult
     /// <summary>Type of install image detected (WIM / ESD / Unknown).</summary>
     public InstallImageType InstallImageType { get; set; } = InstallImageType.Unknown;
 
+    /// <summary>True when the install image is a SPLIT WIM (install.swm + parts).</summary>
+    public bool HasSplitSwm { get; set; }
+
+    /// <summary>Number of split WIM parts found (0 when not split).</summary>
+    public int SwmPartCount { get; set; }
+
+    /// <summary>Selected image index (1-based) chosen by the user; defaults to 1.</summary>
+    public int SelectedIndex { get; set; } = 1;
+
+    /// <summary>True when a WinRE recovery environment is present in the image.</summary>
+    public bool HasRecoveryEnvironment { get; set; }
+
     /// <summary>
     /// Read-only metadata read from the install image (Step 2.2). Populated only
     /// when the layout inspection found an install.wim/install.esd and the

@@ -1774,3 +1774,50 @@ All decisions are `ACCEPTED` unless noted.
   4. Finish cleanup may synchronously wait while deleting a large workspace; future UX may improve
      progress/cancellation;
   5. Custom profile + Extra Scenarios polish remains a separate Phase 11 follow-up (ADR-061).
+
+
+## ADR-073: Compatibility status model
+
+- Compatibility is DETECTED, never assumed: status (Supported / SupportedWithWarnings /
+  PartiallySupported / Unsupported / Unknown) is derived from ISO layout inspection + WIM/ESD
+  metadata + normalized release/edition/language/architecture facts — never from the ISO filename.
+  Findings carry severity (Info/Warning/Blocking) and category; the profile keeps raw build metadata
+  AND the normalized classification.
+
+## ADR-074: Validated vs automated-supported distinction
+
+- "Validated" means real media + real WinForge workflow + generated-ISO VM install validation with
+  EVERY pipeline phase passing (Inspection…RecoveryEnvironment). Synthetic fixture results are
+  recorded with `ValidationEvidenceKind.AutomatedFixturesOnly` and are NEVER called "Validated" in
+  docs or UI. `ValidationResult.AllPhasesPassed` requires every phase to be recorded and passed.
+
+## ADR-075: Validation matrix / report format
+
+- Matrix rows are `ValidationTarget` (release/build range/edition/architecture/language/image
+  format/media type); cells are `ValidationResult` (per-phase PASS/FAIL, evidence kind, provenance,
+  notes). Reports export as JSON + human-readable Markdown to `validation/` — metadata only, never
+  giant binaries. Initial targets: Tier A = 25H2 Pro zh-CN + en-US x64; Tier B = Home/Education/
+  Enterprise; Tier C = 24H2, ESD, multi-index Consumer/Business.
+
+## ADR-076: Unknown future Windows build policy
+
+- A build newer than the validated matrix (>= 27000 floor, or otherwise unclassified) degrades to
+  Windows11_UnknownNewer → SupportedWithWarnings with an explicit message ("此 Windows 版本尚未经过
+  WinForge 完整验证。可以继续，但建议使用保守配置。"). Never blocked unless a concrete incompatibility
+  is detected; risky unverified operations stay disabled where appropriate; safe generic operations
+  remain available.
+
+## ADR-077: Edition / language compatibility policy
+
+- Edition capability facts (Sandbox/Hyper-V/RDP host/BitLocker/Pro features) are modeled per
+  EditionId; edition-gated operations are never shown as universally valid (badge "专业版及以上可用"
+  style). Language matching uses stable identities only; localized strings are display-only. Media
+  classification never overclaims "official" — standard layout ⇒ MicrosoftOfficialLike wording.
+
+## ADR-078: Compatibility preflight + safety invariants
+
+- After ISO inspection the workflow shows a concise compatibility status (release · status) with
+  warnings/blockers inline and advanced detail behind the surface. Blocking examples: unsupported
+  architecture, no usable install image, missing boot.wim, unreadable metadata. Warnings (future
+  build, modified media, untested edition) never auto-block. Catalog safety invariants (update
+  services, Defender, core drivers, Store) are enforced by automated assertions.

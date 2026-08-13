@@ -491,6 +491,26 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ---
 
+## Phase 13 — Compatibility & Real-World Validation Matrix
+
+- **Status:** IN PROGRESS — **COMPATIBILITY FOUNDATION IMPLEMENTED (2026-08-12)** /
+  PENDING REAL MEDIA + VM VALIDATION (branch `phase/13-compatibility-matrix`; NOT merged).
+- **Goal:** turn the single-image proof into a formal compatibility + real-world validation
+  system: detect release/build/edition/language/architecture/format/media BEFORE destructive
+  work; durable matrix; VM install validation; clear user-facing status; future releases
+  regression-testable against the matrix.
+- **Implemented (Stage 13.x foundation):** compatibility model + rule engine; release classifier
+  (24H2/25H2/unknown-newer/older) with graceful future-build degradation; edition capability
+  facts; language stable-identity policy; WIM/ESD/SWM detection; multi-index enumeration +
+  index persistence; media classification (never overclaims "official"); compatibility preflight
+  UI after ISO inspection; blocking-vs-warning rules; validation matrix model + initial targets
+  (Tier A/B/C); JSON/Markdown validation report export with Validated-vs-Automated separation;
+  safety invariants (Update/Defender/drivers/Store) asserted; synthetic fixtures; docs/
+  COMPATIBILITY.md; ADR-073..078.
+- **Acceptance (remaining):** baseline VM validation record (25H2 Pro zh-CN x64, real ISO →
+  workflow → generated ISO → VM install: UEFI boot/Setup/OOBE/desktop/Update/Defender/Store/
+  recovery) must be created before Phase 13 close; Tier A en-US then Tier B/C incrementally.
+
 ## Phase 12 — Workspace Lifecycle & Disk Safety
 
 - **Status:** **COMPLETED — REAL DESKTOP VALIDATION — PASSED** (2026-08-12; Stages 12.1–12.7 all

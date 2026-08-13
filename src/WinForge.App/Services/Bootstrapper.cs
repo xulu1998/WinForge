@@ -60,6 +60,11 @@ public static class Bootstrapper
         services.AddSingleton<IFilePicker, WindowsFilePicker>();
         services.AddSingleton<IFileLauncher, WindowsFileLauncher>();
 
+        // Phase 13 — Compatibility model (detection + preflight + matrix).
+        services.AddSingleton<WinForge.Core.Compatibility.CompatibilityRuleEngine>();
+        services.AddSingleton<WinForge.Core.Compatibility.IImageCompatibilityService,
+            WinForge.Infrastructure.Compatibility.ImageCompatibilityService>();
+
         // Phase 3 — WIM Engine (Step 3.1, read-only durable workspace)
         services.AddSingleton<IImageWorkspaceFactory, ImageWorkspaceFactory>();
         services.AddSingleton<IWimService, WimService>();
