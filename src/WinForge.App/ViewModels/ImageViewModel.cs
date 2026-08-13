@@ -198,6 +198,7 @@ public sealed class ImageViewModel : ViewModelBase
             UpdateWorkspace(value);
             InvalidatePreparedServicingWorkspace();
             Refresh();
+            NotifyCompatibility(); // edition-specific facts update immediately (no re-detect)
         }
     }
 
@@ -258,7 +259,24 @@ public sealed class ImageViewModel : ViewModelBase
     public WinForge.Core.Compatibility.ImageCompatibilityProfile? CompatibilityProfile
     {
         get => _compatibility;
-        private set => SetField(ref _compatibility, value);
+        private set
+        {
+            if (SetField(ref _compatibility, value))
+            {
+                NotifyCompatibility();
+            }
+        }
+    }
+
+    private void NotifyCompatibility()
+    {
+        OnPropertyChanged(nameof(HasCompatibilityProfile));
+        OnPropertyChanged(nameof(CompatibilityStatusText));
+        OnPropertyChanged(nameof(HasCompatibilityWarnings));
+        OnPropertyChanged(nameof(HasCompatibilityBlockers));
+        OnPropertyChanged(nameof(CompatibilityDetailsText));
+        OnPropertyChanged(nameof(CompatibilityWarningsText));
+        OnPropertyChanged(nameof(CompatibilityBlockersText));
     }
 
     /// <summary>Concise preflight status line (e.g. "Windows 11 25H2 · Pro · x64 · zh-CN · WIM").</summary>
@@ -267,10 +285,14 @@ public sealed class ImageViewModel : ViewModelBase
         get
         {
             var p = _compatibility;
-            if (p is null || string.IsNullOrWhiteSpace(p.EditionId))
+            if (p is null)
             {
-                return L("Compat.NotEvaluated", "兼容性未评估");
+                return string.Empty; // section hidden before detection
             }
+
+            var effectiveEditionId = SelectedEdition?.EditionId ?? p.EditionId;
+            var effectiveIndex = SelectedEdition?.Index ?? p.SelectedIndex;
+            var effectiveLanguage = SelectedEdition?.DefaultLanguage ?? p.DefaultLanguage;
 
             var release = p.Release switch
             {
@@ -294,8 +316,24 @@ public sealed class ImageViewModel : ViewModelBase
         }
     }
 
+    public bool HasCompatibilityProfile => _compatibility is not null;
     public bool HasCompatibilityWarnings => _compatibility?.HasWarnings ?? false;
     public bool HasCompatibilityBlockers => _compatibility?.HasBlockers ?? false;
+
+    /// <summary>Localized warning-finding summary (Stage 13.10).</summary>
+    public string CompatibilityWarningsText
+    {
+        get
+        {
+            var warnings = _compatibility?.Findings.Where(f => f.Severity == WinForge.Core.Compatibility.CompatibilitySeverity.Warning).ToList();
+            if (warnings is null || warnings.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(Environment.NewLine, warnings.Select(f => "⚠ " + f.Message));
+        }
+    }
 
     /// <summary>Localized blocking-finding summary (Stage 13.10).</summary>
     public string CompatibilityBlockersText
@@ -321,14 +359,17 @@ public sealed class ImageViewModel : ViewModelBase
                 return string.Empty;
             }
 
+            var effectiveEditionId = SelectedEdition?.EditionId ?? p.EditionId;
+            var effectiveIndex = SelectedEdition?.Index ?? p.SelectedIndex;
+            var effectiveLanguage = SelectedEdition?.DefaultLanguage ?? p.DefaultLanguage;
             var parts = new System.Collections.Generic.List<string>
             {
                 $"Build: {p.Build?.ToString() ?? "?"}",
-                $"Index: {p.SelectedIndex}/{p.ImageCount}",
-                $"Edition: {p.EditionId ?? "?"}",
+                $"Index: {effectiveIndex}/{p.ImageCount}",
+                $"Edition: {effectiveEditionId ?? "?"}",
                 $"Arch: {p.Architecture ?? "?"}",
                 $"Format: {p.ImageFormat}",
-                $"Lang: {string.Join(",", p.AvailableLanguages)}",
+                $"Lang: {effectiveLanguage ?? string.Join(",", p.AvailableLanguages)}",
             };
             return string.Join("  ·  ", parts);
         }

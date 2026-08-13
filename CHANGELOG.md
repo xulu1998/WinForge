@@ -3,6 +3,26 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 13 — Compatibility preflight UI real-desktop blocker FIXED (2026-08-12)
+
+- Real desktop: after 检测 on Win11_25H2_Chinese_Simplified_x64_v2.iso (10.0.26200, zh-CN, Pro index 4)
+  the legacy inspection data showed but the Phase 13 compatibility card was COMPLETELY absent.
+- Root cause (ADR-079): the profile setter used SetField, which only notified "CompatibilityProfile",
+  but the View binds to DERIVED properties (CompatibilityStatusText / CompatibilityDetailsText /
+  HasCompatibility*) — those were never notified, so the section stayed empty. The earlier notify
+  block was wired into the SelectedEdition setter (which runs BEFORE the profile is assigned and
+  clears the selection), so it never fired for the freshly evaluated profile.
+- Fix: CompatibilityProfile setter + SelectedEdition setter both call NotifyCompatibility() for all
+  derived properties; the section is gated by HasCompatibilityProfile (hidden pre-detection) with
+  details ALWAYS visible once detected (not behind an advanced page); status wording stays honest —
+  "支持" (workflow-validated baseline; VM install validation still pending, never "完整验证通过").
+  Edition/index/language details reflect the user-selected edition and refresh immediately on
+  selection change (no re-detect): e.g. Home → Core facts, Pro → Professional + Index 4.
+- Regression: Stage13PreflightUiTests (10) — real-like 26200 Pro zh-CN fixture → profile + Supported;
+  VM receives it after detection; REAL WPF render shows the section with status + details;
+  Build 26200 / x64 / zh-CN / Wim / Index 4 render; edition switching refreshes; warning / blocker /
+  not-detected states; zh-CN + en-US. Full suite **808 pass (Core 53, App 755), 0 errors, 0 warnings**.
+
 ## Phase 13 — Compatibility & Real-World Validation Matrix (2026-08-12, foundation)
 
 - Compatibility model (CompatibilityStatus/Severity/ImageCompatibilityProfile/Findings),

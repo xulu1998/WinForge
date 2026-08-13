@@ -1821,3 +1821,23 @@ All decisions are `ACCEPTED` unless noted.
   architecture, no usable install image, missing boot.wim, unreadable metadata. Warnings (future
   build, modified media, untested edition) never auto-block. Catalog safety invariants (update
   services, Defender, core drivers, Store) are enforced by automated assertions.
+
+
+## ADR-079: Compatibility preflight UI visibility — notify derived properties, reflect selected edition
+
+- **Context:** real desktop: after ISO detection the legacy inspection data showed but the Phase 13
+  compatibility card was completely absent.
+- **Root cause:** the profile setter used SetField (notifies only "CompatibilityProfile"), but the
+  View binds to DERIVED properties (CompatibilityStatusText / CompatibilityDetailsText /
+  HasCompatibilityProfile / HasCompatibilityWarnings / HasCompatibilityBlockers / WarningsText /
+  BlockersText); the earlier notify block lived in the SelectedEdition setter, which executes BEFORE
+  the profile assignment (InspectAsync clears the selection first), so the derived properties were
+  never notified after evaluation.
+- **Decision:** NotifyCompatibility() fires from BOTH the profile setter and the SelectedEdition
+  setter. The section is gated by HasCompatibilityProfile (collapsed pre-detection) with details
+  always visible once detected. Edition/index/language shown in the card reflect the USER-SELECTED
+  edition and update immediately on selection change (no second Detect). Status wording is honest:
+  "支持" for the workflow-validated baseline; VM installation validation pending — never
+  "完整验证通过" until the validation report exists (ADR-074).
+- **Consequences:** the compatibility card is visible on real detection, refreshable by edition
+  selection, and strictly honest about validated-vs-pending status.
