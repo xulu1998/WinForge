@@ -101,9 +101,19 @@ public sealed class ProfileDeltaReport
     /// <summary>Profile-driven changes (AutoApply + Recommended).</summary>
     public int ChangeCount => AutoApply + Recommended;
 
-    /// <summary>Per-operation-type counts over ALL present items (incl. kept/blocked).</summary>
+    /// <summary>
+    /// Stage 15.2 (ADR-095 §2): profile-driven EXECUTABLE changes (AutoApply +
+    /// Recommend only) by operation type. Known-but-unsupported inventory (e.g.
+    /// Capability / CBS) never looks like a planned operation here. The old
+    /// Stage 15.1 semantics (every present item) was misleading — it duplicated
+    /// InventoryBySource; use <see cref="ProfileInventoryAccounting.BySource"/> for
+    /// inventory source counts.
+    /// </summary>
     public IReadOnlyDictionary<ExecutionOperationType, int> ByOperationType { get; init; } =
         new Dictionary<ExecutionOperationType, int>();
+
+    /// <summary>Same as <see cref="ByOperationType"/> — explicit v2 schema name.</summary>
+    public IReadOnlyDictionary<ExecutionOperationType, int> PlanChangesByOperationType => ByOperationType;
 
     public IReadOnlyList<ProfileExecutionItem> Items { get; init; } = new List<ProfileExecutionItem>();
 
@@ -167,6 +177,103 @@ public sealed class ProfilePlanSubject
             ExecutionSupported = ExecutionSupportMatrix.IsExecutable(opType),
         };
     }
+
+    /// <summary>
+    /// Stage 15.2 (ADR-095 §7): subject for a curated-only inventory object —
+    /// curated knowledge (recommendation/risk/removal/dependencies) drives the
+    /// engine exactly like deep knowledge. Curated removal is Supported, so a
+    /// curated AppX trim can execute when the profile steers it.
+    /// </summary>
+    public static ProfilePlanSubject FromCurated(ComponentDefinition d, ComponentCategory category)
+    {
+        var opType = OperationTypeForCategory(category);
+        return new ProfilePlanSubject
+        {
+            LogicalId = d.Id,
+            DisplayName = d.Id,
+            RawIdentity = string.Empty,
+            Category = category,
+            OperationType = opType,
+            Action = OptimizationAction.Remove,
+            DefaultRecommendation = d.Recommendation,
+            Risk = d.Risk,
+            Removal = d.Removal,
+            IsPresent = true,
+            IsApplySupported = true,
+            Dependencies = d.Dependencies,
+            Protection = ComponentProtectionLevel.None,
+            Confidence = ClassificationConfidence.Curated,
+            ExecutionSupported = ExecutionSupportMatrix.IsExecutable(opType),
+        };
+    }
+
+    /// <summary>
+    /// Stage 15.2 (ADR-095 §7): subject for a non-inventory optimization
+    /// definition (Service / RegistryPolicy / Privacy / Personalization /
+    /// OptionalFeature). These participate in profile plans exactly like
+    /// inventory-derived candidates — deduplicated by canonical operation
+    /// identity in <see cref="ProfileCandidateService"/>.
+    /// </summary>
+    public static ProfilePlanSubject FromOptimization(OptimizationDefinition d)
+    {
+        var opType = OperationTypeForOptimization(d);
+        var category = CategoryForTab(d.Tab);
+        return new ProfilePlanSubject
+        {
+            LogicalId = d.Id,
+            DisplayName = d.Id,
+            RawIdentity = string.Empty,
+            Category = category,
+            OperationType = opType,
+            Action = d.Action == OptimizationAction.Unknown ? OptimizationAction.Disable : d.Action,
+            DefaultRecommendation = d.Recommendation,
+            Risk = d.Risk,
+            Removal = d.Removal,
+            IsPresent = true,
+            IsApplySupported = true,
+            Dependencies = d.Dependencies,
+            Protection = ComponentProtectionLevel.None,
+            Confidence = ClassificationConfidence.Curated,
+            ExecutionSupported = ExecutionSupportMatrix.IsExecutable(opType),
+        };
+    }
+
+    public static ExecutionOperationType OperationTypeForCategory(ComponentCategory category) => category switch
+    {
+        ComponentCategory.AppX => ExecutionOperationType.AppX,
+        ComponentCategory.Capability => ExecutionOperationType.Capability,
+        ComponentCategory.OptionalFeature => ExecutionOperationType.OptionalFeature,
+        ComponentCategory.CbsPackage => ExecutionOperationType.CbsPackage,
+        ComponentCategory.Service => ExecutionOperationType.Service,
+        _ => ExecutionOperationType.Other,
+    };
+
+    public static ExecutionOperationType OperationTypeForOptimization(OptimizationDefinition d)
+    {
+        if (d.Mechanism == OptimizationMechanism.ServiceStartup)
+        {
+            return ExecutionOperationType.Service;
+        }
+
+        return d.Tab switch
+        {
+            OptimizationTab.Apps => ExecutionOperationType.AppX,
+            OptimizationTab.WindowsComponents => ExecutionOperationType.OptionalFeature,
+            OptimizationTab.Services => ExecutionOperationType.Service,
+            OptimizationTab.Privacy => ExecutionOperationType.Privacy,
+            OptimizationTab.System => ExecutionOperationType.RegistryPolicy,
+            OptimizationTab.Personalization => ExecutionOperationType.Personalization,
+            _ => ExecutionOperationType.RegistryPolicy,
+        };
+    }
+
+    private static ComponentCategory CategoryForTab(OptimizationTab tab) => tab switch
+    {
+        OptimizationTab.Apps => ComponentCategory.AppX,
+        OptimizationTab.WindowsComponents => ComponentCategory.OptionalFeature,
+        OptimizationTab.Services => ComponentCategory.Service,
+        _ => ComponentCategory.Unknown,
+    };
 
     public static RecommendationLevel MapRecommendation(ComponentRecommendationKind r) => r switch
     {

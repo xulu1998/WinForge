@@ -686,3 +686,21 @@ change plans; manual overrides authoritative; localized per-profile preview UI a
 (ProfileViewModel.ProfilePreviewText + ProfileView). Deterministic six-profile comparison over
 the real-derived fixture; `WinForge.RealCapture` exports `profile-plans.json`. **1150 tests
 (Core 53, App 1097), 0 err/0 warn (Release, ordinary in-place).**
+
+## Phase 15 — Stage 15.2: Unified profile candidate stream + real plan accounting (2026-08-14)
+
+Real 25H2 profile-plans capture exposed four fixture-blind problems, all fixed (ADR-095):
+`ProfileCandidateService` builds ONE unified candidate stream — inventory objects (deep →
+curated → explicit exclusion bucket) + non-inventory optimization definitions — deduplicated by
+canonical Phase 12-style operation identity, with exact `ProfileInventoryAccounting`
+(Total = evaluated + every exclusion; 757 = 678 + 79, asserted, no double counting).
+`ProfileDeltaReport.ByOperationType` now counts EXECUTABLE changes only (AutoApply+Recommend);
+inventory source counts are `ProfileInventoryAccounting.BySource`; changeCount is defined once.
+The registry/privacy/personalization/service layer participates in plans (Office 0→22, Balanced
+3→17, Developer 6→24). Gaming vs DedicatedGaming differ on real media via `WiderMinimalSteer`
+(Low cloud→auto, Moderate productivity/communication→recommend, Moderate media→optional) plus
+aligned Dedicated catalog trims — real-like stream Gaming 28 vs Dedicated 30 (two policy actions).
+Unsupported "optional" is Blocked. UI preview rebuilt on the SAME GenerateDelta report (one source
+of truth). RealCapture exports profile-plans.json v2 (inventoryAccounting / decisionCounts /
+planChanges / semanticActionKeys / keptHighlights / blockedHighlights). **1162 tests (Core 53,
+App 1109), 0 err/0 warn (Release, ordinary in-place).**

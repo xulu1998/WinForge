@@ -116,6 +116,9 @@ public sealed class RecommendationContextService
 
     // ---- Part K — user overrides ----
 
+    /// <summary>Explicit user choices (manual toggles) — authoritative, never auto-applied (Part K).</summary>
+    public IReadOnlyCollection<string> UserOverrides => _userOverrides;
+
     /// <summary>Marks a logical id as explicitly chosen by the user (manual toggle).</summary>
     public void SetUserOverride(string logicalId)
     {

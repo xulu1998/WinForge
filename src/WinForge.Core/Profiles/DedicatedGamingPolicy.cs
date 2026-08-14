@@ -9,42 +9,66 @@ namespace WinForge.Core.Profiles;
 /// the full Gaming PC keep list (servicing, Windows Update, Defender, Store /
 /// winget, Gaming Services, Xbox ecosystem when enabled, runtimes, DirectX,
 /// audio, networking, GPU/display, input, USB, storage, shell/login, WinRE,
-/// boot) and only adds OPTIONAL suggestions — every change is user-confirmed.
+/// boot) and only adds OPTIONAL/RECOMMENDED suggestions — nothing is forced.
 ///
-/// Difference vs <see cref="GamingPcPolicy"/>: the OPTIONAL set is wider —
-/// moderate-risk consumer/media families become optional suggestions too
-/// (Gaming PC leaves those at their default "review" state). Nothing is forced,
-/// nothing is automatic beyond the same Low-risk consumer set.
+/// Difference vs <see cref="GamingPcPolicy"/> (Stage 15.2, ADR-095 §3 — real
+/// profile differentiation on real media, NOT cosmetic):
+///   - Low-risk cloud integration (OneDrive): Gaming PC keeps it optional
+///     (convenience); Dedicated Gaming AUTO-removes (still Low risk, curated,
+///     supported AppX removal).
+///   - Moderate productivity/communication apps: Gaming PC leaves them at the
+///     default (optional); Dedicated Gaming RECOMMENDS removal (user confirms —
+///     Moderate never auto-applies).
+///   - Moderate media: Dedicated suggests OPTIONAL removal (Gaming PC keeps the
+///     default convenience).
 /// </summary>
 public sealed class DedicatedGamingPolicy : GamingPcPolicy
 {
     public override GamingProfileKind Kind => GamingProfileKind.DedicatedGaming;
 
     /// <summary>
-    /// Dedicated Gaming's additional OPTIONAL suggestions (never automatic):
-    /// moderate-risk consumer content, phone integration, and media playback
-    /// apps. The Safety Gate still downgrades everything to user-confirmed.
+    /// Dedicated Gaming's wider minimal steer (never automatic beyond Low-risk
+    /// curated support; health/compatibility keep list fully inherited).
     /// </summary>
-    protected override GamingPolicyDecision? AdditionalOptional(DeepComponentKnowledge k)
+    protected override GamingPolicyDecision? WiderMinimalSteer(DeepComponentKnowledge k)
     {
-        if (k.Risk != ComponentRiskLevel.Moderate)
-        {
-            return null;
-        }
-
-        if (k.ProfileTag is ComponentProfileTag.ConsumerContent or ComponentProfileTag.PhoneIntegration)
+        // Low-risk cloud integration (OneDrive): Gaming PC keeps convenience
+        // (optional); Dedicated Gaming may auto-remove — Low risk + curated +
+        // supported AppX removal, safety gate unchanged.
+        if (k.Risk == ComponentRiskLevel.Low && k.ProfileTag == ComponentProfileTag.CloudStorage
+            && k.Recommendation is ComponentRecommendationKind.OptionalRemove
+                or ComponentRecommendationKind.RecommendedRemove
+                or ComponentRecommendationKind.ProfileDependent)
         {
             return new GamingPolicyDecision
             {
                 Kind = Kind,
-                Verdict = GamingVerdict.OptionalRemoveCandidate,
-                ReasonKey = k.ProfileTag == ComponentProfileTag.PhoneIntegration
-                    ? "Profile.Reason.Gaming.Remove.Phone"
-                    : "Profile.Reason.Gaming.Remove.Consumer",
+                Verdict = GamingVerdict.AutoRemoveCandidate,
+                ReasonKey = "Profile.Reason.Gaming.Dedicated.Optional.Cloud",
             };
         }
 
-        if (k.Function == ComponentFunctionCategory.Media)
+        // Moderate productivity/communication: Gaming PC leaves at the default
+        // (optional); Dedicated Gaming RECOMMENDS removal — Moderate maps to
+        // Recommend in the execution matrix, never automatic.
+        if (k.Risk == ComponentRiskLevel.Moderate && k.Protection != ComponentProtectionLevel.Protected
+            && (k.Function is ComponentFunctionCategory.Productivity or ComponentFunctionCategory.Communication)
+            && k.Recommendation is ComponentRecommendationKind.OptionalRemove
+                or ComponentRecommendationKind.ProfileDependent)
+        {
+            var family = k.Function == ComponentFunctionCategory.Productivity ? "Productivity" : "Communication";
+            return new GamingPolicyDecision
+            {
+                Kind = Kind,
+                Verdict = GamingVerdict.AutoRemoveCandidate,
+                ReasonKey = "Profile.Reason.Gaming.Dedicated.Optional." + family,
+            };
+        }
+
+        // Moderate media: Dedicated suggests OPTIONAL removal (never automatic).
+        if (k.Risk == ComponentRiskLevel.Moderate && k.Function == ComponentFunctionCategory.Media
+            && k.Recommendation is ComponentRecommendationKind.OptionalRemove
+                or ComponentRecommendationKind.ProfileDependent)
         {
             return new GamingPolicyDecision
             {

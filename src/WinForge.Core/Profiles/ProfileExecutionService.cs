@@ -133,7 +133,14 @@ public sealed class ProfileExecutionService
             };
             items.Add(item);
 
-            byType[subject.OperationType] = byType.TryGetValue(subject.OperationType, out var n) ? n + 1 : 1;
+            // Stage 15.2 (ADR-095 §2): ByOperationType counts PROFILE-DRIVEN
+            // EXECUTABLE CHANGES only (AutoApply + Recommend) — never the static
+            // inventory-source totals. Use ProfileInventoryAccounting.BySource for
+            // inventory source counts.
+            if (item.IsExecutableChange)
+            {
+                byType[subject.OperationType] = byType.TryGetValue(subject.OperationType, out var n) ? n + 1 : 1;
+            }
 
             switch (disposition)
             {

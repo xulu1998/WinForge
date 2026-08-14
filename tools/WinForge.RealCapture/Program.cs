@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WinForge.Core.ComponentIntelligence;
 using WinForge.Core.Models;
+using WinForge.Core.Profiles;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.ComponentIntelligence;
 using WinForge.Infrastructure.Customization;
@@ -218,7 +219,7 @@ public static class Program
                     Items = gamingCandidates,
                 });
                 await WriteJsonAsync(Path.Combine(options.OutDir, "real-derived-families.json"), BuildDerivedFixture(raw, metrics, deep));
-                await WriteJsonAsync(Path.Combine(options.OutDir, "profile-plans.json"), BuildProfilePlans(raw, deep));
+                await WriteJsonAsync(Path.Combine(options.OutDir, "profile-plans.json"), BuildProfilePlans(raw, deep, catalog));
 
                 PrintResults(metrics, unknownItems, families, gamingCandidates);
             }
@@ -656,48 +657,96 @@ public static class Program
         };
     }
 
-    // ---- Phase 15 Stage 15.1 — deterministic per-profile plan comparison on the
-    //      real captured inventory (ADR-094 §13). PLAN VALIDATION ONLY: nothing is
-    //      applied or built. Exact operation counts per primary profile. ----
+    // ---- Phase 15 Stage 15.2 — UNIFIED candidate stream + real plan accounting
+    //      (ADR-095). PLAN VALIDATION ONLY: nothing is applied or built. ----
 
-    private static ProfilePlansJson BuildProfilePlans(ComponentInventory raw, DeepComponentClassifier deep)
+    private static ProfilePlansJson BuildProfilePlans(
+        ComponentInventory raw, DeepComponentClassifier deep, IReadOnlyList<ComponentDefinition> curatedCatalog)
     {
-        var subjects = raw.Categories
+        // 1. Inventory objects → deep subject, else curated subject, else an
+        //    explicit exclusion bucket (Unknown / UnsupportedSource).
+        var inventoryInputs = raw.Categories
             .SelectMany(c => c.Items)
-            .Select(i => (Item: i, K: deep.Classify(i.RawIdentity)))
-            .Where(x => x.K is not null)
-            .Select(x => WinForge.Core.Profiles.ProfilePlanSubject.FromKnowledge(
-                x.Item.RawIdentity, x.Item.Category, x.K!))
+            .Select(i => new ProfileInventoryInput
+            {
+                RawIdentity = i.RawIdentity,
+                Category = i.Category,
+                Deep = deep.Classify(i.RawIdentity),
+                Curated = ComponentMatcher.FindMatchingDefinition(i, curatedCatalog),
+            })
             .ToList();
+
+        // 2. Non-inventory optimization definitions (registry/privacy/
+        //    personalization/service) — the profile overrides target these.
+        var optimizations = new WinForge.Infrastructure.Customization.OptimizationCatalog().GetEntries();
+        var built = ProfileCandidateService.BuildCandidates(inventoryInputs, optimizations);
 
         var profiles = new WinForge.Infrastructure.Profiles.ProfileCatalog().GetProfiles();
         var service = new WinForge.Core.Profiles.ProfileExecutionService();
+        var present = built.Subjects.Select(s => s.LogicalId).ToHashSet(StringComparer.Ordinal);
         var reports = service.GenerateAllPrimaries(
-            subjects,
+            built.Subjects,
             new HashSet<WinForge.Core.Profiles.GamingExtra>(),
             new HashSet<string>(),
-            new HashSet<string>(),
+            present,
             profiles);
 
         return new ProfilePlansJson
         {
             Media = "Win11_25H2_zh-CN_x64",
-            Note = "Deterministic per-primary-profile plan summaries over the real captured inventory (plan validation only; nothing applied/built).",
+            Note = "Unified candidate stream (inventory deep+curated + optimization definitions, canonical dedup) — exact per-profile v2 plan summaries over the real captured inventory (plan validation only; nothing applied/built).",
+            Inventory = ToAccountingJson(built.Accounting),
+            OptimizationCandidates = built.OptimizationCandidates,
+            OptimizationDuplicates = built.OptimizationDuplicates,
             Profiles = reports.Select(r => new ProfilePlanJson
             {
                 ProfileId = r.ProfileId,
-                AutoApply = r.AutoApply,
-                Recommended = r.Recommended,
-                Optional = r.Optional,
-                Kept = r.Kept,
-                Blocked = r.Blocked,
-                ChangeCount = r.ChangeCount,
-                ByOperationType = r.ByOperationType
-                    .OrderBy(kv => kv.Key.ToString(), StringComparer.Ordinal)
-                    .ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
+                InventoryAccounting = ToAccountingJson(built.Accounting),
+                DecisionCounts = new ProfileDecisionCountsJson
+                {
+                    AutoApply = r.AutoApply,
+                    Recommended = r.Recommended,
+                    Optional = r.Optional,
+                    Kept = r.Kept,
+                    Blocked = r.Blocked,
+                    NotApplicable = r.NotApplicable,
+                },
+                PlanChanges = new ProfilePlanChangesJson
+                {
+                    Total = r.ChangeCount,
+                    ByOperationType = r.ByOperationType
+                        .OrderBy(kv => kv.Key.ToString(), StringComparer.Ordinal)
+                        .ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
+                },
+                SemanticActionKeys = r.ChangeKeys.OrderBy(k => k, StringComparer.Ordinal).ToList(),
+                KeptHighlights = r.Items
+                    .Where(i => i.Disposition == ProfileDisposition.Keep)
+                    .Take(6)
+                    .Select(i => i.DisplayName)
+                    .ToList(),
+                BlockedHighlights = r.Items
+                    .Where(i => i.Disposition == ProfileDisposition.Blocked)
+                    .Take(4)
+                    .Select(i => i.DisplayName)
+                    .ToList(),
             }).ToList(),
         };
     }
+
+    private static ProfileInventoryAccountingJson ToAccountingJson(ProfileInventoryAccounting a) => new()
+    {
+        TotalInventory = a.TotalInventory,
+        EvaluatedForProfile = a.EvaluatedForProfile,
+        CuratedOutsideDeepInventory = a.CuratedOutsideDeepInventory,
+        ExcludedUnknownKnowledge = a.ExcludedUnknownKnowledge,
+        ExcludedUnsupportedSource = a.ExcludedUnsupportedSource,
+        ExcludedFilteredDuplicate = a.ExcludedFilteredDuplicate,
+        ExcludedNotApplicable = a.ExcludedNotApplicable,
+        ExcludedOther = a.ExcludedOther,
+        BySource = a.BySource
+            .OrderBy(kv => kv.Key.ToString(), StringComparer.Ordinal)
+            .ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
+    };
 
     private static string BucketOf(ClassificationCoverageMetrics metrics, string rawIdentity)
         => metrics.Buckets.TryGetValue(rawIdentity, out var bucket) ? bucket : "Unknown";

@@ -1026,6 +1026,9 @@
   <data name="Profile.Reason.Gaming.Optional.Developer" xml:space="preserve"><value>可选：仅在你不用开发工具时移除</value></data>
   <data name="Profile.Reason.Gaming.Optional.Virtualization" xml:space="preserve"><value>可选：仅在你不用虚拟化（WSL / Hyper-V）时移除</value></data>
   <data name="Profile.Reason.Gaming.Optional.Media" xml:space="preserve"><value>可选：仅在你不用此媒体应用时移除</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Cloud" xml:space="preserve"><value>专精游戏配置移除云集成（OneDrive）— 专精游戏机不需要</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Productivity" xml:space="preserve"><value>专精游戏配置建议移除该生产力应用 — 若仍需要请保留</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Communication" xml:space="preserve"><value>专精游戏配置建议移除该通信应用 — 若仍需要请保留</value></data>
   <data name="Profile.Reason.Gaming.Gate.UserOverride" xml:space="preserve"><value>已保留你的手动选择 — 配置不会更改</value></data>
   <data name="Profile.Reason.Gaming.Gate.Unsupported" xml:space="preserve"><value>无安全执行机制 — 分类不代表可移除</value></data>
   <data name="Profile.Reason.Gaming.Gate.Protected" xml:space="preserve"><value>受保护的系统基础组件 — 绝不自动移除</value></data>
@@ -1051,6 +1054,7 @@
   <data name="Profile.Reason.Office.Meetings" xml:space="preserve"><value>办公稳定配置保留会议与协作应用</value></data>
   <data name="Profile.Reason.Office.OneDrive" xml:space="preserve"><value>办公稳定配置保留 OneDrive 同步</value></data>
   <data name="Profile.Reason.Office.Printing" xml:space="preserve"><value>办公稳定配置保留打印与扫描支持</value></data>
+  <data name="Profile.Reason.Office.Consumer" xml:space="preserve"><value>办公稳定配置移除商务工作站不需要的消费内容</value></data>
   <data name="Profile.Reason.Office.Privacy" xml:space="preserve"><value>办公稳定应用低风险隐私默认</value></data>
   <data name="Profile.Reason.Office.RemoteAssist" xml:space="preserve"><value>办公稳定配置保留远程协助</value></data>
   <data name="Profile.Reason.Office.UI" xml:space="preserve"><value>办公稳定减少开始菜单建议</value></data>

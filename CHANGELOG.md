@@ -3,6 +3,44 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 15 — Stage 15.2: Real profile differentiation + plan accounting fix (2026-08-14)
+
+- **Real 25H2 profile-plans capture exposed fixture-blind product problems; all fixed (ADR-095).**
+- **757 → 674 accounting explained**: RealCapture previously fed ONLY deep-classified inventory
+  subjects — 79 Unknown + 4 curated-but-not-deep AppX (83 objects) were silently dropped. New
+  `ProfileCandidateService` builds ONE unified candidate stream (inventory: deep → curated →
+  explicit exclusion bucket; + non-inventory optimization definitions) with exact
+  `ProfileInventoryAccounting` — invariant Total = evaluated + every exclusion, asserted:
+  authoritative 757 = 678 evaluated (645 deep + 33 curated) + 79 Unknown + 0 other.
+- **byOperationType fixed**: now counts EXECUTABLE profile changes (AutoApply + Recommend) by
+  operation type; the old identical-everywhere inventory-source totals moved to
+  `InventoryBySource` (`ProfileInventoryAccounting.BySource`). changeCount = AutoApply +
+  Recommended, one definition across fixture tests / RealCapture / UI preview / Review plan.
+- **Non-inventory layer integrated**: registry/privacy/personalization/service optimization
+  definitions now participate in profile plans (canonical Phase 12-style dedup). Office real
+  changeCount 0 → meaningful conservative delta (privacy + Solitaire/GetHelp/FeedbackHub/
+  BingNews/BingSearch/DevHome/SpotlightFeatures trims; printing/OneDrive/Teams/QuickAssist kept);
+  Balanced 3 → real baseline (+SpotlightFeatures); Developer 6 → 24 with registry/privacy actions
+  (Dev Home kept).
+- **Gaming vs DedicatedGaming now differ on real media**: DedicatedGaming policy `WiderMinimalSteer`
+  — Low cloud integration (OneDrive) auto-removed (Low/curated/supported), Moderate productivity/
+  communication RECOMMENDED (never automatic), Moderate media optional; the Dedicated catalog now
+  carries the same trims as Gaming PC (its 7-keep-only list made it LESS aggressive once the
+  non-inventory layer arrived). Real-like stream: Gaming changes=28 vs DedicatedGaming=30 —
+  exactly two policy-driven semantic actions (AppX|OneDrive|AutoApply, AppX|Teams|Recommend).
+- **Unsupported "optional" is now Blocked** (an optional suggestion must always be executable);
+  safety gate otherwise unchanged; no new destructive execution (Capability/CBS/Driver still
+  NOT supported).
+- **UI preview = same source of truth**: ProfileViewModel preview is rebuilt on
+  ProfileExecutionService.GenerateDelta over the app's knowledge rows — identical counts to
+  RealCapture profile-plans.json v2; no separate UI counting logic.
+- **profile-plans.json v2**: per profile inventoryAccounting (total/evaluated/curatedOutsideDeep/
+  excludedUnknown/Unsupported/Duplicate/NotApplicable/Other/bySource), decisionCounts, planChanges
+  (total + byOperationType), semanticActionKeys, keptHighlights (≤6), blockedHighlights (≤4).
+- **1162 automated tests pass (Core 53, App 1109), 0 errors, 0 warnings (Release)** — ordinary
+  in-place build/test. ADR-095 + docs/PROFILE-EXECUTION.md updated. REAL-DESKTOP VALIDATION
+  REQUIRED: rerun the elevated RealCapture CLI for the new profile-plans.json.
+
 ## Phase 15 — Stage 15.1: Profile Execution & Safe Execution Matrix (2026-08-14)
 
 - **Profiles now produce clearly different, supported execution plans.** New Core

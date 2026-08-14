@@ -1028,6 +1028,9 @@
   <data name="Profile.Reason.Gaming.Optional.Developer" xml:space="preserve"><value>Optional: remove only if you do not use developer tools</value></data>
   <data name="Profile.Reason.Gaming.Optional.Virtualization" xml:space="preserve"><value>Optional: remove only if you do not use virtualization (WSL / Hyper-V)</value></data>
   <data name="Profile.Reason.Gaming.Optional.Media" xml:space="preserve"><value>Optional: remove only if you do not use this media app</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Cloud" xml:space="preserve"><value>Dedicated Gaming removes cloud integration (OneDrive) — not required for a dedicated gaming machine</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Productivity" xml:space="preserve"><value>Dedicated Gaming recommends removing this productivity app — keep it if you still use it</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Communication" xml:space="preserve"><value>Dedicated Gaming recommends removing this communication app — keep it if you still use it</value></data>
   <data name="Profile.Reason.Gaming.Gate.UserOverride" xml:space="preserve"><value>Manual choice preserved — not changed by the profile</value></data>
   <data name="Profile.Reason.Gaming.Gate.Unsupported" xml:space="preserve"><value>No safe execution mechanism — classification is not removal support</value></data>
   <data name="Profile.Reason.Gaming.Gate.Protected" xml:space="preserve"><value>Protected system infrastructure — never auto-removed</value></data>
@@ -1053,6 +1056,7 @@
   <data name="Profile.Reason.Office.Meetings" xml:space="preserve"><value>Office keeps meeting / collaboration apps</value></data>
   <data name="Profile.Reason.Office.OneDrive" xml:space="preserve"><value>Office keeps OneDrive sync</value></data>
   <data name="Profile.Reason.Office.Printing" xml:space="preserve"><value>Office keeps printing and scanning support</value></data>
+  <data name="Profile.Reason.Office.Consumer" xml:space="preserve"><value>Office removes consumer content that business workstations do not need</value></data>
   <data name="Profile.Reason.Office.Privacy" xml:space="preserve"><value>Office applies low-risk privacy defaults</value></data>
   <data name="Profile.Reason.Office.RemoteAssist" xml:space="preserve"><value>Office keeps remote assistance</value></data>
   <data name="Profile.Reason.Office.UI" xml:space="preserve"><value>Office reduces start suggestions</value></data>

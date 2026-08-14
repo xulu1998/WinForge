@@ -511,7 +511,30 @@ Phased development plan for WinForge. Each phase records its **Status**,
   Office auto=5 · Lightweight auto=24 (Lightweight most active but safe — no CBS/driver/
   servicing removal). `WinForge.RealCapture` exports `profile-plans.json`. **1150 tests
   (Core 53, App 1097), 0 err/0 warn (Release, ordinary in-place).**
-- **Stage 15.2 (recommended next):** wire the delta reports into the Customize/Review plan flow
+- **Stage 15.2 — Real profile differentiation + plan accounting fix (implementation ready,
+  ADR-095):** the real 25H2 profile-plans capture exposed fixture-blind problems and fixed all
+  of them. (1) **757→674 accounting explained + fixed**: `ProfileCandidateService` builds ONE
+  unified candidate stream — inventory objects (deep → curated → explicit exclusion bucket) +
+  non-inventory optimization definitions — with exact `ProfileInventoryAccounting`
+  (Total = evaluated + every exclusion; 757 = 678 evaluated + 79 Unknown, no unexplained loss).
+  (2) **byOperationType fixed**: now counts EXECUTABLE changes (AutoApply+Recommend) only;
+  inventory source counts are `InventoryBySource` (`ProfileInventoryAccounting.BySource`);
+  changeCount = AutoApply+Recommended everywhere (fixture / RealCapture / UI / Review).
+  (3) **non-inventory layer integrated**: registry/privacy/personalization/service definitions
+  now participate — Office changeCount 0→22 (meaningful conservative delta: privacy + consumer
+  trims, keeps printing/OneDrive/Teams), Balanced 3→17 baseline, Developer 6→24 with registry/
+  privacy actions. (4) **Gaming != DedicatedGaming on real media**: DedicatedGaming policy
+  `WiderMinimalSteer` (Low cloud→auto, Moderate productivity/communication→recommend,
+  Moderate media→optional) + Dedicated catalog now carries the same trims as Gaming PC; real-like
+  stream: Gaming changes=28 vs DedicatedGaming=30 with exactly two policy-driven semantic
+  actions (OneDrive auto, Teams recommend). Dedup by canonical Phase 12 operation identity;
+  unsupported "optional" now Blocked; UI preview rebuilt on the SAME GenerateDelta report.
+  `profile-plans.json` upgraded to v2 (inventoryAccounting / decisionCounts / planChanges /
+  semanticActionKeys / keptHighlights / blockedHighlights). **1162 tests (Core 53, App 1109),
+  0 err/0 warn (Release, ordinary in-place).**
+- **Stage 15.2 REAL-DESKTOP VALIDATION REQUIRED**: rerun the elevated RealCapture CLI
+  (same command as Phase 14) and review the new `profile-plans.json` only.
+- **Stage 15.3 (recommended next):** wire the delta reports into the Customize/Review plan flow
   (profile-managed auto-apply end-to-end), per-profile operation-type execution details, and the
   real-image `profile-plans.json` capture on the 25H2 ISO.
 

@@ -1,0 +1,112 @@
+{
+  "media": "Win11_25H2_zh-CN_x64",
+  "note": "Deterministic per-primary-profile plan summaries over the real captured inventory (plan validation only; nothing applied/built).",
+  "generatedUtc": "2026-08-14T13:51:52.4788680Z",
+  "profiles": [
+    {
+      "profileId": "Balanced",
+      "autoApply": 3,
+      "recommended": 0,
+      "optional": 501,
+      "kept": 144,
+      "blocked": 26,
+      "changeCount": 3,
+      "byOperationType": {
+        "AppX": 40,
+        "Capability": 387,
+        "CbsPackage": 149,
+        "OptionalFeature": 98
+      }
+    },
+    {
+      "profileId": "Gaming",
+      "autoApply": 10,
+      "recommended": 0,
+      "optional": 81,
+      "kept": 557,
+      "blocked": 26,
+      "changeCount": 10,
+      "byOperationType": {
+        "AppX": 40,
+        "Capability": 387,
+        "CbsPackage": 149,
+        "OptionalFeature": 98
+      }
+    },
+    {
+      "profileId": "DedicatedGaming",
+      "autoApply": 10,
+      "recommended": 0,
+      "optional": 81,
+      "kept": 557,
+      "blocked": 26,
+      "changeCount": 10,
+      "byOperationType": {
+        "AppX": 40,
+        "Capability": 387,
+        "CbsPackage": 149,
+        "OptionalFeature": 98
+      }
+    },
+    {
+      "profileId": "Developer",
+      "autoApply": 6,
+      "recommended": 0,
+      "optional": 498,
+      "kept": 144,
+      "blocked": 26,
+      "changeCount": 6,
+      "byOperationType": {
+        "AppX": 40,
+        "Capability": 387,
+        "CbsPackage": 149,
+        "OptionalFeature": 98
+      }
+    },
+    {
+      "profileId": "Office",
+      "autoApply": 0,
+      "recommended": 0,
+      "optional": 504,
+      "kept": 144,
+      "blocked": 26,
+      "changeCount": 0,
+      "byOperationType": {
+        "AppX": 40,
+        "Capability": 387,
+        "CbsPackage": 149,
+        "OptionalFeature": 98
+      }
+    },
+    {
+      "profileId": "Lightweight",
+      "autoApply": 6,
+      "recommended": 11,
+      "optional": 488,
+      "kept": 143,
+      "blocked": 26,
+      "changeCount": 17,
+      "byOperationType": {
+        "AppX": 40,
+        "Capability": 387,
+        "CbsPackage": 149,
+        "OptionalFeature": 98
+      }
+    },
+    {
+      "profileId": "DedicatedMinimal",
+      "autoApply": 0,
+      "recommended": 21,
+      "optional": 476,
+      "kept": 143,
+      "blocked": 34,
+      "changeCount": 21,
+      "byOperationType": {
+        "AppX": 40,
+        "Capability": 387,
+        "CbsPackage": 149,
+        "OptionalFeature": 98
+      }
+    }
+  ]
+}

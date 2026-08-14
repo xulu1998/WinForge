@@ -106,8 +106,15 @@ public static class ProfileExecutionMatrix
 
         // ManualReview -> optional, user-confirmed suggestion. The engine's own
         // deterministic reason (e.g. Dedicated Gaming's media suggestion) is kept.
+        // Stage 15.2: an unsupported suggestion is BLOCKED, not "optional" — an
+        // optional item must always be executable (ADR-095 §4/§11).
         if (effective.Level == EffectiveRecommendationLevel.ManualReview)
         {
+            if (!executionSupported)
+            {
+                return (ProfileDisposition.Blocked, ExecutionSupportMatrix.BlockReasonKey);
+            }
+
             return (ProfileDisposition.Optional, ReasonFor(effective, "Profile.Reason.Execution.Optional"));
         }
 

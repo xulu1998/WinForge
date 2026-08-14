@@ -2216,3 +2216,75 @@ optimization and without unsafe "debloat everything".
   clearly differ; Lightweight is the most active but stays safe (no CBS/driver/servicing removal).
 - NO vanity counts: differences are explainable; no Stage 15.1 destructive CBS removal or driver
   stripping was introduced.
+
+## ADR-095: Unified Profile Candidate Stream and Real-Media Plan Accounting
+
+**Status:** Accepted (Phase 15 Stage 15.2).
+**Context:** The real 25H2 `profile-plans.json` capture exposed four product
+problems that fixture-level Stage 15.1 validation could not see:
+  1. **757 → 674 accounting gap**: only deep-classified inventory objects entered
+     profile-plan evaluation. 79 Unknown (no deep entry) + 4 curated-but-not-deep
+     AppX = 83 objects were silently dropped — no bucket, no explanation.
+  2. **byOperationType was inventory, not plan**: the per-type breakdown counted
+     every present subject (AppX 40 / Capability 387 / CbsPackage 149 /
+     OptionalFeature 98 = 674 in every profile) instead of actual planned
+     operations — identical across all profiles and indistinguishable from
+     InventoryBySource.
+  3. **The non-inventory layer was missing**: profile overrides target
+     registry/privacy/personalization/service definitions (Office's trims,
+     Balanced's privacy/UI trims, …). RealCapture fed ONLY deep inventory items,
+     so Office produced changeCount = 0, Balanced 3, Developer 6 — far below
+     their documented intent.
+  4. **Gaming == DedicatedGaming**: the only policy divergence (Moderate media
+     optional) was invisible in counts because default-optional items already
+     show as Optional in both; on the deep-only stream neither profile's
+     overrides fired.
+**Decision:**
+- **ProfileCandidateService (Core, pure)**: builds ONE unified candidate stream —
+  inventory objects (deep → curated → explicit exclusion bucket) + non-inventory
+  optimization definitions — deduplicated by canonical Phase 12-style operation
+  identity (`Service:name` / `OptionalFeature:name` / `Registry:hive:path:value` /
+  `AppX:id`). A curated-only inventory object is EVALUATED with curated knowledge
+  (never dropped); an object with neither deep nor curated knowledge lands in
+  ExcludedUnknownKnowledge.
+- **Exact accounting invariant** (ProfileInventoryAccounting): for ALL inventory
+  objects, TotalInventory = EvaluatedForProfile + CuratedOutsideDeepInventory +
+  ExcludedUnknownKnowledge + ExcludedUnsupportedSource + ExcludedFilteredDuplicate
+  + ExcludedNotApplicable + ExcludedOther — no double counting, no unexplained
+  loss. For the authoritative 757: evaluated 678 (645 deep + 33 curated), unknown
+  79, unsupported 0 → balanced. Optimization definitions are counted separately
+  (OptimizationCandidates / OptimizationDuplicates), never inside the 757.
+- **Metric split (§2)**: InventoryBySource = ProfileInventoryAccounting.BySource
+  (static evaluated counts per component category). PlanChangesByOperationType =
+  ProfileDeltaReport.ByOperationType, now EXECUTABLE CHANGES ONLY (AutoApply +
+  Recommend); known-but-unsupported Capability/CBS items are Blocked and never
+  look like planned operations. changeCount = AutoApply + Recommend (executable
+  by matrix construction).
+- **Gaming vs Dedicated on real media (§3)**: DedicatedGaming policy gains a
+  WiderMinimalSteer (before the generic optional set): Low cloud integration
+  (OneDrive) → AutoRemoveCandidate (auto — Low, curated, supported); Moderate
+  productivity/communication → AutoRemoveCandidate (Recommend — Moderate never
+  auto-applies); Moderate media → OptionalRemoveCandidate. The DedicatedGaming
+  profile catalog now carries the SAME trim/keep overrides as Gaming PC (its
+  previous 7-keep-only list silently made Dedicated LESS aggressive once the
+  non-inventory layer arrived). Real semantic difference: Dedicated ⊋ Gaming by
+  the two policy-driven changes — no fake differences, no count padding.
+- **Office / Balanced / Developer (§4–6)**: with the unified stream, the existing
+  overrides land on real media. Office additionally trims Solitaire/GetHelp/
+  FeedbackHub/BingNews/BingSearch/DevHome + SpotlightFeatures (Profile.Reason.
+  Office.Consumer/Privacy) → meaningful conservative delta; Balanced adds
+  SpotlightFeatures; keep lists unchanged (printing/OneDrive/Teams/etc.).
+- **Unsupported optional is Blocked (§4/§11)**: the matrix now returns Blocked
+  for an unsupported ManualReview item instead of a misleading "optional"
+  suggestion.
+- **UI same source of truth (§13)**: ProfileViewModel preview is rebuilt on
+  ProfileExecutionService.GenerateDelta over the app's own knowledge rows —
+  identical counts to RealCapture profile-plans.json v2; no separate UI counting.
+- **RealCapture v2 schema (§12)**: per profile: inventoryAccounting (total,
+  evaluated, curatedOutsideDeep, excludedUnknown/Unsupported/Duplicate/
+  NotApplicable/Other, bySource), decisionCounts (auto/recommended/optional/kept/
+  blocked/notApplicable), planChanges (total + byOperationType), semanticActionKeys,
+  keptHighlights (≤6), blockedHighlights (≤4).
+- NO new destructive execution: Capability/CBS/Driver removal remain NOT
+  supported; safety gate unchanged (Protected/Critical/High/heuristic rules
+  identical).

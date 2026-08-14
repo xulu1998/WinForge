@@ -120,3 +120,75 @@ A profile with fewer meaningful operations is better than one filled with
 speculative tweaks, unsafe deletions, redundant registry changes or placebo
 performance settings. No vanity counts: every profile difference is
 explainable. Unknown stays visible; known != removable.
+
+## Stage 15.2 — Unified candidate stream + real-media plan accounting (ADR-095)
+
+### Why the first real capture diverged from the fixture
+
+The Stage 15.2 real `profile-plans.json` (757 objects) showed fixture-level
+differentiation did NOT hold on real media. Root causes (all fixed):
+
+1. **757 → 674 accounting gap** — RealCapture fed ONLY deep-classified inventory
+   subjects. The missing 83 = 79 Unknown (no deep knowledge) + 4 curated-but-
+   not-deep AppX. They were silently dropped with no bucket. FIX: exact
+   `ProfileInventoryAccounting` — every object lands in exactly one bucket
+   (EvaluatedForProfile / CuratedOutsideDeepInventory / ExcludedUnknown /
+   ExcludedUnsupportedSource / ExcludedFilteredDuplicate / ExcludedNotApplicable /
+   ExcludedOther); invariant `Total = evaluated + exclusions` is asserted.
+   Authoritative 757: evaluated 678 (645 deep + 33 curated), unknown 79 → balanced.
+2. **byOperationType counted inventory, not operations** — every profile showed
+   AppX 40 / Capability 387 / CbsPackage 149 / OptionalFeature 98 (= 674). FIX:
+   `ByOperationType`/`PlanChangesByOperationType` now counts EXECUTABLE changes
+   (AutoApply + Recommend) only; inventory source counts live in
+   `ProfileInventoryAccounting.BySource` (InventoryBySource).
+3. **Non-inventory optimization layer missing** — Office trims
+   (AdvertisingId/TailoredExperiences/…), Balanced privacy/UI trims, Developer
+   telemetry/explorer trims target registry/privacy/personalization/service
+   definitions. RealCapture had none of them → Office changeCount = 0, Balanced 3,
+   Developer 6. FIX: `ProfileCandidateService.BuildCandidates` builds ONE stream
+   of inventory subjects + optimization-definition subjects, deduplicated by
+   canonical Phase 12-style operation identity. Office now produces a meaningful
+   conservative delta (>0, privacy + consumer trims); Balanced gets a real
+   baseline; Developer includes registry/privacy actions.
+4. **Gaming == DedicatedGaming** — the only policy divergence (Moderate media
+   optional) was invisible because default-optional items show as Optional in
+   both, and the deep-only stream never hit either profile's overrides. FIX:
+   DedicatedGaming policy gains `WiderMinimalSteer` — Low cloud integration
+   (OneDrive) → automatic (Low, curated, supported); Moderate
+   productivity/communication → RECOMMEND (never automatic); Moderate media →
+   optional. The DedicatedGaming catalog now carries the SAME trims as Gaming PC
+   (its 7-keep-only list made Dedicated LESS aggressive once the non-inventory
+   layer arrived). Real-like stream result: Gaming changes=28, DedicatedGaming=30
+   with exactly TWO policy-driven extra changes (AppX|OneDrive|AutoApply,
+   AppX|Teams|Recommend) — real semantics, no fake differences.
+
+### changeCount semantics (one definition everywhere)
+
+`changeCount = AutoApply + Recommended`, and both dispositions are by-construction
+executable (the matrix blocks unsupported changes and unsupported "optional"
+suggestions). Optional / Kept / Blocked never count as changes. The same report
+drives fixture tests, RealCapture `profile-plans.json`, the UI preview and the
+Review plan — one source of truth.
+
+### RealCapture profile-plans.json v2
+
+Per profile:
+
+```json
+{
+  "profileId": "Gaming",
+  "inventoryAccounting": { "totalInventory": 757, "evaluatedForProfile": 645,
+    "curatedOutsideDeepInventory": 33, "excludedUnknownKnowledge": 79,
+    "excludedUnsupportedSource": 0, "excludedFilteredDuplicate": 0,
+    "excludedNotApplicable": 0, "excludedOther": 0, "bySource": {...} },
+  "decisionCounts": { "autoApply": 22, "recommended": 6, "optional": 42,
+    "kept": 35, "blocked": 29, "notApplicable": 0 },
+  "planChanges": { "total": 28, "byOperationType": { "AppX": 13, "Privacy": 7, ... } },
+  "semanticActionKeys": ["AppX|OneDrive|AutoApply", ...],
+  "keptHighlights": [...], "blockedHighlights": [...]
+}
+```
+
+`semanticActionKeys` lets you verify MEANING (which real actions differ between
+profiles), not just counts. Exact real-media numbers require the elevated capture
+command; the fixture numbers above are plan-validation only.

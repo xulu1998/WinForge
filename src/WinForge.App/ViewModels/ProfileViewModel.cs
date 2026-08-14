@@ -109,6 +109,10 @@ public sealed class ProfileViewModel : ViewModelBase
     private readonly Func<IEnumerable<IRecommendationSubject>> _subjects;
     private readonly Action _recompute;
 
+    /// <summary>Stage 15.2 (ADR-095 §13): the preview uses the production planner —
+    /// one source of truth with RealCapture profile-plans.json.</summary>
+    private readonly ProfileExecutionService _executionService = new();
+
     private bool _isPreviewOpen;
 
     public ProfileViewModel(
@@ -349,81 +353,46 @@ public sealed class ProfileViewModel : ViewModelBase
             return;
         }
 
-        var auto = 0;
-        var recommended = 0;
-        var optional = 0;
-        var kept = 0;
-        var blocked = 0;
+        // Stage 15.2 (ADR-095 §13): ONE source of truth — the preview counts come
+        // from the SAME ProfileExecutionService.GenerateDelta + ProfileDeltaReport
+        // semantics as RealCapture profile-plans.json. There is no separate UI
+        // counting logic. Subjects are the app's own knowledge rows (all six
+        // Customize tabs, component + optimization layer).
+        var subjects = Subjects()
+            .Where(s => s.IsPresent)
+            .Select(ToPlanSubject)
+            .ToList();
+        var present = _ctx.PresentIds.Count > 0
+            ? _ctx.PresentIds
+            : subjects.Select(s => s.LogicalId).ToHashSet(StringComparer.Ordinal);
+        var report = _executionService.GenerateDelta(
+            profile, subjects, ExtractGamingExtras(_ctx.SelectedProfiles), _ctx.UserOverrides, present);
+
         var highlights = new List<string>();
-        var keptExamples = new List<string>();
-        var byType = new Dictionary<string, int>(StringComparer.Ordinal);
-
-        foreach (var s in Subjects())
+        foreach (var item in report.Items.Where(i => i.IsExecutableChange))
         {
-            if (!s.IsPresent)
+            if (highlights.Count >= 4)
             {
-                continue;
+                break;
             }
 
-            var eff = s.Effective;
-            var opType = MapTabToExecutionType(s.Tab);
-            var supported = WinForge.Core.Profiles.ExecutionSupportMatrix.IsExecutable(opType);
-            var (disposition, _) = WinForge.Core.Profiles.ProfileExecutionMatrix.Evaluate(
-                profile.Id, eff, WinForge.Core.ComponentIntelligence.ComponentProtectionLevel.None,
-                WinForge.Core.ComponentIntelligence.ClassificationConfidence.Curated, supported, isHeuristic: false);
-
-            byType[opType.ToString()] = byType.TryGetValue(opType.ToString(), out var n) ? n + 1 : 1;
-
-            switch (disposition)
-            {
-                case WinForge.Core.Profiles.ProfileDisposition.AutoApply:
-                    auto++;
-                    if (highlights.Count < 4 && !string.IsNullOrWhiteSpace(s.ReasonText))
-                    {
-                        highlights.Add("✓ " + s.DisplayName + " — " + s.ReasonText);
-                    }
-                    else if (highlights.Count < 4)
-                    {
-                        highlights.Add("✓ " + s.DisplayName);
-                    }
-
-                    break;
-                case WinForge.Core.Profiles.ProfileDisposition.Recommend:
-                    recommended++;
-                    if (highlights.Count < 4 && !string.IsNullOrWhiteSpace(s.ReasonText))
-                    {
-                        highlights.Add("✓ " + s.DisplayName + " — " + s.ReasonText);
-                    }
-
-                    break;
-                case WinForge.Core.Profiles.ProfileDisposition.Optional:
-                    optional++;
-                    break;
-                case WinForge.Core.Profiles.ProfileDisposition.Keep:
-                    kept++;
-                    if (keptExamples.Count < 6)
-                    {
-                        keptExamples.Add(s.DisplayName);
-                    }
-
-                    break;
-                case WinForge.Core.Profiles.ProfileDisposition.Blocked:
-                    blocked++;
-                    break;
-            }
+            var reason = ResolveReason(item.ReasonKey);
+            highlights.Add(string.IsNullOrWhiteSpace(reason)
+                ? "✓ " + item.DisplayName
+                : "✓ " + item.DisplayName + " — " + reason);
         }
 
         var lines = new List<string>
         {
-            $"{_loc["Profile.Preview.Automatic"]}: {auto}",
-            $"{_loc["Profile.Preview.Recommended"]}: {recommended}",
-            $"{_loc["Profile.Preview.Optional"]}: {optional}",
-            $"{_loc["Profile.Preview.Kept"]}: {kept}",
+            $"{_loc["Profile.Preview.Automatic"]}: {report.AutoApply}",
+            $"{_loc["Profile.Preview.Recommended"]}: {report.Recommended}",
+            $"{_loc["Profile.Preview.Optional"]}: {report.Optional}",
+            $"{_loc["Profile.Preview.Kept"]}: {report.Kept}",
         };
 
-        if (blocked > 0)
+        if (report.Blocked > 0)
         {
-            lines.Add($"{_loc["Profile.Preview.Blocked"]}: {blocked}");
+            lines.Add($"{_loc["Profile.Preview.Blocked"]}: {report.Blocked}");
         }
 
         if (highlights.Count > 0)
@@ -431,12 +400,17 @@ public sealed class ProfileViewModel : ViewModelBase
             lines.Add(string.Empty);
             lines.Add(_loc["Profile.Preview.Highlights"]);
             lines.AddRange(highlights);
-            if (auto + recommended > highlights.Count)
+            if (report.ChangeCount > highlights.Count)
             {
                 lines.Add("…");
             }
         }
 
+        var keptExamples = report.Items
+            .Where(i => i.Disposition == ProfileDisposition.Keep)
+            .Take(6)
+            .Select(i => i.DisplayName)
+            .ToList();
         if (keptExamples.Count > 0)
         {
             lines.Add(string.Empty);
@@ -444,6 +418,55 @@ public sealed class ProfileViewModel : ViewModelBase
         }
 
         ProfilePreviewText = string.Join(Environment.NewLine, lines);
+    }
+
+    private string ResolveReason(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return string.Empty;
+        }
+
+        var text = _loc[key];
+        return !string.IsNullOrWhiteSpace(text) && text != key ? text : string.Empty;
+    }
+
+    /// <summary>
+    /// Maps an app knowledge row to the SAME <see cref="ProfilePlanSubject"/> shape
+    /// the planner + RealCapture consume, so preview counts cannot drift from the
+    /// production delta report (ADR-095 §13).
+    /// </summary>
+    private static ProfilePlanSubject ToPlanSubject(IRecommendationSubject s)
+    {
+        var opType = MapTabToExecutionType(s.Tab);
+        var component = s as ComponentKnowledgeItem;
+        var optimization = s as OptimizationKnowledgeItem;
+        return new ProfilePlanSubject
+        {
+            LogicalId = s.LogicalId,
+            DisplayName = s.DisplayName,
+            Category = component?.SourceCategory ?? ComponentCategory.Unknown,
+            OperationType = opType,
+            Action = optimization is not null && optimization.Definition.Action != OptimizationAction.Unknown
+                ? optimization.Definition.Action
+                : OptimizationAction.Remove,
+            DefaultRecommendation = component is not null
+                ? component.RecommendationLevel
+                : optimization is not null ? optimization.Definition.Recommendation : RecommendationLevel.Unknown,
+            Risk = component is not null
+                ? component.RiskLevel
+                : optimization is not null ? optimization.Definition.Risk : RiskLevel.Unknown,
+            Removal = component?.Entry.Definition?.Removal
+                ?? optimization?.Definition.Removal ?? RemovalSupport.Unknown,
+            IsPresent = s.IsPresent,
+            IsApplySupported = s.IsSelectable,
+            Dependencies = component?.Entry.Definition?.Dependencies
+                ?? optimization?.Definition.Dependencies ?? new List<ComponentDependency>(),
+            DeepKnowledge = component?.DeepKnowledge,
+            Protection = WinForge.Core.ComponentIntelligence.ComponentProtectionLevel.None,
+            Confidence = WinForge.Core.ComponentIntelligence.ClassificationConfidence.Curated,
+            ExecutionSupported = WinForge.Core.Profiles.ExecutionSupportMatrix.IsExecutable(opType),
+        };
     }
 
     private static WinForge.Core.Profiles.ExecutionOperationType MapTabToExecutionType(OptimizationTab tab) => tab switch
