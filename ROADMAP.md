@@ -491,6 +491,30 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ---
 
+## Phase 15 — Profile Execution & Meaningful Optimization
+
+- **Status:** IN PROGRESS — **STAGE 15.1 COMPLETE (2026-08-14)**; branch
+  `phase/15-profile-execution`; NOT merged.
+- **Stage 15.1 — Profile Execution & Safe Execution Matrix (ADR-094):** profiles now produce
+  clearly different, supported execution plans. Core `ProfileExecutionMatrix` (AutoApply /
+  Recommend / Optional / Keep / Blocked / NotApplicable from knowledge + risk + protection +
+  confidence + execution support — never raw identity strings); `ExecutionSupportMatrix`
+  (auditable: AppX removal / registry policy / privacy / personalization / OptionalFeature
+  disable supported; service config conditional; Capability / CBS / Driver removal NOT
+  supported — KNOWN != REMOVABLE); `ProfileExecutionService` (inventory → engine + gaming
+  policy → matrix → `ProfileDeltaReport` → validated `CustomizationPlan`); `ProfilePlanValidator`
+  (remove+keep / duplicates / dependency-required / unsupported / protected); extras materially
+  change plans (Xbox/WSL/Print/Touch/Remote — regression-tested); manual overrides authoritative;
+  localized per-profile preview UI (Automatic/Recommended/Optional/Kept + bounded highlights);
+  deterministic six-profile comparison over the real-derived fixture (plan validation only):
+  Balanced auto=8 · Gaming PC auto=18 · Dedicated Gaming auto=8 · Developer auto=15 ·
+  Office auto=5 · Lightweight auto=24 (Lightweight most active but safe — no CBS/driver/
+  servicing removal). `WinForge.RealCapture` exports `profile-plans.json`. **1150 tests
+  (Core 53, App 1097), 0 err/0 warn (Release, ordinary in-place).**
+- **Stage 15.2 (recommended next):** wire the delta reports into the Customize/Review plan flow
+  (profile-managed auto-apply end-to-end), per-profile operation-type execution details, and the
+  real-image `profile-plans.json` capture on the 25H2 ISO.
+
 ## Phase 14 — Deep Component Coverage & Classification (COMPLETED — 89.56% real-media coverage)
 
 - **Status:** COMPLETE — **PHASE 14 ACCEPTED (2026-08-14)** — REAL COMPONENT COVERAGE VALIDATION

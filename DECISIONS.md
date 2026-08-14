@@ -2171,3 +2171,48 @@ described as "89.56% of all Windows components". Real validation history: 30.78%
   resolution; destructive CBS/driver removal execution; aggressive Lightweight/Dedicated execution;
   FullHealthValidated after deeper destructive customization) is moved OUT of Phase 14 into
   subsequent phases. Phase 14 ends here; it is merged to `main` via `--no-ff`.
+
+## ADR-094: Profile execution matrix + safe execution matrix (Stage 15.1)
+
+**Status:** Accepted (Phase 15 Stage 15.1).
+**Context:** Phase 14 completed knowledge/classification (89.56% coverage over the supported
+providers; Gaming Profile 2.0 + Safety Gate). Phase 15 must convert profile KNOWLEDGE into
+meaningful, supported EXECUTION plans so the six primaries (Balanced / Gaming PC / Dedicated
+Gaming / Developer / Office / Lightweight) produce clearly different images — without placebo
+optimization and without unsafe "debloat everything".
+**Decision:**
+- **ProfileExecutionMatrix** (Core, pure): every item gets an explicit disposition —
+  AutoApply / Recommend / Optional / Keep / Blocked / NotApplicable — from
+  EffectiveRecommendation + risk + protection + confidence + execution support, NEVER from raw
+  Windows identity strings. AutoApply is restricted to LOW-risk, non-heuristic, profile-driven,
+  execution-supported changes; curated defaults stay Recommend (user-confirmed).
+- **ExecutionSupportMatrix** (Core, auditable): recommendation is separated from execution
+  support. Supported today: AppX removal, offline registry policy, privacy, personalization,
+  OptionalFeature disable; Conditional: service configuration (allowlist); NOT supported (never
+  silently promoted): Capability removal, CBS package removal, driver removal (KNOWN != REMOVABLE,
+  ADR-086/093).
+- **ProfileExecutionService** (Core): Inventory → Engine (+ gaming policy verdicts, pre-gate so
+  KEEPS surface; the matrix re-applies the full safety gate as final authority) → Matrix →
+  ProfileDeltaReport → optionally a validated CustomizationPlan (only executable, non-overridden
+  changes; Phase 12 operation identity/dedup reused).
+- **ProfileDeltaReport**: per-profile Auto/Recommend/Optional/Kept/Blocked/NotApplicable counts +
+  operation-type breakdown + semantic change-key set — deterministic proof profiles differ.
+- **ProfilePlanValidator**: remove+keep conflicts, duplicate change plans, dependency-required
+  removals, unsupported/protected attempts, and Phase 12 operation-level duplicate/conflict
+  detection. Generation fails safe.
+- **Extras materially change plans** (Xbox/Game Pass, WSL/Docker, Print/Scan, Touch/Pen, Remote
+  Desktop) — regression-tested; a toggle that does not change the plan is a bug.
+- **Manual overrides remain authoritative**: never auto-applied, survive profile/extras changes,
+  excluded from the executable plan.
+- **User-facing preview** (ProfileViewModel.ProfilePreviewText + ProfileView): localized
+  Automatic / Recommended / Optional / Kept (+Blocked) counts with bounded highlights and kept
+  examples — never hundreds of technical ids.
+- Deterministic per-profile plan comparison over the real-derived fixture (plan validation only,
+  nothing applied/built); the elevated `WinForge.RealCapture` CLI additionally exports
+  `profile-plans.json` from the real captured inventory. Exact fixture counts (Stage 15.1):
+  Balanced auto=8/rec=16/opt=46/kept=17/blk=17 · Gaming auto=18/rec=8/opt=27/kept=34/blk=17 ·
+  DedicatedGaming auto=8/rec=17/opt=28/kept=34/blk=17 · Developer auto=15/rec=11/opt=41/kept=20 ·
+  Office auto=5/rec=16/opt=46/kept=20 · Lightweight auto=24/rec=2/opt=43/kept=17 — profiles
+  clearly differ; Lightweight is the most active but stays safe (no CBS/driver/servicing removal).
+- NO vanity counts: differences are explainable; no Stage 15.1 destructive CBS removal or driver
+  stripping was introduced.

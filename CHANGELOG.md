@@ -3,6 +3,41 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 15 — Stage 15.1: Profile Execution & Safe Execution Matrix (2026-08-14)
+
+- **Profiles now produce clearly different, supported execution plans.** New Core
+  `ProfileExecutionMatrix` gives every item an explicit disposition — AutoApply / Recommend /
+  Optional / Keep / Blocked / NotApplicable — driven by knowledge + risk + protection +
+  confidence + execution support, never by raw identity strings. AutoApply is strictly
+  LOW-risk, non-heuristic, profile-driven and execution-supported; curated defaults stay
+  Recommend (user-confirmed).
+- **Auditable `ExecutionSupportMatrix`**: AppX removal, offline registry policy, privacy,
+  personalization and OptionalFeature disable are Supported; service configuration is
+  Conditional (allowlist); Capability removal, CBS package removal and driver removal are
+  NOT Supported — classification never promotes itself into execution capability.
+- **`ProfileExecutionService`**: inventory → engine (+ gaming policy verdicts so KEEPS
+  surface; the matrix re-applies the safety gate as final authority) → `ProfileDeltaReport`
+  (Auto/Recommend/Optional/Kept/Blocked counts + operation-type breakdown + semantic change
+  keys) → optionally a validated `CustomizationPlan` (executable, non-overridden changes only;
+  Phase 12 operation identity/dedup reused).
+- **`ProfilePlanValidator`**: remove+keep conflicts, duplicate change plans, dependency-required
+  removals, unsupported/protected attempts, Phase 12 operation-level duplicate/conflict
+  detection — generation fails safe.
+- **Extras materially change plans** (Xbox/Game Pass, WSL/Docker, Print/Scan, Touch/Pen, Remote
+  Desktop) — regression-tested; a toggle that does not change the plan is a bug.
+- **Manual overrides remain authoritative**: never auto-applied, survive profile/extras changes,
+  excluded from the executable plan.
+- **Localized per-profile preview UI** (Automatic / Recommended / Optional / Kept +Blocked
+  counts, bounded highlights and kept examples) for every primary profile in the Customize
+  profile selector — never hundreds of technical ids.
+- **Deterministic six-profile comparison** over the real-derived fixture (plan validation only):
+  Balanced auto=8 · Gaming PC auto=18 · Dedicated Gaming auto=8 · Developer auto=15 · Office
+  auto=5 · Lightweight auto=24 (Lightweight most active but safe — no CBS/driver/servicing
+  removal). `WinForge.RealCapture` additionally exports `profile-plans.json` from the real
+  captured inventory.
+- **1150 automated tests pass (Core 53, App 1097), 0 errors, 0 warnings (Release)** — ordinary
+  in-place build/test. ADR-094 + docs/PROFILE-EXECUTION.md.
+
 ## Phase 14 — CLOSEOUT: Phase 14 COMPLETED + MERGED TO MAIN (2026-08-14)
 
 - **THIRD elevated RealCapture SUCCEEDED (real desktop, Administrator)** — FINAL AUTHORITATIVE

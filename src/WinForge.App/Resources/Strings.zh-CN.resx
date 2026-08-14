@@ -1061,6 +1061,18 @@
   <data name="Profile.Reason.TouchPen.Keep" xml:space="preserve"><value>触屏/手写需要触摸键盘与手写服务</value></data>
   <data name="Profile.Reason.Trim" xml:space="preserve"><value>所选配置建议精简</value></data>
   <data name="Profile.Reason.UserOverride" xml:space="preserve"><value>你已手动更改——推荐不会覆盖你的选择</value></data>
+  <data name="Profile.Preview.Automatic" xml:space="preserve"><value>自动更改</value></data>
+  <data name="Profile.Preview.Recommended" xml:space="preserve"><value>推荐更改</value></data>
+  <data name="Profile.Preview.Optional" xml:space="preserve"><value>可选建议</value></data>
+  <data name="Profile.Preview.Kept" xml:space="preserve"><value>保留</value></data>
+  <data name="Profile.Preview.Blocked" xml:space="preserve"><value>安全门阻止</value></data>
+  <data name="Profile.Preview.Highlights" xml:space="preserve"><value>亮点</value></data>
+  <data name="Profile.Preview.KeptExamples" xml:space="preserve"><value>保留</value></data>
+  <data name="Profile.Reason.Execution.KeepProtected" xml:space="preserve"><value>因该组件受保护（系统/服务/安全）而保留</value></data>
+  <data name="Profile.Reason.Execution.KeepRuntime" xml:space="preserve"><value>因该组件为必要基础组件而保留</value></data>
+  <data name="Profile.Reason.Execution.Optional" xml:space="preserve"><value>可选——本配置不要求，但部分用户可能仍需要</value></data>
+  <data name="Profile.Reason.Execution.Recommend" xml:space="preserve"><value>本配置推荐更改</value></data>
+  <data name="Profile.Reason.Execution.Unsupported" xml:space="preserve"><value>不可执行——尚无可支持的更改机制</value></data>
   <data name="Profile.Reason.WslDocker.Keep" xml:space="preserve"><value>WSL / Docker 需要虚拟化、终端与 SSH 工具</value></data>
   <data name="Profile.Reason.XboxGamePass.Keep" xml:space="preserve"><value>Game Pass 需要 Xbox 应用与服务</value></data>
   <data name="Profile.RemoteDesktop.Description" xml:space="preserve"><value>需要 SSH 远程连接与远程协助</value></data>

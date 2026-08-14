@@ -1063,6 +1063,18 @@
   <data name="Profile.Reason.TouchPen.Keep" xml:space="preserve"><value>Touch / pen needs the touch keyboard and pen services</value></data>
   <data name="Profile.Reason.Trim" xml:space="preserve"><value>Recommended to trim by the selected configuration</value></data>
   <data name="Profile.Reason.UserOverride" xml:space="preserve"><value>You changed this manually — recommendations will not overwrite your choice</value></data>
+  <data name="Profile.Preview.Automatic" xml:space="preserve"><value>Automatic changes</value></data>
+  <data name="Profile.Preview.Recommended" xml:space="preserve"><value>Recommended</value></data>
+  <data name="Profile.Preview.Optional" xml:space="preserve"><value>Optional</value></data>
+  <data name="Profile.Preview.Kept" xml:space="preserve"><value>Kept</value></data>
+  <data name="Profile.Preview.Blocked" xml:space="preserve"><value>Blocked by safety</value></data>
+  <data name="Profile.Preview.Highlights" xml:space="preserve"><value>Highlights</value></data>
+  <data name="Profile.Preview.KeptExamples" xml:space="preserve"><value>Kept</value></data>
+  <data name="Profile.Reason.Execution.KeepProtected" xml:space="preserve"><value>Kept because this component is protected (system / servicing / security)</value></data>
+  <data name="Profile.Reason.Execution.KeepRuntime" xml:space="preserve"><value>Kept because this component is required infrastructure</value></data>
+  <data name="Profile.Reason.Execution.Optional" xml:space="preserve"><value>Optional — not required by this profile, but some users may still need it</value></data>
+  <data name="Profile.Reason.Execution.Recommend" xml:space="preserve"><value>Recommended for this profile</value></data>
+  <data name="Profile.Reason.Execution.Unsupported" xml:space="preserve"><value>Not executable — no supported change mechanism exists</value></data>
   <data name="Profile.Reason.WslDocker.Keep" xml:space="preserve"><value>WSL / Docker need virtualization, Terminal and SSH tooling</value></data>
   <data name="Profile.Reason.XboxGamePass.Keep" xml:space="preserve"><value>Game Pass needs the Xbox app and services</value></data>
   <data name="Profile.RemoteDesktop.Description" xml:space="preserve"><value>SSH to remote machines and remote assistance</value></data>

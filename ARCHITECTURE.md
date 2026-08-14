@@ -668,3 +668,21 @@ execution; aggressive Lightweight/Dedicated execution; FullHealthValidated after
 customization. Phase 14 ends here and was merged to `main` via `--no-ff` (2026-08-14); the
 `phase/14-deep-component-classification` branch is retained. **1105 tests (Core 53, App 1052),
 0 err/0 warn (Release, ordinary in-place, pre- and post-merge).**
+
+## Phase 15 — Stage 15.1: Profile Execution & Safe Execution Matrix (2026-08-14)
+
+Profiles produce clearly different, supported execution plans (ADR-094).
+`ProfileExecutionMatrix` (Core, pure) maps EffectiveRecommendation + risk + protection +
+confidence + execution support to an explicit disposition (AutoApply / Recommend / Optional /
+Keep / Blocked / NotApplicable); AutoApply requires Low risk, non-heuristic, profile-driven,
+execution-supported. `ExecutionSupportMatrix` is the auditable boundary — AppX removal,
+registry policy, privacy, personalization, OptionalFeature disable supported; service config
+conditional; Capability/CBS/Driver removal NOT supported (KNOWN != REMOVABLE). 
+`ProfileExecutionService` runs inventory → engine (+ gaming policy verdicts, pre-gate so keeps
+surface; matrix re-applies the safety gate) → `ProfileDeltaReport` → validated
+`CustomizationPlan` (Phase 12 operation identity/dedup). `ProfilePlanValidator` fails safe on
+remove+keep / duplicates / dependency-required / unsupported / protected. Extras materially
+change plans; manual overrides authoritative; localized per-profile preview UI added
+(ProfileViewModel.ProfilePreviewText + ProfileView). Deterministic six-profile comparison over
+the real-derived fixture; `WinForge.RealCapture` exports `profile-plans.json`. **1150 tests
+(Core 53, App 1097), 0 err/0 warn (Release, ordinary in-place).**

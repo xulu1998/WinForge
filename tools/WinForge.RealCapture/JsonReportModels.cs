@@ -155,3 +155,25 @@ public sealed class RealDerivedFamilyEntryJson
 
     public string? CanonicalId { get; init; }
 }
+
+/// <summary>Phase 15 Stage 15.1 — per-profile plan summaries over the captured inventory.</summary>
+public sealed class ProfilePlansJson
+{
+    public string Media { get; init; } = string.Empty;
+    public string Note { get; init; } = string.Empty;
+    public string GeneratedUtc { get; init; } = DateTime.UtcNow.ToString("O");
+    public List<ProfilePlanJson> Profiles { get; init; } = new();
+}
+
+/// <summary>One primary profile's plan summary (exact counts, deterministic).</summary>
+public sealed class ProfilePlanJson
+{
+    public string ProfileId { get; init; } = string.Empty;
+    public int AutoApply { get; init; }
+    public int Recommended { get; init; }
+    public int Optional { get; init; }
+    public int Kept { get; init; }
+    public int Blocked { get; init; }
+    public int ChangeCount { get; init; }
+    public Dictionary<string, int> ByOperationType { get; init; } = new();
+}

@@ -317,6 +317,145 @@ public sealed class ProfileViewModel : ViewModelBase
         GamingSummaryText = string.Join(Environment.NewLine, lines);
     }
 
+    private string _profilePreviewText = string.Empty;
+
+    /// <summary>
+    /// Stage 15.1 (ADR-094): LOCALIZED per-profile preview for ANY primary profile
+    /// (Balanced / Gaming PC / Dedicated Gaming / Developer / Office / Lightweight).
+    /// Shows Automatic / Recommended / Optional / Kept(+Blocked) counts with bounded
+    /// highlights and kept examples — never hundreds of technical ids. Built from
+    /// the profile-aware EffectiveRecommendation + execution support matrix.
+    /// </summary>
+    public string ProfilePreviewText
+    {
+        get => _profilePreviewText;
+        private set
+        {
+            if (SetField(ref _profilePreviewText, value))
+            {
+                OnPropertyChanged(nameof(HasProfilePreview));
+            }
+        }
+    }
+
+    public bool HasProfilePreview => !string.IsNullOrEmpty(_profilePreviewText);
+
+    private void RefreshProfilePreview()
+    {
+        var profile = _ctx.SelectedProfiles.FirstOrDefault(p => p.Kind == ProfileKind.Primary && p.Id != "Custom");
+        if (profile is null)
+        {
+            ProfilePreviewText = string.Empty;
+            return;
+        }
+
+        var auto = 0;
+        var recommended = 0;
+        var optional = 0;
+        var kept = 0;
+        var blocked = 0;
+        var highlights = new List<string>();
+        var keptExamples = new List<string>();
+        var byType = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var s in Subjects())
+        {
+            if (!s.IsPresent)
+            {
+                continue;
+            }
+
+            var eff = s.Effective;
+            var opType = MapTabToExecutionType(s.Tab);
+            var supported = WinForge.Core.Profiles.ExecutionSupportMatrix.IsExecutable(opType);
+            var (disposition, _) = WinForge.Core.Profiles.ProfileExecutionMatrix.Evaluate(
+                profile.Id, eff, WinForge.Core.ComponentIntelligence.ComponentProtectionLevel.None,
+                WinForge.Core.ComponentIntelligence.ClassificationConfidence.Curated, supported, isHeuristic: false);
+
+            byType[opType.ToString()] = byType.TryGetValue(opType.ToString(), out var n) ? n + 1 : 1;
+
+            switch (disposition)
+            {
+                case WinForge.Core.Profiles.ProfileDisposition.AutoApply:
+                    auto++;
+                    if (highlights.Count < 4 && !string.IsNullOrWhiteSpace(s.ReasonText))
+                    {
+                        highlights.Add("✓ " + s.DisplayName + " — " + s.ReasonText);
+                    }
+                    else if (highlights.Count < 4)
+                    {
+                        highlights.Add("✓ " + s.DisplayName);
+                    }
+
+                    break;
+                case WinForge.Core.Profiles.ProfileDisposition.Recommend:
+                    recommended++;
+                    if (highlights.Count < 4 && !string.IsNullOrWhiteSpace(s.ReasonText))
+                    {
+                        highlights.Add("✓ " + s.DisplayName + " — " + s.ReasonText);
+                    }
+
+                    break;
+                case WinForge.Core.Profiles.ProfileDisposition.Optional:
+                    optional++;
+                    break;
+                case WinForge.Core.Profiles.ProfileDisposition.Keep:
+                    kept++;
+                    if (keptExamples.Count < 6)
+                    {
+                        keptExamples.Add(s.DisplayName);
+                    }
+
+                    break;
+                case WinForge.Core.Profiles.ProfileDisposition.Blocked:
+                    blocked++;
+                    break;
+            }
+        }
+
+        var lines = new List<string>
+        {
+            $"{_loc["Profile.Preview.Automatic"]}: {auto}",
+            $"{_loc["Profile.Preview.Recommended"]}: {recommended}",
+            $"{_loc["Profile.Preview.Optional"]}: {optional}",
+            $"{_loc["Profile.Preview.Kept"]}: {kept}",
+        };
+
+        if (blocked > 0)
+        {
+            lines.Add($"{_loc["Profile.Preview.Blocked"]}: {blocked}");
+        }
+
+        if (highlights.Count > 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add(_loc["Profile.Preview.Highlights"]);
+            lines.AddRange(highlights);
+            if (auto + recommended > highlights.Count)
+            {
+                lines.Add("…");
+            }
+        }
+
+        if (keptExamples.Count > 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add(_loc["Profile.Preview.KeptExamples"] + ": " + string.Join(" · ", keptExamples));
+        }
+
+        ProfilePreviewText = string.Join(Environment.NewLine, lines);
+    }
+
+    private static WinForge.Core.Profiles.ExecutionOperationType MapTabToExecutionType(OptimizationTab tab) => tab switch
+    {
+        OptimizationTab.Apps => WinForge.Core.Profiles.ExecutionOperationType.AppX,
+        OptimizationTab.Services => WinForge.Core.Profiles.ExecutionOperationType.Service,
+        OptimizationTab.Privacy => WinForge.Core.Profiles.ExecutionOperationType.Privacy,
+        OptimizationTab.System => WinForge.Core.Profiles.ExecutionOperationType.RegistryPolicy,
+        OptimizationTab.Personalization => WinForge.Core.Profiles.ExecutionOperationType.Personalization,
+        _ => WinForge.Core.Profiles.ExecutionOperationType.Other,
+    };
+
     private string ReasonText(WinForge.Core.Profiles.GamingEvaluationItem item)
     {
         var key = string.IsNullOrEmpty(item.Result.ReasonKey) ? item.Result.GateReasonKey : item.Result.ReasonKey;
@@ -405,6 +544,7 @@ public sealed class ProfileViewModel : ViewModelBase
         OnPropertyChanged(nameof(SummaryUnsupportedLabel));
         OnPropertyChanged(nameof(RestoreVisible));
         RefreshGamingSummary();
+        RefreshProfilePreview();
         if (RestoreCommand is RelayCommand r) r.RaiseCanExecuteChanged();
     }
 
