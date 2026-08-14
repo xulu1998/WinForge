@@ -676,21 +676,24 @@ public sealed class Stage11p4Tests
     [Fact]
     public void Profile_Managed_Selection_Changes_With_Profile()
     {
-        // T8: BingNews is trimmed by Developer but NOT by Gaming — switching
-        // profiles must deselect the now-unrecommended Profile-managed row.
-        var (state, customize) = BuildCustomize(AppxInventory("Microsoft.BingNews"));
+        // T8: Clipchamp is auto-trimmed by Developer but only OPTIONAL under the
+        // knowledge-driven Gaming PC (Phase 14.3, ADR-088) — switching profiles
+        // must deselect the now-unrecommended Profile-managed row. (BingNews is
+        // no longer the differentiator: the Gaming PC knowledge policy also
+        // recommends removing news/search consumer content.)
+        var (state, customize) = BuildCustomize(AppxInventory("Clipchamp.Clipchamp"));
         var profileVm = customize.Profiles!;
         var apps = (ComponentKnowledgeViewModel)customize.Tabs[0].Content;
 
         profileVm.Profiles.Single(p => p.Definition.Id == "Developer").IsSelected = true;
-        var bingNews = apps.Items.Single(i => i.LogicalId == "BingNews");
-        Assert.True(bingNews.IsSelected);
-        Assert.True(profileVm.IsProfileManaged("BingNews"));
+        var clipchamp = apps.Items.Single(i => i.LogicalId == "Clipchamp");
+        Assert.True(clipchamp.IsSelected);
+        Assert.True(profileVm.IsProfileManaged("Clipchamp"));
 
         profileVm.Profiles.Single(p => p.Definition.Id == "Gaming").IsSelected = true;
-        Assert.False(bingNews.IsSelected); // no longer recommended by Gaming
-        Assert.False(profileVm.IsProfileManaged("BingNews"));
-        Assert.DoesNotContain(GetPlanOps(state), o => o.TargetIdentifier == "Microsoft.BingNews");
+        Assert.False(clipchamp.IsSelected); // optional under Gaming — not auto-applied
+        Assert.False(profileVm.IsProfileManaged("Clipchamp"));
+        Assert.DoesNotContain(GetPlanOps(state), o => o.TargetIdentifier == "Clipchamp.Clipchamp");
         _ = state;
     }
 

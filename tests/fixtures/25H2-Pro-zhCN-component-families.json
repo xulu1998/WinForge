@@ -1,0 +1,559 @@
+{
+  "media": "Win11_25H2_zh-CN_x64",
+  "note": "Real-derived stable families for Windows 11 25H2 zh-CN x64 Pro. Representative identities are STRIPPED of version numbers, architecture, language and host/temp mount paths (ComponentNormalizer.Canonical). Derived from the REAL 25H2 Pro zh-CN elevated RealCapture run (2026-08-14: 757 objects; Language.* capability families + Package_for_* + high-confidence CBS/features added in Stage 14.3b; Stage 14.3c adds Wi-Fi/Ethernet driver families, DirectX configuration database, SecHealthUI, FOD metadata package, OneCore storage, Hello Face, media codecs, Outlook/Office Hub, Dev Home, console legacy/webdriver/wallpapers/math recognizer capabilities and NFS/DCB/ADAM/HostGuardian/LegacyComponents features) plus .tmp/phase11/real-25h2-inventory-report.md; refreshed automatically by tools/WinForge.RealCapture after the elevated inventory capture. Classification is the EXCLUSIVE coverage bucket (Curated | KnownDeep | Heuristic | Unknown) the capture pipeline reports.",
+  "generatedUtc": "2026-08-13T00:00:00Z",
+  "entries": [
+    {
+      "source": "AppX",
+      "family": "microsoft.yourphone",
+      "representative": "microsoft.yourphone",
+      "classification": "Curated",
+      "canonicalId": "PhoneLink"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoftsolitairecollection",
+      "representative": "microsoftsolitairecollection",
+      "classification": "Curated",
+      "canonicalId": "Solitaire"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.gethelp",
+      "representative": "microsoft.gethelp",
+      "classification": "Curated",
+      "canonicalId": "GetHelp"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.bingweather",
+      "representative": "microsoft.bingweather",
+      "classification": "Curated",
+      "canonicalId": "BingWeather"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.windowsstore",
+      "representative": "microsoft.windowsstore",
+      "classification": "Curated",
+      "canonicalId": "WindowsStore"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.desktopappinstaller",
+      "representative": "microsoft.desktopappinstaller",
+      "classification": "Curated",
+      "canonicalId": "AppInstaller"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.gamingservices",
+      "representative": "microsoft.gamingservices",
+      "classification": "Curated",
+      "canonicalId": "GamingServices"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.bingnews",
+      "representative": "microsoft.bingnews",
+      "classification": "Curated",
+      "canonicalId": "News"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.bingsearch",
+      "representative": "microsoft.bingsearch",
+      "classification": "Curated",
+      "canonicalId": "BingSearch"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.applicationcompatibilityenhancements",
+      "representative": "microsoft.applicationcompatibilityenhancements",
+      "classification": "KnownDeep",
+      "canonicalId": "ApplicationCompatibilityEnhancements"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.gamingapp",
+      "representative": "microsoft.gamingapp",
+      "classification": "Unknown"
+    },
+    {
+      "source": "Capability",
+      "family": "openssh.client",
+      "representative": "openssh.client",
+      "classification": "KnownDeep",
+      "canonicalId": "OpenSSHClient"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "printing-xpsservices-features",
+      "representative": "printing-xpsservices-features",
+      "classification": "KnownDeep",
+      "canonicalId": "PrintingXPS"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-printing",
+      "representative": "microsoft-windows-printing-printfilterpipeline-svc",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsPrintingFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-languagefeatures",
+      "representative": "microsoft-windows-languagefeatures-basic",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsLanguageFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-client",
+      "representative": "microsoft-windows-client-features",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsClientFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-foundation",
+      "representative": "microsoft-windows-foundation",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsFoundationFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-servicingstack",
+      "representative": "microsoft-windows-servicingstack",
+      "classification": "KnownDeep",
+      "canonicalId": "ServicingStack"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-winre",
+      "representative": "microsoft-windows-winre-recovery",
+      "classification": "KnownDeep",
+      "canonicalId": "WinRe"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-hyperv",
+      "representative": "microsoft-windows-hyperv-services",
+      "classification": "KnownDeep",
+      "canonicalId": "HyperV"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-defender",
+      "representative": "microsoft-windows-defender-services",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsDefenderFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-remotedesktop",
+      "representative": "microsoft-windows-remotedesktop-client",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsRemoteDesktopFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-bluetooth",
+      "representative": "microsoft-windows-bluetooth-services",
+      "classification": "KnownDeep",
+      "canonicalId": "HwBluetoothFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-wi",
+      "representative": "microsoft-windows-wi-fi-onexuirefresh",
+      "classification": "KnownDeep",
+      "canonicalId": "HwWifiFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-usb",
+      "representative": "microsoft-windows-usb-platform",
+      "classification": "KnownDeep",
+      "canonicalId": "UsbDrivers"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-storage",
+      "representative": "microsoft-windows-storage-storagemanagement",
+      "classification": "KnownDeep",
+      "canonicalId": "StorageDrivers"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-audio",
+      "representative": "microsoft-windows-audio-audiocore",
+      "classification": "KnownDeep",
+      "canonicalId": "HwAudioFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-tabletpc",
+      "representative": "microsoft-windows-tabletpc-mathinput",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsTabletPcFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-internetexplorer",
+      "representative": "microsoft-windows-internetexplorer-optional",
+      "classification": "KnownDeep",
+      "canonicalId": "InternetExplorer"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-editionspecific",
+      "representative": "microsoft-windows-editionspecific-cliententerprise",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsEditionFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-shell",
+      "representative": "microsoft-windows-shell-setup",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsShellFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-search",
+      "representative": "microsoft-windows-search-searchcenter",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsSearchFamily"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-media",
+      "representative": "microsoft-windows-media-mediaplayback",
+      "classification": "KnownDeep",
+      "canonicalId": "MediaFeatures"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-applicationcompatibilityenhancements",
+      "representative": "microsoft-applicationcompatibilityenhancements",
+      "classification": "KnownDeep",
+      "canonicalId": "ApplicationCompatibilityEnhancements"
+    },
+    {
+      "source": "Capability",
+      "family": "language.basic",
+      "representative": "language.basic",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageBasic"
+    },
+    {
+      "source": "Capability",
+      "family": "language.handwriting",
+      "representative": "language.handwriting",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageHandwriting"
+    },
+    {
+      "source": "Capability",
+      "family": "language.texttospeech",
+      "representative": "language.texttospeech",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageTextToSpeech"
+    },
+    {
+      "source": "Capability",
+      "family": "language.ocr",
+      "representative": "language.ocr",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageOcr"
+    },
+    {
+      "source": "Capability",
+      "family": "language.fonts",
+      "representative": "language.fonts",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageFonts"
+    },
+    {
+      "source": "Capability",
+      "family": "language.speech",
+      "representative": "language.speech",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageSpeech"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "package-for-dotnetrollup",
+      "representative": "package-for-dotnetrollup",
+      "classification": "KnownDeep",
+      "canonicalId": "PackageForDotNetRollup"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "package-for-kb",
+      "representative": "package-for-kb",
+      "classification": "KnownDeep",
+      "canonicalId": "PackageForKb"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "package-for-rollupfix",
+      "representative": "package-for-rollupfix",
+      "classification": "KnownDeep",
+      "canonicalId": "PackageForRollupFix"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-licenses",
+      "representative": "microsoft-windows-licenses",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsLicenses"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-fodmetadataservicing",
+      "representative": "microsoft-windows-fodmetadataservicing",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsFodMetadataServicing"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-kernel",
+      "representative": "microsoft-windows-kernel",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsKernel"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "openssh-client",
+      "representative": "openssh-client",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsOpenSshClient"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "client-devicelockdown",
+      "representative": "client-devicelockdown",
+      "classification": "KnownDeep",
+      "canonicalId": "ClientDeviceLockdown"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "app.wirelessdisplay",
+      "representative": "app.wirelessdisplay.connect",
+      "classification": "KnownDeep",
+      "canonicalId": "WirelessDisplayConnect"
+    },
+    {
+      "source": "Capability",
+      "family": "accessibility.braille",
+      "representative": "accessibility.braille",
+      "classification": "KnownDeep",
+      "canonicalId": "AccessibilityBraille"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.wifi.client.intel",
+      "representative": "Microsoft.Windows.Wifi.Client.Intel~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetWifiClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.wifi.client.realtek",
+      "representative": "Microsoft.Windows.Wifi.Client.Realtek~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetWifiClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.wifi.client.broadcom",
+      "representative": "Microsoft.Windows.Wifi.Client.Broadcom~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetWifiClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.wifi.client.qualcomm",
+      "representative": "Microsoft.Windows.Wifi.Client.Qualcomm~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetWifiClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.ethernet.client.intel",
+      "representative": "Microsoft.Windows.Ethernet.Client.Intel~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetEthernetClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "directx.configuration",
+      "representative": "DirectX.Configuration.Database~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "DirectXConfigurationDatabase"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.sechealthui",
+      "representative": "Microsoft.SecHealthUI_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "SecHealthUi"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-fodmetadata",
+      "representative": "Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~",
+      "classification": "KnownDeep",
+      "canonicalId": "FodMetadataPackage"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.onecore",
+      "representative": "Microsoft.Onecore.StorageManagement~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "OnecoreStorageManagement"
+    },
+    {
+      "source": "Capability",
+      "family": "hello.face",
+      "representative": "Hello.Face~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "HelloFaceCapability"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.heifimageextension",
+      "representative": "Microsoft.HEIFImageExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "HeifImageExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.hevcvideoextension",
+      "representative": "Microsoft.HEVCVideoExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "HevcVideoExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.mpeg2videoextension",
+      "representative": "Microsoft.MPEG2VideoExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "Mpeg2VideoExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.rawimageextension",
+      "representative": "Microsoft.RawImageExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "RawImageExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.vp9videoextensions",
+      "representative": "Microsoft.VP9VideoExtensions_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "Vp9VideoExtensions"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.webmediaextensions",
+      "representative": "Microsoft.WebMediaExtensions_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "WebMediaExtensions"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.webpimageextension",
+      "representative": "Microsoft.WebpImageExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "WebpImageExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.outlookforwindows",
+      "representative": "Microsoft.OutlookForWindows_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "OutlookForWindows"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.microsoftofficehub",
+      "representative": "Microsoft.MicrosoftOfficeHub_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "MicrosoftOfficeHub"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.windows.devhome",
+      "representative": "Microsoft.Windows.DevHome_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "DevHome"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.console.legacy",
+      "representative": "Microsoft.Windows.Console.Legacy~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "ConsoleLegacy"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.webdriver",
+      "representative": "Microsoft.WebDriver~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "WebDriver"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.wallpapers",
+      "representative": "Microsoft.Wallpapers.Extended~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "WallpapersExtended"
+    },
+    {
+      "source": "Capability",
+      "family": "mathrecognizer",
+      "representative": "MathRecognizer~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "MathRecognizer"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "clientfornfs-infrastructure",
+      "representative": "ClientForNFS-Infrastructure",
+      "classification": "KnownDeep",
+      "canonicalId": "ClientForNfsInfrastructure"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "datacenterbridging",
+      "representative": "DataCenterBridging",
+      "classification": "KnownDeep",
+      "canonicalId": "DataCenterBridging"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "directoryservices-adam-client",
+      "representative": "DirectoryServices-ADAM-Client",
+      "classification": "KnownDeep",
+      "canonicalId": "DirectoryServicesAdamClient"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "hostguardian",
+      "representative": "HostGuardian",
+      "classification": "KnownDeep",
+      "canonicalId": "HostGuardian"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "legacycomponents",
+      "representative": "LegacyComponents",
+      "classification": "KnownDeep",
+      "canonicalId": "LegacyComponents"
+    }
+  ]
+}

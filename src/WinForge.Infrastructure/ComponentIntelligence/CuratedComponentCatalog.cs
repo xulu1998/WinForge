@@ -143,6 +143,36 @@ public sealed class CuratedComponentCatalog : IComponentCatalogProvider
 
             new ComponentDefinition
             {
+                Id = "DevHome",
+                Category = ComponentCategory.AppX,
+                DisplayNameKey = "Comp.DevHome.DisplayName",
+                ShortDescriptionKey = "Comp.DevHome.Short",
+                LongDescriptionKey = "Comp.DevHome.Long",
+                Recommendation = RecommendationLevel.UsuallyKeep,
+                Risk = RiskLevel.Low,
+                Removal = RemovalSupport.Supported,
+                Restore = RestoreSupport.Easy,
+                UserScenarios = new[] { ComponentScenario.Developer },
+                KeepIf = new[] { "Comp.DevHome.KeepIf" },
+                RemoveIf = new[] { "Comp.DevHome.RemoveIf" },
+                KnownImpact = new[] { "Comp.DevHome.Impact" },
+                Dependencies = new ComponentDependency[0],
+                Conflicts = new string[0],
+                TechnicalTargets = new[] { new TechnicalTarget { Category = ComponentCategory.AppX, Match = MatchMethod.Prefix, Pattern = "Microsoft.Windows.DevHome" } },
+                CompatibilityRules = new[] { new CompatibilityRule
+                {
+                    SupportedBuildMin = "22000",
+                    KnownOnBuilds = new[] { "26100" }
+                } },
+                Provenance = new[] { new KnowledgeClaim { Kind = KnowledgeClaimKind.Recommendation, TextKey = "Comp.DevHome.Prov0", Sources = new[] { new KnowledgeSource { SourceType = KnowledgeSourceType.WinForgeCurated, SourceName = "WinForge review", Confidence = ConfidenceLevel.Verified } } } },
+                ScenarioRecommendations = new[] { new ScenarioRecommendation { Scenario = ComponentScenario.Developer, Recommendation = RecommendationLevel.UsuallyKeep, ReasonKey = "Comp.DevHome.Scen.Developer" } },
+                EstimatedSavingsBytes = 0,
+                SavingsConfidence = SavingsConfidence.None,
+                Tags = new[] { "devhome" },
+            },
+
+            new ComponentDefinition
+            {
                 Id = "Photos",
                 Category = ComponentCategory.AppX,
                 DisplayNameKey = "Comp.Photos.DisplayName",

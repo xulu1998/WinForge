@@ -1,0 +1,400 @@
+{
+  "count": 79,
+  "items": [
+    {
+      "id": "MSTeams_1.0.0.0_x64__8wekyb3d8bbwe",
+      "source": "AppX",
+      "normalized": "msteams"
+    },
+    {
+      "id": "MicrosoftCorporationII.QuickAssist_2025.331.2057.0_neutral_~_8wekyb3d8bbwe",
+      "source": "AppX",
+      "normalized": "microsoftcorporationii.quickassist"
+    },
+    {
+      "id": "MicrosoftWindows.CrossDevice_1.25112.60.0_neutral_~_cw5n1h2txyewy",
+      "source": "AppX",
+      "normalized": "microsoftwindows.crossdevice"
+    },
+    {
+      "id": "Microsoft.Windows.Notepad.System~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "microsoft.windows.notepad.system"
+    },
+    {
+      "id": "Microsoft.Windows.Sense.Client~~~~",
+      "source": "Capability",
+      "normalized": "microsoft.windows.sense.client"
+    },
+    {
+      "id": "Microsoft.Windows.StorageManagement~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "microsoft.windows.storagemanagement"
+    },
+    {
+      "id": "Msix.PackagingTool.Driver~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "msix.packagingtool.driver"
+    },
+    {
+      "id": "Network.Irda~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "network.irda"
+    },
+    {
+      "id": "OneCoreUAP.OneSync~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "onecoreuap.onesync"
+    },
+    {
+      "id": "Print.Management.Console~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "print.management.console"
+    },
+    {
+      "id": "RIP.Listener~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rip.listener"
+    },
+    {
+      "id": "RasCMAK.Client~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rascmak.client"
+    },
+    {
+      "id": "Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.activedirectory.ds-lds.tools"
+    },
+    {
+      "id": "Rsat.AzureStack.HCI.Management.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.azurestack.hci.management.tools"
+    },
+    {
+      "id": "Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.bitlocker.recovery.tools"
+    },
+    {
+      "id": "Rsat.CertificateServices.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.certificateservices.tools"
+    },
+    {
+      "id": "Rsat.DHCP.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.dhcp.tools"
+    },
+    {
+      "id": "Rsat.Dns.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.dns.tools"
+    },
+    {
+      "id": "Rsat.FailoverCluster.Management.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.failovercluster.management.tools"
+    },
+    {
+      "id": "Rsat.FileServices.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.fileservices.tools"
+    },
+    {
+      "id": "Rsat.GroupPolicy.Management.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.grouppolicy.management.tools"
+    },
+    {
+      "id": "Rsat.IPAM.Client.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.ipam.client.tools"
+    },
+    {
+      "id": "Rsat.LLDP.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.lldp.tools"
+    },
+    {
+      "id": "Rsat.NetworkController.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.networkcontroller.tools"
+    },
+    {
+      "id": "Rsat.NetworkLoadBalancing.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.networkloadbalancing.tools"
+    },
+    {
+      "id": "Rsat.RemoteAccess.Management.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.remoteaccess.management.tools"
+    },
+    {
+      "id": "Rsat.RemoteDesktop.Services.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.remotedesktop.services.tools"
+    },
+    {
+      "id": "Rsat.ServerManager.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.servermanager.tools"
+    },
+    {
+      "id": "Rsat.StorageMigrationService.Management.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.storagemigrationservice.management.tools"
+    },
+    {
+      "id": "Rsat.StorageReplica.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.storagereplica.tools"
+    },
+    {
+      "id": "Rsat.SystemInsights.Management.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.systeminsights.management.tools"
+    },
+    {
+      "id": "Rsat.VolumeActivation.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.volumeactivation.tools"
+    },
+    {
+      "id": "Rsat.WSUS.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "rsat.wsus.tools"
+    },
+    {
+      "id": "SNMP.Client~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "snmp.client"
+    },
+    {
+      "id": "Tools.Graphics.DirectX~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "tools.graphics.directx"
+    },
+    {
+      "id": "Tpm.TpmDiagnostics~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "tpm.tpmdiagnostics"
+    },
+    {
+      "id": "VBSCRIPT~~~~",
+      "source": "Capability",
+      "normalized": "vbscript"
+    },
+    {
+      "id": "WMIC~~~~",
+      "source": "Capability",
+      "normalized": "wmic"
+    },
+    {
+      "id": "Windows.Desktop.EMS-SAC.Tools~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "windows.desktop.ems-sac.tools"
+    },
+    {
+      "id": "Windows.Kernel.LA57~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "windows.kernel.la57"
+    },
+    {
+      "id": "XPS.Viewer~~~~0.0.1.0",
+      "source": "Capability",
+      "normalized": "xps.viewer"
+    },
+    {
+      "id": "MSMQ-ADIntegration",
+      "source": "OptionalFeature",
+      "normalized": "msmq-adintegration"
+    },
+    {
+      "id": "MSMQ-Container",
+      "source": "OptionalFeature",
+      "normalized": "msmq-container"
+    },
+    {
+      "id": "MSMQ-DCOMProxy",
+      "source": "OptionalFeature",
+      "normalized": "msmq-dcomproxy"
+    },
+    {
+      "id": "MSMQ-HTTP",
+      "source": "OptionalFeature",
+      "normalized": "msmq-http"
+    },
+    {
+      "id": "MSMQ-Multicast",
+      "source": "OptionalFeature",
+      "normalized": "msmq-multicast"
+    },
+    {
+      "id": "MSMQ-Server",
+      "source": "OptionalFeature",
+      "normalized": "msmq-server"
+    },
+    {
+      "id": "MSMQ-Triggers",
+      "source": "OptionalFeature",
+      "normalized": "msmq-triggers"
+    },
+    {
+      "id": "MultiPoint-Connector",
+      "source": "OptionalFeature",
+      "normalized": "multipoint-connector"
+    },
+    {
+      "id": "MultiPoint-Connector-Services",
+      "source": "OptionalFeature",
+      "normalized": "multipoint-connector-services"
+    },
+    {
+      "id": "MultiPoint-Tools",
+      "source": "OptionalFeature",
+      "normalized": "multipoint-tools"
+    },
+    {
+      "id": "NFS-Administration",
+      "source": "OptionalFeature",
+      "normalized": "nfs-administration"
+    },
+    {
+      "id": "Printing-Foundation-Features",
+      "source": "OptionalFeature",
+      "normalized": "printing-foundation-features"
+    },
+    {
+      "id": "Printing-Foundation-InternetPrinting-Client",
+      "source": "OptionalFeature",
+      "normalized": "printing-foundation-internetprinting-client"
+    },
+    {
+      "id": "Printing-Foundation-LPDPrintService",
+      "source": "OptionalFeature",
+      "normalized": "printing-foundation-lpdprintservice"
+    },
+    {
+      "id": "Printing-Foundation-LPRPortMonitor",
+      "source": "OptionalFeature",
+      "normalized": "printing-foundation-lprportmonitor"
+    },
+    {
+      "id": "Recall",
+      "source": "OptionalFeature",
+      "normalized": "recall"
+    },
+    {
+      "id": "SearchEngine-Client-Package",
+      "source": "OptionalFeature",
+      "normalized": "searchengine-client-package"
+    },
+    {
+      "id": "ServicesForNFS-ClientOnly",
+      "source": "OptionalFeature",
+      "normalized": "servicesfornfs-clientonly"
+    },
+    {
+      "id": "SimpleTCP",
+      "source": "OptionalFeature",
+      "normalized": "simpletcp"
+    },
+    {
+      "id": "SmbDirect",
+      "source": "OptionalFeature",
+      "normalized": "smbdirect"
+    },
+    {
+      "id": "Sysmon",
+      "source": "OptionalFeature",
+      "normalized": "sysmon"
+    },
+    {
+      "id": "Sysmon-Service",
+      "source": "OptionalFeature",
+      "normalized": "sysmon-service"
+    },
+    {
+      "id": "TFTP",
+      "source": "OptionalFeature",
+      "normalized": "tftp"
+    },
+    {
+      "id": "TIFFIFilter",
+      "source": "OptionalFeature",
+      "normalized": "tiffifilter"
+    },
+    {
+      "id": "WAS-ConfigurationAPI",
+      "source": "OptionalFeature",
+      "normalized": "was-configurationapi"
+    },
+    {
+      "id": "WAS-NetFxEnvironment",
+      "source": "OptionalFeature",
+      "normalized": "was-netfxenvironment"
+    },
+    {
+      "id": "WAS-ProcessModel",
+      "source": "OptionalFeature",
+      "normalized": "was-processmodel"
+    },
+    {
+      "id": "WAS-WindowsActivationService",
+      "source": "OptionalFeature",
+      "normalized": "was-windowsactivationservice"
+    },
+    {
+      "id": "WCF-HTTP-Activation",
+      "source": "OptionalFeature",
+      "normalized": "wcf-http-activation"
+    },
+    {
+      "id": "WCF-HTTP-Activation45",
+      "source": "OptionalFeature",
+      "normalized": "wcf-http-activation45"
+    },
+    {
+      "id": "WCF-MSMQ-Activation45",
+      "source": "OptionalFeature",
+      "normalized": "wcf-msmq-activation45"
+    },
+    {
+      "id": "WCF-NonHTTP-Activation",
+      "source": "OptionalFeature",
+      "normalized": "wcf-nonhttp-activation"
+    },
+    {
+      "id": "WCF-Pipe-Activation45",
+      "source": "OptionalFeature",
+      "normalized": "wcf-pipe-activation45"
+    },
+    {
+      "id": "WCF-Services45",
+      "source": "OptionalFeature",
+      "normalized": "wcf-services45"
+    },
+    {
+      "id": "WCF-TCP-Activation45",
+      "source": "OptionalFeature",
+      "normalized": "wcf-tcp-activation45"
+    },
+    {
+      "id": "WCF-TCP-PortSharing45",
+      "source": "OptionalFeature",
+      "normalized": "wcf-tcp-portsharing45"
+    },
+    {
+      "id": "Windows-Defender-Default-Definitions",
+      "source": "OptionalFeature",
+      "normalized": "windows-defender-default-definitions"
+    },
+    {
+      "id": "Windows-Identity-Foundation",
+      "source": "OptionalFeature",
+      "normalized": "windows-identity-foundation"
+    }
+  ]
+}

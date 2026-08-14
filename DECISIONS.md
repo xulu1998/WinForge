@@ -1931,3 +1931,243 @@ All decisions are `ACCEPTED` unless noted.
 - docs/COMPATIBILITY.md: 25H2 Pro zh-CN x64 WIM → **VM INSTALL VALIDATED**; en-US Pro / Home /
   Education / Enterprise / 24H2 / ESD / SWM stay pending; ARM64 unsupported. No fabricated checks —
   unperformed phases are recorded as "not performed".
+
+
+## ADR-085: Deep component classification — layers, taxonomy, confidence, safety
+
+- Discovery (what exists) / knowledge (what it means) / planning (what to do) are separate layers;
+  a classifier never mutates inventory and never plans removal by itself.
+- ComponentFunctionCategory (25 functional categories) is distinct from the discovery SOURCE kind
+  (ComponentCategory: AppX/Capability/OptionalFeature/CbsPackage/Service…).
+- Risk: Low/Moderate/High/Critical; "unused by Gaming profile" never implies "safe to remove".
+- Recommendation: RecommendedRemove/OptionalRemove/RecommendedKeep/RequiredKeep/ProfileDependent/
+  Unknown — localized display, stable model.
+- Confidence: Curated/KnownPattern/KnownFamily/Heuristic. A Heuristic classification can never look
+  safe on its own: risk floors at Moderate, protection floors at Sensitive; a catalog entry marked
+  Heuristic stays Heuristic regardless of match type.
+- Normalization strips ~/_ tokens, versions, .neutral; FindCollision prevents unrelated families
+  colliding; canonicalization is deterministic.
+- Protected groups (never auto-removed): servicing stack, Windows Update infrastructure, CBS,
+  WinSxS-critical, Defender/security platform, boot, WinRE/recovery, App Installer/winget, Store
+  infrastructure, WebView2, VC/runtime/framework, DirectX/gaming runtimes, shell/core login.
+- Gaming profile foundation: Gaming PC ≠ Dedicated Gaming/cybercafe minimal; keep-list and candidate
+  cleanup recorded (docs/PHASE14-INPUT.md); no placebo tweaks.
+- Unknown remains visible as technical debt; coverage metrics never massaged.
+
+## ADR-086: Stage 14.2 — family rules, CBS safety floor, honest coverage
+
+- Real media confirmed (25H2 zh-CN x64 Consumer, install.wim read-only). The build sandbox is
+  non-elevated (DISM Error 740): a fresh per-object scan is impossible here; the real baseline is the
+  Phase 11 elevated real-desktop scan (758 objects). No per-object metrics are fabricated — the
+  coverage estimate is explicitly family-level and the runbook for an elevated exact scan is documented.
+- Deep catalog grows to 145 entries: 22 CBS family rules + 15 hardware/driver rules. CBS semantics
+  distinguish system core / servicing / edition / language / hardware / networking / printing /
+  media / shell / search / security / recovery / remote / virtualization / enterprise / legacy /
+  optional. Conservative floor: Risk ≥ Moderate (Moderate only for documented optional families),
+  Protection ≥ Sensitive, never RecommendedRemove for CBS-like families.
+- Hardware/driver families are classified for UNDERSTANDING only (RecommendedKeep/ProfileDependent,
+  High/Critical) — no driver removal in this stage.
+- UnknownFamilyAnalyzer + ClassificationCoverageMetrics (Curated/KnownDeep/Protected/Heuristic/Unknown
+  per source, no double counting) keep Unknown visible as debt; a restrained CoverageSummaryText is
+  exposed on the Component Intelligence surface.
+- Classification ≠ removal: no destructive CBS/driver/servicing/Defender/Update/WinRE/Store/runtime/
+  shell removal is added by classification coverage.
+
+## ADR-087: Real inventory validation — deterministic elevated capture workflow
+
+**Status:** Accepted (Phase 14 Stage 14.3).
+**Context:** Stage 14.2's coverage claims must become EXACT real-media numbers, not estimates.
+The build sandbox cannot elevate (DISM Error 740), so a deterministic elevated capture entry point
+is required and the user runs it once as Administrator.
+**Decision:**
+- New `tools/WinForge.RealCapture` console CLI (`requireAdministrator` manifest) runs the EXACT
+  production pipeline: Phase 2 inspection → `ImageWorkspaceFactory` → `ImageServicingService`
+  export selected index → mount → `WindowsComponentIntelligenceService` DISM discovery →
+  `ComponentMatcher` → `DeepComponentClassifier` → `CoverageAccountingService` exact accounting →
+  `UnknownFamilyAnalyzer` top-30 → 6 JSON exports (`inventory-summary.json`, `inventory-items.json`,
+  `unknown-items.json`, `unknown-families.json`, `coverage-by-source.json`, `gaming-candidates.json`)
+  + `real-derived-families.json` fixture to `.tmp/phase14-real/` → unmount+discard + dismount ISO +
+  workspace cleanup. The source ISO is never modified.
+- NO parallel fake discovery: every service is the production implementation.
+- Exactness rules: exclusive buckets per object (Curated | KnownDeep | Heuristic | Unknown);
+  Protected is a property count (subset of known); per-source slices reconcile; heuristic never
+  inflates knowledge coverage. If the environment cannot elevate, the stage stops at
+  `IMPLEMENTATION READY — REAL-DESKTOP ELEVATED VALIDATION REQUIRED` and the ONE command is
+  documented. No completion is fabricated.
+- The real-derived stable fixture (`tests/fixtures/25H2-Pro-zhCN-component-families.json`) is
+  refreshable from the CLI output; host paths / versions / temp mount paths are stripped.
+
+## ADR-088: Profile knowledge pipeline — Inventory → Deep Knowledge → Profile Policy → Candidate → Safety Gate → Plan
+
+**Status:** Accepted (Phase 14 Stage 14.3).
+**Context:** Gaming profiles previously operated on hand-maintained raw-id override lists. The
+recommendation mechanism must consume ComponentKnowledge (Function/Risk/RecommendationKind/
+Protection/ProfileTag/DependencyTags) plus the selected extras, not raw Windows identity strings as
+its primary decision mechanism.
+**Decision:**
+- `GamingProfileEvaluationService` (Core, pure) orchestrates: inventory raw identities → production
+  deep classification → `IGamingProfilePolicy` (knowledge rules) → candidate verdict → `ProfileSafetyGate`
+  (final authority) → post-gate decision consumed by `RecommendationEngine` as a new profile intent
+  tier (after dependency/requirement and legacy extra-scenario overrides, before the default).
+- `RecommendationInput.GamingDecision` carries the post-gate decision; the engine maps
+  Keep→RecommendKeep, AutoRemove→action trim level, Optional→ManualReview, and attributes the
+  advising profile (Gaming PC / Dedicated Gaming).
+- The pipeline is deterministic and platform-agnostic; reasons are localization resource keys, never
+  runtime AI prose. Manual overrides (Part K) remain authoritative; Protected/Critical/High and
+  unsupported items are never acted on.
+
+## ADR-089: Gaming PC vs Dedicated Gaming — two distinct profiles, never aliases
+
+**Status:** Accepted (Phase 14 Stage 14.3).
+**Context:** "Gaming PC" (a normal personal Windows PC optimized for gaming while staying convenient)
+and "Dedicated Gaming" (a minimal gaming-only machine) are different products with different
+recommendation appetites.
+**Decision:**
+- The existing `Gaming` primary profile is the **Gaming PC** concept (`GamingKind = GamingPc`;
+  display name updated to "Gaming PC"/"游戏 PC"); a NEW primary `DedicatedGaming`
+  (`GamingKind = DedicatedGaming`, "Dedicated Gaming"/"专用游戏") is added — 8 primary profiles total.
+- Gaming PC: automatic changes strictly LOW-RISK consumer content (Phone Link, Solitaire, Get Help,
+  Feedback Hub, Tips/suggestions, weather, Spotlight consumer content, advertising/tailored
+  experiences, widgets/news, Bing/web search where supported). Everything else is kept (§8 keep
+  list: servicing/update/Defender/Store/winget/Gaming Services/Xbox/runtimes/DirectX/audio/
+  networking/GPU/USB/storage/shell/WinRE/boot) or OPTIONAL ("never assume": Paint, Photos, OneDrive,
+  printing, Remote Desktop, developer tools, Hyper-V, WSL).
+- Dedicated Gaming: same keep list, wider OPTIONAL set (moderate-risk consumer/media families become
+  user-confirmed suggestions). NOT kiosk mode — nothing is forced.
+- Explicitly forbidden placebo tweaks: HPET hacks, BCD timer changes, dynamic-tick folklore, memory
+  management myths, core-parking registry superstition, forced scheduler hacks, Defender disabling,
+  Windows Update disabling, pagefile folklore, network "gaming" registry cargo-cult tweaks.
+
+## ADR-090: Profile safety gate — final authority for gaming recommendations
+
+**Status:** Accepted (Phase 14 Stage 14.3).
+**Context:** The Safety Gate must have the final say on whether a gaming candidate may act, applied
+BEFORE anything reaches the plan layer.
+**Decision:**
+- `ProfileSafetyGate.Evaluate(decision, input)` → AllowAuto | AllowOptional | Block with a
+  deterministic gate reason key.
+- Rules: Protected → Block (never); Critical → Block (never); High → Block in every Gaming profile;
+  Moderate → AllowOptional only; Low + curated knowledge support → AllowAuto; heuristic
+  classification → never auto (AllowOptional at most); unsupported (no already-supported safe
+  action) → Block (classification ≠ execution support, ADR-086); user override → Block (manual
+  choice authoritative); RequiredKeep/RecommendedKeep semantics → Block (belt-and-suspenders).
+- Blocked candidates fall through to the item's default evaluation; they are still VISIBLE in the
+  summary with the gate reason, so safety never hides intent.
+
+## ADR-091: Stage 14.3b — real Unknown debt reduction + family analyzer refinement
+
+**Status:** Accepted (Phase 14 Stage 14.3b).
+**Context:** The elevated RealCapture first run (2026-08-14, real desktop Administrator) produced
+EXACT numbers: 757 objects (AppX 47 · Capability 425 · CbsPackage 149 · OptionalFeature 136);
+Unknown 524 (30.78% knowledge coverage; Curated 32, Protected 37, KnownDeep 201, Heuristic 0).
+The Unknown report showed six Language.* capability families (337 objects), an over-broad
+`microsoft.windows` cluster (34) mixing console/hardware capabilities, and a generic `package`
+cluster mixing .NET/KB/RollupFix servicing packages. Accounting boundary: the production discovery
+supports AppX/Capability/OptionalFeature/CbsPackage; Service/ScheduledTask/Driver/Language/
+WinRecovery/SystemApp are explicitly NotSupported — totals are NOT mechanically comparable to the
+Phase 11 count of 758 (different accounting boundary).
+**Decision:**
+- Six Language capability families (Basic/Handwriting/TextToSpeech/OCR/Fonts/Speech) get family
+  classification (Function=Language, Moderate, ProfileDependent, Sensitive). ONE family per role —
+  never per locale; each inventory object keeps its exact locale identity (metadata helper
+  `LanguageCapabilityMetadata` extracts family/locale and recognizes the image default language).
+  Classification ONLY: "not zh-CN" is never inferred as safe automatic removal.
+- Gaming policies keep ALL language capabilities (Language added to the keep list) — Gaming PC and
+  Dedicated Gaming never mass-remove foreign languages.
+- Family analyzer: dotted `microsoft.windows.*` capabilities keep up to five segments (dropping
+  trailing generic role words) so Console.Legacy / Ethernet.Client.Intel / Ethernet.Client.Realtek /
+  Wifi.Client.* are distinct semantic families.
+- CBS `Package_for_<sem>_<num>` identities: the normalizer preserves the semantic middle
+  (DotNetRollup→dotnetrollup, KBxxxx→kb, RollupFix→rollupfix) instead of collapsing to "package";
+  classified conservatively (Critical/Protected/RequiredKeep for servicing; DirectX rollup →
+  RuntimeDependency keep). No generic "package" catch-all entry (avoided shadowing real families;
+  obscure Package_for_* stay Unknown).
+- High-confidence real CBS families classified (semantics only): Licenses / Kernel /
+  FodMetadataServicing = Critical+Protected+RequiredKeep; OneCore-DirectX kept for Gaming; SenseClient
+  and Hello conservative Security; VBSCRIPT LegacyCompatibility; OpenSSH Client ProfileDependent;
+  Notepad Productivity (no CBS removal enabled); Wallpaper consumer content Moderate.
+- Small high-confidence OptionalFeatures: Braille (Accessibility), WirelessDisplay (Media), AzureArc
+  ArcSetup/AppServerClient/ProjFS (Enterprise/Developer, High, ProfileDependent), embedded
+  lockdown/filter/UWF features (Enterprise, High, RecommendedKeep — NEVER automatic Gaming removal).
+- KNOWN != REMOVABLE (ADR-086 preserved): none of the new classifications enable execution.
+- No heuristic entries were added to reduce debt; heuristic count remains 1 (pre-existing) and
+  Unknown stays visible. The second elevated capture must re-run to produce the exact new metrics
+  (expected: Unknown falls materially from 524 due to the 337 language objects alone).
+
+## ADR-092: Stage 14.3c — final high-confidence long-tail classification
+
+**Status:** Accepted (Phase 14 Stage 14.3c).
+**Context:** The SECOND elevated RealCapture run (2026-08-14, real desktop Administrator) VALIDATED
+Stage 14.3b with EXACT numbers: Total 757 (AppX 47 · Capability 425 · CbsPackage 149 ·
+OptionalFeature 136); Curated 32, Protected 51, KnownDeep 591, Heuristic 0, **Unknown 134, coverage
+82.30%** (by source: AppX 22/3/10/15 · Capability 2/3/348/75 · CBS 0/41/148/1 · OptionalFeature
+8/4/85/43). Remaining Unknown is a long tail of clearly identifiable driver families, critical system
+capabilities, codecs, consumer AppX and enterprise features. This pass classifies ONLY high-confidence
+semantics; obscure entries stay Unknown; heuristic stays zero.
+**Decision:**
+- **Network driver capability families** (`Microsoft.Windows.Wifi.Client.*` Intel/Realtek/Broadcom/
+  Qualcomm; `Microsoft.Windows.Ethernet.Client.*`): ONE vendor-family catalog record per family —
+  never per driver model — Networking/High/RecommendedKeep/Sensitive; exact driver capability IDs
+  preserved; both Gaming profiles KEEP them (never auto-removed).
+- **Critical system items**: DirectX.Configuration.Database (RuntimeDependency/Critical/RequiredKeep/
+  GamingRelevant — always kept in Gaming); Microsoft.SecHealthUI (Security/Critical/Protected/
+  RequiredKeep); Microsoft-Windows-FodMetadata-Package (Servicing/Critical/Protected/RequiredKeep);
+  Microsoft.Onecore.StorageManagement (SystemCore/High/Keep); Hello.Face (Security/High/
+  ProfileDependent/Sensitive). None enable destructive removal.
+- **Media codec / image extensions** (HEIF/HEVC/MPEG-2/RAW/VP9/WebMedia/WebP AppX): Media/Low/
+  ProfileDependent. Gaming PC NEVER auto-strips codec support; Dedicated Gaming optional at most.
+  No removal-support expansion in this stage.
+- **User-facing AppX**: Outlook for Windows and Microsoft Office Hub (Low/ConsumerContent,
+  OptionalRemove) — Gaming PC auto-recommends ONLY when a supported AppX removal exists (the Safety
+  Gate blocks unsupported candidates, ADR-090). Dev Home (Developer/ProfileDependent/DeveloperTool):
+  the Developer profile gains a Keep override (new `Profile.Reason.Developer.DevHome`; Dev Home added
+  to the curated catalog, 22→23 AppX definitions); Gaming profiles treat it optional-only.
+  ApplicationCompatibilityEnhancements (SystemCore/High/RecommendedKeep) covers both AppX and CBS
+  identities. Classification never implies removability (ADR-086).
+- **Clear capabilities**: Microsoft.Windows.Console.Legacy (LegacyCompatibility), Microsoft.WebDriver
+  (Developer), MathRecognizer (Accessibility), App.WirelessDisplay.Connect (Media) → ProfileDependent,
+  no auto/optional steer; Microsoft.Wallpapers.Extended → ShellExperience optional consumer.
+- **High-confidence OptionalFeatures**: ClientForNFS-Infrastructure (Networking), DataCenterBridging
+  (Networking/High), DirectoryServices-ADAM-Client (Enterprise), HostGuardian (Security/High —
+  never becomes Low-risk auto-removable), LegacyComponents (LegacyCompatibility) — all ProfileDependent
+  or kept, never automatic Gaming removals. Embedded/lockdown families keep their 14.3b High semantics.
+- **Coverage-quality rule**: NO broad namespace fallback patterns (Microsoft.* / Windows.* / Client-* /
+  Package-* are forbidden; a guard test enforces this). Unknown stays visible; heuristic remains 1
+  (unchanged); deep catalog 177 → 203 (+27 high-confidence entries).
+- The FINAL THIRD elevated RealCapture (same CLI) must produce the exact new metrics; no percentage is
+  asserted — Unknown is expected to fall materially from 134.
+
+## ADR-093: Phase 14 coverage acceptance at 89.56% with explicit Unknown debt
+
+**Status:** Accepted (Phase 14 closeout, 2026-08-14).
+**Context:** The THIRD elevated RealCapture run (real desktop Administrator, same ISO/index)
+produced the FINAL authoritative exact numbers: Total 757 · Curated 33 · Protected 53 · KnownDeep
+645 · Heuristic 0 · **Unknown 79 · knowledge coverage 89.56%** across the currently supported
+discovery providers (AppX 47: 23/4/21/3 · Capability 425: 2/3/385/38 · CbsPackage 149: 0/42/149/0 —
+CBS 100% known · OptionalFeature 136: 8/4/90/38). Provider scope is explicit: AppX/Capability/
+OptionalFeature/CbsPackage supported; Service/ScheduledTask/Driver/Language/WinRecovery/SystemApp
+NotSupported. Therefore 89.56% is semantic knowledge coverage across the SUPPORTED providers — never
+described as "89.56% of all Windows components". Real validation history: 30.78% (201/524) →
+82.30% (591/134) → 89.56% (645/79); the ≥60% Stage 14.2 estimate is superseded.
+**Decision:**
+- **Phase 14 is ACCEPTED at 89.56%. No Stage 14.3d** will be created merely to chase a higher
+  percentage. Remaining 79 Unknown entries are ACCEPTED as explicit, visible technical debt.
+- Rationale: (1) CBS coverage is complete (149/149); (2) AppX long-tail is almost complete (3
+  unknown); (3) remaining Capability/OptionalFeature debt is predominantly low-frequency long-tail
+  functionality; (4) top remaining families are mostly singleton entries (Quick Assist/CrossDevice,
+  MSIX packaging tooling, MSMQ family, MultiPoint, NFS administration, legacy IrDA/RIP, RSAT
+  subfeatures, printing subfeatures, Recall, miscellaneous enterprise/legacy capabilities); (5)
+  heuristic stays 0; (6) explicit Unknown is deliberately preferred over low-confidence
+  classification.
+- **Zero Unknown is NOT a product requirement.** Unknown is honest debt; hiding it (or "classifying"
+  it with vanity broad patterns such as Microsoft.* / Windows.* / Client-* / Package-*) is the
+  failure mode we refuse.
+- **Gaming Profile 2.0 ACCEPTED** alongside: Gaming PC vs Dedicated Gaming remain distinct products;
+  safety principles confirmed (Protected/Critical/High never auto-remove; heuristic never auto;
+  Known != Removable; GamingRelevant != SafeToRemove; dependency/extras keep rules have final
+  authority; manual overrides authoritative; no placebo tweaks; Defender/Windows Update/servicing/
+  Store/Gaming Services/runtime/DirectX protected).
+- Future work (Service/Driver/ScheduledTask/SystemApp/WinRecovery discovery; deeper dependency
+  resolution; destructive CBS/driver removal execution; aggressive Lightweight/Dedicated execution;
+  FullHealthValidated after deeper destructive customization) is moved OUT of Phase 14 into
+  subsequent phases. Phase 14 ends here; it is merged to `main` via `--no-ff`.

@@ -1,0 +1,335 @@
+{
+  "count": 30,
+  "families": [
+    {
+      "rank": 1,
+      "family": "microsoft.windows.notepad.system",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Microsoft.Windows.Notepad.System~~~~0.0.1.0"
+      ],
+      "normalizedKey": "microsoft.windows.notepad.system",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 2,
+      "family": "microsoft.windows.sense.client",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Microsoft.Windows.Sense.Client~~~~"
+      ],
+      "normalizedKey": "microsoft.windows.sense.client",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 3,
+      "family": "microsoft.windows.storagemanagement",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Microsoft.Windows.StorageManagement~~~~0.0.1.0"
+      ],
+      "normalizedKey": "microsoft.windows.storagemanagement",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 4,
+      "family": "microsoftcorporationii.quickassist",
+      "source": "AppX",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MicrosoftCorporationII.QuickAssist_2025.331.2057.0_neutral_~_8wekyb3d8bbwe"
+      ],
+      "normalizedKey": "microsoftcorporationii.quickassist",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 5,
+      "family": "microsoftwindows.crossdevice",
+      "source": "AppX",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MicrosoftWindows.CrossDevice_1.25112.60.0_neutral_~_cw5n1h2txyewy"
+      ],
+      "normalizedKey": "microsoftwindows.crossdevice",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 6,
+      "family": "msix.packagingtool",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Msix.PackagingTool.Driver~~~~0.0.1.0"
+      ],
+      "normalizedKey": "msix.packagingtool",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 7,
+      "family": "msmq-adintegration",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MSMQ-ADIntegration"
+      ],
+      "normalizedKey": "msmq-adintegration",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 8,
+      "family": "msmq-container",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MSMQ-Container"
+      ],
+      "normalizedKey": "msmq-container",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 9,
+      "family": "msmq-dcomproxy",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MSMQ-DCOMProxy"
+      ],
+      "normalizedKey": "msmq-dcomproxy",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 10,
+      "family": "msmq-http",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MSMQ-HTTP"
+      ],
+      "normalizedKey": "msmq-http",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 11,
+      "family": "msmq-multicast",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MSMQ-Multicast"
+      ],
+      "normalizedKey": "msmq-multicast",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 12,
+      "family": "msmq-server",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MSMQ-Server"
+      ],
+      "normalizedKey": "msmq-server",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 13,
+      "family": "msmq-triggers",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MSMQ-Triggers"
+      ],
+      "normalizedKey": "msmq-triggers",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 14,
+      "family": "msteams",
+      "source": "AppX",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MSTeams_1.0.0.0_x64__8wekyb3d8bbwe"
+      ],
+      "normalizedKey": "msteams",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 15,
+      "family": "multipoint-connector",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MultiPoint-Connector"
+      ],
+      "normalizedKey": "multipoint-connector",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 16,
+      "family": "multipoint-connector-services",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MultiPoint-Connector-Services"
+      ],
+      "normalizedKey": "multipoint-connector-services",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 17,
+      "family": "multipoint-tools",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "MultiPoint-Tools"
+      ],
+      "normalizedKey": "multipoint-tools",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 18,
+      "family": "network.irda",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Network.Irda~~~~0.0.1.0"
+      ],
+      "normalizedKey": "network.irda",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 19,
+      "family": "nfs-administration",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "NFS-Administration"
+      ],
+      "normalizedKey": "nfs-administration",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 20,
+      "family": "onecoreuap.onesync",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "OneCoreUAP.OneSync~~~~0.0.1.0"
+      ],
+      "normalizedKey": "onecoreuap.onesync",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 21,
+      "family": "print.management",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Print.Management.Console~~~~0.0.1.0"
+      ],
+      "normalizedKey": "print.management",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 22,
+      "family": "printing-foundation-features",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Printing-Foundation-Features"
+      ],
+      "normalizedKey": "printing-foundation-features",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 23,
+      "family": "printing-foundation-internetprinting",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Printing-Foundation-InternetPrinting-Client"
+      ],
+      "normalizedKey": "printing-foundation-internetprinting",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 24,
+      "family": "printing-foundation-lpdprintservice",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Printing-Foundation-LPDPrintService"
+      ],
+      "normalizedKey": "printing-foundation-lpdprintservice",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 25,
+      "family": "printing-foundation-lprportmonitor",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Printing-Foundation-LPRPortMonitor"
+      ],
+      "normalizedKey": "printing-foundation-lprportmonitor",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 26,
+      "family": "rascmak.client",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "RasCMAK.Client~~~~0.0.1.0"
+      ],
+      "normalizedKey": "rascmak.client",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 27,
+      "family": "recall",
+      "source": "OptionalFeature",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Recall"
+      ],
+      "normalizedKey": "recall",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 28,
+      "family": "rip.listener",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "RIP.Listener~~~~0.0.1.0"
+      ],
+      "normalizedKey": "rip.listener",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 29,
+      "family": "rsat.activedirectory.ds-lds.tools",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0"
+      ],
+      "normalizedKey": "rsat.activedirectory.ds-lds.tools",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    },
+    {
+      "rank": 30,
+      "family": "rsat.azurestack",
+      "source": "Capability",
+      "count": 1,
+      "representativeIdentifiers": [
+        "Rsat.AzureStack.HCI.Management.Tools~~~~0.0.1.0"
+      ],
+      "normalizedKey": "rsat.azurestack",
+      "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
+    }
+  ]
+}

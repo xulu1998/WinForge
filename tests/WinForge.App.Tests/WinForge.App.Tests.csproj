@@ -23,6 +23,14 @@
     <ProjectReference Include="..\..\src\WinForge.Infrastructure\WinForge.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!-- Phase 14.3 real-derived regression fixture (tests/fixtures). Copied to the
+       test output so the fixture validation test can read it. -->
+  <ItemGroup>
+    <None Include="..\fixtures\25H2-Pro-zhCN-component-families.json"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="fixtures\25H2-Pro-zhCN-component-families.json" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

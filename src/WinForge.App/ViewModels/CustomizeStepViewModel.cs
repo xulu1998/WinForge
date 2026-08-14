@@ -292,6 +292,12 @@ public sealed class CustomizeStepViewModel : ViewModelBase
             return;
         }
 
+        // Phase 14.3 (ADR-088/089): derive the knowledge-driven gaming context from
+        // the CURRENT profile selection BEFORE rows recompute, so each row's gaming
+        // decision reflects the active primary (Gaming PC / Dedicated Gaming) and
+        // the selected extras (Xbox / WSL / printing / touch / remote).
+        PushGamingContext();
+
         _profileCtx.SetPresentIds(AllSubjects().Where(s => s.IsPresent).Select(s => s.LogicalId));
         foreach (var tab in Tabs)
         {
@@ -307,5 +313,43 @@ public sealed class CustomizeStepViewModel : ViewModelBase
         }
 
         Profiles.RefreshSummary();
+    }
+
+    /// <summary>
+    /// Pushes the active gaming kind + extras into both knowledge tabs. Only a
+    /// primary profile with <see cref="WinForge.Core.Profiles.ProfileDefinition.GamingKind"/>
+    /// activates the pipeline; extras map 1:1 to
+    /// <see cref="WinForge.Core.Profiles.GamingExtra"/>.
+    /// </summary>
+    private void PushGamingContext()
+    {
+        if (_profileCtx is null)
+        {
+            return;
+        }
+
+        var selected = _profileCtx.SelectedProfiles;
+        var gamingProfile = selected.FirstOrDefault(p => p.GamingKind is not null);
+        var kind = gamingProfile is null ? null : gamingProfile.GamingKind;
+        var extras = new HashSet<WinForge.Core.Profiles.GamingExtra>();
+        foreach (var p in selected)
+        {
+            var extra = p.Id switch
+            {
+                "XboxGamePass" => WinForge.Core.Profiles.GamingExtra.XboxGamePass,
+                "WslDocker" => WinForge.Core.Profiles.GamingExtra.WslDocker,
+                "PrintingScanning" => WinForge.Core.Profiles.GamingExtra.PrintScan,
+                "TouchPen" => WinForge.Core.Profiles.GamingExtra.TouchPen,
+                "RemoteDesktop" => WinForge.Core.Profiles.GamingExtra.RemoteDesktop,
+                _ => (WinForge.Core.Profiles.GamingExtra?)null,
+            };
+            if (extra is not null)
+            {
+                extras.Add(extra.Value);
+            }
+        }
+
+        _knowledge.SetGamingContext(kind, extras);
+        _componentsKnowledge.SetGamingContext(kind, extras);
     }
 }

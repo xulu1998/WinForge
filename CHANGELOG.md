@@ -3,6 +3,194 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 14 — CLOSEOUT: Phase 14 COMPLETED + MERGED TO MAIN (2026-08-14)
+
+- **THIRD elevated RealCapture SUCCEEDED (real desktop, Administrator)** — FINAL AUTHORITATIVE
+  EXACT numbers: **Total 757 · Curated 33 · Protected 53 · KnownDeep 645 · Heuristic 0 · Unknown 79 ·
+  knowledge coverage 89.56%** (AppX 47: 23 curated/4 protected/21 known/3 unknown · Capability 425:
+  2/3/385/38 · CbsPackage 149: 0/42/149/0 — **CBS 149/149 = 100% known** · OptionalFeature 136:
+  8/4/90/38).
+- **Precise scope wording**: 89.56% is semantic knowledge coverage across the CURRENTLY SUPPORTED
+  Component Intelligence discovery providers (AppX / Capability / OptionalFeature / CbsPackage).
+  Service / ScheduledTask / Driver / Language / WinRecovery / SystemApp are NotSupported by
+  RealCapture — this is NOT "89.56% of all Windows components".
+- **Real validation history preserved**: 30.78% (KnownDeep 201, Unknown 524) → 82.30% (591/134) →
+  **89.56% (645/79)** — evidence of the family-based classification architecture on real 25H2 media.
+  The old ≥60% Stage 14.2 estimate is superseded and is not presented as a validated metric.
+- **79 Unknown entries ACCEPTED as explicit technical debt** (ADR-093): CBS complete; AppX long-tail
+  near-complete (3 unknown); remaining Capability/OptionalFeature debt is low-frequency long-tail,
+  mostly singletons (Quick Assist/CrossDevice, MSIX packaging tooling, MSMQ family, MultiPoint,
+  NFS administration, legacy IrDA/RIP, RSAT subfeatures, printing subfeatures, Recall, miscellaneous
+  enterprise/legacy capabilities). Zero Unknown is NOT a product requirement; Unknown is visible,
+  honest debt. No broad catch-all classifier was added.
+- **Gaming Profile 2.0 ACCEPTED**: Gaming PC (safe personal gaming optimization while retaining
+  normal Windows usefulness) vs Dedicated Gaming (more minimal OPTIONAL recommendations,
+  health/compatibility-first, not kiosk). Safety confirmed: Protected/Critical/High never
+  auto-remove; heuristic never auto; Known ≠ Removable; GamingRelevant ≠ SafeToRemove;
+  dependency/extras keeps have final authority; manual overrides authoritative; NO placebo gaming
+  tweaks; Defender enabled; Windows Update enabled; servicing protected; Store/Gaming
+  Services/runtime/DirectX protected where required.
+- **Future work moved OUT of Phase 14** (no Stage 14.4): Service/Driver/ScheduledTask/SystemApp/
+  WinRecovery discovery, deeper dependency resolution, destructive CBS-removal execution, driver
+  stripping, aggressive Lightweight/Dedicated execution, FullHealthValidated after deeper destructive
+  customization.
+- **1105 automated tests pass (Core 53, App 1052), 0 errors, 0 warnings (Release)** — ordinary
+  in-place build/test, pre- and post-merge.
+- **MERGED TO `main` via `--no-ff`** (2026-08-14); Phase 14 branch retained.
+
+## Phase 14 — Stage 14.3c: FINAL high-confidence long-tail classification (2026-08-14)
+
+- **Stage 14.3b VALIDATED + COMPLETE** — SECOND elevated RealCapture run SUCCEEDED (real desktop,
+  Administrator): exact numbers **Total 757 · Curated 32 · Protected 51 · KnownDeep 591 · Heuristic 0 ·
+  Unknown 134 · knowledge coverage 82.30%** (AppX 47: 22/3/10/15 · Capability 425: 2/3/348/75 ·
+  CbsPackage 149: 0/41/148/1 · OptionalFeature 136: 8/4/85/43). The accounting boundary remains the
+  four supported providers (AppX/Capability/OptionalFeature/CbsPackage) — not comparable to Phase 11's 758.
+- **Wi-Fi / Ethernet driver capability families** (vendor-family rules, one catalog record per FAMILY,
+  never per driver model): `Microsoft.Windows.Wifi.Client.*` (Intel/Realtek/Broadcom/Qualcomm) and
+  `Microsoft.Windows.Ethernet.Client.*` → Networking / High / RecommendedKeep / Sensitive. Both Gaming
+  profiles KEEP them — never auto-removed.
+- **Critical system items classified**: DirectX.Configuration.Database (RuntimeDependency/Critical/
+  RequiredKeep/GamingRelevant — always kept in Gaming); Microsoft.SecHealthUI (Security/Critical/
+  Protected/RequiredKeep); Microsoft-Windows-FodMetadata-Package (Servicing/Critical/Protected/
+  RequiredKeep); Microsoft.Onecore.StorageManagement (SystemCore/High/Keep); Hello.Face
+  (Security/High/ProfileDependent/Sensitive).
+- **Media codec / image extensions** (HEIF/HEVC/MPEG-2/RAW/VP9/WebMedia/WebP): Media/Low/
+  ProfileDependent — Gaming PC never automatically strips codec support (optional, user-confirmed at
+  most); Dedicated Gaming optional at most.
+- **User-facing AppX**: Outlook for Windows + Office Hub (Low/ConsumerContent → Gaming PC auto-
+  recommends only when a supported AppX removal exists; the safety gate blocks otherwise); Dev Home
+  (Developer/ProfileDependent/DeveloperTool — the Developer profile now KEEPS it, Gaming optional-only;
+  added to the curated catalog, 22→23); ApplicationCompatibilityEnhancements (SystemCore/High/
+  RecommendedKeep — AppX and CBS identities).
+- **Clear capabilities**: Console.Legacy, WebDriver, MathRecognizer (Accessibility), App.WirelessDisplay
+  .Connect → ProfileDependent (never auto); Wallpapers.Extended → optional consumer content.
+- **High-confidence features**: ClientForNFS-Infrastructure, DataCenterBridging, DirectoryServices-ADAM
+  -Client, HostGuardian, LegacyComponents → conservative ProfileDependent semantics; embedded/security
+  families keep High risk (HostGuardian never becomes a Low-risk auto removal).
+- Deep catalog **177 → 203** (+27 high-confidence entries, **zero heuristic** added); no broad namespace
+  fallback rules (new guard test). Heuristic remains 1.
+- **1105 automated tests pass (Core 53, App 1052), 0 errors, 0 warnings (Release)** — ordinary in-place
+  `dotnet build`/`dotnet test` both pass.
+- **FINAL THIRD elevated RealCapture required** to produce the exact new metrics (Unknown expected to
+  fall materially from 134 — Wi-Fi/Ethernet drivers, DirectX config, codecs, Outlook/Office Hub,
+  Dev Home and the capability/feature families now carry knowledge).
+
+## Phase 14 — Stage 14.3b: Real Unknown debt reduction + family analyzer refinement (2026-08-14)
+
+- **First elevated RealCapture run SUCCEEDED** (real desktop, Administrator) — EXACT real numbers:
+  Total **757** (AppX 47 · Capability 425 · CbsPackage 149 · OptionalFeature 136); Overall
+  Curated 32 · Protected 37 · KnownDeep 201 · Heuristic 0 · **Unknown 524 · knowledge coverage
+  30.78%**. New explicit accounting boundary: only the four supported sources are counted;
+  Service/ScheduledTask/Driver/Language/WinRecovery/SystemApp are NotSupported — totals are not
+  mechanically comparable to the Phase 11 count of 758.
+- **Six real Language capability families classified** (Basic 123 / Handwriting 89 / TextToSpeech 49 /
+  OCR 35 / Fonts 24 / Speech 17 = 337 objects): one semantic family per role — never per locale —
+  each inventory object keeps its exact locale identity. Semantics conservative
+  (Language/Moderate/ProfileDependent/Sensitive). `LanguageCapabilityMetadata` prepares
+  target/default-language recognition; **no destructive language stripping**; "not zh-CN" is never
+  inferred as safe automatic removal.
+- **Gaming safety**: Gaming PC and Dedicated Gaming keep ALL language capabilities — foreign
+  languages are never mass-removed.
+- **Family analyzer refined**: `Microsoft.Windows.*` dotted capabilities now keep up to five semantic
+  segments (Console.Legacy / Ethernet.Client.Intel / Ethernet.Client.Realtek / Wifi.Client.* are
+  distinct families; trailing generic role words dropped) — the useless `microsoft.windows` bucket
+  is gone.
+- **Package_for_* CBS semantics**: the normalizer preserves the semantic middle of
+  `Package_for_DotNetRollup_481`, `Package_for_KB5054156`, `Package_for_RollupFix` (→
+  dotnetrollup / kb / rollupfix) instead of collapsing every servicing package to "package";
+  classified conservatively (Critical/Protected/RequiredKeep, never removable).
+- **High-confidence real CBS classified** (semantics only, KNOWN ≠ REMOVABLE): Licenses / Kernel /
+  FodMetadataServicing (Critical+Protected+RequiredKeep), OneCore-DirectX (kept for Gaming),
+  SenseClient + Windows Hello (Security), VBSCRIPT (LegacyCompatibility), OpenSSH Client
+  (ProfileDependent), Notepad (Productivity), Wallpaper content (Moderate consumer).
+- **Small high-confidence features**: Braille (Accessibility), Wireless Display (Media), Azure Arc /
+  AppServerClient / ProjFS (Enterprise/Developer, High, ProfileDependent), embedded
+  lockdown/filter/ShellLauncher/UWF (Enterprise, High, RecommendedKeep — never automatic Gaming
+  removal).
+- Deep catalog 145 → **177 entries**; **zero heuristic entries added** (debt reduced with real
+  semantic knowledge only).
+- **1030 automated tests pass (Core 53, App 977), 0 errors, 0 warnings (Release)** — ordinary
+  in-place `dotnet build`/`dotnet test` pass.
+- **SECOND elevated RealCapture required** to produce the exact new metrics (Unknown expected to
+  fall materially from 524 — the 337 Language objects alone now carry family knowledge).
+
+## Phase 14 — Stage 14.3: Elevated real capture + Gaming Profile 2.0 (2026-08-13)
+
+- **Elevated real-inventory capture tool** (`tools/WinForge.RealCapture`): a console CLI that runs
+  the EXACT production WinForge pipeline (ISO inspection → export selected index → mount working WIM
+  → production DISM discovery → matcher → DeepComponentClassifier → exact coverage accounting) and
+  exports `inventory-summary.json`, `inventory-items.json`, `unknown-items.json`,
+  `unknown-families.json` (top-30 ranked), `coverage-by-source.json`, `gaming-candidates.json` and
+  `real-derived-families.json` to `.tmp/phase14-real/`, then unmounts/discards/cleans up. Must run as
+  **Administrator** (DISM requires elevation; the app manifest requests it). Source ISO stays
+  read-only. **Exact real coverage numbers will be captured when the user runs it — nothing
+  estimated or fabricated.**
+- **Exact coverage accounting** (`CoverageAccountingService`): every raw object lands in exactly one
+  bucket (Curated | KnownDeep | Heuristic | Unknown); Protected is a property count (subset of known);
+  per-source slices reconcile to the total; heuristic never inflates knowledge coverage.
+- **Real-derived regression fixture** `tests/fixtures/25H2-Pro-zhCN-component-families.json` with
+  version/arch/language/host-path-stripped representatives + validation tests (refreshable from the
+  capture CLI output).
+- **Gaming Profile 2.0**: the Gaming primary profile is now the **Gaming PC** concept and a new
+  **Dedicated Gaming** primary was added (never aliases). Recommendations are knowledge-driven:
+  Inventory → Deep Knowledge → Profile Policy → Candidate → Safety Gate → Plan. The Safety Gate has
+  final authority (Protected/Critical/High block; Moderate is optional-only; Low + curated knowledge
+  may auto-recommend; heuristic classification never auto-removes; unsupported items and manual
+  choices are never touched). Extras materially influence decisions (Xbox/Game Pass, WSL/Docker,
+  printing/scanning, touch/pen, Remote Desktop force their ecosystems to keep). The keep list covers
+  servicing/update/Defender/Store/winget/Gaming Services/runtimes/DirectX/audio/networking/GPU/USB/
+  storage/shell/WinRE/boot. No placebo tweaks (HPET/BCD/tick/memory/pagefile/cargo-cult forbidden).
+- **User-facing Gaming summary** in the profile panel: 建议修改 / 为兼容保留 / 可选建议 counts with
+  bounded examples and deterministic localized reasons (en + zh-CN) — never hundreds of technical ids.
+- **Gaming PC (游戏 PC)** and **Dedicated Gaming (专用游戏)** are two distinct primary profiles
+  (8 primaries total, never aliases). Manual overrides remain authoritative
+  (profile recalculation never silently overwrites an explicit user choice; Protected stays protected).
+- **975 automated tests pass (Core 53, App 922), 0 errors, 0 warnings (Release)** — ordinary in-place
+  `dotnet build WinForge.sln`/`dotnet test WinForge.sln` both pass on this machine.
+
+## Phase 14 — Stage 14.2: Real-media family expansion + coverage (2026-08-13)
+
+- Real source confirmed: `C:\Users\xulu1998\Downloads\Win11_25H2_Chinese_Simplified_x64_v2.iso`
+  (install.wim 7.58 GB, extracted read-only). The build sandbox is NON-ELEVATED — DISM returns
+  Error 740, so a fresh per-object scan is not possible here; the real baseline uses the Phase 11
+  elevated real-desktop scan (Curated 11 + DiscoveredUnclassified 734 + Protected 13 = 758).
+- Family expansion: `DeepComponentCatalogData` 108 → **145 curated entries** (+22 CBS family rules,
+  +15 hardware/driver rules). CBS semantics introduced with conservative floors Risk≥Moderate,
+  Protection≥Sensitive, never RecommendedRemove; hardware families → RecommendedKeep/ProfileDependent.
+- `UnknownFamilyAnalyzer` (ranked family debt) + enhanced `ClassificationCoverageMetrics`
+  (Curated/KnownDeep/Protected/Heuristic/Unknown, per source, no double counting) + restrained
+  `CoverageSummaryText` on the Component Intelligence surface.
+- Language/architecture/resource/version variants covered; version suffix changes do not alter
+  classification; cross-entry pattern/alias collisions eliminated and guarded.
+- docs/COMPONENT-COVERAGE.md (honest scan-capability note; ≥60% family-level coverage estimate;
+  exact per-object numbers require an elevated scan; CBS safety policy; classified ≠ removable).
+  **892 tests pass (Core 53, App 839), 0 errors, 0 warnings** — incl. 47 Stage14 tests.
+
+## Phase 14 — Stage 14.1: Deep Component Coverage & Classification (2026-08-13)
+
+- Durable taxonomy + classification layer (ADR-085): discovery / knowledge / planning kept SEPARATE.
+  `ComponentFunctionCategory` (25 top-level functional categories) distinct from discovery source
+  kind; `DeepComponentKnowledge` (canonical id, display name, purpose, category, risk, recommendation,
+  protection, profile tag, dependencies, confidence); risk model Low/Moderate/High/Critical;
+  recommendation RecommendedRemove/OptionalRemove/RecommendedKeep/RequiredKeep/ProfileDependent;
+  confidence Curated/KnownPattern/KnownFamily/Heuristic (heuristic NEVER lowers risk below Moderate or
+  protection below Sensitive).
+- `ComponentNormalizer` (strips ~/_ tokens, versions, .neutral; collision guard) + first-batch
+  `DeepComponentCatalogData` with **108 curated family entries** (Gaming/Xbox, consumer inbox, phone,
+  search/Bing, widgets/Spotlight/ads, diagnostics/telemetry, printing, virtualization, dev tools,
+  remote access, media, cloud, Store/runtime infrastructure, security, servicing/recovery,
+  accessibility) — protection flags for servicing/update/CBS/Defender/boot/WinRE/App Installer/Store/
+  WebView2/runtimes/DirectX/shell.
+- Gaming profile foundation metadata (Gaming PC vs Dedicated Gaming distinction; keep-list; candidate
+  safe cleanup; no placebo tweaks) — matches docs/PHASE14-INPUT.md.
+- UI: the existing Customize Apps/Windows Components knowledge surface now also ingests CLASSIFIED
+  DiscoveredUnclassified rows (name/purpose/recommendation/risk via deep catalog) — raw ids stop
+  dominating; unknown stays clearly labeled. Master-detail behavior preserved.
+- Coverage metrics model (total/curated/protected/classified/unknown, per-source) with Unknown kept
+  visible as debt. **845 tests pass (Core 53, App 792), 0 errors, 0 warnings** — incl. 21 new
+  Stage14DeepClassificationTests (taxonomy/normalization/alias/family/risk/rec/confidence/profile/
+  protected/unknown/deterministic/collision/fallback/heuristic/Gaming-safety/metrics).
+
 ## Phase 13 — CLOSEOUT: VM INSTALL VALIDATED + merged (2026-08-13)
 
 - Phase 13 baseline VM validation ACCEPTED (ADR-084): WinForge-generated ISO (25H2 Pro zh-CN x64

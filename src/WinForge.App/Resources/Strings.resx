@@ -98,6 +98,43 @@
   <data name="Compat.Edition.IoTEnterprise" xml:space="preserve"><value>IoT Enterprise</value></data>
   <data name="Compat.Status.Future" xml:space="preserve"><value>⚠ Not fully validated yet</value></data>
   <data name="Compat.Status.EsdOnly" xml:space="preserve"><value>⚠ Inspection only</value></data>
+  <data name="Deep.Rec.RecommendedRemove" xml:space="preserve"><value>Recommended remove</value></data>
+  <data name="Deep.Rec.OptionalRemove" xml:space="preserve"><value>Optional remove</value></data>
+  <data name="Deep.Rec.RecommendedKeep" xml:space="preserve"><value>Recommended keep</value></data>
+  <data name="Deep.Rec.RequiredKeep" xml:space="preserve"><value>Required keep</value></data>
+  <data name="Deep.Rec.ProfileDependent" xml:space="preserve"><value>Depends on configuration</value></data>
+  <data name="Deep.Rec.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Deep.Risk.Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Deep.Risk.Moderate" xml:space="preserve"><value>Moderate</value></data>
+  <data name="Deep.Risk.High" xml:space="preserve"><value>High</value></data>
+  <data name="Deep.Risk.Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="Deep.Risk.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Deep.Function.Communication" xml:space="preserve"><value>Communication</value></data>
+  <data name="Deep.Function.Gaming" xml:space="preserve"><value>Gaming</value></data>
+  <data name="Deep.Function.Media" xml:space="preserve"><value>Media</value></data>
+  <data name="Deep.Function.Productivity" xml:space="preserve"><value>Productivity</value></data>
+  <data name="Deep.Function.Developer" xml:space="preserve"><value>Developer</value></data>
+  <data name="Deep.Function.Networking" xml:space="preserve"><value>Networking</value></data>
+  <data name="Deep.Function.RemoteAccess" xml:space="preserve"><value>Remote access</value></data>
+  <data name="Deep.Function.PrintingScanning" xml:space="preserve"><value>Printing / scanning</value></data>
+  <data name="Deep.Function.Input" xml:space="preserve"><value>Input</value></data>
+  <data name="Deep.Function.Accessibility" xml:space="preserve"><value>Accessibility</value></data>
+  <data name="Deep.Function.Security" xml:space="preserve"><value>Security</value></data>
+  <data name="Deep.Function.Servicing" xml:space="preserve"><value>Servicing</value></data>
+  <data name="Deep.Function.DiagnosticsTelemetry" xml:space="preserve"><value>Diagnostics / telemetry</value></data>
+  <data name="Deep.Function.CloudIntegration" xml:space="preserve"><value>Cloud integration</value></data>
+  <data name="Deep.Function.Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Deep.Function.ShellExperience" xml:space="preserve"><value>Shell experience</value></data>
+  <data name="Deep.Function.HardwareSupport" xml:space="preserve"><value>Hardware support</value></data>
+  <data name="Deep.Function.Virtualization" xml:space="preserve"><value>Virtualization</value></data>
+  <data name="Deep.Function.Enterprise" xml:space="preserve"><value>Enterprise</value></data>
+  <data name="Deep.Function.LegacyCompatibility" xml:space="preserve"><value>Legacy compatibility</value></data>
+  <data name="Deep.Function.Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Deep.Function.Recovery" xml:space="preserve"><value>Recovery</value></data>
+  <data name="Deep.Function.StoreInfrastructure" xml:space="preserve"><value>Store infrastructure</value></data>
+  <data name="Deep.Function.RuntimeDependency" xml:space="preserve"><value>Runtime dependency</value></data>
+  <data name="Deep.Function.SystemCore" xml:space="preserve"><value>System core</value></data>
+  <data name="Deep.Function.Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="StepState.Current" xml:space="preserve"><value>In progress</value></data>
   <data name="StepState.Completed" xml:space="preserve"><value>Completed</value></data>
   <data name="StepState.RequiresAttention" xml:space="preserve"><value>Needs attention</value></data>
@@ -539,6 +576,14 @@
   <data name="Comp.XboxApp.Prov0" xml:space="preserve"><value>Xbox / Gaming bundles the Xbox app, game overlay, identity provider and Gaming Services runtime.</value></data>
   <data name="Comp.XboxApp.Prov1" xml:space="preserve"><value>Optional to remove for users who do not use Xbox / PC gaming.</value></data>
   <data name="Comp.XboxApp.Scen.Gaming" xml:space="preserve"><value>Kept because you selected a Gaming profile; Xbox Game Pass and PC gaming depend on it.</value></data>
+  <data name="Comp.DevHome.DisplayName" xml:space="preserve"><value>Dev Home</value></data>
+  <data name="Comp.DevHome.Short" xml:space="preserve"><value>Microsoft's developer dashboard app.</value></data>
+  <data name="Comp.DevHome.Long" xml:space="preserve"><value>Dev Home centralizes developer workflows (machine configuration, repos, WinGet packages, performance widgets). Developers commonly rely on it; gamers typically do not need it.</value></data>
+  <data name="Comp.DevHome.KeepIf" xml:space="preserve"><value>You are a developer and use Dev Home for machine setup and WinGet workflows.</value></data>
+  <data name="Comp.DevHome.RemoveIf" xml:space="preserve"><value>You never use Dev Home; you manage development tools another way.</value></data>
+  <data name="Comp.DevHome.Impact" xml:space="preserve"><value>Dev Home is removed. Development tools and WinGet packages remain unaffected.</value></data>
+  <data name="Comp.DevHome.Prov0" xml:space="preserve"><value>Dev Home is a developer dashboard; kept by the Developer profile, optional suggestion only for Gaming profiles.</value></data>
+  <data name="Comp.DevHome.Scen.Developer" xml:space="preserve"><value>Kept because you selected a Developer profile; Dev Home supports machine setup and WinGet workflows.</value></data>
   <data name="Comp.Photos.DisplayName" xml:space="preserve"><value>Photos</value></data>
   <data name="Comp.Photos.Short" xml:space="preserve"><value>Microsoft's default photo viewer/editor.</value></data>
   <data name="Comp.Photos.Long" xml:space="preserve"><value>The default Photos app. Many users rely on it as the shell image viewer; removing it leaves the OS without a built-in photo viewer (files still open via other apps).</value></data>
@@ -926,8 +971,8 @@
   <data name="Profile.Developer.DisplayName" xml:space="preserve"><value>Developer</value></data>
   <data name="Profile.Empty.Preview" xml:space="preserve"><value>Select a configuration to preview its recommendation plan.</value></data>
   <data name="Profile.Extras.Title" xml:space="preserve"><value>Additional needs</value></data>
-  <data name="Profile.Gaming.Description" xml:space="preserve"><value>Game compatibility, controller input, codecs and Game Pass in mind</value></data>
-  <data name="Profile.Gaming.DisplayName" xml:space="preserve"><value>Gaming</value></data>
+  <data name="Profile.Gaming.Description" xml:space="preserve"><value>Gaming PC: a normal personal Windows PC optimized for gaming while staying convenient</value></data>
+  <data name="Profile.Gaming.DisplayName" xml:space="preserve"><value>Gaming PC</value></data>
   <data name="Profile.Lightweight.Description" xml:space="preserve"><value>Fewer optional apps and background experiences; servicing and security kept</value></data>
   <data name="Profile.Lightweight.DisplayName" xml:space="preserve"><value>Lightweight</value></data>
   <data name="Profile.None" xml:space="preserve"><value>No profile selected — manual mode</value></data>
@@ -953,6 +998,7 @@
   <data name="Profile.Reason.Dependency" xml:space="preserve"><value>Required by another component that must be kept</value></data>
   <data name="Profile.Reason.Developer.Consumer" xml:space="preserve"><value>Developer trims unrelated consumer / promotional apps</value></data>
   <data name="Profile.Reason.Developer.Explorer" xml:space="preserve"><value>Developer enables explorer-friendly settings (file extensions)</value></data>
+  <data name="Profile.Reason.Developer.DevHome" xml:space="preserve"><value>Developer keeps Dev Home for machine setup and WinGet workflows</value></data>
   <data name="Profile.Reason.Developer.Sandbox" xml:space="preserve"><value>Developer keeps Windows Sandbox</value></data>
   <data name="Profile.Reason.Developer.Telemetry" xml:space="preserve"><value>Developer reduces advertising and recommendation content</value></data>
   <data name="Profile.Reason.Developer.UI" xml:space="preserve"><value>Developer cleans up suggestion UI</value></data>
@@ -964,6 +1010,39 @@
   <data name="Profile.Reason.Gaming.UI" xml:space="preserve"><value>Gaming trims promotional / suggestion UI</value></data>
   <data name="Profile.Reason.Gaming.Xbox" xml:space="preserve"><value>Gaming keeps Xbox / Game Pass features</value></data>
   <data name="Profile.Reason.Gaming.XboxServices" xml:space="preserve"><value>Gaming keeps Xbox service infrastructure</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.XboxGamePass" xml:space="preserve"><value>Kept because Xbox / Game Pass support is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.WslDocker" xml:space="preserve"><value>Kept because WSL / Docker support is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.PrintScan" xml:space="preserve"><value>Kept because printing / scanning is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.TouchPen" xml:space="preserve"><value>Kept because touch / pen input is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Extra.RemoteDesktop" xml:space="preserve"><value>Kept because Remote Desktop is enabled</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Infrastructure" xml:space="preserve"><value>Kept: core Windows infrastructure (servicing, security, runtimes, drivers, networking, storage, shell)</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Protection" xml:space="preserve"><value>Kept: protected system infrastructure</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Runtime" xml:space="preserve"><value>Kept: this runtime / service is used by games and Windows applications</value></data>
+  <data name="Profile.Reason.Gaming.Keep.Dependency" xml:space="preserve"><value>Kept: other kept infrastructure depends on it (Store / winget / gaming services)</value></data>
+  <data name="Profile.Reason.Gaming.Remove.Consumer" xml:space="preserve"><value>Not required for PC gaming and can be removed safely</value></data>
+  <data name="Profile.Reason.Gaming.Remove.Phone" xml:space="preserve"><value>Phone Link is not required for PC gaming and can be removed safely</value></data>
+  <data name="Profile.Reason.Gaming.Remove.Search" xml:space="preserve"><value>Web / search integration is not required for PC gaming and can be removed safely</value></data>
+  <data name="Profile.Reason.Gaming.Optional.CloudStorage" xml:space="preserve"><value>Optional: remove only if you do not use cloud storage (OneDrive)</value></data>
+  <data name="Profile.Reason.Gaming.Optional.PrintScan" xml:space="preserve"><value>Optional: remove only if you do not use printing / scanning</value></data>
+  <data name="Profile.Reason.Gaming.Optional.RemoteAccess" xml:space="preserve"><value>Optional: remove only if you do not use remote access</value></data>
+  <data name="Profile.Reason.Gaming.Optional.Developer" xml:space="preserve"><value>Optional: remove only if you do not use developer tools</value></data>
+  <data name="Profile.Reason.Gaming.Optional.Virtualization" xml:space="preserve"><value>Optional: remove only if you do not use virtualization (WSL / Hyper-V)</value></data>
+  <data name="Profile.Reason.Gaming.Optional.Media" xml:space="preserve"><value>Optional: remove only if you do not use this media app</value></data>
+  <data name="Profile.Reason.Gaming.Gate.UserOverride" xml:space="preserve"><value>Manual choice preserved — not changed by the profile</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Unsupported" xml:space="preserve"><value>No safe execution mechanism — classification is not removal support</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Protected" xml:space="preserve"><value>Protected system infrastructure — never auto-removed</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Critical" xml:space="preserve"><value>Critical risk — never auto-removed</value></data>
+  <data name="Profile.Reason.Gaming.Gate.High" xml:space="preserve"><value>High risk — never auto-removed by a Gaming profile</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Recommendation" xml:space="preserve"><value>Recommendation semantics require keeping this item</value></data>
+  <data name="Profile.Reason.Gaming.Gate.ModerateOptional" xml:space="preserve"><value>Moderate risk — removable only with your explicit confirmation</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Heuristic" xml:space="preserve"><value>Heuristic classification — never auto-removed</value></data>
+  <data name="Profile.Reason.Gaming.Gate.Optional" xml:space="preserve"><value>Optional suggestion — remove only if you confirm</value></data>
+  <data name="Profile.Summary.Gaming.Recommended" xml:space="preserve"><value>Recommended changes</value></data>
+  <data name="Profile.Summary.Gaming.Kept" xml:space="preserve"><value>Kept for compatibility</value></data>
+  <data name="Profile.Summary.Gaming.Optional" xml:space="preserve"><value>Optional choices</value></data>
+  <data name="Profile.Summary.Gaming.KeptExamples" xml:space="preserve"><value>Kept</value></data>
+  <data name="Profile.DedicatedGaming.DisplayName" xml:space="preserve"><value>Dedicated Gaming</value></data>
+  <data name="Profile.DedicatedGaming.Description" xml:space="preserve"><value>A minimal gaming-only machine; optional cleanups are always user-confirmed</value></data>
   <data name="Profile.Reason.Keep" xml:space="preserve"><value>Recommended to keep by the selected configuration</value></data>
   <data name="Profile.Reason.Lightweight.Background" xml:space="preserve"><value>Lightweight trims background / consumer services</value></data>
   <data name="Profile.Reason.Lightweight.Consumer" xml:space="preserve"><value>Lightweight trims optional consumer apps</value></data>
