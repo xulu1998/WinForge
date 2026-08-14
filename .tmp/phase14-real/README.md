@@ -1,7 +1,10 @@
 # Phase 14 Stage 14.3 — Elevated Real Inventory Capture Output
 
-This directory receives the EXACT real-media inventory results. It is intentionally
-EMPTY until the elevated capture runs — nothing here is fabricated or estimated.
+This directory holds the EXACT real-media inventory results captured by the elevated
+RealCapture runs. The FIRST run (2026-08-14, real desktop Administrator) succeeded and its
+JSON reports are committed here as evidence (Total 757 · Unknown 524 · coverage 30.78%).
+After Stage 14.3b code changes, the SECOND run refreshes these files with the exact new
+metrics. Nothing here is fabricated or estimated.
 
 ## What the user must run (ONE command, as Administrator)
 
