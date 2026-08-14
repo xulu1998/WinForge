@@ -154,3 +154,14 @@ Unknown stays **visible as technical debt** — metrics never hide it. Stage 14.
   (LegacyCompatibility) — ProfileDependent or kept, never Low-risk automatic Gaming removals.
 - **Coverage quality**: no broad namespace fallback patterns (Microsoft.* / Windows.* / Client-* /
   Package-* forbidden — guard test); Unknown stays visible; heuristic unchanged (1); KNOWN ≠ REMOVABLE.
+
+## Phase 14 closeout (2026-08-14, ADR-093)
+
+Final exact real-media coverage: **757 total · Curated 33 · Protected 53 · KnownDeep 645 ·
+Heuristic 0 · Unknown 79 · 89.56%** across the supported providers (CBS 149/149 known; AppX 3
+unknown; Capability 38; OptionalFeature 38). The 79 Unknown are ACCEPTED as explicit technical debt
+— mostly low-frequency long-tail singletons (Quick Assist/CrossDevice, MSIX tooling, MSMQ,
+MultiPoint, NFS admin, legacy IrDA/RIP, RSAT subfeatures, printing subfeatures, Recall, misc
+enterprise/legacy). Zero Unknown is NOT a requirement; no broad fallback patterns were added.
+Gaming Profile 2.0 accepted (Gaming PC vs Dedicated Gaming distinct; safety principles confirmed).
+Future provider/dependency/execution work moved to subsequent phases.

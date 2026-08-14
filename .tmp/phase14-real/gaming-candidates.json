@@ -1,5 +1,5 @@
 {
-  "count": 7,
+  "count": 8,
   "items": [
     {
       "id": "Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_neutral_~_8wekyb3d8bbwe",
@@ -50,6 +50,16 @@
       "function": "Gaming",
       "risk": "Low",
       "recommendation": "OptionalRemove"
+    },
+    {
+      "id": "DirectX.Configuration.Database~~~~0.0.1.0",
+      "source": "Capability",
+      "canonicalId": "DirectXConfigurationDatabase",
+      "displayName": "DirectX Configuration Database",
+      "profileTag": "GamingRelevant",
+      "function": "RuntimeDependency",
+      "risk": "Critical",
+      "recommendation": "RequiredKeep"
     },
     {
       "id": "Microsoft-OneCore-DirectX-Database-FOD-Package~31bf3856ad364e35~amd64~~10.0.26100.1742",

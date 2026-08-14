@@ -2136,3 +2136,38 @@ semantics; obscure entries stay Unknown; heuristic stays zero.
   (unchanged); deep catalog 177 → 203 (+27 high-confidence entries).
 - The FINAL THIRD elevated RealCapture (same CLI) must produce the exact new metrics; no percentage is
   asserted — Unknown is expected to fall materially from 134.
+
+## ADR-093: Phase 14 coverage acceptance at 89.56% with explicit Unknown debt
+
+**Status:** Accepted (Phase 14 closeout, 2026-08-14).
+**Context:** The THIRD elevated RealCapture run (real desktop Administrator, same ISO/index)
+produced the FINAL authoritative exact numbers: Total 757 · Curated 33 · Protected 53 · KnownDeep
+645 · Heuristic 0 · **Unknown 79 · knowledge coverage 89.56%** across the currently supported
+discovery providers (AppX 47: 23/4/21/3 · Capability 425: 2/3/385/38 · CbsPackage 149: 0/42/149/0 —
+CBS 100% known · OptionalFeature 136: 8/4/90/38). Provider scope is explicit: AppX/Capability/
+OptionalFeature/CbsPackage supported; Service/ScheduledTask/Driver/Language/WinRecovery/SystemApp
+NotSupported. Therefore 89.56% is semantic knowledge coverage across the SUPPORTED providers — never
+described as "89.56% of all Windows components". Real validation history: 30.78% (201/524) →
+82.30% (591/134) → 89.56% (645/79); the ≥60% Stage 14.2 estimate is superseded.
+**Decision:**
+- **Phase 14 is ACCEPTED at 89.56%. No Stage 14.3d** will be created merely to chase a higher
+  percentage. Remaining 79 Unknown entries are ACCEPTED as explicit, visible technical debt.
+- Rationale: (1) CBS coverage is complete (149/149); (2) AppX long-tail is almost complete (3
+  unknown); (3) remaining Capability/OptionalFeature debt is predominantly low-frequency long-tail
+  functionality; (4) top remaining families are mostly singleton entries (Quick Assist/CrossDevice,
+  MSIX packaging tooling, MSMQ family, MultiPoint, NFS administration, legacy IrDA/RIP, RSAT
+  subfeatures, printing subfeatures, Recall, miscellaneous enterprise/legacy capabilities); (5)
+  heuristic stays 0; (6) explicit Unknown is deliberately preferred over low-confidence
+  classification.
+- **Zero Unknown is NOT a product requirement.** Unknown is honest debt; hiding it (or "classifying"
+  it with vanity broad patterns such as Microsoft.* / Windows.* / Client-* / Package-*) is the
+  failure mode we refuse.
+- **Gaming Profile 2.0 ACCEPTED** alongside: Gaming PC vs Dedicated Gaming remain distinct products;
+  safety principles confirmed (Protected/Critical/High never auto-remove; heuristic never auto;
+  Known != Removable; GamingRelevant != SafeToRemove; dependency/extras keep rules have final
+  authority; manual overrides authoritative; no placebo tweaks; Defender/Windows Update/servicing/
+  Store/Gaming Services/runtime/DirectX protected).
+- Future work (Service/Driver/ScheduledTask/SystemApp/WinRecovery discovery; deeper dependency
+  resolution; destructive CBS/driver removal execution; aggressive Lightweight/Dedicated execution;
+  FullHealthValidated after deeper destructive customization) is moved OUT of Phase 14 into
+  subsequent phases. Phase 14 ends here; it is merged to `main` via `--no-ff`.

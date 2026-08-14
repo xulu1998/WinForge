@@ -1,70 +1,10 @@
 {
-  "count": 134,
+  "count": 79,
   "items": [
     {
       "id": "MSTeams_1.0.0.0_x64__8wekyb3d8bbwe",
       "source": "AppX",
       "normalized": "msteams"
-    },
-    {
-      "id": "Microsoft.ApplicationCompatibilityEnhancements_1.2511.9.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.applicationcompatibilityenhancements"
-    },
-    {
-      "id": "Microsoft.HEIFImageExtension_1.2.28.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.heifimageextension"
-    },
-    {
-      "id": "Microsoft.HEVCVideoExtension_2.4.39.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.hevcvideoextension"
-    },
-    {
-      "id": "Microsoft.MPEG2VideoExtension_1.2.13.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.mpeg2videoextension"
-    },
-    {
-      "id": "Microsoft.MicrosoftOfficeHub_19.2506.56051.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.microsoftofficehub"
-    },
-    {
-      "id": "Microsoft.OutlookForWindows_1.0.0.0_neutral__8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.outlookforwindows"
-    },
-    {
-      "id": "Microsoft.RawImageExtension_2.5.7.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.rawimageextension"
-    },
-    {
-      "id": "Microsoft.SecHealthUI_1000.26100.8036.0_x64__8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.sechealthui"
-    },
-    {
-      "id": "Microsoft.VP9VideoExtensions_1.2.12.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.vp9videoextensions"
-    },
-    {
-      "id": "Microsoft.WebMediaExtensions_2.1.23.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.webmediaextensions"
-    },
-    {
-      "id": "Microsoft.WebpImageExtension_1.2.14.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.webpimageextension"
-    },
-    {
-      "id": "Microsoft.Windows.DevHome_0.1701.597.0_neutral_~_8wekyb3d8bbwe",
-      "source": "AppX",
-      "normalized": "microsoft.windows.devhome"
     },
     {
       "id": "MicrosoftCorporationII.QuickAssist_2025.331.2057.0_neutral_~_8wekyb3d8bbwe",
@@ -75,61 +15,6 @@
       "id": "MicrosoftWindows.CrossDevice_1.25112.60.0_neutral_~_cw5n1h2txyewy",
       "source": "AppX",
       "normalized": "microsoftwindows.crossdevice"
-    },
-    {
-      "id": "DirectX.Configuration.Database~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "directx.configuration.database"
-    },
-    {
-      "id": "Hello.Face.20134~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "hello.face.20134"
-    },
-    {
-      "id": "MathRecognizer~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "mathrecognizer"
-    },
-    {
-      "id": "Microsoft.Onecore.StorageManagement~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.onecore.storagemanagement"
-    },
-    {
-      "id": "Microsoft.Wallpapers.Extended~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.wallpapers.extended"
-    },
-    {
-      "id": "Microsoft.WebDriver~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.webdriver"
-    },
-    {
-      "id": "Microsoft.Windows.Console.Legacy~~~~",
-      "source": "Capability",
-      "normalized": "microsoft.windows.console.legacy"
-    },
-    {
-      "id": "Microsoft.Windows.Ethernet.Client.Intel.E1i68x64~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.ethernet.client.intel.e1i68x64"
-    },
-    {
-      "id": "Microsoft.Windows.Ethernet.Client.Intel.E2f68~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.ethernet.client.intel.e2f68"
-    },
-    {
-      "id": "Microsoft.Windows.Ethernet.Client.Realtek.Rtcx21x64~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.ethernet.client.realtek.rtcx21x64"
-    },
-    {
-      "id": "Microsoft.Windows.Ethernet.Client.Vmware.Vmxnet3~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.ethernet.client.vmware.vmxnet3"
     },
     {
       "id": "Microsoft.Windows.Notepad.System~~~~0.0.1.0",
@@ -145,136 +30,6 @@
       "id": "Microsoft.Windows.StorageManagement~~~~0.0.1.0",
       "source": "Capability",
       "normalized": "microsoft.windows.storagemanagement"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Broadcom.Bcmpciedhd63~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.broadcom.bcmpciedhd63"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Broadcom.Bcmwl63al~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.broadcom.bcmwl63al"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Broadcom.Bcmwl63a~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.broadcom.bcmwl63a"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwbw02~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwbw02"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwew00~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwew00"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwew01~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwew01"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwlv64~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwlv64"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwns64~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwns64"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwsw00~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwsw00"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwtw02~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwtw02"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwtw04~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwtw04"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwtw06~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwtw06"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwtw08~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwtw08"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Intel.Netwtw10~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.intel.netwtw10"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Marvel.Mrvlpcie8897~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.marvel.mrvlpcie8897"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Qualcomm.Athw8x~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.qualcomm.athw8x"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Qualcomm.Athwnx~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.qualcomm.athwnx"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Qualcomm.Qcamain10x64~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.qualcomm.qcamain10x64"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Ralink.Netr28x~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.ralink.netr28x"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Realtek.Rtl8187se~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.realtek.rtl8187se"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Realtek.Rtl8192se~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.realtek.rtl8192se"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Realtek.Rtl819xp~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.realtek.rtl819xp"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Realtek.Rtl85n64~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.realtek.rtl85n64"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Realtek.Rtwlane01~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.realtek.rtwlane01"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Realtek.Rtwlane13~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.realtek.rtwlane13"
-    },
-    {
-      "id": "Microsoft.Windows.Wifi.Client.Realtek.Rtwlane~~~~0.0.1.0",
-      "source": "Capability",
-      "normalized": "microsoft.windows.wifi.client.realtek.rtwlane"
     },
     {
       "id": "Msix.PackagingTool.Driver~~~~0.0.1.0",
@@ -450,36 +205,6 @@
       "id": "XPS.Viewer~~~~0.0.1.0",
       "source": "Capability",
       "normalized": "xps.viewer"
-    },
-    {
-      "id": "Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~10.0.26100.1",
-      "source": "CbsPackage",
-      "normalized": "microsoft-windows-fodmetadata-package"
-    },
-    {
-      "id": "ClientForNFS-Infrastructure",
-      "source": "OptionalFeature",
-      "normalized": "clientfornfs-infrastructure"
-    },
-    {
-      "id": "DataCenterBridging",
-      "source": "OptionalFeature",
-      "normalized": "datacenterbridging"
-    },
-    {
-      "id": "DirectoryServices-ADAM-Client",
-      "source": "OptionalFeature",
-      "normalized": "directoryservices-adam-client"
-    },
-    {
-      "id": "HostGuardian",
-      "source": "OptionalFeature",
-      "normalized": "hostguardian"
-    },
-    {
-      "id": "LegacyComponents",
-      "source": "OptionalFeature",
-      "normalized": "legacycomponents"
     },
     {
       "id": "MSMQ-ADIntegration",

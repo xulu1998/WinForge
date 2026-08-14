@@ -151,3 +151,31 @@ boundary (four providers; Service/Driver/etc. NotSupported — ADR-091).
 - Deep catalog 177→203 (+27, zero heuristic); no broad namespace fallback rules.
 - **The THIRD elevated run** (same command) must now produce the exact new metrics (Unknown expected
   to fall materially from 134 — no percentage asserted).
+
+## Phase 14 — FINAL: THIRD elevated RealCapture AUTHORITATIVE NUMBERS (2026-08-14)
+
+Phase 14 is ACCEPTED at these exact numbers (real desktop, Administrator, same ISO/index):
+
+| Source | Total | Curated | Protected | Known | Heuristic | Unknown |
+| --- | --- | --- | --- | --- | --- | --- |
+| AppX | 47 | 23 | 4 | 21 | 0 | 3 |
+| Capability | 425 | 2 | 3 | 385 | 0 | 38 |
+| CbsPackage | 149 | 0 | 42 | **149** | 0 | **0** |
+| OptionalFeature | 136 | 8 | 4 | 90 | 0 | 38 |
+| **Total** | **757** | **33** | **53** | **645** | **0** | **79** |
+
+Knowledge coverage: **89.56%** across the CURRENTLY SUPPORTED discovery providers
+(AppX / Capability / OptionalFeature / CbsPackage). Service / ScheduledTask / Driver / Language /
+WinRecovery / SystemApp remain NotSupported — this is NOT "89.56% of all Windows components".
+
+**CBS coverage is complete: 149 / 149 known.**
+
+Real validation history (family-based architecture on real 25H2 media):
+30.78% (KnownDeep 201, Unknown 524) → 82.30% (591, 134) → **89.56% (645, 79)**. The ≥60% Stage 14.2
+estimate was superseded by real captures and is no longer presented as a validated metric.
+
+The remaining **79 Unknown are ACCEPTED explicit technical debt** (ADR-093) — CBS complete, AppX
+long-tail near-complete (3), Capability/OptionalFeature remainder is low-frequency long-tail (mostly
+singletons: Quick Assist/CrossDevice, MSIX tooling, MSMQ, MultiPoint, NFS admin, legacy IrDA/RIP,
+RSAT subfeatures, printing subfeatures, Recall, misc enterprise/legacy). Zero Unknown is NOT a
+product requirement; no broad catch-all classifier was added.

@@ -3,6 +3,41 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 14 — CLOSEOUT: Phase 14 COMPLETED + MERGED TO MAIN (2026-08-14)
+
+- **THIRD elevated RealCapture SUCCEEDED (real desktop, Administrator)** — FINAL AUTHORITATIVE
+  EXACT numbers: **Total 757 · Curated 33 · Protected 53 · KnownDeep 645 · Heuristic 0 · Unknown 79 ·
+  knowledge coverage 89.56%** (AppX 47: 23 curated/4 protected/21 known/3 unknown · Capability 425:
+  2/3/385/38 · CbsPackage 149: 0/42/149/0 — **CBS 149/149 = 100% known** · OptionalFeature 136:
+  8/4/90/38).
+- **Precise scope wording**: 89.56% is semantic knowledge coverage across the CURRENTLY SUPPORTED
+  Component Intelligence discovery providers (AppX / Capability / OptionalFeature / CbsPackage).
+  Service / ScheduledTask / Driver / Language / WinRecovery / SystemApp are NotSupported by
+  RealCapture — this is NOT "89.56% of all Windows components".
+- **Real validation history preserved**: 30.78% (KnownDeep 201, Unknown 524) → 82.30% (591/134) →
+  **89.56% (645/79)** — evidence of the family-based classification architecture on real 25H2 media.
+  The old ≥60% Stage 14.2 estimate is superseded and is not presented as a validated metric.
+- **79 Unknown entries ACCEPTED as explicit technical debt** (ADR-093): CBS complete; AppX long-tail
+  near-complete (3 unknown); remaining Capability/OptionalFeature debt is low-frequency long-tail,
+  mostly singletons (Quick Assist/CrossDevice, MSIX packaging tooling, MSMQ family, MultiPoint,
+  NFS administration, legacy IrDA/RIP, RSAT subfeatures, printing subfeatures, Recall, miscellaneous
+  enterprise/legacy capabilities). Zero Unknown is NOT a product requirement; Unknown is visible,
+  honest debt. No broad catch-all classifier was added.
+- **Gaming Profile 2.0 ACCEPTED**: Gaming PC (safe personal gaming optimization while retaining
+  normal Windows usefulness) vs Dedicated Gaming (more minimal OPTIONAL recommendations,
+  health/compatibility-first, not kiosk). Safety confirmed: Protected/Critical/High never
+  auto-remove; heuristic never auto; Known ≠ Removable; GamingRelevant ≠ SafeToRemove;
+  dependency/extras keeps have final authority; manual overrides authoritative; NO placebo gaming
+  tweaks; Defender enabled; Windows Update enabled; servicing protected; Store/Gaming
+  Services/runtime/DirectX protected where required.
+- **Future work moved OUT of Phase 14** (no Stage 14.4): Service/Driver/ScheduledTask/SystemApp/
+  WinRecovery discovery, deeper dependency resolution, destructive CBS-removal execution, driver
+  stripping, aggressive Lightweight/Dedicated execution, FullHealthValidated after deeper destructive
+  customization.
+- **1105 automated tests pass (Core 53, App 1052), 0 errors, 0 warnings (Release)** — ordinary
+  in-place build/test, pre- and post-merge.
+- **MERGED TO `main` via `--no-ff`** (2026-08-14); Phase 14 branch retained.
+
 ## Phase 14 — Stage 14.3c: FINAL high-confidence long-tail classification (2026-08-14)
 
 - **Stage 14.3b VALIDATED + COMPLETE** — SECOND elevated RealCapture run SUCCEEDED (real desktop,

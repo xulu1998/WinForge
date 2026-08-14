@@ -1,51 +1,51 @@
 {
   "totals": {
     "totalInventory": 757,
-    "curated": 32,
-    "protected": 51,
-    "knownDeep": 591,
+    "curated": 33,
+    "protected": 53,
+    "knownDeep": 645,
     "heuristic": 0,
-    "unknown": 134,
+    "unknown": 79,
     "matcherProtected": 13,
-    "coverageRatio": 82.3,
-    "totalClassifiedRatio": 82.3
+    "coverageRatio": 89.56,
+    "totalClassifiedRatio": 89.56
   },
   "sources": [
     {
       "source": "AppX",
       "total": 47,
-      "curated": 22,
-      "protected": 3,
-      "known": 10,
+      "curated": 23,
+      "protected": 4,
+      "known": 21,
       "heuristic": 0,
-      "unknown": 15
+      "unknown": 3
     },
     {
       "source": "Capability",
       "total": 425,
       "curated": 2,
       "protected": 3,
-      "known": 348,
+      "known": 385,
       "heuristic": 0,
-      "unknown": 75
+      "unknown": 38
     },
     {
       "source": "CbsPackage",
       "total": 149,
       "curated": 0,
-      "protected": 41,
-      "known": 148,
+      "protected": 42,
+      "known": 149,
       "heuristic": 0,
-      "unknown": 1
+      "unknown": 0
     },
     {
       "source": "OptionalFeature",
       "total": 136,
       "curated": 8,
       "protected": 4,
-      "known": 85,
+      "known": 90,
       "heuristic": 0,
-      "unknown": 43
+      "unknown": 38
     }
   ]
 }

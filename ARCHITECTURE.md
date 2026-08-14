@@ -636,3 +636,35 @@ docs/COMPONENT-COVERAGE.md). Stage 14.3c then classified ONLY high-confidence lo
 - Deep catalog 177→203 (+27, zero heuristic); guard test forbids broad namespace fallback patterns.
 - **1105 tests (Core 53, App 1052), 0 err/0 warn (Release, ordinary in-place)**. FINAL THIRD elevated
   capture required for exact new metrics (no asserted percentage).
+
+## Phase 14 — CLOSEOUT: COMPLETED + MERGED (2026-08-14)
+
+THIRD elevated RealCapture run SUCCEEDED (real desktop Administrator) — **Phase 14 ACCEPTED**.
+FINAL AUTHORITATIVE EXACT numbers: **Total 757 · Curated 33 · Protected 53 · KnownDeep 645 ·
+Heuristic 0 · Unknown 79 · knowledge coverage 89.56%** across the currently supported discovery
+providers (AppX 47: 23/4/21/3 · Capability 425: 2/3/385/38 · CbsPackage 149: 0/42/149/0 — **CBS
+149/149 = 100% known** · OptionalFeature 136: 8/4/90/38). Precise scope: the boundary is the four
+supported providers; Service/ScheduledTask/Driver/Language/WinRecovery/SystemApp are NotSupported —
+89.56% is never described as "89.56% of all Windows components". Real validation history: 30.78%
+(201/524) → 82.30% (591/134) → **89.56% (645/79)**; the ≥60% Stage 14.2 estimate is superseded.
+
+The remaining **79 Unknown entries are ACCEPTED as explicit technical debt** (ADR-093): CBS complete,
+AppX long-tail near-complete (3 unknown), remaining Capability/OptionalFeature debt is low-frequency
+long-tail mostly singletons (Quick Assist/CrossDevice, MSIX tooling, MSMQ, MultiPoint, NFS admin,
+legacy IrDA/RIP, RSAT subfeatures, printing subfeatures, Recall, misc enterprise/legacy). Zero
+Unknown is NOT a product requirement; no broad catch-all classifier was added (forbidden vanity
+patterns remain forbidden).
+
+**Gaming Profile 2.0 ACCEPTED**: Gaming PC (safe personal gaming optimization while retaining normal
+Windows usefulness) vs Dedicated Gaming (more minimal OPTIONAL recommendations, health/
+compatibility-first, not kiosk). Safety confirmed: Protected/Critical/High never auto-remove;
+heuristic never auto; Known ≠ Removable; GamingRelevant ≠ SafeToRemove; dependency/extras keeps have
+final authority; manual overrides authoritative; NO placebo gaming tweaks; Defender enabled; Windows
+Update enabled; servicing protected; Store/Gaming Services/runtime/DirectX protected where required.
+
+**Future work moved OUT of Phase 14** (no Stage 14.4): Service/Driver/ScheduledTask/SystemApp/
+WinRecovery discovery + classification; deeper dependency resolution; destructive CBS/driver removal
+execution; aggressive Lightweight/Dedicated execution; FullHealthValidated after deeper destructive
+customization. Phase 14 ends here and was merged to `main` via `--no-ff` (2026-08-14); the
+`phase/14-deep-component-classification` branch is retained. **1105 tests (Core 53, App 1052),
+0 err/0 warn (Release, ordinary in-place, pre- and post-merge).**

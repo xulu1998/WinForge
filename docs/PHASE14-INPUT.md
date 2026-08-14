@@ -115,3 +115,13 @@ compatibility infrastructure, console/webdriver/wallpapers/math capabilities and
 HostGuardian/LegacyComponents features — all conservative, never Low-risk automatic Gaming removals.
 Deep catalog 177→203 (+27, zero heuristic). FINAL THIRD elevated capture (same command) required for
 the exact new metrics; Unknown is expected to fall materially from 134 — no percentage asserted.
+
+## Final — Phase 14 COMPLETE (2026-08-14)
+
+THIRD elevated RealCapture SUCCEEDED: **757 total · KnownDeep 645 · Unknown 79 · 89.56%** across the
+supported providers (CBS 149/149 known). The 79 remaining Unknown are ACCEPTED explicit technical
+debt (ADR-093) — representative long-tail areas documented (Quick Assist/CrossDevice, MSIX tooling,
+MSMQ, MultiPoint, NFS admin, legacy IrDA/RIP, RSAT subfeatures, printing subfeatures, Recall, misc
+enterprise/legacy). No Stage 14.3d; future work (Service/Driver/ScheduledTask/SystemApp/WinRecovery
+discovery, deeper dependency resolution, destructive execution) belongs to subsequent phases.
+Gaming Profile 2.0 COMPLETED + ACCEPTED. Merged to `main` via `--no-ff` (2026-08-14).
