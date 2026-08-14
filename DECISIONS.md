@@ -2053,3 +2053,43 @@ BEFORE anything reaches the plan layer.
   choice authoritative); RequiredKeep/RecommendedKeep semantics → Block (belt-and-suspenders).
 - Blocked candidates fall through to the item's default evaluation; they are still VISIBLE in the
   summary with the gate reason, so safety never hides intent.
+
+## ADR-091: Stage 14.3b — real Unknown debt reduction + family analyzer refinement
+
+**Status:** Accepted (Phase 14 Stage 14.3b).
+**Context:** The elevated RealCapture first run (2026-08-14, real desktop Administrator) produced
+EXACT numbers: 757 objects (AppX 47 · Capability 425 · CbsPackage 149 · OptionalFeature 136);
+Unknown 524 (30.78% knowledge coverage; Curated 32, Protected 37, KnownDeep 201, Heuristic 0).
+The Unknown report showed six Language.* capability families (337 objects), an over-broad
+`microsoft.windows` cluster (34) mixing console/hardware capabilities, and a generic `package`
+cluster mixing .NET/KB/RollupFix servicing packages. Accounting boundary: the production discovery
+supports AppX/Capability/OptionalFeature/CbsPackage; Service/ScheduledTask/Driver/Language/
+WinRecovery/SystemApp are explicitly NotSupported — totals are NOT mechanically comparable to the
+Phase 11 count of 758 (different accounting boundary).
+**Decision:**
+- Six Language capability families (Basic/Handwriting/TextToSpeech/OCR/Fonts/Speech) get family
+  classification (Function=Language, Moderate, ProfileDependent, Sensitive). ONE family per role —
+  never per locale; each inventory object keeps its exact locale identity (metadata helper
+  `LanguageCapabilityMetadata` extracts family/locale and recognizes the image default language).
+  Classification ONLY: "not zh-CN" is never inferred as safe automatic removal.
+- Gaming policies keep ALL language capabilities (Language added to the keep list) — Gaming PC and
+  Dedicated Gaming never mass-remove foreign languages.
+- Family analyzer: dotted `microsoft.windows.*` capabilities keep up to five segments (dropping
+  trailing generic role words) so Console.Legacy / Ethernet.Client.Intel / Ethernet.Client.Realtek /
+  Wifi.Client.* are distinct semantic families.
+- CBS `Package_for_<sem>_<num>` identities: the normalizer preserves the semantic middle
+  (DotNetRollup→dotnetrollup, KBxxxx→kb, RollupFix→rollupfix) instead of collapsing to "package";
+  classified conservatively (Critical/Protected/RequiredKeep for servicing; DirectX rollup →
+  RuntimeDependency keep). No generic "package" catch-all entry (avoided shadowing real families;
+  obscure Package_for_* stay Unknown).
+- High-confidence real CBS families classified (semantics only): Licenses / Kernel /
+  FodMetadataServicing = Critical+Protected+RequiredKeep; OneCore-DirectX kept for Gaming; SenseClient
+  and Hello conservative Security; VBSCRIPT LegacyCompatibility; OpenSSH Client ProfileDependent;
+  Notepad Productivity (no CBS removal enabled); Wallpaper consumer content Moderate.
+- Small high-confidence OptionalFeatures: Braille (Accessibility), WirelessDisplay (Media), AzureArc
+  ArcSetup/AppServerClient/ProjFS (Enterprise/Developer, High, ProfileDependent), embedded
+  lockdown/filter/UWF features (Enterprise, High, RecommendedKeep — NEVER automatic Gaming removal).
+- KNOWN != REMOVABLE (ADR-086 preserved): none of the new classifications enable execution.
+- No heuristic entries were added to reduce debt; heuristic count remains 1 (pre-existing) and
+  Unknown stays visible. The second elevated capture must re-run to produce the exact new metrics
+  (expected: Unknown falls materially from 524 due to the 337 language objects alone).

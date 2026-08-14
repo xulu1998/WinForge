@@ -223,6 +223,11 @@ public static class UnknownFamilyAnalyzer
     /// Best-effort family prefix of a canonical identity: for dotted/package ids
     /// the leading two segments, for dashed servicing ids the leading segments up
     /// to (and including) the second dash, else the whole canonical key.
+    /// Dotted <c>microsoft.windows.*</c> capability families keep up to FIVE
+    /// segments so unrelated hardware/console capabilities no longer collapse
+    /// into one useless <c>microsoft.windows</c> bucket (Stage 14.3b real report:
+    /// Console.Legacy, Ethernet.Client.Intel.*, Ethernet.Client.Realtek.*,
+    /// Wifi.Client.*, … — each becomes its own semantic family).
     /// </summary>
     public static string FamilyOf(string rawIdentity)
     {
@@ -242,11 +247,36 @@ public static class UnknownFamilyAnalyzer
         if (c.Contains('.', StringComparison.Ordinal))
         {
             var parts = c.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2 &&
+                string.Equals(parts[0], "microsoft", StringComparison.Ordinal) &&
+                string.Equals(parts[1], "windows", StringComparison.Ordinal))
+            {
+                var family = string.Join('.', parts.Take(5));
+                // Drop a trailing generic role/instance segment so families stay
+                // semantic: Wifi.Client.WlanSvc -> ...wifi.client (Intel/Realtek
+                // vendor segments are KEPT: Ethernet.Client.Intel -> ...client.intel).
+                var segs = family.Split('.');
+                if (segs.Length >= 5 && GenericRoleSuffixes.Contains(segs[^1]))
+                {
+                    return string.Join('.', segs.Take(4));
+                }
+
+                return family;
+            }
+
             return parts.Length >= 2 ? string.Join('.', parts[0], parts[1]) : c;
         }
 
         return c;
     }
+
+    private static readonly System.Collections.Generic.HashSet<string> GenericRoleSuffixes =
+        new(System.StringComparer.Ordinal)
+        {
+            "client", "service", "services", "wlansvc", "telemetry", "diagnostics",
+            "diag", "extension", "extensions", "package", "packaging", "provider",
+            "runtime", "infrastructure", "common", "shared", "core", "base",
+        };
 
     /// <summary>Cluster identities into families with counts (descending).</summary>
     public static IReadOnlyList<FamilyFrequency> Cluster(IEnumerable<string> identities)

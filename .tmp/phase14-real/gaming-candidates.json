@@ -1,0 +1,55 @@
+{
+  "count": 5,
+  "items": [
+    {
+      "id": "Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_neutral_~_8wekyb3d8bbwe",
+      "source": "AppX",
+      "canonicalId": "Solitaire",
+      "displayName": "Microsoft Solitaire Collection",
+      "profileTag": "ConsumerContent",
+      "function": "Gaming",
+      "risk": "Low",
+      "recommendation": "OptionalRemove"
+    },
+    {
+      "id": "Microsoft.Xbox.TCUI_1.23.28005.0_neutral_~_8wekyb3d8bbwe",
+      "source": "AppX",
+      "canonicalId": "XboxTcui",
+      "displayName": "Xbox TCUI",
+      "profileTag": "GamingRelevant",
+      "function": "Gaming",
+      "risk": "Low",
+      "recommendation": "RequiredKeep"
+    },
+    {
+      "id": "Microsoft.XboxGamingOverlay_7.325.7221.0_neutral_~_8wekyb3d8bbwe",
+      "source": "AppX",
+      "canonicalId": "XboxGamingOverlay",
+      "displayName": "Xbox Game Bar",
+      "profileTag": "GamingRelevant",
+      "function": "Gaming",
+      "risk": "Low",
+      "recommendation": "OptionalRemove"
+    },
+    {
+      "id": "Microsoft.XboxIdentityProvider_12.130.2510.6003_neutral_~_8wekyb3d8bbwe",
+      "source": "AppX",
+      "canonicalId": "XboxIdentityProvider",
+      "displayName": "Xbox Identity Provider",
+      "profileTag": "GamingRelevant",
+      "function": "Gaming",
+      "risk": "Moderate",
+      "recommendation": "ProfileDependent"
+    },
+    {
+      "id": "Microsoft.XboxSpeechToTextOverlay_1.117.15001.0_neutral_~_8wekyb3d8bbwe",
+      "source": "AppX",
+      "canonicalId": "XboxSpeechToText",
+      "displayName": "Xbox Game Speech",
+      "profileTag": "GamingRelevant",
+      "function": "Gaming",
+      "risk": "Low",
+      "recommendation": "OptionalRemove"
+    }
+  ]
+}

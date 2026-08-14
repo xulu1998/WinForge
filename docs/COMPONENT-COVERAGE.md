@@ -81,3 +81,41 @@ dependencies and profile — never by classification alone.
   estimate, and Stage 14.3 stays `IMPLEMENTATION READY — REAL-DESKTOP ELEVATED VALIDATION REQUIRED`.
 - Real-derived regression fixture `tests/fixtures/25H2-Pro-zhCN-component-families.json`
   (version/arch/language/host-path-stripped representatives) is refreshable from the CLI output.
+
+## Stage 14.3 — FIRST ELEVATED RealCapture run: EXACT REAL NUMBERS (2026-08-14)
+
+The elevated capture ran successfully on the real desktop as Administrator (source ISO
+`Win11_25H2_Chinese_Simplified_x64_v2.iso`, Windows 11 Pro, index 4, x64, build 26200, zh-CN).
+These are exact production numbers, not estimates:
+
+| Source | Total | Curated | Protected | Known | Heuristic | Unknown |
+| --- | --- | --- | --- | --- | --- | --- |
+| AppX | 47 | 22 | 3 | 10 | 0 | 15 |
+| Capability | 425 | 2 | 3 | 8 | 0 | **415** |
+| CbsPackage | 149 | 0 | 27 | 106 | 0 | 43 |
+| OptionalFeature | 136 | 8 | 4 | 77 | 0 | 51 |
+| **Total** | **757** | **32** | **37** | **201** | **0** | **524** |
+
+Knowledge coverage: **30.78%** (Curated+KnownDeep)/Total. Protected = property count (subset of
+known; matcher-protected reported separately in the JSON). No double counting.
+
+**Accounting boundary (do not mis-compare):** the production discovery supports exactly
+AppX / Capability / OptionalFeature / CbsPackage. Service, ScheduledTask, Driver, Language,
+WinRecovery and SystemApp are explicitly **NotSupported** providers. The Stage 14.3b total of 757
+is therefore NOT mechanically comparable to the historical Phase 11 count of 758 (a different,
+partly provider-mapped accounting). Documented in ADR-091.
+
+## Stage 14.3b — real Unknown debt reduction (implementation ready; second capture pending)
+
+- Six Language capability families classified: Basic (123) / Handwriting (89) / TextToSpeech (49) /
+  OCR (35) / Fonts (24) / Speech (17) — **337 objects** now carry family knowledge
+  (Function=Language, Moderate, ProfileDependent, Sensitive; one family per role, locale identity
+  preserved on each object). No heuristic entries added.
+- Family analyzer refined: `microsoft.windows.*` capabilities split into semantic subfamilies
+  (Console.Legacy / Ethernet.Client.Intel / Ethernet.Client.Realtek / Wifi.Client.* …);
+  `Package_for_*` CBS identities keep their semantic middle (dotnetrollup / kb / rollupfix).
+- High-confidence real CBS (Licenses/Kernel/FodMetadataServicing/OneCore-DirectX/SenseClient/Hello/
+  VBSCRIPT/OpenSSH/Notepad/Wallpaper) and small features (Braille/WirelessDisplay/AzureArc/
+  AppServerClient/ProjFS/embedded lockdown·filter·UWF) classified conservatively; KNOWN ≠ REMOVABLE.
+- **The second elevated run** (same command) must now be executed to capture the exact new metrics
+  (Unknown expected to fall materially from 524).

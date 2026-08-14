@@ -494,9 +494,12 @@ Phased development plan for WinForge. Each phase records its **Status**,
 ## Phase 14 — Deep Component Coverage & Classification
 
 - **Status:** IN PROGRESS — **STAGES 14.1 + 14.2 COMPLETE · STAGE 14.3 IMPLEMENTATION READY
-  (2026-08-13)**; branch `phase/14-deep-component-classification`; NOT merged. **REAL-DESKTOP
-  ELEVATED VALIDATION REQUIRED** to close Stage 14.3 (user runs `WinForge.RealCapture` as
-  Administrator; exact real numbers captured to `.tmp/phase14-real/`).
+  (2026-08-13) · STAGE 14.3b IMPLEMENTATION READY (2026-08-14)**; branch
+  `phase/14-deep-component-classification`; NOT merged. **FIRST elevated RealCapture run
+  SUCCEEDED** (757 objects; Unknown 524; coverage 30.78% — real numbers in PROJECT_STATUS/
+  COMPONENT-COVERAGE). **SECOND REAL-DESKTOP CAPTURE REQUIRED** to close 14.3b (rerun the CLI as
+  Administrator after this build; Unknown expected to fall materially — 337 Language objects now
+  classified).
 - **Stage 14.1 delivered:** taxonomy + classification layer (discovery/knowledge/planning separate);
   ComponentFunctionCategory; DeepComponentKnowledge (risk/recommendation/protection/profile/
   confidence); ComponentNormalizer + collision guard; first-batch DeepComponentCatalogData
@@ -517,7 +520,20 @@ Phased development plan for WinForge. Each phase records its **Status**,
   no placebo tweaks; deterministic localized reasons; localized Gaming summary in the profile panel;
   manual overrides authoritative; `Gaming`=Gaming PC + new `DedicatedGaming` primary. **975 tests
   (Core 53, App 922), 0 err/0 warn (Release; ordinary in-place build+test pass).**
-- **Stage 14.4 (recommended next, after elevated validation):** expand remaining Unknown families
+- **Stage 14.3b (implementation ready; second capture required, ADR-091):** six real Language
+  capability families classified (Basic/Handwriting/TextToSpeech/OCR/Fonts/Speech — 337 objects,
+  one family per role, locale identity preserved; Function=Language/Moderate/ProfileDependent/
+  Sensitive; `LanguageCapabilityMetadata` for target-language prep, NO destructive stripping);
+  family analyzer refined (microsoft.windows.* → up to 5 semantic segments; Console.Legacy/
+  Ethernet.Client.Intel/Realtek/Wifi.Client.* distinct); `Package_for_*` CBS semantics preserved
+  by the normalizer (DotNetRollup/KB/RollupFix distinct, Critical/Protected/RequiredKeep);
+  high-confidence real CBS (Licenses/Kernel/FodMetadataServicing Critical+Protected; OneCore-DirectX
+  kept for Gaming; SenseClient/Hello Security; VBSCRIPT Legacy; OpenSSH ProfileDependent; Notepad
+  Productivity) + small features (Braille/WirelessDisplay/AzureArc/AppServerClient/ProjFS; embedded
+  lockdown/filter/UWF High/RecommendedKeep — never auto Gaming removal). Catalog 145→177; ZERO
+  heuristic entries added. Gaming policies keep ALL languages. **1030 tests (Core 53, App 977),
+  0 err/0 warn (Release, ordinary in-place).**
+- **Stage 14.4 (recommended next, after second capture):** expand remaining Unknown families
   from the real top-30 report; per-object dependency resolution; removal execution only after high
   classification coverage + protection gating.
 

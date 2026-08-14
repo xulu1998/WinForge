@@ -94,3 +94,12 @@ coverage numbers.
   beyond the safe Low-risk set.
 - Elevated real capture (Part A) delivered as `tools/WinForge.RealCapture`; exact real numbers
   still require the Administrator run (Stage 14.3 completion gate).
+
+## Progress — Stage 14.3b implementation ready (2026-08-14)
+
+- First elevated RealCapture succeeded (real desktop, Administrator): exact 757-object inventory,
+  Unknown 524 (30.78% coverage). The Language.* capability families (337 objects) are now
+  classified with conservative semantics and kept by both Gaming profiles; `LanguageCapabilityMetadata`
+  prepares image-default-language vs supplemental-language distinction for a future policy pass —
+  still NO destructive language stripping in this stage. Second elevated capture required for the
+  exact new metrics.

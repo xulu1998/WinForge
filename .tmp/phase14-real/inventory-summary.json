@@ -1,0 +1,34 @@
+{
+  "targetIso": "C:\\Users\\xulu1998\\Downloads\\Win11_25H2_Chinese_Simplified_x64_v2.iso",
+  "isoFileName": "Win11_25H2_Chinese_Simplified_x64_v2.iso",
+  "selectedIndex": 4,
+  "editionName": "Windows 11 \u4E13\u4E1A\u7248",
+  "architecture": "x64",
+  "build": "26200",
+  "generatedUtc": "2026-08-14T11:15:14.5984493Z",
+  "winForgeVersion": "",
+  "categoryStatus": {
+    "AppX": "Success (47)",
+    "Capability": "Success (425)",
+    "OptionalFeature": "Success (136)",
+    "CbsPackage": "Success (149)",
+    "Service": "NotSupported",
+    "ScheduledTask": "NotSupported",
+    "Driver": "NotSupported",
+    "Language": "NotSupported",
+    "WinRecovery": "NotSupported",
+    "SystemApp": "NotSupported"
+  },
+  "totals": {
+    "totalInventory": 757,
+    "curated": 32,
+    "protected": 37,
+    "knownDeep": 201,
+    "heuristic": 0,
+    "unknown": 524,
+    "matcherProtected": 13,
+    "coverageRatio": 30.78,
+    "totalClassifiedRatio": 30.78
+  },
+  "curatedLogicalComponents": 32
+}

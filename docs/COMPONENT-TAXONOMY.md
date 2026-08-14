@@ -112,3 +112,21 @@ Unknown stays **visible as technical debt** — metrics never hide it. Stage 14.
   No placebo tweaks: HPET/BCD/tick/memory/pagefile/cargo-cult registry tweaks, Defender or Windows
   Update disabling, servicing-stack removal are all forbidden.
 - Every recommendation reason is a localization resource key (en + zh-CN), never runtime AI prose.
+
+## Stage 14.3b update (2026-08-14, ADR-091)
+
+- **Six real Language capability families** (Basic/Handwriting/TextToSpeech/OCR/Fonts/Speech —
+  337 objects on the real 25H2 media): one semantic family per ROLE, never per locale; each
+  inventory object retains its exact locale identity. Function=Language, Moderate,
+  ProfileDependent, Sensitive. `LanguageCapabilityMetadata` parses family/locale and recognizes
+  the image default language (metadata only — no destructive language stripping; "not zh-CN" is
+  never inferred as safe automatic removal).
+- **Family analyzer granularity**: dotted `microsoft.windows.*` capability families keep up to five
+  semantic segments (trailing generic role words like "wlansvc"/"client" dropped) — Console.Legacy,
+  Ethernet.Client.Intel, Ethernet.Client.Realtek, Wifi.Client.* are distinct.
+- **Package_for_* CBS semantics**: `ComponentNormalizer` preserves the semantic middle
+  (DotNetRollup→dotnetrollup, KBxxxx→kb, RollupFix→rollupfix); classified Critical/Protected/
+  RequiredKeep (servicing/runtime servicing) — never removable.
+- **High-confidence real CBS + small features** classified conservatively (see COMPONENT-COVERAGE);
+  KNOWN ≠ REMOVABLE; embedded lockdown/filter/UWF features are Enterprise/High/RecommendedKeep and
+  never automatic Gaming removals. Gaming policies keep ALL language capabilities.

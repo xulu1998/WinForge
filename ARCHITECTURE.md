@@ -594,3 +594,17 @@ Inventory → Deep Knowledge → Profile Policy → Candidate → Safety Gate �
 - Extras materially influence decisions (Xbox/Game Pass, WSL/Docker, print/scan, touch/pen,
   Remote Desktop force their ecosystems to keep). No placebo tweaks (HPET/BCD/tick/memory/
   pagefile/cargo-cult, Defender/Windows Update disabling, servicing-stack removal — all forbidden).
+
+## Phase 14 — Stage 14.3b: Real Unknown debt reduction + analyzer refinement (2026-08-14)
+
+First elevated RealCapture run SUCCEEDED (real desktop Administrator): exact 757-object inventory,
+Unknown 524, coverage 30.78% (see docs/COMPONENT-COVERAGE.md; accounting boundary = the four
+supported providers only, ADR-091). Six Language capability families (337 objects) added to
+`DeepComponentCatalogData` (145→177) with conservative semantics (Language/Moderate/ProfileDependent/
+Sensitive); `LanguageCapabilityMetadata` parses role/locale and recognizes the image default
+language (metadata only). `ComponentNormalizer` now preserves `Package_for_<sem>_<num>` CBS semantics
+(dotnetrollup/kb/rollupfix). `UnknownFamilyAnalyzer.FamilyOf` keeps up to five semantic segments for
+`microsoft.windows.*` dotted capabilities (dropping generic trailing role words). High-confidence
+real CBS + small features classified conservatively; KNOWN != REMOVABLE; embedded lockdown/filter/UWF
+features never auto-removable by Gaming. Gaming policies keep ALL language capabilities. Zero
+heuristic entries added. Second elevated capture required for exact new metrics.

@@ -1,6 +1,6 @@
 {
   "media": "Win11_25H2_zh-CN_x64",
-  "note": "Real-derived stable families for Windows 11 25H2 zh-CN x64 Pro. Representative identities are STRIPPED of version numbers, architecture, language and host/temp mount paths (ComponentNormalizer.Canonical). Derived from real-media runs recorded in .tmp/phase11/real-25h2-inventory-report.md and the Stage 14.2 real-family fixture; refreshed automatically by tools/WinForge.RealCapture after the elevated inventory capture. Classification is the EXCLUSIVE coverage bucket (Curated | KnownDeep | Heuristic | Unknown) the capture pipeline reports.",
+  "note": "Real-derived stable families for Windows 11 25H2 zh-CN x64 Pro. Representative identities are STRIPPED of version numbers, architecture, language and host/temp mount paths (ComponentNormalizer.Canonical). Derived from the REAL 25H2 Pro zh-CN elevated RealCapture run (2026-08-14: 757 objects; Language.* capability families + Package_for_* + high-confidence CBS/features added in Stage 14.3b) plus .tmp/phase11/real-25h2-inventory-report.md; refreshed automatically by tools/WinForge.RealCapture after the elevated inventory capture. Classification is the EXCLUSIVE coverage bucket (Curated | KnownDeep | Heuristic | Unknown) the capture pipeline reports.",
   "generatedUtc": "2026-08-13T00:00:00Z",
   "entries": [
     {
@@ -237,6 +237,118 @@
       "family": "microsoft-applicationcompatibilityenhancements",
       "representative": "microsoft-applicationcompatibilityenhancements",
       "classification": "Unknown"
+    },
+    {
+      "source": "Capability",
+      "family": "language.basic",
+      "representative": "language.basic",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageBasic"
+    },
+    {
+      "source": "Capability",
+      "family": "language.handwriting",
+      "representative": "language.handwriting",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageHandwriting"
+    },
+    {
+      "source": "Capability",
+      "family": "language.texttospeech",
+      "representative": "language.texttospeech",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageTextToSpeech"
+    },
+    {
+      "source": "Capability",
+      "family": "language.ocr",
+      "representative": "language.ocr",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageOcr"
+    },
+    {
+      "source": "Capability",
+      "family": "language.fonts",
+      "representative": "language.fonts",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageFonts"
+    },
+    {
+      "source": "Capability",
+      "family": "language.speech",
+      "representative": "language.speech",
+      "classification": "KnownDeep",
+      "canonicalId": "LanguageSpeech"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "package-for-dotnetrollup",
+      "representative": "package-for-dotnetrollup",
+      "classification": "KnownDeep",
+      "canonicalId": "PackageForDotNetRollup"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "package-for-kb",
+      "representative": "package-for-kb",
+      "classification": "KnownDeep",
+      "canonicalId": "PackageForKb"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "package-for-rollupfix",
+      "representative": "package-for-rollupfix",
+      "classification": "KnownDeep",
+      "canonicalId": "PackageForRollupFix"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-licenses",
+      "representative": "microsoft-windows-licenses",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsLicenses"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-fodmetadataservicing",
+      "representative": "microsoft-windows-fodmetadataservicing",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsFodMetadataServicing"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-kernel",
+      "representative": "microsoft-windows-kernel",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsKernel"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "openssh-client",
+      "representative": "openssh-client",
+      "classification": "KnownDeep",
+      "canonicalId": "CbsOpenSshClient"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "client-devicelockdown",
+      "representative": "client-devicelockdown",
+      "classification": "KnownDeep",
+      "canonicalId": "ClientDeviceLockdown"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "app.wirelessdisplay",
+      "representative": "app.wirelessdisplay.connect",
+      "classification": "KnownDeep",
+      "canonicalId": "WirelessDisplayConnect"
+    },
+    {
+      "source": "Capability",
+      "family": "accessibility.braille",
+      "representative": "accessibility.braille",
+      "classification": "KnownDeep",
+      "canonicalId": "AccessibilityBraille"
     }
   ]
 }

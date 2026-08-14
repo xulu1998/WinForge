@@ -51,6 +51,11 @@ public class GamingPcPolicy : IGamingProfilePolicy
         ComponentFunctionCategory.HardwareSupport,
         ComponentFunctionCategory.Networking,
         ComponentFunctionCategory.Input,
+        // Stage 14.3b (ADR-091): language capabilities stay KEPT by Gaming
+        // profiles — they affect display/input/OCR/speech/handwriting/fonts/TTS
+        // and users may intentionally need several. Never mass-remove "foreign"
+        // languages merely because they are Gaming-irrelevant.
+        ComponentFunctionCategory.Language,
     };
 
     // §7 potential automatic LOW-RISK consumer removals.

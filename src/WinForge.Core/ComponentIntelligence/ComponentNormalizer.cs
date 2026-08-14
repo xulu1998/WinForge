@@ -22,6 +22,17 @@ public static class ComponentNormalizer
         RegexOptions.Compiled);
 
     /// <summary>
+    /// CBS servicing identities of the form <c>Package_for_&lt;Semantic&gt;_&lt;num&gt;~...~10.0.26200</c>.
+    /// The underscore tokens are SEMANTIC (DotNetRollup / KBxxxx / RollupFix / Rollup),
+    /// not publisher noise — the generic token stripper would reduce them to "package"
+    /// and collapse ALL servicing packages into one useless family. The special case
+    /// preserves a stable family key instead (Stage 14.3b, ADR-091).
+    /// </summary>
+    private static readonly Regex PackageFor = new(
+        @"^Package_for_(?<sem>[A-Za-z0-9]+)(?:_\d+)*(?:~.*)?$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    /// <summary>
     /// Deterministic canonical key for a raw identity (never localized, never
     /// display text). Lowercase, token-stripped, whitespace-collapsed.
     /// </summary>
@@ -33,9 +44,43 @@ public static class ComponentNormalizer
         }
 
         var s = identity.Trim();
+
+        // CBS Package_for_* semantics preserved (see PackageFor above).
+        var packageFor = PackageFor.Match(s);
+        if (packageFor.Success)
+        {
+            return "package-for-" + SemanticOf(packageFor.Groups["sem"].Value);
+        }
+
         s = StripTokens.Replace(s, " ");
         s = Collapse.Replace(s, " ").Trim();
         return s.ToLowerInvariant();
+    }
+
+    private static string SemanticOf(string sem)
+    {
+        var lower = sem.ToLowerInvariant();
+        if (lower.StartsWith("kb", StringComparison.Ordinal))
+        {
+            return "kb"; // Package_for_KBxxxxxxx — servicing/KB package family.
+        }
+
+        if (lower.Contains("dotnetrollup", StringComparison.Ordinal))
+        {
+            return "dotnetrollup"; // .NET runtime servicing rollups.
+        }
+
+        if (lower.StartsWith("rollupfix", StringComparison.Ordinal))
+        {
+            return "rollupfix"; // cumulative rollup fix packages.
+        }
+
+        if (lower.StartsWith("rollup", StringComparison.Ordinal))
+        {
+            return "rollup";
+        }
+
+        return lower;
     }
 
     /// <summary>

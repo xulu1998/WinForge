@@ -3,6 +3,45 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 14 — Stage 14.3b: Real Unknown debt reduction + family analyzer refinement (2026-08-14)
+
+- **First elevated RealCapture run SUCCEEDED** (real desktop, Administrator) — EXACT real numbers:
+  Total **757** (AppX 47 · Capability 425 · CbsPackage 149 · OptionalFeature 136); Overall
+  Curated 32 · Protected 37 · KnownDeep 201 · Heuristic 0 · **Unknown 524 · knowledge coverage
+  30.78%**. New explicit accounting boundary: only the four supported sources are counted;
+  Service/ScheduledTask/Driver/Language/WinRecovery/SystemApp are NotSupported — totals are not
+  mechanically comparable to the Phase 11 count of 758.
+- **Six real Language capability families classified** (Basic 123 / Handwriting 89 / TextToSpeech 49 /
+  OCR 35 / Fonts 24 / Speech 17 = 337 objects): one semantic family per role — never per locale —
+  each inventory object keeps its exact locale identity. Semantics conservative
+  (Language/Moderate/ProfileDependent/Sensitive). `LanguageCapabilityMetadata` prepares
+  target/default-language recognition; **no destructive language stripping**; "not zh-CN" is never
+  inferred as safe automatic removal.
+- **Gaming safety**: Gaming PC and Dedicated Gaming keep ALL language capabilities — foreign
+  languages are never mass-removed.
+- **Family analyzer refined**: `Microsoft.Windows.*` dotted capabilities now keep up to five semantic
+  segments (Console.Legacy / Ethernet.Client.Intel / Ethernet.Client.Realtek / Wifi.Client.* are
+  distinct families; trailing generic role words dropped) — the useless `microsoft.windows` bucket
+  is gone.
+- **Package_for_* CBS semantics**: the normalizer preserves the semantic middle of
+  `Package_for_DotNetRollup_481`, `Package_for_KB5054156`, `Package_for_RollupFix` (→
+  dotnetrollup / kb / rollupfix) instead of collapsing every servicing package to "package";
+  classified conservatively (Critical/Protected/RequiredKeep, never removable).
+- **High-confidence real CBS classified** (semantics only, KNOWN ≠ REMOVABLE): Licenses / Kernel /
+  FodMetadataServicing (Critical+Protected+RequiredKeep), OneCore-DirectX (kept for Gaming),
+  SenseClient + Windows Hello (Security), VBSCRIPT (LegacyCompatibility), OpenSSH Client
+  (ProfileDependent), Notepad (Productivity), Wallpaper content (Moderate consumer).
+- **Small high-confidence features**: Braille (Accessibility), Wireless Display (Media), Azure Arc /
+  AppServerClient / ProjFS (Enterprise/Developer, High, ProfileDependent), embedded
+  lockdown/filter/ShellLauncher/UWF (Enterprise, High, RecommendedKeep — never automatic Gaming
+  removal).
+- Deep catalog 145 → **177 entries**; **zero heuristic entries added** (debt reduced with real
+  semantic knowledge only).
+- **1030 automated tests pass (Core 53, App 977), 0 errors, 0 warnings (Release)** — ordinary
+  in-place `dotnet build`/`dotnet test` pass.
+- **SECOND elevated RealCapture required** to produce the exact new metrics (Unknown expected to
+  fall materially from 524 — the 337 Language objects alone now carry family knowledge).
+
 ## Phase 14 — Stage 14.3: Elevated real capture + Gaming Profile 2.0 (2026-08-13)
 
 - **Elevated real-inventory capture tool** (`tools/WinForge.RealCapture`): a console CLI that runs
