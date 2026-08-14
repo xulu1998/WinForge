@@ -3,364 +3,341 @@
   "families": [
     {
       "rank": 1,
-      "family": "language.basic",
+      "family": "microsoft.windows.wifi.client.intel",
       "source": "Capability",
-      "count": 123,
+      "count": 11,
       "representativeIdentifiers": [
-        "Language.Basic~~~af-ZA~0.0.1.0",
-        "Language.Basic~~~am-ET~0.0.1.0",
-        "Language.Basic~~~ar-SA~0.0.1.0"
+        "Microsoft.Windows.Wifi.Client.Intel.Netwbw02~~~~0.0.1.0",
+        "Microsoft.Windows.Wifi.Client.Intel.Netwew00~~~~0.0.1.0",
+        "Microsoft.Windows.Wifi.Client.Intel.Netwew01~~~~0.0.1.0"
       ],
-      "normalizedKey": "language.basic",
+      "normalizedKey": "microsoft.windows.wifi.client.intel",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 2,
-      "family": "language.handwriting",
+      "family": "microsoft.windows.wifi.client.realtek",
       "source": "Capability",
-      "count": 89,
+      "count": 7,
       "representativeIdentifiers": [
-        "Language.Handwriting~~~af-ZA~0.0.1.0",
-        "Language.Handwriting~~~ar-EG~0.0.1.0",
-        "Language.Handwriting~~~as-IN~0.0.1.0"
+        "Microsoft.Windows.Wifi.Client.Realtek.Rtl8187se~~~~0.0.1.0",
+        "Microsoft.Windows.Wifi.Client.Realtek.Rtl8192se~~~~0.0.1.0",
+        "Microsoft.Windows.Wifi.Client.Realtek.Rtl819xp~~~~0.0.1.0"
       ],
-      "normalizedKey": "language.handwriting",
+      "normalizedKey": "microsoft.windows.wifi.client.realtek",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 3,
-      "family": "language.texttospeech",
+      "family": "microsoft.windows.wifi.client.broadcom",
       "source": "Capability",
-      "count": 49,
+      "count": 3,
       "representativeIdentifiers": [
-        "Language.TextToSpeech~~~ar-EG~0.0.1.0",
-        "Language.TextToSpeech~~~ar-SA~0.0.1.0",
-        "Language.TextToSpeech~~~bg-BG~0.0.1.0"
+        "Microsoft.Windows.Wifi.Client.Broadcom.Bcmpciedhd63~~~~0.0.1.0",
+        "Microsoft.Windows.Wifi.Client.Broadcom.Bcmwl63al~~~~0.0.1.0",
+        "Microsoft.Windows.Wifi.Client.Broadcom.Bcmwl63a~~~~0.0.1.0"
       ],
-      "normalizedKey": "language.texttospeech",
+      "normalizedKey": "microsoft.windows.wifi.client.broadcom",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 4,
-      "family": "language.ocr",
+      "family": "microsoft.windows.wifi.client.qualcomm",
       "source": "Capability",
-      "count": 35,
+      "count": 3,
       "representativeIdentifiers": [
-        "Language.OCR~~~ar-SA~0.0.1.0",
-        "Language.OCR~~~bg-BG~0.0.1.0",
-        "Language.OCR~~~bs-LATN-BA~0.0.1.0"
+        "Microsoft.Windows.Wifi.Client.Qualcomm.Athw8x~~~~0.0.1.0",
+        "Microsoft.Windows.Wifi.Client.Qualcomm.Athwnx~~~~0.0.1.0",
+        "Microsoft.Windows.Wifi.Client.Qualcomm.Qcamain10x64~~~~0.0.1.0"
       ],
-      "normalizedKey": "language.ocr",
+      "normalizedKey": "microsoft.windows.wifi.client.qualcomm",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 5,
-      "family": "microsoft.windows",
+      "family": "microsoft.windows.ethernet.client.intel",
       "source": "Capability",
-      "count": 34,
+      "count": 2,
       "representativeIdentifiers": [
-        "Microsoft.Windows.Console.Legacy~~~~",
         "Microsoft.Windows.Ethernet.Client.Intel.E1i68x64~~~~0.0.1.0",
         "Microsoft.Windows.Ethernet.Client.Intel.E2f68~~~~0.0.1.0"
       ],
-      "normalizedKey": "microsoft.windows",
+      "normalizedKey": "microsoft.windows.ethernet.client.intel",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 6,
-      "family": "language.fonts",
-      "source": "Capability",
-      "count": 24,
+      "family": "clientfornfs-infrastructure",
+      "source": "OptionalFeature",
+      "count": 1,
       "representativeIdentifiers": [
-        "Language.Fonts.Arab~~~und-ARAB~0.0.1.0",
-        "Language.Fonts.Beng~~~und-BENG~0.0.1.0",
-        "Language.Fonts.Cans~~~und-CANS~0.0.1.0"
+        "ClientForNFS-Infrastructure"
       ],
-      "normalizedKey": "language.fonts",
+      "normalizedKey": "clientfornfs-infrastructure",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 7,
-      "family": "language.speech",
-      "source": "Capability",
-      "count": 17,
+      "family": "datacenterbridging",
+      "source": "OptionalFeature",
+      "count": 1,
       "representativeIdentifiers": [
-        "Language.Speech~~~da-DK~0.0.1.0",
-        "Language.Speech~~~de-DE~0.0.1.0",
-        "Language.Speech~~~en-AU~0.0.1.0"
+        "DataCenterBridging"
       ],
-      "normalizedKey": "language.speech",
+      "normalizedKey": "datacenterbridging",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 8,
-      "family": "microsoft-windows-notepad",
-      "source": "CbsPackage",
-      "count": 7,
+      "family": "directoryservices-adam-client",
+      "source": "OptionalFeature",
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-Windows-Notepad-System-FoD-Package~31bf3856ad364e35~amd64~zh-CN~10.0.26100.1742",
-        "Microsoft-Windows-Notepad-System-FoD-Package~31bf3856ad364e35~amd64~zh-CN~10.0.26100.7824",
-        "Microsoft-Windows-Notepad-System-FoD-Package~31bf3856ad364e35~amd64~~10.0.26100.1742"
+        "DirectoryServices-ADAM-Client"
       ],
-      "normalizedKey": "microsoft-windows-notepad",
+      "normalizedKey": "directoryservices-adam-client",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 9,
-      "family": "microsoft-windows-vbscript",
-      "source": "CbsPackage",
-      "count": 7,
+      "family": "directx.configuration",
+      "source": "Capability",
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-Windows-VBSCRIPT-FoD-Package~31bf3856ad364e35~amd64~zh-CN~10.0.26100.1742",
-        "Microsoft-Windows-VBSCRIPT-FoD-Package~31bf3856ad364e35~amd64~zh-CN~10.0.26100.7824",
-        "Microsoft-Windows-VBSCRIPT-FoD-Package~31bf3856ad364e35~amd64~~10.0.26100.1742"
+        "DirectX.Configuration.Database~~~~0.0.1.0"
       ],
-      "normalizedKey": "microsoft-windows-vbscript",
+      "normalizedKey": "directx.configuration",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 10,
-      "family": "package",
-      "source": "CbsPackage",
-      "count": 5,
+      "family": "hello.face",
+      "source": "Capability",
+      "count": 1,
       "representativeIdentifiers": [
-        "Package_for_DotNetRollup_481~31bf3856ad364e35~amd64~~10.0.9321.3",
-        "Package_for_KB5054156~31bf3856ad364e35~amd64~~26100.6717.1.4",
-        "Package_for_RollupFix~31bf3856ad364e35~amd64~~26100.1742.1.10"
+        "Hello.Face.20134~~~~0.0.1.0"
       ],
-      "normalizedKey": "package",
+      "normalizedKey": "hello.face",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 11,
-      "family": "microsoft-windows-licenses",
-      "source": "CbsPackage",
-      "count": 4,
+      "family": "hostguardian",
+      "source": "OptionalFeature",
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-Windows-Licenses-Professional-Package~31bf3856ad364e35~amd64~zh-CN~10.0.26100.1742",
-        "Microsoft-Windows-Licenses-Professional-Package~31bf3856ad364e35~amd64~zh-CN~10.0.26100.8037",
-        "Microsoft-Windows-Licenses-Professional-Package~31bf3856ad364e35~amd64~~10.0.26100.1742"
+        "HostGuardian"
       ],
-      "normalizedKey": "microsoft-windows-licenses",
+      "normalizedKey": "hostguardian",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 12,
-      "family": "microsoft-windows-senseclient",
-      "source": "CbsPackage",
-      "count": 4,
+      "family": "legacycomponents",
+      "source": "OptionalFeature",
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-Windows-SenseClient-FoD-Package~31bf3856ad364e35~amd64~zh-CN~10.0.26100.1",
-        "Microsoft-Windows-SenseClient-FoD-Package~31bf3856ad364e35~amd64~zh-CN~10.0.26100.7920",
-        "Microsoft-Windows-SenseClient-FoD-Package~31bf3856ad364e35~amd64~~10.0.26100.1"
+        "LegacyComponents"
       ],
-      "normalizedKey": "microsoft-windows-senseclient",
+      "normalizedKey": "legacycomponents",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 13,
-      "family": "microsoft-windows-fodmetadataservicing",
-      "source": "CbsPackage",
-      "count": 3,
+      "family": "mathrecognizer",
+      "source": "Capability",
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-Windows-FodMetadataServicing-Desktop-CompDB-Package~31bf3856ad364e35~amd64~~10.0.26100.1",
-        "Microsoft-Windows-FodMetadataServicing-Desktop-Metadata-Package~31bf3856ad364e35~amd64~~10.0.26100.1742",
-        "Microsoft-Windows-FodMetadataServicing-Desktop-Metadata-Package~31bf3856ad364e35~amd64~~10.0.26100.8036"
+        "MathRecognizer~~~~0.0.1.0"
       ],
-      "normalizedKey": "microsoft-windows-fodmetadataservicing",
+      "normalizedKey": "mathrecognizer",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 14,
-      "family": "microsoft-onecore-applicationmodel",
+      "family": "microsoft-windows-fodmetadata",
       "source": "CbsPackage",
-      "count": 2,
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-OneCore-ApplicationModel-Sync-Desktop-FOD-Package~31bf3856ad364e35~amd64~~10.0.26100.1742",
-        "Microsoft-OneCore-ApplicationModel-Sync-Desktop-FOD-Package~31bf3856ad364e35~amd64~~10.0.26100.8036"
+        "Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~10.0.26100.1"
       ],
-      "normalizedKey": "microsoft-onecore-applicationmodel",
+      "normalizedKey": "microsoft-windows-fodmetadata",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 15,
-      "family": "microsoft-onecore-directx",
-      "source": "CbsPackage",
-      "count": 2,
+      "family": "microsoft.applicationcompatibilityenhancements",
+      "source": "AppX",
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-OneCore-DirectX-Database-FOD-Package~31bf3856ad364e35~amd64~~10.0.26100.1742",
-        "Microsoft-OneCore-DirectX-Database-FOD-Package~31bf3856ad364e35~amd64~~10.0.26100.8036"
+        "Microsoft.ApplicationCompatibilityEnhancements_1.2511.9.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "microsoft-onecore-directx",
+      "normalizedKey": "microsoft.applicationcompatibilityenhancements",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 16,
-      "family": "microsoft-windows-hello",
-      "source": "CbsPackage",
-      "count": 2,
+      "family": "microsoft.heifimageextension",
+      "source": "AppX",
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-Windows-Hello-Face-Package~31bf3856ad364e35~amd64~~10.0.26100.1742",
-        "Microsoft-Windows-Hello-Face-Package~31bf3856ad364e35~amd64~~10.0.26100.8036"
+        "Microsoft.HEIFImageExtension_1.2.28.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "microsoft-windows-hello",
+      "normalizedKey": "microsoft.heifimageextension",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 17,
-      "family": "microsoft-windows-kernel",
-      "source": "CbsPackage",
-      "count": 2,
+      "family": "microsoft.hevcvideoextension",
+      "source": "AppX",
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-Windows-Kernel-LA57-FoD-Package~31bf3856ad364e35~amd64~~10.0.26100.1742",
-        "Microsoft-Windows-Kernel-LA57-FoD-Package~31bf3856ad364e35~amd64~~10.0.26100.8036"
+        "Microsoft.HEVCVideoExtension_2.4.39.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "microsoft-windows-kernel",
+      "normalizedKey": "microsoft.hevcvideoextension",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 18,
-      "family": "microsoft-windows-wallpaper",
-      "source": "CbsPackage",
-      "count": 2,
+      "family": "microsoft.microsoftofficehub",
+      "source": "AppX",
+      "count": 1,
       "representativeIdentifiers": [
-        "Microsoft-Windows-Wallpaper-Content-Extended-FoD-Package~31bf3856ad364e35~amd64~~10.0.26100.1742",
-        "Microsoft-Windows-Wallpaper-Content-Extended-FoD-Package~31bf3856ad364e35~amd64~~10.0.26100.8036"
+        "Microsoft.MicrosoftOfficeHub_19.2506.56051.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "microsoft-windows-wallpaper",
+      "normalizedKey": "microsoft.microsoftofficehub",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 19,
-      "family": "openssh-client-package",
-      "source": "CbsPackage",
-      "count": 2,
+      "family": "microsoft.mpeg2videoextension",
+      "source": "AppX",
+      "count": 1,
       "representativeIdentifiers": [
-        "OpenSSH-Client-Package~31bf3856ad364e35~amd64~~10.0.26100.1742",
-        "OpenSSH-Client-Package~31bf3856ad364e35~amd64~~10.0.26100.8036"
+        "Microsoft.MPEG2VideoExtension_1.2.13.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "openssh-client-package",
+      "normalizedKey": "microsoft.mpeg2videoextension",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 20,
-      "family": "accessibility.braille",
+      "family": "microsoft.onecore",
       "source": "Capability",
       "count": 1,
       "representativeIdentifiers": [
-        "Accessibility.Braille~~~~0.0.1.0"
+        "Microsoft.Onecore.StorageManagement~~~~0.0.1.0"
       ],
-      "normalizedKey": "accessibility.braille",
+      "normalizedKey": "microsoft.onecore",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 21,
-      "family": "app.wirelessdisplay",
-      "source": "Capability",
+      "family": "microsoft.outlookforwindows",
+      "source": "AppX",
       "count": 1,
       "representativeIdentifiers": [
-        "App.WirelessDisplay.Connect~~~~0.0.1.0"
+        "Microsoft.OutlookForWindows_1.0.0.0_neutral__8wekyb3d8bbwe"
       ],
-      "normalizedKey": "app.wirelessdisplay",
+      "normalizedKey": "microsoft.outlookforwindows",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 22,
-      "family": "appserverclient",
-      "source": "OptionalFeature",
+      "family": "microsoft.rawimageextension",
+      "source": "AppX",
       "count": 1,
       "representativeIdentifiers": [
-        "AppServerClient"
+        "Microsoft.RawImageExtension_2.5.7.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "appserverclient",
+      "normalizedKey": "microsoft.rawimageextension",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 23,
-      "family": "azurearcsetup",
-      "source": "Capability",
+      "family": "microsoft.sechealthui",
+      "source": "AppX",
       "count": 1,
       "representativeIdentifiers": [
-        "AzureArcSetup~~~~"
+        "Microsoft.SecHealthUI_1000.26100.8036.0_x64__8wekyb3d8bbwe"
       ],
-      "normalizedKey": "azurearcsetup",
+      "normalizedKey": "microsoft.sechealthui",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 24,
-      "family": "client-devicelockdown",
-      "source": "OptionalFeature",
+      "family": "microsoft.vp9videoextensions",
+      "source": "AppX",
       "count": 1,
       "representativeIdentifiers": [
-        "Client-DeviceLockdown"
+        "Microsoft.VP9VideoExtensions_1.2.12.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "client-devicelockdown",
+      "normalizedKey": "microsoft.vp9videoextensions",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 25,
-      "family": "client-embeddedbootexp",
-      "source": "OptionalFeature",
+      "family": "microsoft.wallpapers",
+      "source": "Capability",
       "count": 1,
       "representativeIdentifiers": [
-        "Client-EmbeddedBootExp"
+        "Microsoft.Wallpapers.Extended~~~~0.0.1.0"
       ],
-      "normalizedKey": "client-embeddedbootexp",
+      "normalizedKey": "microsoft.wallpapers",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 26,
-      "family": "client-embeddedlogon",
-      "source": "OptionalFeature",
+      "family": "microsoft.webdriver",
+      "source": "Capability",
       "count": 1,
       "representativeIdentifiers": [
-        "Client-EmbeddedLogon"
+        "Microsoft.WebDriver~~~~0.0.1.0"
       ],
-      "normalizedKey": "client-embeddedlogon",
+      "normalizedKey": "microsoft.webdriver",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 27,
-      "family": "client-embeddedshelllauncher",
-      "source": "OptionalFeature",
+      "family": "microsoft.webmediaextensions",
+      "source": "AppX",
       "count": 1,
       "representativeIdentifiers": [
-        "Client-EmbeddedShellLauncher"
+        "Microsoft.WebMediaExtensions_2.1.23.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "client-embeddedshelllauncher",
+      "normalizedKey": "microsoft.webmediaextensions",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 28,
-      "family": "client-keyboardfilter",
-      "source": "OptionalFeature",
+      "family": "microsoft.webpimageextension",
+      "source": "AppX",
       "count": 1,
       "representativeIdentifiers": [
-        "Client-KeyboardFilter"
+        "Microsoft.WebpImageExtension_1.2.14.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "client-keyboardfilter",
+      "normalizedKey": "microsoft.webpimageextension",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 29,
-      "family": "client-projfs",
-      "source": "OptionalFeature",
+      "family": "microsoft.windows.console.legacy",
+      "source": "Capability",
       "count": 1,
       "representativeIdentifiers": [
-        "Client-ProjFS"
+        "Microsoft.Windows.Console.Legacy~~~~"
       ],
-      "normalizedKey": "client-projfs",
+      "normalizedKey": "microsoft.windows.console.legacy",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     },
     {
       "rank": 30,
-      "family": "client-unifiedwritefilter",
-      "source": "OptionalFeature",
+      "family": "microsoft.windows.devhome",
+      "source": "AppX",
       "count": 1,
       "representativeIdentifiers": [
-        "Client-UnifiedWriteFilter"
+        "Microsoft.Windows.DevHome_0.1701.597.0_neutral_~_8wekyb3d8bbwe"
       ],
-      "normalizedKey": "client-unifiedwritefilter",
+      "normalizedKey": "microsoft.windows.devhome",
       "reason": "No curated pattern/alias in the deep catalog matched this family; it stays visible as Unknown technical debt (never auto-removed)."
     }
   ]

@@ -130,3 +130,27 @@ Unknown stays **visible as technical debt** — metrics never hide it. Stage 14.
 - **High-confidence real CBS + small features** classified conservatively (see COMPONENT-COVERAGE);
   KNOWN ≠ REMOVABLE; embedded lockdown/filter/UWF features are Enterprise/High/RecommendedKeep and
   never automatic Gaming removals. Gaming policies keep ALL language capabilities.
+
+## Stage 14.3c update (2026-08-14, ADR-092)
+
+- **Driver capability families**: `Microsoft.Windows.Wifi.Client.*` (Intel/Realtek/Broadcom/Qualcomm)
+  and `Microsoft.Windows.Ethernet.Client.*` are vendor-FAMILY classifications (Networking/High/
+  RecommendedKeep/Sensitive) — one record per family, never per driver model; exact capability IDs
+  preserved; never auto-removed by Gaming.
+- **Critical system items**: DirectX.Configuration.Database (RuntimeDependency/Critical/RequiredKeep/
+  GamingRelevant), Microsoft.SecHealthUI (Security/Critical/Protected), Microsoft-Windows-FodMetadata
+  -Package (Servicing/Critical/Protected), Microsoft.Onecore.StorageManagement (SystemCore/High/Keep),
+  Hello.Face (Security/High/ProfileDependent/Sensitive).
+- **Media codec AppX** (HEIF/HEVC/MPEG-2/RAW/VP9/WebMedia/WebP): Media/Low/ProfileDependent — Gaming PC
+  never auto-strips codec support; optional-only; no removal-support expansion.
+- **User-facing AppX**: Outlook/Office Hub (Low/ConsumerContent — Gaming auto only when a supported
+  AppX removal exists; gate blocks otherwise); Dev Home (Developer/DeveloperTool — Developer profile
+  keeps it, Gaming optional); ApplicationCompatibilityEnhancements (SystemCore/High/RecommendedKeep,
+  AppX + CBS).
+- **Capabilities/features**: Console.Legacy (LegacyCompatibility), WebDriver (Developer),
+  MathRecognizer (Accessibility), Wallpapers.Extended (ShellExperience optional consumer),
+  App.WirelessDisplay.Connect (Media), ClientForNFS-Infrastructure / DataCenterBridging (Networking),
+  DirectoryServices-ADAM-Client (Enterprise), HostGuardian (Security/High), LegacyComponents
+  (LegacyCompatibility) — ProfileDependent or kept, never Low-risk automatic Gaming removals.
+- **Coverage quality**: no broad namespace fallback patterns (Microsoft.* / Windows.* / Client-* /
+  Package-* forbidden — guard test); Unknown stays visible; heuristic unchanged (1); KNOWN ≠ REMOVABLE.

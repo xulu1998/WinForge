@@ -576,6 +576,14 @@
   <data name="Comp.XboxApp.Prov0" xml:space="preserve"><value>Xbox / Gaming bundles the Xbox app, game overlay, identity provider and Gaming Services runtime.</value></data>
   <data name="Comp.XboxApp.Prov1" xml:space="preserve"><value>Optional to remove for users who do not use Xbox / PC gaming.</value></data>
   <data name="Comp.XboxApp.Scen.Gaming" xml:space="preserve"><value>Kept because you selected a Gaming profile; Xbox Game Pass and PC gaming depend on it.</value></data>
+  <data name="Comp.DevHome.DisplayName" xml:space="preserve"><value>Dev Home</value></data>
+  <data name="Comp.DevHome.Short" xml:space="preserve"><value>Microsoft's developer dashboard app.</value></data>
+  <data name="Comp.DevHome.Long" xml:space="preserve"><value>Dev Home centralizes developer workflows (machine configuration, repos, WinGet packages, performance widgets). Developers commonly rely on it; gamers typically do not need it.</value></data>
+  <data name="Comp.DevHome.KeepIf" xml:space="preserve"><value>You are a developer and use Dev Home for machine setup and WinGet workflows.</value></data>
+  <data name="Comp.DevHome.RemoveIf" xml:space="preserve"><value>You never use Dev Home; you manage development tools another way.</value></data>
+  <data name="Comp.DevHome.Impact" xml:space="preserve"><value>Dev Home is removed. Development tools and WinGet packages remain unaffected.</value></data>
+  <data name="Comp.DevHome.Prov0" xml:space="preserve"><value>Dev Home is a developer dashboard; kept by the Developer profile, optional suggestion only for Gaming profiles.</value></data>
+  <data name="Comp.DevHome.Scen.Developer" xml:space="preserve"><value>Kept because you selected a Developer profile; Dev Home supports machine setup and WinGet workflows.</value></data>
   <data name="Comp.Photos.DisplayName" xml:space="preserve"><value>Photos</value></data>
   <data name="Comp.Photos.Short" xml:space="preserve"><value>Microsoft's default photo viewer/editor.</value></data>
   <data name="Comp.Photos.Long" xml:space="preserve"><value>The default Photos app. Many users rely on it as the shell image viewer; removing it leaves the OS without a built-in photo viewer (files still open via other apps).</value></data>
@@ -990,6 +998,7 @@
   <data name="Profile.Reason.Dependency" xml:space="preserve"><value>Required by another component that must be kept</value></data>
   <data name="Profile.Reason.Developer.Consumer" xml:space="preserve"><value>Developer trims unrelated consumer / promotional apps</value></data>
   <data name="Profile.Reason.Developer.Explorer" xml:space="preserve"><value>Developer enables explorer-friendly settings (file extensions)</value></data>
+  <data name="Profile.Reason.Developer.DevHome" xml:space="preserve"><value>Developer keeps Dev Home for machine setup and WinGet workflows</value></data>
   <data name="Profile.Reason.Developer.Sandbox" xml:space="preserve"><value>Developer keeps Windows Sandbox</value></data>
   <data name="Profile.Reason.Developer.Telemetry" xml:space="preserve"><value>Developer reduces advertising and recommendation content</value></data>
   <data name="Profile.Reason.Developer.UI" xml:space="preserve"><value>Developer cleans up suggestion UI</value></data>

@@ -102,7 +102,7 @@ public class ComponentIntelligenceViewModelTests
         var (vm, _, _, _) = Build();
 
         Assert.True(vm.StandardMode);
-        Assert.Equal(22, vm.Entries.Count);
+        Assert.Equal(23, vm.Entries.Count);
         Assert.All(vm.Entries, e => Assert.True(e.IsCurated));
         Assert.False(vm.HasInventory);
         Assert.Equal("ComponentIntelligence.NoImage", vm.StatusMessage);
@@ -158,13 +158,13 @@ public class ComponentIntelligenceViewModelTests
         await vm.DiscoverAsync();
 
         Assert.True(vm.HasInventory);
-        Assert.Equal(22, vm.CuratedCount);   // BingWeather matched + 21 catalog-only
+        Assert.Equal(23, vm.CuratedCount);   // BingWeather matched + 22 catalog-only
         Assert.Equal(1, vm.UnclassifiedCount);
         Assert.Equal(0, vm.ProtectedCount);
         Assert.Equal(0, vm.UnsupportedCount);
 
         // Standard mode shows only curated rows.
-        Assert.Equal(22, vm.Entries.Count);
+        Assert.Equal(23, vm.Entries.Count);
         Assert.All(vm.Entries, e => Assert.True(e.IsCurated));
         Assert.NotEqual("ComponentIntelligence.NoImage", vm.StatusMessage);
     }
@@ -183,7 +183,7 @@ public class ComponentIntelligenceViewModelTests
 
         await vm.DiscoverAsync();
 
-        Assert.Equal(23, vm.Entries.Count); // 22 curated + 1 unclassified
+        Assert.Equal(24, vm.Entries.Count); // 23 curated + 1 unclassified
         Assert.Contains(vm.Entries, e => !e.IsCurated);
     }
 
@@ -199,13 +199,13 @@ public class ComponentIntelligenceViewModelTests
         svc.Result = MakeDiscoveredInventory();
 
         await vm.DiscoverAsync();
-        Assert.Equal(22, vm.Entries.Count); // standard
+        Assert.Equal(23, vm.Entries.Count); // standard
 
         vm.StandardMode = false;
-        Assert.Equal(23, vm.Entries.Count); // advanced
+        Assert.Equal(24, vm.Entries.Count); // advanced
 
         vm.StandardMode = true;
-        Assert.Equal(22, vm.Entries.Count); // back to standard
+        Assert.Equal(23, vm.Entries.Count); // back to standard
     }
 
     [Fact]
@@ -247,6 +247,6 @@ public class ComponentIntelligenceViewModelTests
         Assert.NotNull(vm.SelectedEntry);
         Assert.Equal(id, vm.SelectedEntry!.Entry.LogicalId);
         // Count is stable across the rebuild (catalog-only curated seed).
-        Assert.Equal(22, vm.Entries.Count);
+        Assert.Equal(23, vm.Entries.Count);
     }
 }

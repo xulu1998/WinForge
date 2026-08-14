@@ -7,7 +7,7 @@
 ## Balanced
 - Automatic (low-risk, adoptable): 19
 - Manual review: 53
-- Keep: 7
+- Keep: 8
 - Unsupported: 2
 - Conflict: 0
   - Apps: auto 6 · manual 9
@@ -20,7 +20,7 @@
 ## Gaming
 - Automatic (low-risk, adoptable): 21
 - Manual review: 44
-- Keep: 14
+- Keep: 15
 - Unsupported: 2
 - Conflict: 0
   - Apps: auto 6 · manual 7
@@ -33,7 +33,7 @@
 ## DedicatedGaming
 - Automatic (low-risk, adoptable): 12
 - Manual review: 53
-- Keep: 14
+- Keep: 15
 - Unsupported: 2
 - Conflict: 0
   - Apps: auto 3 · manual 10
@@ -46,7 +46,7 @@
 ## Developer
 - Automatic (low-risk, adoptable): 24
 - Manual review: 44
-- Keep: 11
+- Keep: 12
 - Unsupported: 2
 - Conflict: 0
   - Apps: auto 9 · manual 7
@@ -59,7 +59,7 @@
 ## Office
 - Automatic (low-risk, adoptable): 15
 - Manual review: 50
-- Keep: 14
+- Keep: 15
 - Unsupported: 2
 - Conflict: 0
   - Apps: auto 3 · manual 10
@@ -72,7 +72,7 @@
 ## Lightweight
 - Automatic (low-risk, adoptable): 30
 - Manual review: 44
-- Keep: 5
+- Keep: 6
 - Unsupported: 2
 - Conflict: 0
   - Apps: auto 9 · manual 8
@@ -85,7 +85,7 @@
 ## DedicatedMinimal
 - Automatic (low-risk, adoptable): 37
 - Manual review: 38
-- Keep: 4
+- Keep: 5
 - Unsupported: 2
 - Conflict: 0
   - Apps: auto 12 · manual 6
@@ -98,7 +98,7 @@
 ## Custom
 - Automatic (low-risk, adoptable): 12
 - Manual review: 61
-- Keep: 6
+- Keep: 7
 - Unsupported: 2
 - Conflict: 0
   - Apps: auto 3 · manual 13

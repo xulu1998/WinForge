@@ -5,7 +5,7 @@
   "editionName": "Windows 11 \u4E13\u4E1A\u7248",
   "architecture": "x64",
   "build": "26200",
-  "generatedUtc": "2026-08-14T11:15:14.5984493Z",
+  "generatedUtc": "2026-08-14T11:50:25.8573322Z",
   "winForgeVersion": "",
   "categoryStatus": {
     "AppX": "Success (47)",
@@ -22,13 +22,13 @@
   "totals": {
     "totalInventory": 757,
     "curated": 32,
-    "protected": 37,
-    "knownDeep": 201,
+    "protected": 51,
+    "knownDeep": 591,
     "heuristic": 0,
-    "unknown": 524,
+    "unknown": 134,
     "matcherProtected": 13,
-    "coverageRatio": 30.78,
-    "totalClassifiedRatio": 30.78
+    "coverageRatio": 82.3,
+    "totalClassifiedRatio": 82.3
   },
   "curatedLogicalComponents": 32
 }

@@ -2093,3 +2093,46 @@ Phase 11 count of 758 (different accounting boundary).
 - No heuristic entries were added to reduce debt; heuristic count remains 1 (pre-existing) and
   Unknown stays visible. The second elevated capture must re-run to produce the exact new metrics
   (expected: Unknown falls materially from 524 due to the 337 language objects alone).
+
+## ADR-092: Stage 14.3c — final high-confidence long-tail classification
+
+**Status:** Accepted (Phase 14 Stage 14.3c).
+**Context:** The SECOND elevated RealCapture run (2026-08-14, real desktop Administrator) VALIDATED
+Stage 14.3b with EXACT numbers: Total 757 (AppX 47 · Capability 425 · CbsPackage 149 ·
+OptionalFeature 136); Curated 32, Protected 51, KnownDeep 591, Heuristic 0, **Unknown 134, coverage
+82.30%** (by source: AppX 22/3/10/15 · Capability 2/3/348/75 · CBS 0/41/148/1 · OptionalFeature
+8/4/85/43). Remaining Unknown is a long tail of clearly identifiable driver families, critical system
+capabilities, codecs, consumer AppX and enterprise features. This pass classifies ONLY high-confidence
+semantics; obscure entries stay Unknown; heuristic stays zero.
+**Decision:**
+- **Network driver capability families** (`Microsoft.Windows.Wifi.Client.*` Intel/Realtek/Broadcom/
+  Qualcomm; `Microsoft.Windows.Ethernet.Client.*`): ONE vendor-family catalog record per family —
+  never per driver model — Networking/High/RecommendedKeep/Sensitive; exact driver capability IDs
+  preserved; both Gaming profiles KEEP them (never auto-removed).
+- **Critical system items**: DirectX.Configuration.Database (RuntimeDependency/Critical/RequiredKeep/
+  GamingRelevant — always kept in Gaming); Microsoft.SecHealthUI (Security/Critical/Protected/
+  RequiredKeep); Microsoft-Windows-FodMetadata-Package (Servicing/Critical/Protected/RequiredKeep);
+  Microsoft.Onecore.StorageManagement (SystemCore/High/Keep); Hello.Face (Security/High/
+  ProfileDependent/Sensitive). None enable destructive removal.
+- **Media codec / image extensions** (HEIF/HEVC/MPEG-2/RAW/VP9/WebMedia/WebP AppX): Media/Low/
+  ProfileDependent. Gaming PC NEVER auto-strips codec support; Dedicated Gaming optional at most.
+  No removal-support expansion in this stage.
+- **User-facing AppX**: Outlook for Windows and Microsoft Office Hub (Low/ConsumerContent,
+  OptionalRemove) — Gaming PC auto-recommends ONLY when a supported AppX removal exists (the Safety
+  Gate blocks unsupported candidates, ADR-090). Dev Home (Developer/ProfileDependent/DeveloperTool):
+  the Developer profile gains a Keep override (new `Profile.Reason.Developer.DevHome`; Dev Home added
+  to the curated catalog, 22→23 AppX definitions); Gaming profiles treat it optional-only.
+  ApplicationCompatibilityEnhancements (SystemCore/High/RecommendedKeep) covers both AppX and CBS
+  identities. Classification never implies removability (ADR-086).
+- **Clear capabilities**: Microsoft.Windows.Console.Legacy (LegacyCompatibility), Microsoft.WebDriver
+  (Developer), MathRecognizer (Accessibility), App.WirelessDisplay.Connect (Media) → ProfileDependent,
+  no auto/optional steer; Microsoft.Wallpapers.Extended → ShellExperience optional consumer.
+- **High-confidence OptionalFeatures**: ClientForNFS-Infrastructure (Networking), DataCenterBridging
+  (Networking/High), DirectoryServices-ADAM-Client (Enterprise), HostGuardian (Security/High —
+  never becomes Low-risk auto-removable), LegacyComponents (LegacyCompatibility) — all ProfileDependent
+  or kept, never automatic Gaming removals. Embedded/lockdown families keep their 14.3b High semantics.
+- **Coverage-quality rule**: NO broad namespace fallback patterns (Microsoft.* / Windows.* / Client-* /
+  Package-* are forbidden; a guard test enforces this). Unknown stays visible; heuristic remains 1
+  (unchanged); deep catalog 177 → 203 (+27 high-confidence entries).
+- The FINAL THIRD elevated RealCapture (same CLI) must produce the exact new metrics; no percentage is
+  asserted — Unknown is expected to fall materially from 134.

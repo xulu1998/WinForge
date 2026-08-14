@@ -119,3 +119,35 @@ partly provider-mapped accounting). Documented in ADR-091.
   AppServerClient/ProjFS/embedded lockdown·filter·UWF) classified conservatively; KNOWN ≠ REMOVABLE.
 - **The second elevated run** (same command) must now be executed to capture the exact new metrics
   (Unknown expected to fall materially from 524).
+
+## Stage 14.3b — VALIDATED: SECOND elevated RealCapture EXACT NUMBERS (2026-08-14)
+
+The second elevated run (same real desktop, Administrator, same ISO/index) validated Stage 14.3b.
+Exact production numbers:
+
+| Source | Total | Curated | Protected | Known | Heuristic | Unknown |
+| --- | --- | --- | --- | --- | --- | --- |
+| AppX | 47 | 22 | 3 | 10 | 0 | 15 |
+| Capability | 425 | 2 | 3 | 348 | 0 | 75 |
+| CbsPackage | 149 | 0 | 41 | 148 | 0 | 1 |
+| OptionalFeature | 136 | 8 | 4 | 85 | 0 | 43 |
+| **Total** | **757** | **32** | **51** | **591** | **0** | **134** |
+
+Knowledge coverage: **82.30%** ((Curated + KnownDeep)/Total). Unknown fell from 524 → **134**
+(the 337 Language objects + high-confidence CBS/feature families from 14.3b). Same accounting
+boundary (four providers; Service/Driver/etc. NotSupported — ADR-091).
+
+## Stage 14.3c — FINAL high-confidence long-tail classification (implementation ready; THIRD capture pending)
+
+- Wi-Fi / Ethernet driver capability families (vendor-family rules, not per-model): Networking/High/
+  RecommendedKeep/Sensitive — never auto-removed by Gaming.
+- Critical system items: DirectX.Configuration.Database, SecHealthUI, FodMetadata-Package,
+  Onecore.StorageManagement, Hello.Face (see ADR-092 for exact semantics).
+- 7 media codec AppX classified (Media/Low/ProfileDependent) — Gaming PC never auto-strips codecs.
+- Outlook/Office Hub (supported-removal-gated Gaming recommendations), Dev Home (Developer keep +
+  curated 22→23, Gaming optional), ApplicationCompatibilityEnhancements (AppX + CBS, High/Keep).
+- Clear capabilities + high-confidence features (Console.Legacy/WebDriver/MathRecognizer/Wallpapers.
+  Extended/NFS/DCB/ADAM/HostGuardian/LegacyComponents) — conservative, never Low-risk auto.
+- Deep catalog 177→203 (+27, zero heuristic); no broad namespace fallback rules.
+- **The THIRD elevated run** (same command) must now produce the exact new metrics (Unknown expected
+  to fall materially from 134 — no percentage asserted).

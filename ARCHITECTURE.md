@@ -608,3 +608,31 @@ language (metadata only). `ComponentNormalizer` now preserves `Package_for_<sem>
 real CBS + small features classified conservatively; KNOWN != REMOVABLE; embedded lockdown/filter/UWF
 features never auto-removable by Gaming. Gaming policies keep ALL language capabilities. Zero
 heuristic entries added. Second elevated capture required for exact new metrics.
+
+## Phase 14 — Stage 14.3c: FINAL high-confidence long-tail classification (2026-08-14)
+
+The SECOND elevated RealCapture run SUCCEEDED (real desktop Administrator) and VALIDATED Stage 14.3b:
+**Total 757 · Curated 32 · Protected 51 · KnownDeep 591 · Heuristic 0 · Unknown 134 · coverage 82.30%**
+(AppX 22/3/10/15 · Capability 2/3/348/75 · CBS 0/41/148/1 · OptionalFeature 8/4/85/43 — exact table in
+docs/COMPONENT-COVERAGE.md). Stage 14.3c then classified ONLY high-confidence long-tail families:
+
+- **Driver capability families** (`Microsoft.Windows.Wifi.Client.*` and
+  `Microsoft.Windows.Ethernet.Client.*`): vendor-family catalog records (never per driver model),
+  Networking/High/RecommendedKeep/Sensitive — both Gaming profiles keep them.
+- **Critical system items**: DirectXConfigurationDatabase (RuntimeDependency/Critical/RequiredKeep/
+  GamingRelevant), SecHealthUi (Security/Critical/Protected), FodMetadataPackage
+  (Servicing/Critical/Protected), OnecoreStorageManagement (SystemCore/High/Keep), HelloFaceCapability
+  (Security/High/ProfileDependent) — none enable removal.
+- **7 media codec AppX** (HEIF/HEVC/MPEG-2/RAW/VP9/WebMedia/WebP): Media/Low/ProfileDependent —
+  Gaming PC never auto-strips codecs (optional-only); no removal-support expansion.
+- **User-facing AppX**: Outlook + Office Hub (Low/ConsumerContent — Gaming PC auto only with supported
+  AppX removal, gate blocks otherwise); Dev Home (Developer/DeveloperTool — Developer profile Keep
+  override + curated catalog 22→23, Gaming optional-only); ApplicationCompatibilityEnhancements
+  (SystemCore/High/RecommendedKeep, AppX + CBS).
+- **Capabilities/features**: Console.Legacy, WebDriver, MathRecognizer, Wallpapers.Extended,
+  App.WirelessDisplay.Connect, ClientForNFS-Infrastructure, DataCenterBridging,
+  DirectoryServices-ADAM-Client, HostGuardian, LegacyComponents — conservative ProfileDependent or
+  kept; HostGuardian never Low-risk auto.
+- Deep catalog 177→203 (+27, zero heuristic); guard test forbids broad namespace fallback patterns.
+- **1105 tests (Core 53, App 1052), 0 err/0 warn (Release, ordinary in-place)**. FINAL THIRD elevated
+  capture required for exact new metrics (no asserted percentage).

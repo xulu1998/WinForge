@@ -1,6 +1,6 @@
 {
   "media": "Win11_25H2_zh-CN_x64",
-  "note": "Real-derived stable families for Windows 11 25H2 zh-CN x64 Pro. Representative identities are STRIPPED of version numbers, architecture, language and host/temp mount paths (ComponentNormalizer.Canonical). Derived from the REAL 25H2 Pro zh-CN elevated RealCapture run (2026-08-14: 757 objects; Language.* capability families + Package_for_* + high-confidence CBS/features added in Stage 14.3b) plus .tmp/phase11/real-25h2-inventory-report.md; refreshed automatically by tools/WinForge.RealCapture after the elevated inventory capture. Classification is the EXCLUSIVE coverage bucket (Curated | KnownDeep | Heuristic | Unknown) the capture pipeline reports.",
+  "note": "Real-derived stable families for Windows 11 25H2 zh-CN x64 Pro. Representative identities are STRIPPED of version numbers, architecture, language and host/temp mount paths (ComponentNormalizer.Canonical). Derived from the REAL 25H2 Pro zh-CN elevated RealCapture run (2026-08-14: 757 objects; Language.* capability families + Package_for_* + high-confidence CBS/features added in Stage 14.3b; Stage 14.3c adds Wi-Fi/Ethernet driver families, DirectX configuration database, SecHealthUI, FOD metadata package, OneCore storage, Hello Face, media codecs, Outlook/Office Hub, Dev Home, console legacy/webdriver/wallpapers/math recognizer capabilities and NFS/DCB/ADAM/HostGuardian/LegacyComponents features) plus .tmp/phase11/real-25h2-inventory-report.md; refreshed automatically by tools/WinForge.RealCapture after the elevated inventory capture. Classification is the EXCLUSIVE coverage bucket (Curated | KnownDeep | Heuristic | Unknown) the capture pipeline reports.",
   "generatedUtc": "2026-08-13T00:00:00Z",
   "entries": [
     {
@@ -70,7 +70,8 @@
       "source": "AppX",
       "family": "microsoft.applicationcompatibilityenhancements",
       "representative": "microsoft.applicationcompatibilityenhancements",
-      "classification": "Unknown"
+      "classification": "KnownDeep",
+      "canonicalId": "ApplicationCompatibilityEnhancements"
     },
     {
       "source": "AppX",
@@ -236,7 +237,8 @@
       "source": "CbsPackage",
       "family": "microsoft-applicationcompatibilityenhancements",
       "representative": "microsoft-applicationcompatibilityenhancements",
-      "classification": "Unknown"
+      "classification": "KnownDeep",
+      "canonicalId": "ApplicationCompatibilityEnhancements"
     },
     {
       "source": "Capability",
@@ -349,6 +351,209 @@
       "representative": "accessibility.braille",
       "classification": "KnownDeep",
       "canonicalId": "AccessibilityBraille"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.wifi.client.intel",
+      "representative": "Microsoft.Windows.Wifi.Client.Intel~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetWifiClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.wifi.client.realtek",
+      "representative": "Microsoft.Windows.Wifi.Client.Realtek~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetWifiClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.wifi.client.broadcom",
+      "representative": "Microsoft.Windows.Wifi.Client.Broadcom~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetWifiClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.wifi.client.qualcomm",
+      "representative": "Microsoft.Windows.Wifi.Client.Qualcomm~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetWifiClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.ethernet.client.intel",
+      "representative": "Microsoft.Windows.Ethernet.Client.Intel~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "NetEthernetClientFamily"
+    },
+    {
+      "source": "Capability",
+      "family": "directx.configuration",
+      "representative": "DirectX.Configuration.Database~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "DirectXConfigurationDatabase"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.sechealthui",
+      "representative": "Microsoft.SecHealthUI_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "SecHealthUi"
+    },
+    {
+      "source": "CbsPackage",
+      "family": "microsoft-windows-fodmetadata",
+      "representative": "Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~",
+      "classification": "KnownDeep",
+      "canonicalId": "FodMetadataPackage"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.onecore",
+      "representative": "Microsoft.Onecore.StorageManagement~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "OnecoreStorageManagement"
+    },
+    {
+      "source": "Capability",
+      "family": "hello.face",
+      "representative": "Hello.Face~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "HelloFaceCapability"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.heifimageextension",
+      "representative": "Microsoft.HEIFImageExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "HeifImageExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.hevcvideoextension",
+      "representative": "Microsoft.HEVCVideoExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "HevcVideoExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.mpeg2videoextension",
+      "representative": "Microsoft.MPEG2VideoExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "Mpeg2VideoExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.rawimageextension",
+      "representative": "Microsoft.RawImageExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "RawImageExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.vp9videoextensions",
+      "representative": "Microsoft.VP9VideoExtensions_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "Vp9VideoExtensions"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.webmediaextensions",
+      "representative": "Microsoft.WebMediaExtensions_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "WebMediaExtensions"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.webpimageextension",
+      "representative": "Microsoft.WebpImageExtension_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "WebpImageExtension"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.outlookforwindows",
+      "representative": "Microsoft.OutlookForWindows_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "OutlookForWindows"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.microsoftofficehub",
+      "representative": "Microsoft.MicrosoftOfficeHub_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "MicrosoftOfficeHub"
+    },
+    {
+      "source": "AppX",
+      "family": "microsoft.windows.devhome",
+      "representative": "Microsoft.Windows.DevHome_8wekyb3d8bbwe",
+      "classification": "KnownDeep",
+      "canonicalId": "DevHome"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.windows.console.legacy",
+      "representative": "Microsoft.Windows.Console.Legacy~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "ConsoleLegacy"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.webdriver",
+      "representative": "Microsoft.WebDriver~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "WebDriver"
+    },
+    {
+      "source": "Capability",
+      "family": "microsoft.wallpapers",
+      "representative": "Microsoft.Wallpapers.Extended~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "WallpapersExtended"
+    },
+    {
+      "source": "Capability",
+      "family": "mathrecognizer",
+      "representative": "MathRecognizer~~~~0.0.1.0",
+      "classification": "KnownDeep",
+      "canonicalId": "MathRecognizer"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "clientfornfs-infrastructure",
+      "representative": "ClientForNFS-Infrastructure",
+      "classification": "KnownDeep",
+      "canonicalId": "ClientForNfsInfrastructure"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "datacenterbridging",
+      "representative": "DataCenterBridging",
+      "classification": "KnownDeep",
+      "canonicalId": "DataCenterBridging"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "directoryservices-adam-client",
+      "representative": "DirectoryServices-ADAM-Client",
+      "classification": "KnownDeep",
+      "canonicalId": "DirectoryServicesAdamClient"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "hostguardian",
+      "representative": "HostGuardian",
+      "classification": "KnownDeep",
+      "canonicalId": "HostGuardian"
+    },
+    {
+      "source": "OptionalFeature",
+      "family": "legacycomponents",
+      "representative": "LegacyComponents",
+      "classification": "KnownDeep",
+      "canonicalId": "LegacyComponents"
     }
   ]
 }

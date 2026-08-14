@@ -1,5 +1,5 @@
 {
-  "count": 5,
+  "count": 7,
   "items": [
     {
       "id": "Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_neutral_~_8wekyb3d8bbwe",
@@ -50,6 +50,26 @@
       "function": "Gaming",
       "risk": "Low",
       "recommendation": "OptionalRemove"
+    },
+    {
+      "id": "Microsoft-OneCore-DirectX-Database-FOD-Package~31bf3856ad364e35~amd64~~10.0.26100.1742",
+      "source": "CbsPackage",
+      "canonicalId": "CbsOneCoreDirectX",
+      "displayName": "CBS \u2014 DirectX database",
+      "profileTag": "GamingRelevant",
+      "function": "RuntimeDependency",
+      "risk": "High",
+      "recommendation": "RecommendedKeep"
+    },
+    {
+      "id": "Microsoft-OneCore-DirectX-Database-FOD-Package~31bf3856ad364e35~amd64~~10.0.26100.8036",
+      "source": "CbsPackage",
+      "canonicalId": "CbsOneCoreDirectX",
+      "displayName": "CBS \u2014 DirectX database",
+      "profileTag": "GamingRelevant",
+      "function": "RuntimeDependency",
+      "risk": "High",
+      "recommendation": "RecommendedKeep"
     }
   ]
 }

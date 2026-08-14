@@ -3,6 +3,43 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 14 — Stage 14.3c: FINAL high-confidence long-tail classification (2026-08-14)
+
+- **Stage 14.3b VALIDATED + COMPLETE** — SECOND elevated RealCapture run SUCCEEDED (real desktop,
+  Administrator): exact numbers **Total 757 · Curated 32 · Protected 51 · KnownDeep 591 · Heuristic 0 ·
+  Unknown 134 · knowledge coverage 82.30%** (AppX 47: 22/3/10/15 · Capability 425: 2/3/348/75 ·
+  CbsPackage 149: 0/41/148/1 · OptionalFeature 136: 8/4/85/43). The accounting boundary remains the
+  four supported providers (AppX/Capability/OptionalFeature/CbsPackage) — not comparable to Phase 11's 758.
+- **Wi-Fi / Ethernet driver capability families** (vendor-family rules, one catalog record per FAMILY,
+  never per driver model): `Microsoft.Windows.Wifi.Client.*` (Intel/Realtek/Broadcom/Qualcomm) and
+  `Microsoft.Windows.Ethernet.Client.*` → Networking / High / RecommendedKeep / Sensitive. Both Gaming
+  profiles KEEP them — never auto-removed.
+- **Critical system items classified**: DirectX.Configuration.Database (RuntimeDependency/Critical/
+  RequiredKeep/GamingRelevant — always kept in Gaming); Microsoft.SecHealthUI (Security/Critical/
+  Protected/RequiredKeep); Microsoft-Windows-FodMetadata-Package (Servicing/Critical/Protected/
+  RequiredKeep); Microsoft.Onecore.StorageManagement (SystemCore/High/Keep); Hello.Face
+  (Security/High/ProfileDependent/Sensitive).
+- **Media codec / image extensions** (HEIF/HEVC/MPEG-2/RAW/VP9/WebMedia/WebP): Media/Low/
+  ProfileDependent — Gaming PC never automatically strips codec support (optional, user-confirmed at
+  most); Dedicated Gaming optional at most.
+- **User-facing AppX**: Outlook for Windows + Office Hub (Low/ConsumerContent → Gaming PC auto-
+  recommends only when a supported AppX removal exists; the safety gate blocks otherwise); Dev Home
+  (Developer/ProfileDependent/DeveloperTool — the Developer profile now KEEPS it, Gaming optional-only;
+  added to the curated catalog, 22→23); ApplicationCompatibilityEnhancements (SystemCore/High/
+  RecommendedKeep — AppX and CBS identities).
+- **Clear capabilities**: Console.Legacy, WebDriver, MathRecognizer (Accessibility), App.WirelessDisplay
+  .Connect → ProfileDependent (never auto); Wallpapers.Extended → optional consumer content.
+- **High-confidence features**: ClientForNFS-Infrastructure, DataCenterBridging, DirectoryServices-ADAM
+  -Client, HostGuardian, LegacyComponents → conservative ProfileDependent semantics; embedded/security
+  families keep High risk (HostGuardian never becomes a Low-risk auto removal).
+- Deep catalog **177 → 203** (+27 high-confidence entries, **zero heuristic** added); no broad namespace
+  fallback rules (new guard test). Heuristic remains 1.
+- **1105 automated tests pass (Core 53, App 1052), 0 errors, 0 warnings (Release)** — ordinary in-place
+  `dotnet build`/`dotnet test` both pass.
+- **FINAL THIRD elevated RealCapture required** to produce the exact new metrics (Unknown expected to
+  fall materially from 134 — Wi-Fi/Ethernet drivers, DirectX config, codecs, Outlook/Office Hub,
+  Dev Home and the capability/feature families now carry knowledge).
+
 ## Phase 14 — Stage 14.3b: Real Unknown debt reduction + family analyzer refinement (2026-08-14)
 
 - **First elevated RealCapture run SUCCEEDED** (real desktop, Administrator) — EXACT real numbers:

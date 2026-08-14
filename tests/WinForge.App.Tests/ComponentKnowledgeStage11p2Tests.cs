@@ -368,9 +368,9 @@ public class ComponentKnowledgeStage11p2Tests
     public class CuratedCatalogStage11p2Tests
     {
         [Fact]
-        public void Catalog_Expanded_To_22_Components()
+        public void Catalog_Expanded_To_23_Components()
         {
-            Assert.Equal(22, Catalog().Count);
+            Assert.Equal(23, Catalog().Count);
         }
 
         [Fact]
@@ -1252,7 +1252,7 @@ public class ComponentKnowledgeStage11p2Tests
             // filters to present-in-image curated.
             var ciVm = new ComponentIntelligenceViewModel(new AppState(), new InMemoryLoggerService(),
                 new NoDiscoveryCiService(), new CuratedComponentCatalog(), new ResolvingLoc());
-            Assert.Equal(22, ciVm.Entries.Count);
+            Assert.Equal(23, ciVm.Entries.Count);
             Assert.All(ciVm.Entries, e => Assert.Equal(ComponentClassification.Curated, e.Entry.Classification));
         }
 

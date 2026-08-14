@@ -497,7 +497,7 @@ Phased development plan for WinForge. Each phase records its **Status**,
   (2026-08-13) · STAGE 14.3b IMPLEMENTATION READY (2026-08-14)**; branch
   `phase/14-deep-component-classification`; NOT merged. **FIRST elevated RealCapture run
   SUCCEEDED** (757 objects; Unknown 524; coverage 30.78% — real numbers in PROJECT_STATUS/
-  COMPONENT-COVERAGE). **SECOND REAL-DESKTOP CAPTURE REQUIRED** to close 14.3b (rerun the CLI as
+  COMPONENT-COVERAGE). **SECOND elevated RealCapture run SUCCEEDED (2026-08-14, real Administrator): 757 objects, Known 591, Unknown 134, coverage 82.30% — 14.3b VALIDATED + COMPLETE** (real numbers in PROJECT_STATUS/COMPONENT-COVERAGE). **FINAL THIRD REAL-DESKTOP CAPTURE REQUIRED** to close 14.3c (rerun the CLI as
   Administrator after this build; Unknown expected to fall materially — 337 Language objects now
   classified).
 - **Stage 14.1 delivered:** taxonomy + classification layer (discovery/knowledge/planning separate);
@@ -533,7 +533,22 @@ Phased development plan for WinForge. Each phase records its **Status**,
   lockdown/filter/UWF High/RecommendedKeep — never auto Gaming removal). Catalog 145→177; ZERO
   heuristic entries added. Gaming policies keep ALL languages. **1030 tests (Core 53, App 977),
   0 err/0 warn (Release, ordinary in-place).**
-- **Stage 14.4 (recommended next, after second capture):** expand remaining Unknown families
+- **Stage 14.3c (implementation ready; FINAL third capture required, ADR-092):** high-confidence
+  long-tail classification — Wi-Fi/Ethernet driver capability families by vendor-family rule
+  (Networking/High/RecommendedKeep/Sensitive; NEVER auto-removed by Gaming); critical system items
+  (DirectX.Configuration.Database RuntimeDependency/Critical/RequiredKeep/GamingRelevant;
+  SecHealthUI Security/Critical/Protected; Microsoft-Windows-FodMetadata-Package
+  Servicing/Critical/Protected; Onecore.StorageManagement SystemCore/High; Hello.Face
+  Security/High/ProfileDependent); 7 media codec AppX (Media/Low/ProfileDependent — Gaming PC never
+  auto-strips codecs, optional-only); Outlook/Office Hub (Low+ConsumerContent, Gaming PC auto only
+  when supported AppX removal exists, gate blocks otherwise); Dev Home (Developer/DeveloperTool —
+  Developer profile KEEP override, Gaming optional-only, curated catalog 22→23); Application
+  Compatibility Enhancements (SystemCore/High/RecommendedKeep, AppX + CBS); Console.Legacy/WebDriver/
+  MathRecognizer/Wallpapers.Extended/App.WirelessDisplay.Connect capabilities; ClientForNFS/
+  DataCenterBridging/ADAM-Client/HostGuardian/LegacyComponents features (ProfileDependent, never
+  Low-risk auto). Deep catalog 177→203 (+27, ZERO heuristic). No broad namespace fallback rules.
+  **1105 tests (Core 53, App 1052), 0 err/0 warn (Release, ordinary in-place).**
+- **Stage 14.4 (recommended next, after FINAL third capture):** expand remaining Unknown families
   from the real top-30 report; per-object dependency resolution; removal execution only after high
   classification coverage + protection gating.
 

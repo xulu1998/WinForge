@@ -576,6 +576,14 @@
   <data name="Comp.XboxApp.Prov0" xml:space="preserve"><value>Xbox / 游戏 包含 Xbox 应用、游戏覆盖层、身份提供程序与 Gaming Services 运行时。</value></data>
   <data name="Comp.XboxApp.Prov1" xml:space="preserve"><value>对不使用 Xbox / PC 游戏的用户，可选移除。</value></data>
   <data name="Comp.XboxApp.Scen.Gaming" xml:space="preserve"><value>选择“游戏”配置后保留；Xbox Game Pass 与 PC 游戏依赖它。</value></data>
+  <data name="Comp.DevHome.DisplayName" xml:space="preserve"><value>开发主页（Dev Home）</value></data>
+  <data name="Comp.DevHome.Short" xml:space="preserve"><value>微软的开发者仪表板应用。</value></data>
+  <data name="Comp.DevHome.Long" xml:space="preserve"><value>开发主页（Dev Home）整合开发者工作流（机器配置、仓库、WinGet 包、性能组件）。开发者常用；游戏用户通常不需要。</value></data>
+  <data name="Comp.DevHome.KeepIf" xml:space="preserve"><value>你是开发者并使用 Dev Home 进行环境配置与 WinGet 工作流。</value></data>
+  <data name="Comp.DevHome.RemoveIf" xml:space="preserve"><value>你从不使用 Dev Home，用其他方式管理开发工具。</value></data>
+  <data name="Comp.DevHome.Impact" xml:space="preserve"><value>Dev Home 被移除；开发工具与 WinGet 包不受影响。</value></data>
+  <data name="Comp.DevHome.Prov0" xml:space="preserve"><value>Dev Home 是开发者仪表板；开发工作站配置保留，游戏配置仅作可选建议。</value></data>
+  <data name="Comp.DevHome.Scen.Developer" xml:space="preserve"><value>选择“开发工作站”配置后保留；Dev Home 支持环境配置与 WinGet 工作流。</value></data>
   <data name="Comp.Photos.DisplayName" xml:space="preserve"><value>照片</value></data>
   <data name="Comp.Photos.Short" xml:space="preserve"><value>微软默认的照片查看器/编辑器。</value></data>
   <data name="Comp.Photos.Long" xml:space="preserve"><value>默认的照片应用。许多用户将其作为系统图片查看器；移除后系统将没有内置照片查看器（文件仍可由其他应用打开）。</value></data>
@@ -988,6 +996,7 @@
   <data name="Profile.Reason.Dependency" xml:space="preserve"><value>另一需要保留的组件依赖此项</value></data>
   <data name="Profile.Reason.Developer.Consumer" xml:space="preserve"><value>开发工作站精简无关消费与推广应用</value></data>
   <data name="Profile.Reason.Developer.Explorer" xml:space="preserve"><value>开发工作站启用资源管理器友好设置（显示文件扩展名）</value></data>
+  <data name="Profile.Reason.Developer.DevHome" xml:space="preserve"><value>开发工作站保留 Dev Home 以支持环境配置与 WinGet 工作流</value></data>
   <data name="Profile.Reason.Developer.Sandbox" xml:space="preserve"><value>开发工作站配置保留 Windows 沙盒</value></data>
   <data name="Profile.Reason.Developer.Telemetry" xml:space="preserve"><value>开发工作站减少广告与推荐内容</value></data>
   <data name="Profile.Reason.Developer.UI" xml:space="preserve"><value>开发工作站清理建议类界面</value></data>
