@@ -797,3 +797,28 @@ never executed — candidates ≠ selected proven); cleanup discard+workspace su
 level per ADR-084: real-image pipeline validation — NOT six full ISO installs, NOT VM
 FullHealthValidated. MERGED TO `main` via `--no-ff`; branch `phase/15-profile-execution` retained.
 **1225 tests (Core 53, App 1172), 0 err/0 warn.**
+
+## Phase 16 — Stage 16.1: Balanced end-to-end ISO + VM Full-Health Validation prep (2026-08-15, ADR-098)
+
+`WinForge.RealCapture --commit-profile <Id>` is the EXPLICIT commit/build mode (mutually exclusive
+with the discard-only `--apply-profile`): after the same selected-only apply + read-back, the
+pre-commit gate (every attempted op Verified) and a commit-mode ownership guard (session-owned
+paths + the authoritative `dism /Get-MountedImageInfo` inventory — an UNKNOWN registered mount
+aborts the run) gate the COMMIT. The commit + ISO build reuse the PRODUCTION `ImageBuildService`
+(commit → export → media preparation → oscdimg → independent `BuildVerifier` verification →
+atomic rename; `BuildOverwritePolicy.Fail`, deterministic output). The COMMITTED WIM is then
+re-opened (re-mounted into a second workspace-owned mount dir) and every attempted op is
+independently re-verified — the strongest persistence proof — and the ISO is structurally checked
+(boot/etfsboot.com, efi/microsoft/boot/efisys.bin, sources/boot.wim, sources/install.wim,
+setup.exe) with path/size/streaming-SHA-256 metadata into `profile-commit-validation.json`. The
+source ISO is never modified. The in-VM `scripts/Validate-WinForgeInstallation.ps1` collects
+structured `full-health-report.json` (Pass/Warning/Fail/NotTested; media/profile/windowsIdentity/
+bootAndShell/devices/network/servicing/windowsUpdate/security/storeAndAppPlatform/
+profileExpectedChanges; DISM CheckHealth + sfc /verifyonly non-destructive; activation REPORT
+ONLY; offline-VM warnings distinct from failures); the host-side `HealthReportParser` re-aggregates
+authoritatively (Fail > Warning > NotTested > Pass) and recomputes `fullHealthValidated`, so a
+hand-edited or buggy script can never report a false Pass. ADR-084 levels (WorkflowValidated /
+VmInstallValidated / FullHealthValidated) are documented in docs/FULL-HEALTH-VALIDATION.md —
+FullHealthValidated requires installed-OS evidence: ISO generated + VM Setup booted + Windows
+installed + OOBE completed + desktop reached + health report completed with no critical
+servicing/security/network/shell failures. **1243 tests (Core 53, App 1190), 0 err/0 warn.**

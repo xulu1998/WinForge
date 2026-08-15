@@ -60,7 +60,10 @@ public static class Program
         string OutDir,
         string WorkDir,
         bool NoCleanup,
-        string? ApplyProfile);
+        string? ApplyProfile,
+        string? CommitProfile,
+        string IsoOut,
+        string IsoName);
 
     public static async Task<int> Main(string[] args)
     {
@@ -89,6 +92,20 @@ public static class Program
             Console.WriteLine();
 
             return await RunApplyValidationAsync(options, logger);
+        }
+
+        if (options.CommitProfile is not null)
+        {
+            Console.WriteLine("=== WinForge Phase 16 Stage 16.1 — Real Offline Profile COMMIT + ISO Build ===");
+            Console.WriteLine($"ISO    : {options.IsoPath}");
+            Console.WriteLine($"Index  : {options.Index}");
+            Console.WriteLine($"Profile: {options.CommitProfile}");
+            Console.WriteLine($"ISO out: {options.IsoOut}");
+            Console.WriteLine($"ISO name: {options.IsoName}");
+            Console.WriteLine($"Reports: {options.OutDir}");
+            Console.WriteLine();
+
+            return await RunCommitProfileAsync(options, logger);
         }
 
         Console.WriteLine("=== WinForge Phase 14.3 — Elevated Real Inventory Capture ===");
@@ -271,7 +288,8 @@ public static class Program
         IImageServicingService Servicing,
         IComponentIntelligenceService Intelligence,
         IComponentCatalogProvider Catalog,
-        IIsoMountService IsoMount);
+        IIsoMountService IsoMount,
+        IBuildService Build);
 
     private static ComposedServices Compose(Options options, ILoggerService logger)
     {
@@ -288,7 +306,21 @@ public static class Program
         var intelligence = new WindowsComponentIntelligenceService(processRunner, logger, validator);
         var catalog = new CompositeComponentCatalog(new CuratedComponentCatalog(), new WindowsFeaturesCatalog());
 
-        return new ComposedServices(inspection, workspaceFactory, servicing, intelligence, catalog, isoMount);
+        // Production build pipeline (Phase 10/12) — commit → export → media prep →
+        // oscdimg → independent ISO verification. Reused as-is for commit mode.
+        var fileSystem = new WinForge.Infrastructure.Build.WindowsFileSystem();
+        var build = new WinForge.Infrastructure.Build.ImageBuildService(
+            servicing,
+            new WinForge.Infrastructure.Build.DismWimExporter(processRunner, fileSystem, logger),
+            new WinForge.Infrastructure.Build.IsoMediaPreparer(isoMount, fileSystem, logger),
+            new WinForge.Infrastructure.Build.OscdimgIsoBuilder(
+                new WinForge.Infrastructure.Build.AdkToolLocator(), processRunner, fileSystem, logger),
+            new WinForge.Infrastructure.Build.BuildVerifier(fileSystem, processRunner, isoMount, logger),
+            new WinForge.Infrastructure.Build.AdkToolLocator(),
+            fileSystem,
+            logger);
+
+        return new ComposedServices(inspection, workspaceFactory, servicing, intelligence, catalog, isoMount, build);
     }
 
     private static Options Parse(string[] args)
@@ -299,6 +331,9 @@ public static class Program
         string? workDir = null;
         var noCleanup = false;
         string? applyProfile = null;
+        string? commitProfile = null;
+        string? isoOut = null;
+        string? isoName = null;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -326,6 +361,15 @@ public static class Program
                 case "--apply-profile":
                     applyProfile = RequireValue(args, ref i, "--apply-profile");
                     break;
+                case "--commit-profile":
+                    commitProfile = RequireValue(args, ref i, "--commit-profile");
+                    break;
+                case "--iso-out":
+                    isoOut = RequireValue(args, ref i, "--iso-out");
+                    break;
+                case "--iso-name":
+                    isoName = RequireValue(args, ref i, "--iso-name");
+                    break;
                 case "--help":
                 case "-h":
                     PrintUsage();
@@ -346,16 +390,24 @@ public static class Program
             throw new ArgumentException($"ISO not found: {iso}");
         }
 
-        if (applyProfile is not null)
+        if (applyProfile is not null && commitProfile is not null)
         {
-            var known = new WinForge.Infrastructure.Profiles.ProfileCatalog().GetProfiles()
-                .Where(p => p.Kind == ProfileKind.Primary && p.Id != "Custom")
-                .Select(p => p.Id)
-                .ToHashSet(StringComparer.Ordinal);
-            if (!known.Contains(applyProfile))
+            throw new ArgumentException("--apply-profile (discard-only validation) and --commit-profile " +
+                                        "(commit + ISO build) are mutually exclusive — commit intent must be explicit.");
+        }
+
+        var knownProfiles = new WinForge.Infrastructure.Profiles.ProfileCatalog().GetProfiles()
+            .Where(p => p.Kind == ProfileKind.Primary && p.Id != "Custom")
+            .Select(p => p.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var id in new[] { applyProfile, commitProfile })
+        {
+            if (id is not null && !knownProfiles.Contains(id))
             {
                 throw new ArgumentException(
-                    $"--apply-profile '{applyProfile}' is not a known primary profile. Available: {string.Join(", ", known.OrderBy(x => x, StringComparer.Ordinal))}");
+                    $"--apply-profile/--commit-profile '{id}' is not a known primary profile. " +
+                    $"Available: {string.Join(", ", knownProfiles.OrderBy(x => x, StringComparer.Ordinal))}");
             }
         }
 
@@ -365,7 +417,17 @@ public static class Program
             ? Path.Combine(resolvedOut, "work")
             : Path.GetFullPath(workDir);
 
-        return new Options(Path.GetFullPath(iso), index, resolvedOut, resolvedWork, noCleanup, applyProfile);
+        // Commit-mode ISO output: user-chosen dir (default Documents\WinForge),
+        // deterministic name (never the repo, never the source ISO root).
+        var defaultIsoOut = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "WinForge");
+        var resolvedIsoOut = string.IsNullOrWhiteSpace(isoOut) ? defaultIsoOut : Path.GetFullPath(isoOut);
+        var resolvedIsoName = string.IsNullOrWhiteSpace(isoName)
+            ? $"WinForge-{commitProfile ?? "Custom"}-Win11-25H2-Pro-zh-CN-x64"
+            : isoName;
+
+        return new Options(Path.GetFullPath(iso), index, resolvedOut, resolvedWork, noCleanup,
+            applyProfile, commitProfile, resolvedIsoOut, resolvedIsoName);
     }
 
     private static string FindRepoRoot()
@@ -397,24 +459,35 @@ public static class Program
     private static void PrintUsage()
     {
         Console.WriteLine();
-        Console.WriteLine("WinForge.RealCapture — Phase 14.3 elevated real inventory capture / Phase 15.4 apply validation.");
+        Console.WriteLine("WinForge.RealCapture — Phase 14.3 elevated real inventory capture / Phase 15.4 apply validation / Phase 16.1 commit+ISO build.");
         Console.WriteLine();
         Console.WriteLine("Usage (capture):");
         Console.WriteLine("  WinForge.RealCapture --iso <path> [--index 4] [--out <dir>] [--work <dir>] [--no-cleanup]");
         Console.WriteLine();
-        Console.WriteLine("Usage (real offline apply validation — Stage 15.4):");
+        Console.WriteLine("Usage (real offline apply validation — Stage 15.4, DISCARD ONLY):");
         Console.WriteLine("  WinForge.RealCapture --iso <path> --apply-profile <ProfileId> [--index 4] [--out <dir>]");
         Console.WriteLine();
-        Console.WriteLine("  --iso            Windows 11 ISO to inspect (READ-ONLY input). REQUIRED.");
-        Console.WriteLine("  --index          WIM index to use (default 4 = Pro for the 25H2 zh-CN x64 ISO).");
-        Console.WriteLine("  --out            Report output dir (default <repo>/.tmp/phase14-real).");
-        Console.WriteLine("  --work           Temporary working dir for export/mount (default <out>/work).");
-        Console.WriteLine("  --no-cleanup     Keep the exported/mounted working image for inspection.");
-        Console.WriteLine("  --apply-profile  Execute + read-back-verify ONE primary profile against an");
-        Console.WriteLine("                   isolated exported+mounted working image, then DISCARD the");
-        Console.WriteLine("                   mount and clean the workspace. Only SelectedOperations run.");
-        Console.WriteLine("                   (Balanced and DedicatedGaming are the Stage 15.4 profiles;");
-        Console.WriteLine("                   run one profile per invocation.)");
+        Console.WriteLine("Usage (real offline COMMIT + ISO build — Stage 16.1):");
+        Console.WriteLine("  WinForge.RealCapture --iso <path> --commit-profile <ProfileId> [--index 4] [--out <dir>] [--iso-out <dir>] [--iso-name <name>]");
+        Console.WriteLine();
+        Console.WriteLine("  --iso             Windows 11 ISO to inspect (READ-ONLY input). REQUIRED.");
+        Console.WriteLine("  --index           WIM index to use (default 4 = Pro for the 25H2 zh-CN x64 ISO).");
+        Console.WriteLine("  --out             Report output dir (default <repo>/.tmp/phase14-real).");
+        Console.WriteLine("  --work            Temporary working dir for export/mount (default <out>/work).");
+        Console.WriteLine("  --no-cleanup      Keep the exported/mounted working image for inspection.");
+        Console.WriteLine("  --apply-profile   Execute + read-back-verify ONE primary profile against an");
+        Console.WriteLine("                    isolated exported+mounted working image, then DISCARD the");
+        Console.WriteLine("                    mount and clean the workspace. Only SelectedOperations run.");
+        Console.WriteLine("                    (Balanced and DedicatedGaming are the Stage 15.4 profiles;");
+        Console.WriteLine("                    run one profile per invocation.)");
+        Console.WriteLine("  --commit-profile  EXPLICIT commit/build mode: execute + read-back verify,");
+        Console.WriteLine("                    then (only if the pre-commit gate passes) COMMIT the working");
+        Console.WriteLine("                    WIM and build a final bootable ISO through the PRODUCTION");
+        Console.WriteLine("                    pipeline (oscdimg). Never modifies the source ISO. Output");
+        Console.WriteLine("                    ISO goes to --iso-out (default Documents\\WinForge).");
+        Console.WriteLine("  --iso-out         Output directory for the final ISO (default Documents\\WinForge).");
+        Console.WriteLine("  --iso-name        Output ISO file name without extension (deterministic default");
+        Console.WriteLine("                    WinForge-<Profile>-Win11-25H2-Pro-zh-CN-x64).");
         Console.WriteLine();
         Console.WriteLine("MUST run from an elevated (Administrator) prompt — DISM requires elevation.");
     }
@@ -1088,6 +1161,295 @@ public static class Program
         }
 
         return exitCode;
+    }
+
+    // =====================================================================
+    // Phase 16 Stage 16.1 — REAL OFFLINE COMMIT + ISO BUILD (ADR-098).
+    //
+    //   --commit-profile <PrimaryId>
+    //
+    // Same isolated workflow as the Stage 15.4 apply validation (inspect ISO
+    // read-only → export selected index → mount → BuildPlan → execute ONLY
+    // SelectedOperations → read-back), then — ONLY if the pre-commit gate
+    // passes (every attempted op Verified) and ONLY after the commit-mode
+    // ownership guard (session-owned paths + authoritative DISM mount
+    // inventory, unknown mounts abort) — COMMITS the working WIM and builds a
+    // final bootable ISO through the PRODUCTION pipeline (ImageBuildService).
+    // The committed WIM is then re-opened and re-verified (post-commit
+    // persistence), the ISO structure is validated, and the output metadata
+    // (path, size, SHA-256) is reported. Commit intent is EXPLICIT here — the
+    // discard-only --apply-profile mode can never accidentally commit.
+    // =====================================================================
+
+    private static async Task<int> RunCommitProfileAsync(Options options, ILoggerService logger)
+    {
+        var services = Compose(options, logger);
+        var ct = CancellationToken.None;
+        var profileId = options.CommitProfile!;
+        ProfileCommitValidationReport report = new() { ProfileId = profileId };
+        ImageServicingWorkspace? workspace = null;
+        var exitCode = 0;
+
+        try
+        {
+            // ---- 1. Inspect the source ISO (read-only input) ----
+            var inspection = await services.Inspection.InspectAsync(options.IsoPath, ct);
+            if (inspection.Status != IsoInspectionStatus.Completed ||
+                inspection.ImageMetadata is null ||
+                inspection.ImageMetadata.Status != WindowsImageMetadataStatus.Completed)
+            {
+                Console.Error.WriteLine(
+                    "ISO inspection did not complete. If you see DISM error 740, this tool must run");
+                Console.Error.WriteLine("from an ELEVATED (Administrator) prompt.");
+                Console.Error.WriteLine(inspection.ErrorMessage is null ? string.Empty : $"Detail: {inspection.ErrorMessage}");
+                return 3;
+            }
+
+            var edition = inspection.ImageMetadata.Editions.FirstOrDefault(e => e.Index == options.Index);
+            if (edition is null)
+            {
+                Console.Error.WriteLine($"Index {options.Index} not present in the ISO. Available:");
+                foreach (var e in inspection.ImageMetadata.Editions.OrderBy(e => e.Index))
+                {
+                    Console.Error.WriteLine($"  {e.Index}: {e.Name}");
+                }
+
+                return 3;
+            }
+
+            Console.WriteLine($"Target: {edition.Name} (index {edition.Index}) {edition.Architecture} {edition.Version}");
+
+            // ---- 2. Isolated workspace for THIS commit run ----
+            var workspaceBuild = services.WorkspaceFactory.BuildWorkspace(inspection, edition);
+            if (workspaceBuild.Status != ImageWorkspaceStatus.Ready || workspaceBuild.Workspace is null)
+            {
+                Console.Error.WriteLine($"Workspace build failed: {string.Join("; ", workspaceBuild.Issues)}");
+                return 3;
+            }
+
+            // ---- 3. Export selected index → workspace-owned working WIM ----
+            var prepared = await services.Servicing.PrepareWorkingImageAsync(workspaceBuild.Workspace, WorkspaceId, ct);
+            if (!prepared.Success || prepared.Workspace is null)
+            {
+                PrintServicingFailure("export", prepared.ErrorMessage, prepared.Issues);
+                return 4;
+            }
+
+            workspace = prepared.Workspace;
+
+            // ---- 4. Mount the workspace-owned working WIM ----
+            var mounted = await services.Servicing.MountAsync(workspace, ct);
+            if (!mounted.Success)
+            {
+                PrintServicingFailure("mount", mounted.ErrorMessage, mounted.Issues);
+                return 4;
+            }
+
+            Console.WriteLine($"Mounted working image at {workspace.MountDirectory}");
+
+            // ---- 5. Production discovery + classification (same pipeline as capture) ----
+            var raw = await services.Intelligence.DiscoverAsync(workspace, ct);
+            if (!raw.Discovered)
+            {
+                Console.Error.WriteLine("Discovery did not run (workspace not usable).");
+                return 5;
+            }
+
+            if (raw.Cancelled)
+            {
+                Console.Error.WriteLine("Discovery was cancelled.");
+                return 5;
+            }
+
+            var catalog = services.Catalog.GetDefinitions();
+            var deep = new DeepComponentClassifier(DeepComponentCatalogData.Entries);
+
+            // ---- 6. Unified candidate stream → final validated BuildPlan ----
+            var (built, profiles, present) = BuildUnifiedStream(raw, deep, catalog);
+            var profile = profiles.Single(p => p.Id == profileId);
+            var execution = new ProfileExecutionService();
+            var (plan, issues) = execution.BuildPlan(profile, built.Subjects,
+                new HashSet<GamingExtra>(), new HashSet<string>(), present, profiles);
+
+            if (plan is null || issues.Count > 0 || plan.Validate().Count > 0)
+            {
+                Console.Error.WriteLine("Commit: BuildPlan is not valid — nothing was executed or committed.");
+                foreach (var issue in issues.Concat(plan?.Validate() ?? System.Array.Empty<string>()))
+                {
+                    Console.Error.WriteLine("  - " + issue);
+                }
+
+                report.BuildPlanOperationCount = plan?.Operations.Count ?? 0;
+                report.SelectedOperationCount = plan?.SelectedOperations.Count ?? 0;
+                report.PreCommitGateFailure = "BuildPlan validation failed; nothing was executed or committed.";
+                exitCode = 9;
+                return exitCode;
+            }
+
+            // ---- 7. Execute selected-only + independent read-back (same as Stage 15.4) ----
+            var processRunner = new WindowsProcessRunner();
+            var registry = new OfflineRegistryService(logger);
+            var validator = new MountIdentityValidator();
+            var applyService = new ProfileApplyValidationService();
+            var applyReport = await applyService.ValidateAsync(new ProfileApplyValidationRequest
+            {
+                Profile = profile,
+                Plan = plan,
+                Workspace = workspace,
+                Executor = new WindowsCustomizationExecutionService(processRunner, registry, logger, validator),
+                Verifier = new OfflineApplyVerifier(processRunner, registry, logger),
+                Validator = validator,
+                Logger = logger,
+            }, ct);
+
+            report.BuildPlanOperationCount = applyReport.BuildPlanOperationCount;
+            report.SelectedOperationCount = applyReport.SelectedOperationCount;
+            report.Attempted = applyReport.Attempted;
+            report.Succeeded = applyReport.Succeeded;
+            report.Failed = applyReport.Failed;
+            report.Skipped = applyReport.Skipped;
+            report.PreCommitValidationPassed = applyReport.ValidationPassed;
+            report.Operations = new List<ProfileApplyOperationReport>(applyReport.Operations);
+            PrintApplySummary(applyReport);
+
+            if (!applyReport.ValidationPassed || applyReport.Failed > 0)
+            {
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("COMMIT BLOCKED: pre-commit read-back gate rejected the run — " +
+                                        "the working image will be DISCARDED, nothing committed.");
+                exitCode = 9;
+                return exitCode;
+            }
+
+            // ---- 8. Explicit commit + production ISO build + post-commit re-verification ----
+            Directory.CreateDirectory(options.IsoOut);
+            var commitService = new ProfileIsoCommitService(
+                services.Build,
+                new OfflineApplyVerifier(processRunner, registry, logger),
+                validator,
+                services.Servicing,
+                services.IsoMount,
+                processRunner,
+                logger);
+            report = await commitService.CommitAsync(new ProfileIsoCommitRequest
+            {
+                Profile = profile,
+                Plan = plan,
+                Workspace = workspace,
+                ApplyReport = applyReport,
+                SourceIsoPath = options.IsoPath,
+                SourceIsoSizeBytes = new FileInfo(options.IsoPath).Length,
+                SourceImageRelativePath = workspace.SourceImageRelativePath ?? "sources/install.wim",
+                SourceImageType = workspace.SourceImageType,
+                SourceEditionName = workspace.SelectedEditionName,
+                OutputDirectory = options.IsoOut,
+                OutputFileName = options.IsoName,
+            }, ct);
+
+            if (report.Committed)
+            {
+                // BuildAsync committed + unmounted the working image. Mark the
+                // CLI-side workspace Prepared so cleanup treats it as a safe no-op
+                // (never a second DISM operation against a gone mount).
+                workspace.State = ServicingWorkspaceState.Prepared;
+            }
+
+            PrintCommitSummary(report);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine();
+            Console.Error.WriteLine("COMMIT VALIDATION FAILED: " + ex.Message);
+            if (ex.Message.Contains("740", StringComparison.Ordinal) ||
+                ex.Message.Contains("elevat", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Error.WriteLine("DISM requires elevation (Error 740) — run from an ELEVATED prompt.");
+            }
+
+            exitCode = 1;
+            report.CommitError = ex.Message;
+            report.PostCommitError = ex.Message;
+        }
+        finally
+        {
+            // ---- 9. Cleanup ALWAYS runs: discard any remaining mount, dismount ISO, remove workspace ----
+            if (workspace is not null)
+            {
+                report.MountCleanup = await CleanupWithReportAsync(services, workspace, options, logger);
+                if (!report.MountCleanup.DiscardSucceeded)
+                {
+                    Console.Error.WriteLine();
+                    Console.Error.WriteLine("BLOCKER: mount cleanup failed — stopping further profile validation.");
+                    Console.Error.WriteLine(report.MountCleanup.Error ?? "Unmount/discard reported failure.");
+                    exitCode = 10;
+                }
+            }
+            else
+            {
+                report.MountCleanup = new ProfileApplyMountCleanupReport
+                {
+                    DiscardSucceeded = true,
+                    WorkspaceCleanupSucceeded = false,
+                    Error = "No workspace was created for this commit run.",
+                };
+            }
+        }
+
+        // ---- 10. Report (always written) ----
+        if (workspace is not null)
+        {
+            Directory.CreateDirectory(options.OutDir);
+            await WriteJsonAsync(Path.Combine(options.OutDir, "profile-commit-validation.json"), report);
+        }
+
+        return exitCode;
+    }
+
+    private static void PrintCommitSummary(ProfileCommitValidationReport report)
+    {
+        Console.WriteLine();
+        Console.WriteLine("=== PROFILE COMMIT + ISO BUILD SUMMARY ===");
+        Console.WriteLine($"Profile            : {report.ProfileId}");
+        Console.WriteLine($"BuildPlan ops      : {report.BuildPlanOperationCount}");
+        Console.WriteLine($"Selected ops       : {report.SelectedOperationCount}");
+        Console.WriteLine($"Attempted/Succeeded: {report.Attempted}/{report.Succeeded}");
+        Console.WriteLine($"Failed/Skipped     : {report.Failed}/{report.Skipped}");
+        Console.WriteLine($"Pre-commit gate    : {(report.PreCommitValidationPassed ? "PASS" : "REJECTED")}");
+        if (report.PreCommitGateFailure is not null)
+        {
+            Console.WriteLine($"Gate failure       : {report.PreCommitGateFailure}");
+        }
+
+        Console.WriteLine($"Committed          : {report.Committed}");
+        if (report.CommitError is not null)
+        {
+            Console.WriteLine($"Commit error       : {report.CommitError}");
+        }
+
+        Console.WriteLine($"Post-commit verify : {(report.PostCommitVerified ? "PASS" : "FAILED")}");
+        if (report.PostCommitError is not null)
+        {
+            Console.WriteLine($"Post-commit error  : {report.PostCommitError}");
+        }
+
+        foreach (var check in report.PostCommitChecks)
+        {
+            Console.WriteLine($"  [{check.VerificationStatus,-16}] {check.CanonicalKey} — {check.VerificationDetail}");
+        }
+
+        if (report.Iso is not null)
+        {
+            Console.WriteLine($"ISO output         : {report.Iso.OutputPath}");
+            Console.WriteLine($"ISO size           : {report.Iso.SizeBytes:N0} bytes");
+            Console.WriteLine($"ISO SHA-256        : {report.Iso.Sha256}");
+            Console.WriteLine($"ISO structure      : {(report.Iso.StructureValidated ? "VALID" : "INVALID")}");
+            foreach (var check in report.Iso.StructureChecks)
+            {
+                Console.WriteLine($"  - {check}");
+            }
+        }
+
+        Console.WriteLine($"Cleanup            : discard={report.MountCleanup.DiscardSucceeded} workspace={report.MountCleanup.WorkspaceCleanupSucceeded}");
     }
 
     private static void PrintApplySummary(ProfileApplyValidationReport report)

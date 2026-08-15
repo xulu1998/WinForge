@@ -3,6 +3,37 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 16 — Stage 16.1: Balanced end-to-end ISO + VM Full-Health Validation prep (2026-08-15)
+
+- **Explicit COMMIT + ISO build mode**: `WinForge.RealCapture --commit-profile <ProfileId>`
+  (mutually exclusive with the discard-only `--apply-profile`) executes a profile's selected
+  operations against an isolated mounted 25H2 image, gates the commit on pre-commit read-back
+  (every attempted op must be Verified) plus a commit-mode ownership guard (authoritative DISM
+  mount inventory — an unknown mount aborts), COMMITS the working WIM and builds a final bootable
+  ISO through the same production pipeline the app uses (commit → export → media preparation →
+  oscdimg → independent ISO verification → atomic rename). The source ISO is never modified; the
+  output ISO goes to `Documents\WinForge\WinForge-Balanced-Win11-25H2-Pro-zh-CN-x64.iso` by
+  default with no silent overwrite.
+- **Post-commit persistence verification**: after commit + unmount, the committed WIM is re-opened
+  and independently re-verified (removed AppX still absent, machine + Default-User registry values
+  persisted, DISM metadata query succeeds), distinct from the pre-commit mounted-image read-back.
+- **ISO structure + metadata evidence**: the produced ISO is verified for boot files
+  (etfsboot.com / efisys.bin), sourcesoot.wim, sources\install.wim and setup.exe, and the
+  commit report records output path, size and a streaming SHA-256.
+- **In-VM full-health validator**: `scripts/Validate-WinForgeInstallation.ps1` (run at
+  Administrator inside the installed VM) collects structured `full-health-report.json` evidence —
+  edition/build/architecture/language/activation (report only), boot+shell, devices, network
+  (offline-VM warnings distinct from failures), DISM CheckHealth + sfc /verifyonly (non-destructive),
+  Windows Update presence, security presence, Store/app-platform presence, and Balanced
+  expected-state checks (Feedback Hub / Phone Link / Solitaire absent; machine + Default-User
+  policy registry values) — with a Pass/Warning/Fail/NotTested vocabulary.
+- **FullHealthValidated is earned, not assumed** (ADR-098): a booting ISO alone never qualifies;
+  the gate requires the VM to install, reach the desktop and complete the health report with no
+  critical servicing/security/network/shell failures. Validation levels
+  (WorkflowValidated / VmInstallValidated / FullHealthValidated) documented in
+  `docs/FULL-HEALTH-VALIDATION.md`.
+
+
 ## Phase 15 — COMPLETE: Profile Execution & Meaningful Optimization (2026-08-15)
 
 **Phase 15 ACCEPTED — real Windows 11 25H2 Pro zh-CN x64 (ISO index 4) validation PASSED.**

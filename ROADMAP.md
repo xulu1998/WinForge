@@ -491,6 +491,38 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ---
 
+## Phase 16 — Full Health Validation & Release Confidence
+
+- **Status: IN PROGRESS — STAGE 16.1 IMPLEMENTATION READY (2026-08-15)** — BALANCED REAL ISO
+  BUILD + VM FULL-HEALTH VALIDATION REQUIRED; branch `phase/16-full-health-validation`; NOT merged.
+- **Stage 16.1 — Balanced end-to-end ISO + VM health validation prep (ADR-098):** proves a real
+  WinForge-generated customized ISO works end-to-end (Profile → Customize → validated BuildPlan →
+  Apply → COMMIT WIM → build ISO → VMware install → OOBE → desktop → post-install health
+  validation). Deliverables:
+  - **Explicit commit mode** (`WinForge.RealCapture --commit-profile <Id>`, mutually exclusive
+    with the discard-only `--apply-profile`): pre-commit read-back gate (every attempted op
+    Verified or nothing is committed) + commit-mode ownership guard (session-owned paths +
+    authoritative DISM mount inventory; an UNKNOWN mount aborts) → COMMIT via the PRODUCTION
+    ImageBuildService (commit → export → media prep → oscdimg → independent ISO verification →
+    atomic rename) → post-commit re-verification against the re-opened COMMITTED WIM (AppX
+    absence, machine + Default-User registry persistence, DISM metadata) → ISO structure
+    validation (boot files, sourcesoot.wim, install.wim, setup.exe, UEFI) → output metadata
+    (path, size, streaming SHA-256). Source ISO never modified; deterministic output
+    `Documents\WinForge\WinForge-Balanced-Win11-25H2-Pro-zh-CN-x64.iso`, no silent overwrite.
+  - **In-VM health validator** (`scripts/Validate-WinForgeInstallation.ps1` + balanced-expected
+    -state.json): structured full-health-report.json (Pass/Warning/Fail/NotTested; sections
+    media/profile/windowsIdentity/bootAndShell/devices/network/servicing/windowsUpdate/security/
+    storeAndAppPlatform/profileExpectedChanges; DISM CheckHealth + sfc /verifyonly non-destructive;
+    activation REPORT ONLY; offline-VM warnings distinct from failures). Host-side
+    HealthReportParser re-aggregates authoritatively and recomputes fullHealthValidated.
+  - **ADR-084 levels documented** (docs/FULL-HEALTH-VALIDATION.md): WorkflowValidated (Phase 15)
+    / VmInstallValidated / FullHealthValidated — FullHealthValidated requires installed-OS
+    evidence: ISO generated + VM Setup booted + Windows installed + OOBE + desktop + health
+    report completed with no critical servicing/security/network/shell failures.
+  - Balanced expected-state checks: Feedback Hub / Phone Link / Solitaire absent, 4 machine
+    registry policy values, 2 Default-User Start values.
+  - **1243 tests (Core 53, App 1190), 0 err/0 warn.**
+
 ## Phase 15 — Profile Execution & Meaningful Optimization
 
 - **Status: COMPLETE (2026-08-15) — ALL STAGES 15.1/15.2/15.2b/15.3/15.3b/15.4/15.4a COMPLETE;

@@ -1,0 +1,49 @@
+{
+  "profileId": "Balanced",
+  "description": "Expected post-install state for the Balanced profile (Phase 16 Stage 16.1). These are the AutoApply targets Balanced is designed to achieve on a real 25H2 install; each is verified from the installed OS where practical. Recommend-only rows are intentionally NOT listed here.",
+  "appxAbsent": [
+    "Microsoft.WindowsFeedbackHub",
+    "Microsoft.YourPhone",
+    "Microsoft.MicrosoftSolitaireCollection"
+  ],
+  "machineRegistry": [
+    {
+      "path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo",
+      "name": "Enabled",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+      "name": "DisableWindowsConsumerFeatures",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+      "name": "DoNotShowFeedbackNotifications",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+      "name": "DisableWindowsSpotlightFeatures",
+      "expectedData": "1",
+      "kind": "DWord"
+    }
+  ],
+  "defaultUserRegistry": [
+    {
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "Start_ShowRecommended",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "Start_ShowRecent",
+      "expectedData": "0",
+      "kind": "DWord"
+    }
+  ]
+}

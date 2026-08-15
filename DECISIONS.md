@@ -2470,3 +2470,56 @@ failure:**
 - First real Balanced result recorded: mount/discovery/hive-access/cleanup PASSED; registry precheck
   absence semantics FAILED; no Stage 15.4 completion yet — BALANCED REAL APPLY RETEST REQUIRED
   (`--apply-profile Balanced` only; DedicatedGaming NOT yet).
+
+## ADR-098: FullHealth Validation Requires Installed-OS Evidence (Stage 16.1)
+
+**Status:** Accepted (Phase 16 Stage 16.1; implementation ready, Balanced real
+VM validation pending).
+**Context:** Phase 15 proved the Profile Execution / Apply pipeline
+`WorkflowValidated` on real 25H2 media (structural validation of all six
+primaries; Balanced 10/10 and DedicatedGaming 20/20 real offline Apply executed
++ read-back Verified; mounts discarded). It did NOT commit a customized WIM,
+build a final ISO, install it, or validate the installed OS. The product goal
+for Phase 16 is a real end-to-end customized ISO install; "the ISO boots" must
+never be conflated with "the installed Windows is healthy".
+**Decision — FullHealthValidated requires installed-OS evidence:**
+- **Levels (ADR-084 boundary preserved):** `WorkflowValidated` = the toolchain
+  runs end-to-end on real media in an isolated/discard-only context;
+  `VmInstallValidated` = a WinForge-produced ISO boots in a VM and Windows
+  installs (Setup → OOBE → desktop); `FullHealthValidated` = VmInstallValidated
+  PLUS a schema-valid `full-health-report.json` with `fullHealthValidated:
+  true` (no critical servicing/security/network/shell failures).
+- **Explicit commit mode (`--commit-profile`, mutually exclusive with the
+  discard-only `--apply-profile`):** pre-commit read-back gate (every attempted
+  op Verified or nothing is committed) + commit-mode ownership guard (session-
+  owned paths + authoritative DISM mount inventory; an UNKNOWN mount aborts) →
+  COMMIT via the production ImageBuildService (commit → export → media prep →
+  oscdimg → independent ISO verification → atomic rename) → post-commit
+  re-verification against the re-opened COMMITTED WIM (AppX absence, machine +
+  Default-User registry persistence, DISM metadata) → ISO structure validation
+  (boot files, sources\boot.wim, install.wim, setup.exe, UEFI) → output
+  metadata (path, size, streaming SHA-256). The source ISO is never modified;
+  output is `Documents\WinForge\WinForge-Balanced-Win11-25H2-Pro-zh-CN-x64.iso`
+  by default with `BuildOverwritePolicy.Fail` (deterministic, no silent
+  overwrite).
+- **Health evidence is structured, not "OK":** `scripts/Validate-WinForge
+  Installation.ps1` (runs inside the VM at Administrator) collects
+  `full-health-report.json` covering media / profile / windowsIdentity /
+  bootAndShell / devices / network / servicing / windowsUpdate / security /
+  storeAndAppPlatform / profileExpectedChanges, with the status vocabulary
+  `Pass | Warning | Fail | NotTested` (no binary false confidence: an offline
+  VM, unactivated Windows, or missing VMware audio are reported distinctly and
+  never masquerade as product failures). The host-side `HealthReportParser`
+  re-aggregates authoritatively (Fail > Warning > NotTested > Pass) and
+  recomputes `fullHealthValidated` — a hand-edited or buggy script can never
+  report a false Pass.
+- **FullHealthValidated gate (Balanced):** ISO generated + VM Setup booted +
+  Windows installed + OOBE completed + desktop reached + health report
+  completed with no section Fail and the critical sections (bootAndShell,
+  servicing, security, network) actually tested and Pass. Warnings do not
+  block. Non-destructive checks only (DISM /CheckHealth, sfc /verifyonly,
+  activation REPORT ONLY, Defender signatures report-only) — nothing is
+  repaired or bypassed (no OOBE bypass, no activation bypass, no Windows
+  Update disabling).
+- **Balanced first:** safest primary, already real-Apply validated, minimal
+  confounding variables. Other profiles keep their current validation level.
