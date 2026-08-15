@@ -39,7 +39,11 @@ public static class ProfilePlanValidator
     {
         var issues = new List<string>();
 
-        // ---- 1. remove + keep conflicts / duplicate change plans on the same logical id ----
+        // ---- 1a. remove + keep conflicts on the same SEMANTIC logical id ----
+        // A Keep intent for a family (HyperV, Containers, …) protects the WHOLE
+        // family; a change elsewhere under the same logical id is contradictory
+        // unless resolved (the aggregation layer resolves keep-wins BEFORE final
+        // validation — ADR-096 addendum §5).
         var dispositions = new Dictionary<string, List<ProfileDisposition>>(StringComparer.Ordinal);
         foreach (var item in items ?? Array.Empty<ProfileExecutionItem>())
         {
@@ -60,8 +64,37 @@ public static class ProfilePlanValidator
             {
                 issues.Add($"Remove/keep conflict for '{pair.Key}': planned as a change but kept elsewhere.");
             }
+        }
 
-            var changeCount = pair.Value.Count(d => d is ProfileDisposition.AutoApply or ProfileDisposition.Recommend);
+        // ---- 1b. duplicate change plans on the same EXECUTABLE identity ----
+        // Stage 15.3b (ADR-096 addendum): the duplicate check groups by the
+        // executable technical identity (the actual DISM FeatureName / package /
+        // service identity), NOT the profile-facing family alias. Distinct real
+        // features that share a family (HyperV x9, Containers x4, MediaPlayer
+        // AppX+OptionalFeature) are legitimate distinct executable changes; two
+        // candidates resolving to the SAME executable change are true duplicates
+        // and must have been merged by the aggregation layer before final
+        // validation — the validator still rejects them if not.
+        var executableKeys = new Dictionary<string, List<ProfileDisposition>>(StringComparer.Ordinal);
+        foreach (var item in items ?? Array.Empty<ProfileExecutionItem>())
+        {
+            if (item.Disposition is not (ProfileDisposition.AutoApply or ProfileDisposition.Recommend))
+            {
+                continue;
+            }
+
+            if (!executableKeys.TryGetValue(item.ExecutableCanonicalKey, out var list))
+            {
+                list = new List<ProfileDisposition>();
+                executableKeys[item.ExecutableCanonicalKey] = list;
+            }
+
+            list.Add(item.Disposition);
+        }
+
+        foreach (var pair in executableKeys)
+        {
+            var changeCount = pair.Value.Count;
             if (changeCount > 1)
             {
                 issues.Add($"Duplicate change plan for '{pair.Key}' ({changeCount} change entries).");

@@ -772,12 +772,20 @@ public static class Program
             var (plan, issues) = service.BuildPlan(profile, built.Subjects,
                 new HashSet<WinForge.Core.Profiles.GamingExtra>(), new HashSet<string>(), present, profiles);
 
+            // Stage 15.3b (ADR-096 addendum): expose canonical merges so structural
+            // validation can prove same-target candidates collapsed with no
+            // information loss. Aggregator input mirrors BuildPlan exactly.
+            var aggregate = WinForge.Core.Profiles.ProfilePlanAggregator.Aggregate(report.Items);
+
             profilesJson.Add(new ProfileBuildPlanJson
             {
                 ProfileId = profile.Id,
                 DeltaCount = report.ChangeCount,
                 BuildPlanOperationCount = plan?.Operations.Count ?? 0,
                 SelectedOperationCount = plan?.SelectedOperations.Count ?? 0,
+                MergedDuplicateCount = aggregate.MergedDuplicateCount,
+                MergeGroupCount = aggregate.MergeGroups.Count,
+                DroppedKeepWins = aggregate.DroppedKeepWins,
                 ValidationPassed = plan is not null,
                 ValidationErrors = issues.ToList(),
                 OperationsByType = plan is null
@@ -788,6 +796,15 @@ public static class Program
                 CanonicalOperationKeys = plan is null
                     ? new List<string>()
                     : plan.Operations.Select(o => o.ConflictKey).OrderBy(k => k, StringComparer.Ordinal).ToList(),
+                MergeGroups = aggregate.MergeGroups
+                    .Select(g => new ProfileBuildPlanMergeGroupJson
+                    {
+                        CanonicalKey = g.CanonicalKey,
+                        SourceCount = g.SourceCount,
+                        SourceIds = g.SourceIds.ToList(),
+                        SourceIdentities = g.SourceIdentities.ToList(),
+                    })
+                    .ToList(),
             });
         }
 

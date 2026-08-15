@@ -70,7 +70,14 @@ public enum ExecutionOperationType
 /// </summary>
 public sealed class ProfileExecutionItem
 {
+    /// <summary>
+    /// Semantic (profile-facing) identity — the canonical family id (e.g. "HyperV",
+    /// "Containers", "MediaPlayer"). Multiple REAL Windows objects can share it
+    /// (family aliasing): profile intent matching, keep overrides, gaming policy,
+    /// delta keys and the preview all operate at THIS level.
+    /// </summary>
     public string LogicalId { get; init; } = string.Empty;
+
     public string DisplayName { get; init; } = string.Empty;
     public ExecutionOperationType OperationType { get; init; } = ExecutionOperationType.Unknown;
     public ProfileDisposition Disposition { get; init; } = ProfileDisposition.Unknown;
@@ -80,6 +87,48 @@ public sealed class ProfileExecutionItem
     public bool IsUserOverride { get; init; }
     public bool WasProfileDriven { get; init; }
     public bool IsExecutableChange => Disposition is ProfileDisposition.AutoApply or ProfileDisposition.Recommend;
+
+    /// <summary>
+    /// Stage 15.3b (ADR-096 addendum): the EXECUTABLE technical identity — the
+    /// actual name sent to DISM / the service name / the package identity — as
+    /// opposed to the profile-facing <see cref="LogicalId"/> family alias. The
+    /// canonical executable operation identity is built from THIS field, so
+    /// distinct real features that share a family (HyperV x9, Containers x4,
+    /// MediaPlayer AppX+OptionalFeature) stay distinct in the executable plan,
+    /// while genuine same-target candidates (same feature from multiple sources)
+    /// collapse into one operation during aggregation.
+    /// </summary>
+    public string ExecutableIdentity { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The requested executable state of the candidate (Remove / Disable /
+    /// Configure). Aggregation refuses to silently merge DIFFERENT states for
+    /// the same executable target — that is an explicit conflict (ADR-096 addendum §5).
+    /// </summary>
+    public OptimizationAction ActionKind { get; init; } = OptimizationAction.Remove;
+
+    /// <summary>
+    /// Provenance of this operation (Stage 15.3b §4): the ordered, distinct
+    /// source identities of every semantic candidate merged into one executable
+    /// operation (raw feature/package identities for inventory objects, catalog
+    /// definition ids for optimization definitions). Mirrors the existing
+    /// registry <c>SourceDefinitionIds</c> behavior — "this operation exists
+    /// because of these sources". Single-candidate items carry exactly one id.
+    /// </summary>
+    public IReadOnlyList<string> SourceDefinitionIds { get; init; } = new List<string>();
+
+    /// <summary>Number of semantic candidates merged into this executable item (1 = none).</summary>
+    public int MergedSourceCount { get; init; } = 1;
+
+    /// <summary>
+    /// Canonical executable operation key — the identity used to detect TRUE
+    /// duplicates (two candidates → the same executable change) and to merge
+    /// same-target candidates. Mirrors the plan operation ConflictKey prefixes
+    /// (svc:|opt:|feat:|appx:|cap:|pkg:).
+    /// </summary>
+    public string ExecutableCanonicalKey => string.IsNullOrWhiteSpace(ExecutableIdentity)
+        ? $"{OperationType}|{LogicalId}"
+        : $"{OperationType}|{ExecutableIdentity}";
 }
 
 /// <summary>

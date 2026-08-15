@@ -291,3 +291,110 @@ present-unselected, canonical dedup merges, manual overrides excluded — never 
 - **PlanCapture** (`profile-buildplans.json`): structural validation per profile — deltaCount,
   buildPlanOperationCount, selectedOperationCount, validationPassed, validationErrors,
   operationsByType, canonicalOperationKeys. Nothing is applied or built.
+
+## Stage 15.3b — Optional Feature canonical aggregation (ADR-096 addendum)
+
+### Real structural validation exposed false "duplicate change plans"
+
+The first REAL BuildPlan validation (Win11 25H2 Pro zh-CN x64, Administrator RealCapture) passed
+four primaries (Balanced 16/16, Gaming 25/25, Developer 21/21, Office 17/17) and FAILED the
+virtualization/media-heavy profiles:
+
+| Profile | delta | validation error |
+| --- | --- | --- |
+| DedicatedGaming | 33 | Duplicate change plan for 'Containers' (4 change entries). |
+| Lightweight | 38 | Duplicate change plan for 'HyperV' (9 change entries). |
+| DedicatedMinimal | 44 | MediaPlayer x2, HyperV x9 |
+
+These were NOT true duplicates. Root cause (verified against the real 757-object capture — **zero**
+raw-identity duplicates): the deep catalog maps MULTIPLE genuinely distinct Windows OptionalFeature
+names to ONE profile-facing family id:
+
+- `Containers` → `Containers`, `Containers-HNS`, `Containers-SDN`, `Containers-Server-For-Application-Guard`
+  (4 real DISM features)
+- `HyperV` → `HyperV-Guest-KernelInt`, `HyperV-KernelInt-VirtualDevice`, `Microsoft-Hyper-V`,
+  `Microsoft-Hyper-V-All`, `Microsoft-Hyper-V-Hypervisor`, `Microsoft-Hyper-V-Management-Clients`,
+  `Microsoft-Hyper-V-Management-PowerShell`, `Microsoft-Hyper-V-Services`, `Microsoft-Hyper-V-Tools-All`
+  (9 real DISM features)
+- `MediaPlayer` → `Microsoft.ZuneMusic` AppX + `WindowsMediaPlayer` OptionalFeature
+  (Capability + 7 CBS packages are NotSupported → blocked, never planned)
+
+The PlanValidator grouped change entries by the SEMANTIC family id (`LogicalId`) and rejected
+distinct real features as duplicates.
+
+### Semantic candidate identity vs executable DISM feature identity
+
+Two identities now coexist on every item:
+
+- **Semantic identity** (`LogicalId` — the canonical family id): drives profile intent matching,
+  keep overrides, gaming policy, extras, the delta report keys and the preview. A Trim/Keep intent
+  for family "HyperV" applies to all 9 members.
+- **Executable identity** (`ProfileExecutionItem.ExecutableIdentity`): the ACTUAL name sent to DISM
+  (raw FeatureName / package identity / service name). The final plan's canonical key
+  (`feat:|pkg:|svc:|…`) is built from THIS, so distinct real features sharing a family stay
+  distinct executable operations.
+
+Executable identity rule:
+- Component subjects → the raw inventory identity (the DISM FeatureName / package identity).
+- ServiceStartup definitions → `ServiceName`; WindowsComponents definitions → `TargetIdentifier`.
+- Registry/Privacy/Personalization definitions → the definition id (each definition is one semantic
+  candidate; overlapping registry mutations still merge at plan level via the existing Phase 12
+  behavior — unchanged).
+
+### Aggregation boundary (`ProfilePlanAggregator`, runs BEFORE final validation)
+
+`BuildPlan` now aggregates the delta report's items by executable canonical key
+(`OperationType|ExecutableIdentity`) BEFORE constructing operations and BEFORE `ProfilePlanValidator`
+runs. N semantic candidates resolving to the SAME executable operation collapse into ONE operation
+(the validator is NOT weakened — true duplicates must be resolved before it sees the plan, and it
+still rejects any that are not).
+
+- Distinct real features stay distinct: HyperV x9 → 9 operations; Containers x4 → 4 operations;
+  MediaPlayer → `appx|…ZuneMusic` + `feat|WindowsMediaPlayer`. The virtualization ecosystem is NOT
+  collapsed into one feature.
+- The validator's duplicate-change check now groups by the EXECUTABLE key; its remove/keep conflict
+  check stays semantic (a family-level Keep protects the whole family).
+
+### Conflict precedence (documented, deterministic)
+
+1. **Keep wins over removal** at the semantic level: if any item for a `LogicalId` is kept, every
+   change candidate for that `LogicalId` is dropped (`DroppedKeepWins` — RequiredKeep / Protected /
+   explicit user override / profile keep all take precedence over removal, mirroring the Safety Gate).
+2. **AutoApply > Recommend**: within one executable target, an automatic intent is the deterministic
+   superset of a user-confirmed suggestion.
+3. **Conflicting requested executable states** (Remove vs Disable vs Configure) for the same target
+   are NEVER silently merged — an explicit "Conflicting executable intents" issue fails validation.
+
+### Provenance preservation
+
+When N candidates merge, the operation keeps `SourceDefinitionIds` = the ordered, distinct union of
+every absorbed candidate's source identity (raw feature/package identity for inventory objects,
+definition id for optimization definitions) — the same behavior as the existing registry merge.
+`MergeGroups` additionally records `CanonicalKey`, `SourceCount` and the semantic source keys
+(`OpType|LogicalId|Disposition`) for full traceability.
+
+### Count reconciliation
+
+- `deltaCount` = SEMANTIC change entries (AutoApply + Recommend in the delta report) — unchanged.
+- `buildPlanOperationCount` = EXECUTABLE operations after canonical aggregation.
+- `mergedDuplicateCount` = semantic candidates absorbed into merges (0 on real media — no true
+  same-executable duplicates exist in the 25H2 capture).
+- `mergeGroups` = per-group diagnostics. Every difference between the two counts is EXPLICITLY
+  accounted for — no mysterious loss. Post-fix real structural results (offline re-validation over
+  the captured inventory, plan validation only):
+
+| Profile | delta | planOps | validated |
+| --- | --- | --- | --- |
+| Balanced | 16 | 16 | ✓ |
+| Gaming PC | 25 | 25 | ✓ |
+| Dedicated Gaming | 33 | 33 | ✓ |
+| Developer | 21 | 21 | ✓ |
+| Office | 17 | 17 | ✓ |
+| Lightweight | 38 | 38 | ✓ |
+| DedicatedMinimal | 44 | 44 | ✓ |
+
+`profile-buildplans.json` now also reports `semanticChangeCount`, `mergedDuplicateCount`,
+`mergeGroupCount`, `droppedKeepWins` and per-profile `mergeGroups` (diagnostic only).
+
+*Stage 15.3 remains NOT marked complete until the final Administrator RealCapture retest
+reproduces this structural result on the mounted ISO.*

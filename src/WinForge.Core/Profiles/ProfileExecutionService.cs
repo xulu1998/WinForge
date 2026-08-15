@@ -150,6 +150,15 @@ public sealed class ProfileExecutionService
                 IsPresent = true,
                 IsUserOverride = effective.WasOverridden,
                 WasProfileDriven = effective.WasProfileDriven,
+                // Stage 15.3b (ADR-096 addendum): the EXECUTABLE technical
+                // identity (DISM FeatureName / package / service identity) is
+                // carried separately from the semantic family LogicalId. The
+                // executable plan dedupes/validates on THIS, so distinct real
+                // features sharing a family stay distinct, while same-target
+                // candidates collapse during aggregation.
+                ExecutableIdentity = ExecutableIdentityOf(subject),
+                ActionKind = subject.Action,
+                SourceDefinitionIds = new[] { SourceIdentityOf(subject) },
             };
             items.Add(item);
 
@@ -224,7 +233,13 @@ public sealed class ProfileExecutionService
     /// (ADR-096): every operation carries its COMPLETE execution payload (service
     /// name + start type, registry hive/path/value/kind/data, feature/package
     /// identity) — the real-stream blocker was ops built without payloads, which
-    /// the validator correctly rejected. Returns the issues list (empty when valid).
+    /// the validator correctly rejected. Stage 15.3b (ADR-096 addendum): items
+    /// are AGGREGATED by executable canonical identity BEFORE construction and
+    /// validation — distinct real features sharing a profile-facing family stay
+    /// distinct, same-target candidates merge with provenance, keep-wins and
+    /// conflicts resolve deterministically (the validator is NOT weakened; the
+    /// duplicate must be resolved before final validation). Returns the issues
+    /// list (empty when valid).
     /// </summary>
     public (CustomizationPlan? Plan, IReadOnlyList<string> Issues) BuildPlan(
         ProfileDefinition profile,
@@ -235,10 +250,11 @@ public sealed class ProfileExecutionService
         IReadOnlyList<ProfileDefinition>? allProfiles = null)
     {
         var report = GenerateDelta(profile, subjects, extras, userOverrides, presentIds, allProfiles);
-        var issues = new List<string>();
+        var aggregate = ProfilePlanAggregator.Aggregate(report.Items);
+        var issues = new List<string>(aggregate.Issues);
         var plan = new CustomizationPlan();
 
-        foreach (var item in report.Items.Where(i => i.IsExecutableChange && !i.IsUserOverride))
+        foreach (var item in aggregate.Items.Where(i => i.IsExecutableChange && !i.IsUserOverride))
         {
             if (!ExecutionSupportMatrix.IsExecutable(item.OperationType))
             {
@@ -246,8 +262,7 @@ public sealed class ProfileExecutionService
                 continue;
             }
 
-            var subject = subjects.FirstOrDefault(s =>
-                string.Equals(s.LogicalId, item.LogicalId, StringComparison.Ordinal));
+            var subject = FindSubjectForItem(subjects, item);
             if (subject is null)
             {
                 issues.Add($"Subject for plan operation '{item.LogicalId}' was not found.");
@@ -273,9 +288,12 @@ public sealed class ProfileExecutionService
             }
         }
 
-        var validation = ProfilePlanValidator.Validate(report.Items, plan);
+        // Validate the AGGREGATED items: distinct executable identities are
+        // legitimate even when they share a family (HyperV x9 → 9 features);
+        // true duplicates were already merged above.
+        var validation = ProfilePlanValidator.Validate(aggregate.Items, plan);
         issues.AddRange(validation.Issues);
-        return (validation.IsValid ? plan : null, issues);
+        return (validation.IsValid && aggregate.IsValid ? plan : null, issues);
     }
 
     /// <summary>
@@ -313,7 +331,7 @@ public sealed class ProfileExecutionService
                     ReversalKey = def.ReversalKey,
                     ExecutionOrder = 0,
                 };
-                svc.AddSourceDefinition(def.Id);
+                AddSources(svc, item, def.Id);
                 return new[] { svc };
             }
 
@@ -335,7 +353,7 @@ public sealed class ProfileExecutionService
                     ReversalKey = def.ReversalKey,
                     ExecutionOrder = 0,
                 };
-                feat.AddSourceDefinition(def.Id);
+                AddSources(feat, item, def.Id);
                 return new[] { feat };
             }
 
@@ -364,7 +382,7 @@ public sealed class ProfileExecutionService
                     ReversalKey = def.ReversalKey,
                     ExecutionOrder = index,
                 };
-                reg.AddSourceDefinition(def.Id);
+                AddSources(reg, item, def.Id);
                 ops.Add(reg);
                 index++;
             }
@@ -372,8 +390,16 @@ public sealed class ProfileExecutionService
             return ops;
         }
 
-        // Component-layer item (deep / curated inventory object).
-        var identity = !string.IsNullOrWhiteSpace(subject.RawIdentity) ? subject.RawIdentity : subject.LogicalId;
+        // Component-layer item (deep / curated inventory object). The executable
+        // identity is the RAW inventory identity (the actual DISM FeatureName /
+        // package identity) — NOT the profile-facing family alias — so distinct
+        // real features that share a family (HyperV x9, Containers x4) each get
+        // their own executable operation (ADR-096 addendum §3/§6/§7).
+        var identity = !string.IsNullOrWhiteSpace(item.ExecutableIdentity)
+            ? item.ExecutableIdentity
+            : !string.IsNullOrWhiteSpace(subject.RawIdentity)
+                ? subject.RawIdentity
+                : subject.LogicalId;
         var (opType, category) = item.OperationType switch
         {
             ExecutionOperationType.AppX => (CustomizationOperationType.RemoveProvisionedAppx, CustomizationCategory.App),
@@ -403,8 +429,102 @@ public sealed class ProfileExecutionService
             ActionKind = OptimizationAction.Remove,
             ExecutionOrder = 0,
         };
-        component.AddSourceDefinition(subject.LogicalId);
+        // Provenance: single candidates carry the subject's source identity
+        // (raw identity / definition id); MERGED candidates carry the union of
+        // every absorbed candidate's source identities — "this operation exists
+        // because of these profile/component sources" (ADR-096 addendum §4).
+        AddSources(component, item, subject.LogicalId);
         return new[] { component };
+    }
+
+    /// <summary>
+    /// Writes provenance onto a plan operation: the aggregated item's source set
+    /// when candidates merged, otherwise the single-source fallback id. Mirrors
+    /// the existing registry <see cref="CustomizationOperation.SourceDefinitionIds"/>
+    /// behavior — no information loss when N candidates collapse into one op.
+    /// </summary>
+    private static void AddSources(CustomizationOperation op, ProfileExecutionItem item, string fallbackSourceId)
+    {
+        if (item.MergedSourceCount > 1 && item.SourceDefinitionIds.Count > 0)
+        {
+            foreach (var src in item.SourceDefinitionIds)
+            {
+                op.AddSourceDefinition(src);
+            }
+
+            return;
+        }
+
+        op.AddSourceDefinition(fallbackSourceId);
+    }
+
+    /// <summary>
+    /// Resolves the subject behind an aggregated executable item. Component
+    /// subjects are matched by their RAW identity (the executable feature name —
+    /// unique), optimization-definition subjects by their definition id
+    /// (LogicalId). Family aliasing means LogicalId alone is ambiguous for
+    /// multi-member families (9 HyperV members share LogicalId "HyperV").
+    /// </summary>
+    private static ProfilePlanSubject? FindSubjectForItem(
+        IReadOnlyList<ProfilePlanSubject> subjects, ProfileExecutionItem item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.ExecutableIdentity))
+        {
+            var byRaw = subjects.FirstOrDefault(s =>
+                !string.IsNullOrWhiteSpace(s.RawIdentity)
+                && string.Equals(s.RawIdentity, item.ExecutableIdentity, StringComparison.Ordinal));
+            if (byRaw is not null)
+            {
+                return byRaw;
+            }
+        }
+
+        return subjects.FirstOrDefault(s =>
+            string.Equals(s.LogicalId, item.LogicalId, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The EXECUTABLE technical identity of a subject — the actual name sent to
+    /// DISM / the configured service / the package identity. Definition subjects
+    /// map their real payload (service name, feature name); registry-style
+    /// definitions use their catalog id (each definition is one semantic
+    /// candidate; overlapping registry mutations merge at plan level via the
+    /// existing Stage 12.4 behavior). Falls back to the logical id.
+    /// </summary>
+    private static string ExecutableIdentityOf(ProfilePlanSubject subject)
+    {
+        if (subject.OptimizationDefinition is { } def)
+        {
+            if (def.Mechanism == OptimizationMechanism.ServiceStartup && !string.IsNullOrWhiteSpace(def.ServiceName))
+            {
+                return def.ServiceName;
+            }
+
+            if (def.Tab == OptimizationTab.WindowsComponents && !string.IsNullOrWhiteSpace(def.TargetIdentifier))
+            {
+                return def.TargetIdentifier;
+            }
+
+            return def.Id;
+        }
+
+        return !string.IsNullOrWhiteSpace(subject.RawIdentity) ? subject.RawIdentity : subject.LogicalId;
+    }
+
+    /// <summary>
+    /// The provenance source identity of a subject: the raw inventory identity
+    /// for component objects (executable feature name), the catalog definition id
+    /// for optimization definitions (mirrors the registry SourceDefinitionIds
+    /// vocabulary). Fallback: the logical id.
+    /// </summary>
+    private static string SourceIdentityOf(ProfilePlanSubject subject)
+    {
+        if (subject.OptimizationDefinition is { } def)
+        {
+            return def.Id;
+        }
+
+        return !string.IsNullOrWhiteSpace(subject.RawIdentity) ? subject.RawIdentity : subject.LogicalId;
     }
 
     private static CustomizationCategory MapCategoryForTab(OptimizationTab tab) => tab switch

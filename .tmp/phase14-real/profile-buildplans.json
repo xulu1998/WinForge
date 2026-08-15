@@ -1,0 +1,183 @@
+{
+  "media": "Win11_25H2_zh-CN_x64",
+  "note": "Structural BuildPlan validation per primary profile over the real captured inventory (ADR-096; plan validation only \u2014 nothing applied/built). ValidationPassed == non-null validated plan.",
+  "generatedUtc": "2026-08-15T13:23:36.8273394Z",
+  "profiles": [
+    {
+      "profileId": "Balanced",
+      "deltaCount": 16,
+      "buildPlanOperationCount": 16,
+      "selectedOperationCount": 10,
+      "validationPassed": true,
+      "validationErrors": [],
+      "operationsByType": {
+        "RemoveProvisionedAppx": 3,
+        "ConfigureOfflineService": 2,
+        "SetOfflineRegistryValue": 11
+      },
+      "canonicalOperationKeys": [
+        "pkg|Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.WindowsFeedbackHub_2024.125.1522.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.YourPhone_1.25112.39.0_neutral_~_8wekyb3d8bbwe",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|HideFileExt",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecent",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecommended",
+        "reg|OfflineMachine|SOFTWARE|Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo|Enabled",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\AppCompat|AllowTelemetry",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableSoftLanding",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsConsumerFeatures",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsSpotlightFeatures",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\DataCollection|DoNotShowFeedbackNotifications",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\Explorer|DisableSearchBoxSuggestions",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\System|EnableActivityHistory",
+        "svc|DiagTrack",
+        "svc|RetailDemo"
+      ]
+    },
+    {
+      "profileId": "Gaming",
+      "deltaCount": 25,
+      "buildPlanOperationCount": 25,
+      "selectedOperationCount": 19,
+      "validationPassed": true,
+      "validationErrors": [],
+      "operationsByType": {
+        "RemoveProvisionedAppx": 10,
+        "ConfigureOfflineService": 2,
+        "SetOfflineRegistryValue": 13
+      },
+      "canonicalOperationKeys": [
+        "pkg|Microsoft.BingNews_4.1.24002.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.BingSearch_2022.1.43.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.BingWeather_4.54.63017.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.GetHelp_10.2407.40222.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.MicrosoftOfficeHub_19.2506.56051.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.OutlookForWindows_1.0.0.0_neutral__8wekyb3d8bbwe",
+        "pkg|Microsoft.WindowsFeedbackHub_2024.125.1522.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.YourPhone_1.25112.39.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|MicrosoftWindows.Client.WebExperience_525.31002.150.9_neutral_~_cw5n1h2txyewy",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|HideFileExt",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecent",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecommended",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|TaskbarSearch",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Policies\\Microsoft\\Dsh|EnableWebContent",
+        "reg|OfflineMachine|SOFTWARE|Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo|Enabled",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\AppCompat|AllowTelemetry",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableSoftLanding",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsConsumerFeatures",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsSpotlightFeatures",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\DataCollection|DoNotShowFeedbackNotifications",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\Explorer|DisableSearchBoxSuggestions",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\System|EnableActivityHistory",
+        "svc|DiagTrack",
+        "svc|RetailDemo"
+      ]
+    },
+    {
+      "profileId": "DedicatedGaming",
+      "deltaCount": 33,
+      "buildPlanOperationCount": 0,
+      "selectedOperationCount": 0,
+      "validationPassed": false,
+      "validationErrors": [
+        "Duplicate change plan for \u0027Containers\u0027 (4 change entries)."
+      ],
+      "operationsByType": {},
+      "canonicalOperationKeys": []
+    },
+    {
+      "profileId": "Developer",
+      "deltaCount": 21,
+      "buildPlanOperationCount": 21,
+      "selectedOperationCount": 18,
+      "validationPassed": true,
+      "validationErrors": [],
+      "operationsByType": {
+        "RemoveProvisionedAppx": 6,
+        "ConfigureOfflineService": 2,
+        "SetOfflineRegistryValue": 13
+      },
+      "canonicalOperationKeys": [
+        "pkg|Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt",
+        "pkg|Microsoft.BingSearch_2022.1.43.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.GetHelp_10.2407.40222.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.WindowsFeedbackHub_2024.125.1522.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.YourPhone_1.25112.39.0_neutral_~_8wekyb3d8bbwe",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Hidden",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|HideFileExt",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecent",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecommended",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Policies\\Microsoft\\Dsh|EnableWebContent",
+        "reg|OfflineMachine|SOFTWARE|Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo|Enabled",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\AppCompat|AllowTelemetry",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableSoftLanding",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsConsumerFeatures",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsSpotlightFeatures",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\DataCollection|DoNotShowFeedbackNotifications",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\Explorer|DisableSearchBoxSuggestions",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\System|EnableActivityHistory",
+        "svc|DiagTrack",
+        "svc|RetailDemo"
+      ]
+    },
+    {
+      "profileId": "Office",
+      "deltaCount": 17,
+      "buildPlanOperationCount": 17,
+      "selectedOperationCount": 10,
+      "validationPassed": true,
+      "validationErrors": [],
+      "operationsByType": {
+        "RemoveProvisionedAppx": 5,
+        "ConfigureOfflineService": 2,
+        "SetOfflineRegistryValue": 10
+      },
+      "canonicalOperationKeys": [
+        "pkg|Microsoft.BingSearch_2022.1.43.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.GetHelp_10.2407.40222.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.Windows.DevHome_0.1701.597.0_neutral_~_8wekyb3d8bbwe",
+        "pkg|Microsoft.WindowsFeedbackHub_2024.125.1522.0_neutral_~_8wekyb3d8bbwe",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|HideFileExt",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecent",
+        "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecommended",
+        "reg|OfflineMachine|SOFTWARE|Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo|Enabled",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\AppCompat|AllowTelemetry",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsConsumerFeatures",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsSpotlightFeatures",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\DataCollection|DoNotShowFeedbackNotifications",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\Explorer|DisableSearchBoxSuggestions",
+        "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\System|EnableActivityHistory",
+        "svc|DiagTrack",
+        "svc|RetailDemo"
+      ]
+    },
+    {
+      "profileId": "Lightweight",
+      "deltaCount": 38,
+      "buildPlanOperationCount": 0,
+      "selectedOperationCount": 0,
+      "validationPassed": false,
+      "validationErrors": [
+        "Duplicate change plan for \u0027HyperV\u0027 (9 change entries)."
+      ],
+      "operationsByType": {},
+      "canonicalOperationKeys": []
+    },
+    {
+      "profileId": "DedicatedMinimal",
+      "deltaCount": 44,
+      "buildPlanOperationCount": 0,
+      "selectedOperationCount": 0,
+      "validationPassed": false,
+      "validationErrors": [
+        "Duplicate change plan for \u0027MediaPlayer\u0027 (2 change entries).",
+        "Duplicate change plan for \u0027HyperV\u0027 (9 change entries)."
+      ],
+      "operationsByType": {},
+      "canonicalOperationKeys": []
+    }
+  ]
+}
