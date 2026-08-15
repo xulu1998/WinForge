@@ -3,6 +3,33 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 15 — Stage 15.2b: Real Dedicated-Gaming differentiation fix (2026-08-15)
+
+- **First v2 real validation accepted accounting/Office/byOperationType but exposed the remaining
+  blocker: Gaming PC == Dedicated Gaming on real media** (auto 19 / rec 6 / opt 72 / kept 565 /
+  blk 62 / changes 25, identical semanticActionKeys). Fixed both wiring defects (ADR-095 addendum):
+- **Curated-only subjects no longer bypass the gaming policy** — the policy is dispatched for
+  curated-only inventory objects via a synthesized knowledge view. On the real image the
+  CuratedOutsideDeep consumer/cloud AppX (OneDrive-class) previously fell to defaults in BOTH
+  gaming profiles, so the DedicatedGaming `WiderMinimalSteer` never ran.
+- **Dedicated Gaming curated intent (profile data)**: OneDrive + OneDriveSync → Trim (Medium risk →
+  **Recommend**, never auto); Clipchamp → Trim (Low curated supported → AutoApply). Dev Home's
+  difference is POLICY-layer (Moderate + DeveloperTool → Recommend; a curated Low Dev Home is never
+  auto-removed). Gaming PC keeps these optional/kept — convenience preserved, no Gaming changes.
+- **Extras now override profile minimalism for ANY primary**: `GenerateDelta`/`BuildPlan` join the
+  matching ExtraScenario profiles (Xbox/Game Pass, WSL/Docker, Print/Scan, Touch/Pen, Remote
+  Desktop) into SelectedProfiles — their data-driven Keep overrides reach the engine. Lightweight +
+  Xbox/Game Pass ON upgrades XblAuthManager/XboxGipSvc/XboxNetApiSvc to Keep (removed from the
+  executable plan); without the extra they stay AutoApply `ConfigureOfflineService` startup-type
+  changes (restorable, NON-destructive — documented, behavior unchanged).
+- Real-like stream: **Gaming changes=28 vs DedicatedGaming=33**; Dedicated-only semantic actions =
+  {AppX|OneDrive|AutoApply, AppX|Teams|Recommend, AppX|DevHome|Recommend,
+  RegistryPolicy|OneDriveSync|Recommend} — real, safe, explainable differences.
+- **1169 automated tests pass (Core 53, App 1116), 0 errors, 0 warnings (Release)** — ordinary
+  in-place build/test. ADR-095 addendum + docs/PROFILE-EXECUTION.md updated. **FINAL REAL PROFILE
+  VALIDATION REQUIRED** (rerun the elevated RealCapture CLI; review profile-plans.json v2 only —
+  Gaming vs Dedicated must now differ).
+
 ## Phase 15 — Stage 15.2: Real profile differentiation + plan accounting fix (2026-08-14)
 
 - **Real 25H2 profile-plans capture exposed fixture-blind product problems; all fixed (ADR-095).**

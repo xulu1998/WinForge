@@ -65,6 +65,20 @@ public sealed class DedicatedGamingPolicy : GamingPcPolicy
             };
         }
 
+        // Moderate developer tooling (Dev Home): Gaming PC keeps it optional;
+        // Dedicated Gaming RECOMMENDS removal — Moderate, never automatic.
+        if (k.Risk == ComponentRiskLevel.Moderate && k.ProfileTag == ComponentProfileTag.DeveloperTool
+            && k.Recommendation is ComponentRecommendationKind.OptionalRemove
+                or ComponentRecommendationKind.ProfileDependent)
+        {
+            return new GamingPolicyDecision
+            {
+                Kind = Kind,
+                Verdict = GamingVerdict.AutoRemoveCandidate,
+                ReasonKey = "Profile.Reason.Gaming.Dedicated.Optional.Developer",
+            };
+        }
+
         // Moderate media: Dedicated suggests OPTIONAL removal (never automatic).
         if (k.Risk == ComponentRiskLevel.Moderate && k.Function == ComponentFunctionCategory.Media
             && k.Recommendation is ComponentRecommendationKind.OptionalRemove

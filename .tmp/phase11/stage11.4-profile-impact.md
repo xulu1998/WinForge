@@ -32,11 +32,11 @@
 
 ## DedicatedGaming
 - Automatic (low-risk, adoptable): 21
-- Manual review: 44
-- Keep: 15
+- Manual review: 45
+- Keep: 14
 - Unsupported: 2
 - Conflict: 0
-  - Apps: auto 6 · manual 7
+  - Apps: auto 6 · manual 8
   - WindowsComponents: auto 0 · manual 9
   - Services: auto 1 · manual 8
   - Privacy: auto 7 · manual 4

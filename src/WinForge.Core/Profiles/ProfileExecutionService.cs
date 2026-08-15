@@ -39,7 +39,8 @@ public sealed class ProfileExecutionService
         IReadOnlyList<ProfilePlanSubject> subjects,
         IReadOnlySet<GamingExtra> extras,
         IReadOnlyCollection<string> userOverrides,
-        IReadOnlyCollection<string> presentIds)
+        IReadOnlyCollection<string> presentIds,
+        IReadOnlyList<ProfileDefinition>? allProfiles = null)
     {
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(subjects);
@@ -47,7 +48,17 @@ public sealed class ProfileExecutionService
         userOverrides ??= new HashSet<string>();
         presentIds ??= new HashSet<string>();
 
-        var isGaming = profile.GamingKind is { } kind;
+        // Stage 15.2b (ADR-095 addendum): the planner's SelectedProfiles must
+        // include the EXTRA SCENARIO profiles (Xbox/Game Pass, WSL/Docker, …) so
+        // their data-driven Keep overrides actually reach the engine. Previously
+        // the extras' keep intents were dead in the planner — Lightweight could
+        // auto-disable Xbox services even with the Xbox extra enabled.
+        var selectedProfiles = new List<ProfileDefinition> { profile };
+        if (allProfiles is not null)
+        {
+            selectedProfiles.AddRange(SelectExtraProfiles(allProfiles, extras));
+        }
+
         var items = new List<ProfileExecutionItem>();
         var auto = 0;
         var recommended = 0;
@@ -73,24 +84,33 @@ public sealed class ProfileExecutionService
             // heuristic) as the final authority for this planner layer.
             var gamingKind = profile.GamingKind;
             GamingPolicyDecision? gamingDecision = null;
-            if (gamingKind is not null && subject.DeepKnowledge is not null)
+            if (gamingKind is not null)
             {
-                var policy = gamingKind.Value == GamingProfileKind.DedicatedGaming
-                    ? (IGamingProfilePolicy)new DedicatedGamingPolicy()
-                    : new GamingPcPolicy();
-                var policyDecision = policy.Evaluate(new GamingPolicyInput
+                // Stage 15.2b: dispatch the policy for CURATED-ONLY subjects too,
+                // using a synthesized knowledge view. On real media the curated
+                // consumer/cloud items (OneDrive, Teams, …) were bypassing the
+                // policy entirely — the reason Gaming PC and Dedicated Gaming came
+                // out IDENTICAL despite the WiderMinimalSteer policy.
+                var knowledge = subject.DeepKnowledge ?? SynthesizeFromCurated(subject.CuratedDefinition, subject.Category);
+                if (knowledge is not null)
                 {
-                    RawIdentity = subject.RawIdentity,
-                    Source = subject.Category,
-                    Knowledge = subject.DeepKnowledge,
-                    Extras = extras,
-                    IsPresent = true,
-                    SupportedForRemoval = subject.ExecutionSupported,
-                    HasUserOverride = userOverrides.Contains(subject.LogicalId),
-                });
-                if (policyDecision.Verdict != GamingVerdict.NoOpinion)
-                {
-                    gamingDecision = policyDecision;
+                    var policy = gamingKind.Value == GamingProfileKind.DedicatedGaming
+                        ? (IGamingProfilePolicy)new DedicatedGamingPolicy()
+                        : new GamingPcPolicy();
+                    var policyDecision = policy.Evaluate(new GamingPolicyInput
+                    {
+                        RawIdentity = subject.RawIdentity,
+                        Source = subject.Category,
+                        Knowledge = knowledge,
+                        Extras = extras,
+                        IsPresent = true,
+                        SupportedForRemoval = subject.ExecutionSupported,
+                        HasUserOverride = userOverrides.Contains(subject.LogicalId),
+                    });
+                    if (policyDecision.Verdict != GamingVerdict.NoOpinion)
+                    {
+                        gamingDecision = policyDecision;
+                    }
                 }
             }
 
@@ -109,7 +129,7 @@ public sealed class ProfileExecutionService
 
             var effective = _engine.Evaluate(input, new RecommendationContext
             {
-                SelectedProfiles = new[] { profile },
+                SelectedProfiles = selectedProfiles,
                 UserOverrides = userOverrides,
                 PresentIds = presentIds,
             });
@@ -193,7 +213,7 @@ public sealed class ProfileExecutionService
         ArgumentNullException.ThrowIfNull(profiles);
         var primaries = profiles.Where(p => p.Kind == ProfileKind.Primary && p.Id != "Custom").ToList();
         return primaries
-            .Select(p => GenerateDelta(p, subjects, extras, userOverrides, presentIds))
+            .Select(p => GenerateDelta(p, subjects, extras, userOverrides, presentIds, profiles))
             .ToList();
     }
 
@@ -207,9 +227,10 @@ public sealed class ProfileExecutionService
         IReadOnlyList<ProfilePlanSubject> subjects,
         IReadOnlySet<GamingExtra> extras,
         IReadOnlyCollection<string> userOverrides,
-        IReadOnlyCollection<string> presentIds)
+        IReadOnlyCollection<string> presentIds,
+        IReadOnlyList<ProfileDefinition>? allProfiles = null)
     {
-        var report = GenerateDelta(profile, subjects, extras, userOverrides, presentIds);
+        var report = GenerateDelta(profile, subjects, extras, userOverrides, presentIds, allProfiles);
         var issues = new List<string>();
         var plan = new CustomizationPlan();
 
@@ -260,5 +281,94 @@ public sealed class ProfileExecutionService
         ExecutionOperationType.CbsPackage => CustomizationOperationType.RemovePackage,
         ExecutionOperationType.Service => CustomizationOperationType.ConfigureOfflineService,
         _ => CustomizationOperationType.SetOfflineRegistryValue,
+    };
+
+    /// <summary>
+    /// Maps a GamingExtra to its ExtraScenario profile id (Stage 15.2b). The
+    /// planner includes those profiles in SelectedProfiles so their data-driven
+    /// Keep overrides (Xbox services, virtualization stack, printing, RDP, input)
+    /// actually reach the engine — extras must override profile minimalism.
+    /// </summary>
+    private static IReadOnlyList<ProfileDefinition> SelectExtraProfiles(
+        IReadOnlyList<ProfileDefinition> allProfiles, IReadOnlySet<GamingExtra> extras)
+    {
+        if (extras.Count == 0)
+        {
+            return Array.Empty<ProfileDefinition>();
+        }
+
+        var result = new List<ProfileDefinition>();
+        foreach (var extra in extras)
+        {
+            var id = extra switch
+            {
+                GamingExtra.XboxGamePass => "XboxGamePass",
+                GamingExtra.WslDocker => "WslDocker",
+                GamingExtra.PrintScan => "PrintingScanning",
+                GamingExtra.TouchPen => "TouchPen",
+                GamingExtra.RemoteDesktop => "RemoteDesktop",
+                _ => null,
+            };
+            if (id is null)
+            {
+                continue;
+            }
+
+            var profile = allProfiles.FirstOrDefault(p =>
+                p.Kind == ProfileKind.ExtraScenario && string.Equals(p.Id, id, StringComparison.Ordinal));
+            if (profile is not null && !result.Contains(profile))
+            {
+                result.Add(profile);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Synthesizes a knowledge view for a curated-only inventory object so the
+    /// gaming policy dispatches uniformly (Stage 15.2b). Curated definitions carry
+    /// recommendation/risk (no function/tag), so the policy mostly returns
+    /// NoOpinion for them — the real difference comes from the profile intent
+    /// layer (overrides). This closes the "curated bypasses policy" hole.
+    /// </summary>
+    private static DeepComponentKnowledge? SynthesizeFromCurated(
+        ComponentDefinition? curated, ComponentCategory category)
+    {
+        if (curated is null)
+        {
+            return null;
+        }
+
+        return new DeepComponentKnowledge
+        {
+            CanonicalId = curated.Id,
+            DisplayNameFallback = curated.Id,
+            Function = ComponentFunctionCategory.Unknown,
+            Risk = MapCuratedRisk(curated.Risk),
+            Recommendation = MapCuratedRecommendation(curated.Recommendation),
+            Protection = ComponentProtectionLevel.None,
+            ProfileTag = ComponentProfileTag.None,
+            Confidence = ClassificationConfidence.Curated,
+            DependencyTags = Array.Empty<string>(),
+        };
+    }
+
+    private static ComponentRiskLevel MapCuratedRisk(RiskLevel risk) => risk switch
+    {
+        RiskLevel.Low => ComponentRiskLevel.Low,
+        RiskLevel.Medium => ComponentRiskLevel.Moderate,
+        RiskLevel.High => ComponentRiskLevel.High,
+        RiskLevel.Critical => ComponentRiskLevel.Critical,
+        _ => ComponentRiskLevel.Unknown,
+    };
+
+    private static ComponentRecommendationKind MapCuratedRecommendation(RecommendationLevel rec) => rec switch
+    {
+        RecommendationLevel.UsuallyKeep => ComponentRecommendationKind.RecommendedKeep,
+        RecommendationLevel.NeverRemove => ComponentRecommendationKind.RequiredKeep,
+        RecommendationLevel.OptionalRemove => ComponentRecommendationKind.OptionalRemove,
+        RecommendationLevel.RecommendedRemove => ComponentRecommendationKind.RecommendedRemove,
+        _ => ComponentRecommendationKind.Unknown,
     };
 }

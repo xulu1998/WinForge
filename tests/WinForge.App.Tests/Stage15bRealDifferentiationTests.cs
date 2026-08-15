@@ -236,9 +236,16 @@ public sealed class Stage15bRealDifferentiationTests
         Assert.Equal(ProfileDisposition.Optional, gTeams.Disposition);
         Assert.Equal(ProfileDisposition.Recommend, dTeams.Disposition);
 
-        // Semantic action sets differ (Dedicated ⊋ Gaming here), not just strings.
-        Assert.NotEmpty(dedicated.ChangeKeys.Except(gaming.ChangeKeys));
-        Assert.Equal(gaming.ChangeCount + 2, dedicated.ChangeCount);
+        // Semantic action sets differ — exactly the meaningful dedicated actions
+        // (set semantics; the fixture may carry its own DevHome family row).
+        // OneDriveSync = the optimization-layer "disable cloud sync" registry
+        // policy, trimmed only by Dedicated Gaming.
+        var dOnly = dedicated.ChangeKeys.Except(gaming.ChangeKeys)
+            .OrderBy(x => x, StringComparer.Ordinal).ToArray();
+        Assert.Equal(
+            new[] { "AppX|DevHome|Recommend", "AppX|OneDrive|AutoApply", "AppX|Teams|Recommend", "RegistryPolicy|OneDriveSync|Recommend" },
+            dOnly);
+        Assert.True(dedicated.ChangeCount > gaming.ChangeCount);
         Assert.True(dedicated.AutoApply > gaming.AutoApply);
         Assert.True(dedicated.Recommended > gaming.Recommended);
     }

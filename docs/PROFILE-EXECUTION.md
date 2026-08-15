@@ -192,3 +192,52 @@ Per profile:
 `semanticActionKeys` lets you verify MEANING (which real actions differ between
 profiles), not just counts. Exact real-media numbers require the elevated capture
 command; the fixture numbers above are plan-validation only.
+
+## Stage 15.2b — Real Dedicated-Gaming differentiation fix (ADR-095 addendum)
+
+### What the first v2 real validation left open
+
+Accounting (757 = 678 evaluated + 79 unknown), byOperationType and Office were
+accepted. But on REAL media **Gaming PC == Dedicated Gaming** (auto 19 / rec 6 /
+opt 72 / kept 565 / blk 62 / changes 25, identical semanticActionKeys). Two
+wiring defects:
+
+1. **Curated-only subjects bypassed the gaming policy.** The planner only
+   dispatched the policy when `subject.DeepKnowledge != null`. The real image's
+   CuratedOutsideDeep objects (OneDrive-class consumer/cloud AppX) have no deep
+   entry, so the DedicatedGaming `WiderMinimalSteer` never ran on them → both
+   profiles fell to defaults → identical plans.
+2. **Extra-scenario profiles were never selected.** The planner hard-coded
+   `SelectedProfiles = [primary]`, so the extras' data-driven Keep overrides
+   (XboxGipSvc/XblAuthManager/XboxNetApiSvc/…) were dead — Lightweight could
+   auto-disable Xbox services even with the Xbox/Game Pass extra enabled.
+
+### Fixes
+
+- **Policy dispatch for curated subjects**: the gaming policy now runs for
+  curated-only subjects via a synthesized knowledge view (curated
+  Recommendation/Risk → policy semantics; function/tag Unknown → NoOpinion
+  unless curated keep semantics applies). Curated items no longer bypass policy.
+- **DedicatedGaming curated intent** (profile data): OneDrive + OneDriveSync →
+  Trim (Medium → **Recommend**, never auto), Clipchamp → Trim (Low curated
+  supported → AutoApply). Dev Home's difference is POLICY-layer (Moderate +
+  DeveloperTool → Recommend) so a curated Low Dev Home is never auto-removed.
+  Gaming PC keeps these optional/kept — **convenience preserved, unchanged**.
+- **Extras wiring**: `GenerateDelta`/`BuildPlan` join the matching ExtraScenario
+  profiles into SelectedProfiles. Extras now override profile minimalism for ANY
+  primary: Lightweight + Xbox/Game Pass ON → XblAuthManager/XboxGipSvc/
+  XboxNetApiSvc upgraded to Keep (removed from the executable plan); without the
+  extra they remain AutoApply `ConfigureOfflineService` startup-type changes
+  (restorable — NON-destructive, documented; no behavior change).
+
+### Real-like result (plan validation only)
+
+| Profile | auto | rec | opt | kept | blk | changes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Gaming PC | 22 | 6 | 42 | 35 | 29 | 28 |
+| Dedicated Gaming | 23 | 10 | 37 | 35 | 29 | 33 |
+
+Dedicated-only semantic actions: `AppX|OneDrive|AutoApply`,
+`AppX|Teams|Recommend`, `AppX|DevHome|Recommend`, `RegistryPolicy|OneDriveSync|Recommend`
+— real, safe, explainable product differences (no fake counts; no Gaming PC
+changes). Final real-media numbers come from the elevated capture retest.

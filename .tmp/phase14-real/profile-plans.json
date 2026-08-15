@@ -1,112 +1,574 @@
 {
   "media": "Win11_25H2_zh-CN_x64",
-  "note": "Deterministic per-primary-profile plan summaries over the real captured inventory (plan validation only; nothing applied/built).",
-  "generatedUtc": "2026-08-14T13:51:52.4788680Z",
+  "note": "Unified candidate stream (inventory deep\u002Bcurated \u002B optimization definitions, canonical dedup) \u2014 exact per-profile v2 plan summaries over the real captured inventory (plan validation only; nothing applied/built).",
+  "generatedUtc": "2026-08-15T12:23:22.0222495Z",
+  "inventory": {
+    "totalInventory": 757,
+    "evaluatedForProfile": 674,
+    "curatedOutsideDeepInventory": 4,
+    "excludedUnknownKnowledge": 79,
+    "excludedUnsupportedSource": 0,
+    "excludedFilteredDuplicate": 0,
+    "excludedNotApplicable": 0,
+    "excludedOther": 0,
+    "bySource": {
+      "AppX": 44,
+      "Capability": 387,
+      "CbsPackage": 149,
+      "OptionalFeature": 98
+    },
+    "evaluated": 678
+  },
+  "optimizationCandidates": 46,
+  "optimizationDuplicates": 1,
   "profiles": [
     {
       "profileId": "Balanced",
-      "autoApply": 3,
-      "recommended": 0,
-      "optional": 501,
-      "kept": 144,
-      "blocked": 26,
-      "changeCount": 3,
-      "byOperationType": {
-        "AppX": 40,
-        "Capability": 387,
-        "CbsPackage": 149,
-        "OptionalFeature": 98
-      }
+      "inventoryAccounting": {
+        "totalInventory": 757,
+        "evaluatedForProfile": 674,
+        "curatedOutsideDeepInventory": 4,
+        "excludedUnknownKnowledge": 79,
+        "excludedUnsupportedSource": 0,
+        "excludedFilteredDuplicate": 0,
+        "excludedNotApplicable": 0,
+        "excludedOther": 0,
+        "bySource": {
+          "AppX": 44,
+          "Capability": 387,
+          "CbsPackage": 149,
+          "OptionalFeature": 98
+        },
+        "evaluated": 678
+      },
+      "decisionCounts": {
+        "autoApply": 10,
+        "recommended": 6,
+        "optional": 149,
+        "kept": 145,
+        "blocked": 414,
+        "notApplicable": 0
+      },
+      "planChanges": {
+        "total": 16,
+        "byOperationType": {
+          "AppX": 3,
+          "Personalization": 3,
+          "Privacy": 7,
+          "RegistryPolicy": 1,
+          "Service": 2
+        }
+      },
+      "semanticActionKeys": [
+        "AppX|FeedbackHub|AutoApply",
+        "AppX|PhoneLink|AutoApply",
+        "AppX|Solitaire|AutoApply",
+        "Personalization|HideStartRecentlyAdded|AutoApply",
+        "Personalization|HideStartRecommended|AutoApply",
+        "Personalization|ShowFileExtensions|Recommend",
+        "Privacy|ActivityHistory|Recommend",
+        "Privacy|AdvertisingId|AutoApply",
+        "Privacy|AppLaunchTracking|Recommend",
+        "Privacy|FeedbackNotifications|AutoApply",
+        "Privacy|SpotlightFeatures|AutoApply",
+        "Privacy|TailoredExperiences|AutoApply",
+        "Privacy|WebSearchStart|Recommend",
+        "RegistryPolicy|Tips|AutoApply",
+        "Service|DiagTrack|Recommend",
+        "Service|RetailDemo|Recommend"
+      ],
+      "keptHighlights": [
+        "App Installer (winget)",
+        "Application compatibility enhancements",
+        "Calculator",
+        "Notepad",
+        "Paint",
+        "Snipping Tool"
+      ],
+      "blockedHighlights": [
+        "Windows Security (SecHealthUI)",
+        "Feature \u2014 Braille",
+        "Feature \u2014 Azure Arc",
+        "CBS WMI family"
+      ]
     },
     {
       "profileId": "Gaming",
-      "autoApply": 10,
-      "recommended": 0,
-      "optional": 81,
-      "kept": 557,
-      "blocked": 26,
-      "changeCount": 10,
-      "byOperationType": {
-        "AppX": 40,
-        "Capability": 387,
-        "CbsPackage": 149,
-        "OptionalFeature": 98
-      }
+      "inventoryAccounting": {
+        "totalInventory": 757,
+        "evaluatedForProfile": 674,
+        "curatedOutsideDeepInventory": 4,
+        "excludedUnknownKnowledge": 79,
+        "excludedUnsupportedSource": 0,
+        "excludedFilteredDuplicate": 0,
+        "excludedNotApplicable": 0,
+        "excludedOther": 0,
+        "bySource": {
+          "AppX": 44,
+          "Capability": 387,
+          "CbsPackage": 149,
+          "OptionalFeature": 98
+        },
+        "evaluated": 678
+      },
+      "decisionCounts": {
+        "autoApply": 19,
+        "recommended": 6,
+        "optional": 72,
+        "kept": 565,
+        "blocked": 62,
+        "notApplicable": 0
+      },
+      "planChanges": {
+        "total": 25,
+        "byOperationType": {
+          "AppX": 10,
+          "Personalization": 5,
+          "Privacy": 7,
+          "RegistryPolicy": 1,
+          "Service": 2
+        }
+      },
+      "semanticActionKeys": [
+        "AppX|BingSearch|AutoApply",
+        "AppX|BingWeather|AutoApply",
+        "AppX|FeedbackHub|AutoApply",
+        "AppX|GetHelp|AutoApply",
+        "AppX|MicrosoftOfficeHub|AutoApply",
+        "AppX|News|AutoApply",
+        "AppX|OutlookForWindows|AutoApply",
+        "AppX|PhoneLink|AutoApply",
+        "AppX|Solitaire|AutoApply",
+        "AppX|WebExperience|AutoApply",
+        "Personalization|HideStartRecentlyAdded|AutoApply",
+        "Personalization|HideStartRecommended|AutoApply",
+        "Personalization|HideTaskbarWidgets|AutoApply",
+        "Personalization|ShowFileExtensions|Recommend",
+        "Personalization|TaskbarSearchIcon|AutoApply",
+        "Privacy|ActivityHistory|Recommend",
+        "Privacy|AdvertisingId|AutoApply",
+        "Privacy|AppLaunchTracking|Recommend",
+        "Privacy|FeedbackNotifications|AutoApply",
+        "Privacy|SpotlightFeatures|AutoApply",
+        "Privacy|TailoredExperiences|AutoApply",
+        "Privacy|WebSearchStart|Recommend",
+        "RegistryPolicy|Tips|AutoApply",
+        "Service|DiagTrack|Recommend",
+        "Service|RetailDemo|Recommend"
+      ],
+      "keptHighlights": [
+        "AV1VideoExtension",
+        "AVCEncoderVideoExtension",
+        "App Installer (winget)",
+        "Application compatibility enhancements",
+        "Calculator",
+        "Media Player"
+      ],
+      "blockedHighlights": [
+        "Windows Security (SecHealthUI)",
+        "Feature \u2014 Braille",
+        "Feature \u2014 Azure Arc",
+        "CBS WMI family"
+      ]
     },
     {
       "profileId": "DedicatedGaming",
-      "autoApply": 10,
-      "recommended": 0,
-      "optional": 81,
-      "kept": 557,
-      "blocked": 26,
-      "changeCount": 10,
-      "byOperationType": {
-        "AppX": 40,
-        "Capability": 387,
-        "CbsPackage": 149,
-        "OptionalFeature": 98
-      }
+      "inventoryAccounting": {
+        "totalInventory": 757,
+        "evaluatedForProfile": 674,
+        "curatedOutsideDeepInventory": 4,
+        "excludedUnknownKnowledge": 79,
+        "excludedUnsupportedSource": 0,
+        "excludedFilteredDuplicate": 0,
+        "excludedNotApplicable": 0,
+        "excludedOther": 0,
+        "bySource": {
+          "AppX": 44,
+          "Capability": 387,
+          "CbsPackage": 149,
+          "OptionalFeature": 98
+        },
+        "evaluated": 678
+      },
+      "decisionCounts": {
+        "autoApply": 19,
+        "recommended": 6,
+        "optional": 72,
+        "kept": 565,
+        "blocked": 62,
+        "notApplicable": 0
+      },
+      "planChanges": {
+        "total": 25,
+        "byOperationType": {
+          "AppX": 10,
+          "Personalization": 5,
+          "Privacy": 7,
+          "RegistryPolicy": 1,
+          "Service": 2
+        }
+      },
+      "semanticActionKeys": [
+        "AppX|BingSearch|AutoApply",
+        "AppX|BingWeather|AutoApply",
+        "AppX|FeedbackHub|AutoApply",
+        "AppX|GetHelp|AutoApply",
+        "AppX|MicrosoftOfficeHub|AutoApply",
+        "AppX|News|AutoApply",
+        "AppX|OutlookForWindows|AutoApply",
+        "AppX|PhoneLink|AutoApply",
+        "AppX|Solitaire|AutoApply",
+        "AppX|WebExperience|AutoApply",
+        "Personalization|HideStartRecentlyAdded|AutoApply",
+        "Personalization|HideStartRecommended|AutoApply",
+        "Personalization|HideTaskbarWidgets|AutoApply",
+        "Personalization|ShowFileExtensions|Recommend",
+        "Personalization|TaskbarSearchIcon|AutoApply",
+        "Privacy|ActivityHistory|Recommend",
+        "Privacy|AdvertisingId|AutoApply",
+        "Privacy|AppLaunchTracking|Recommend",
+        "Privacy|FeedbackNotifications|AutoApply",
+        "Privacy|SpotlightFeatures|AutoApply",
+        "Privacy|TailoredExperiences|AutoApply",
+        "Privacy|WebSearchStart|Recommend",
+        "RegistryPolicy|Tips|AutoApply",
+        "Service|DiagTrack|Recommend",
+        "Service|RetailDemo|Recommend"
+      ],
+      "keptHighlights": [
+        "AV1VideoExtension",
+        "AVCEncoderVideoExtension",
+        "App Installer (winget)",
+        "Application compatibility enhancements",
+        "Calculator",
+        "Media Player"
+      ],
+      "blockedHighlights": [
+        "Windows Security (SecHealthUI)",
+        "Feature \u2014 Braille",
+        "Feature \u2014 Azure Arc",
+        "CBS WMI family"
+      ]
     },
     {
       "profileId": "Developer",
-      "autoApply": 6,
-      "recommended": 0,
-      "optional": 498,
-      "kept": 144,
-      "blocked": 26,
-      "changeCount": 6,
-      "byOperationType": {
-        "AppX": 40,
-        "Capability": 387,
-        "CbsPackage": 149,
-        "OptionalFeature": 98
-      }
+      "inventoryAccounting": {
+        "totalInventory": 757,
+        "evaluatedForProfile": 674,
+        "curatedOutsideDeepInventory": 4,
+        "excludedUnknownKnowledge": 79,
+        "excludedUnsupportedSource": 0,
+        "excludedFilteredDuplicate": 0,
+        "excludedNotApplicable": 0,
+        "excludedOther": 0,
+        "bySource": {
+          "AppX": 44,
+          "Capability": 387,
+          "CbsPackage": 149,
+          "OptionalFeature": 98
+        },
+        "evaluated": 678
+      },
+      "decisionCounts": {
+        "autoApply": 18,
+        "recommended": 3,
+        "optional": 133,
+        "kept": 156,
+        "blocked": 414,
+        "notApplicable": 0
+      },
+      "planChanges": {
+        "total": 21,
+        "byOperationType": {
+          "AppX": 6,
+          "Personalization": 5,
+          "Privacy": 7,
+          "RegistryPolicy": 1,
+          "Service": 2
+        }
+      },
+      "semanticActionKeys": [
+        "AppX|BingSearch|AutoApply",
+        "AppX|Clipchamp|AutoApply",
+        "AppX|FeedbackHub|AutoApply",
+        "AppX|GetHelp|AutoApply",
+        "AppX|PhoneLink|AutoApply",
+        "AppX|Solitaire|AutoApply",
+        "Personalization|HideStartRecentlyAdded|AutoApply",
+        "Personalization|HideStartRecommended|AutoApply",
+        "Personalization|HideTaskbarWidgets|AutoApply",
+        "Personalization|ShowFileExtensions|AutoApply",
+        "Personalization|ShowHiddenFiles|AutoApply",
+        "Privacy|ActivityHistory|AutoApply",
+        "Privacy|AdvertisingId|AutoApply",
+        "Privacy|AppLaunchTracking|AutoApply",
+        "Privacy|FeedbackNotifications|AutoApply",
+        "Privacy|SpotlightFeatures|Recommend",
+        "Privacy|TailoredExperiences|AutoApply",
+        "Privacy|WebSearchStart|AutoApply",
+        "RegistryPolicy|Tips|AutoApply",
+        "Service|DiagTrack|Recommend",
+        "Service|RetailDemo|Recommend"
+      ],
+      "keptHighlights": [
+        "App Installer (winget)",
+        "Application compatibility enhancements",
+        "Calculator",
+        "Dev Home",
+        "Notepad",
+        "Snipping Tool"
+      ],
+      "blockedHighlights": [
+        "Windows Security (SecHealthUI)",
+        "Feature \u2014 Braille",
+        "Feature \u2014 Azure Arc",
+        "CBS WMI family"
+      ]
     },
     {
       "profileId": "Office",
-      "autoApply": 0,
-      "recommended": 0,
-      "optional": 504,
-      "kept": 144,
-      "blocked": 26,
-      "changeCount": 0,
-      "byOperationType": {
-        "AppX": 40,
-        "Capability": 387,
-        "CbsPackage": 149,
-        "OptionalFeature": 98
-      }
+      "inventoryAccounting": {
+        "totalInventory": 757,
+        "evaluatedForProfile": 674,
+        "curatedOutsideDeepInventory": 4,
+        "excludedUnknownKnowledge": 79,
+        "excludedUnsupportedSource": 0,
+        "excludedFilteredDuplicate": 0,
+        "excludedNotApplicable": 0,
+        "excludedOther": 0,
+        "bySource": {
+          "AppX": 44,
+          "Capability": 387,
+          "CbsPackage": 149,
+          "OptionalFeature": 98
+        },
+        "evaluated": 678
+      },
+      "decisionCounts": {
+        "autoApply": 10,
+        "recommended": 7,
+        "optional": 145,
+        "kept": 148,
+        "blocked": 414,
+        "notApplicable": 0
+      },
+      "planChanges": {
+        "total": 17,
+        "byOperationType": {
+          "AppX": 5,
+          "Personalization": 3,
+          "Privacy": 7,
+          "Service": 2
+        }
+      },
+      "semanticActionKeys": [
+        "AppX|BingSearch|AutoApply",
+        "AppX|DevHome|Recommend",
+        "AppX|FeedbackHub|AutoApply",
+        "AppX|GetHelp|AutoApply",
+        "AppX|Solitaire|AutoApply",
+        "Personalization|HideStartRecentlyAdded|AutoApply",
+        "Personalization|HideStartRecommended|AutoApply",
+        "Personalization|ShowFileExtensions|Recommend",
+        "Privacy|ActivityHistory|Recommend",
+        "Privacy|AdvertisingId|AutoApply",
+        "Privacy|AppLaunchTracking|Recommend",
+        "Privacy|FeedbackNotifications|AutoApply",
+        "Privacy|SpotlightFeatures|AutoApply",
+        "Privacy|TailoredExperiences|AutoApply",
+        "Privacy|WebSearchStart|Recommend",
+        "Service|DiagTrack|Recommend",
+        "Service|RetailDemo|Recommend"
+      ],
+      "keptHighlights": [
+        "App Installer (winget)",
+        "Application compatibility enhancements",
+        "Calculator",
+        "Notepad",
+        "Snipping Tool",
+        "Store Purchase App"
+      ],
+      "blockedHighlights": [
+        "Windows Security (SecHealthUI)",
+        "Feature \u2014 Braille",
+        "Feature \u2014 Azure Arc",
+        "CBS WMI family"
+      ]
     },
     {
       "profileId": "Lightweight",
-      "autoApply": 6,
-      "recommended": 11,
-      "optional": 488,
-      "kept": 143,
-      "blocked": 26,
-      "changeCount": 17,
-      "byOperationType": {
-        "AppX": 40,
-        "Capability": 387,
-        "CbsPackage": 149,
-        "OptionalFeature": 98
-      }
+      "inventoryAccounting": {
+        "totalInventory": 757,
+        "evaluatedForProfile": 674,
+        "curatedOutsideDeepInventory": 4,
+        "excludedUnknownKnowledge": 79,
+        "excludedUnsupportedSource": 0,
+        "excludedFilteredDuplicate": 0,
+        "excludedNotApplicable": 0,
+        "excludedOther": 0,
+        "bySource": {
+          "AppX": 44,
+          "Capability": 387,
+          "CbsPackage": 149,
+          "OptionalFeature": 98
+        },
+        "evaluated": 678
+      },
+      "decisionCounts": {
+        "autoApply": 24,
+        "recommended": 14,
+        "optional": 128,
+        "kept": 144,
+        "blocked": 414,
+        "notApplicable": 0
+      },
+      "planChanges": {
+        "total": 38,
+        "byOperationType": {
+          "AppX": 6,
+          "OptionalFeature": 11,
+          "Personalization": 8,
+          "Privacy": 7,
+          "Service": 6
+        }
+      },
+      "semanticActionKeys": [
+        "AppX|BingSearch|AutoApply",
+        "AppX|Clipchamp|AutoApply",
+        "AppX|FeedbackHub|AutoApply",
+        "AppX|GetHelp|AutoApply",
+        "AppX|PhoneLink|AutoApply",
+        "AppX|Solitaire|AutoApply",
+        "OptionalFeature|HyperV|Recommend",
+        "OptionalFeature|HypervisorPlatform|Recommend",
+        "OptionalFeature|VirtualMachinePlatform|Recommend",
+        "Personalization|DisableTransparency|AutoApply",
+        "Personalization|HideFrequentQuickAccess|AutoApply",
+        "Personalization|HideRecentQuickAccess|AutoApply",
+        "Personalization|HideStartRecentlyAdded|AutoApply",
+        "Personalization|HideStartRecommended|AutoApply",
+        "Personalization|HideTaskbarWidgets|AutoApply",
+        "Personalization|ShowFileExtensions|Recommend",
+        "Personalization|TaskbarSearchIcon|AutoApply",
+        "Privacy|ActivityHistory|AutoApply",
+        "Privacy|AdvertisingId|AutoApply",
+        "Privacy|AppLaunchTracking|AutoApply",
+        "Privacy|FeedbackNotifications|AutoApply",
+        "Privacy|SpotlightFeatures|AutoApply",
+        "Privacy|TailoredExperiences|AutoApply",
+        "Privacy|WebSearchStart|Recommend",
+        "Service|DiagTrack|Recommend",
+        "Service|MapsBroker|AutoApply",
+        "Service|RetailDemo|AutoApply",
+        "Service|XblAuthManager|AutoApply",
+        "Service|XboxGipSvc|AutoApply",
+        "Service|XboxNetApiSvc|AutoApply"
+      ],
+      "keptHighlights": [
+        "App Installer (winget)",
+        "Application compatibility enhancements",
+        "Calculator",
+        "Notepad",
+        "Snipping Tool",
+        "Store Purchase App"
+      ],
+      "blockedHighlights": [
+        "Windows Security (SecHealthUI)",
+        "Feature \u2014 Braille",
+        "Feature \u2014 Azure Arc",
+        "CBS WMI family"
+      ]
     },
     {
       "profileId": "DedicatedMinimal",
-      "autoApply": 0,
-      "recommended": 21,
-      "optional": 476,
-      "kept": 143,
-      "blocked": 34,
-      "changeCount": 21,
-      "byOperationType": {
-        "AppX": 40,
-        "Capability": 387,
-        "CbsPackage": 149,
-        "OptionalFeature": 98
-      }
+      "inventoryAccounting": {
+        "totalInventory": 757,
+        "evaluatedForProfile": 674,
+        "curatedOutsideDeepInventory": 4,
+        "excludedUnknownKnowledge": 79,
+        "excludedUnsupportedSource": 0,
+        "excludedFilteredDuplicate": 0,
+        "excludedNotApplicable": 0,
+        "excludedOther": 0,
+        "bySource": {
+          "AppX": 44,
+          "Capability": 387,
+          "CbsPackage": 149,
+          "OptionalFeature": 98
+        },
+        "evaluated": 678
+      },
+      "decisionCounts": {
+        "autoApply": 0,
+        "recommended": 44,
+        "optional": 122,
+        "kept": 144,
+        "blocked": 414,
+        "notApplicable": 0
+      },
+      "planChanges": {
+        "total": 44,
+        "byOperationType": {
+          "AppX": 9,
+          "OptionalFeature": 12,
+          "Personalization": 4,
+          "Privacy": 7,
+          "RegistryPolicy": 3,
+          "Service": 9
+        }
+      },
+      "semanticActionKeys": [
+        "AppX|BingSearch|Recommend",
+        "AppX|Clipchamp|Recommend",
+        "AppX|FeedbackHub|Recommend",
+        "AppX|GetHelp|Recommend",
+        "AppX|MediaPlayer|Recommend",
+        "AppX|PhoneLink|Recommend",
+        "AppX|Photos|Recommend",
+        "AppX|Solitaire|Recommend",
+        "AppX|ToDo|Recommend",
+        "OptionalFeature|HyperV|Recommend",
+        "OptionalFeature|HypervisorPlatform|Recommend",
+        "OptionalFeature|MediaPlayer|Recommend",
+        "OptionalFeature|VirtualMachinePlatform|Recommend",
+        "Personalization|HideStartRecentlyAdded|Recommend",
+        "Personalization|HideStartRecommended|Recommend",
+        "Personalization|HideTaskbarWidgets|Recommend",
+        "Personalization|ShowFileExtensions|Recommend",
+        "Privacy|ActivityHistory|Recommend",
+        "Privacy|AdvertisingId|Recommend",
+        "Privacy|AppLaunchTracking|Recommend",
+        "Privacy|FeedbackNotifications|Recommend",
+        "Privacy|SpotlightFeatures|Recommend",
+        "Privacy|TailoredExperiences|Recommend",
+        "Privacy|WebSearchStart|Recommend",
+        "RegistryPolicy|Cortana|Recommend",
+        "RegistryPolicy|GameDvr|Recommend",
+        "RegistryPolicy|Tips|Recommend",
+        "Service|DiagTrack|Recommend",
+        "Service|MapsBroker|Recommend",
+        "Service|PcaSvc|Recommend",
+        "Service|RetailDemo|Recommend",
+        "Service|TabletInputService|Recommend",
+        "Service|WerSvc|Recommend",
+        "Service|XblAuthManager|Recommend",
+        "Service|XboxGipSvc|Recommend",
+        "Service|XboxNetApiSvc|Recommend"
+      ],
+      "keptHighlights": [
+        "App Installer (winget)",
+        "Application compatibility enhancements",
+        "Calculator",
+        "Notepad",
+        "Snipping Tool",
+        "Store Purchase App"
+      ],
+      "blockedHighlights": [
+        "Windows Security (SecHealthUI)",
+        "Feature \u2014 Braille",
+        "Feature \u2014 Azure Arc",
+        "CBS WMI family"
+      ]
     }
   ]
 }

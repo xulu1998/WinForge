@@ -2288,3 +2288,51 @@ problems that fixture-level Stage 15.1 validation could not see:
 - NO new destructive execution: Capability/CBS/Driver removal remain NOT
   supported; safety gate unchanged (Protected/Critical/High/heuristic rules
   identical).
+
+## ADR-095 addendum — Stage 15.2b: real Dedicated-Gaming differentiation fix
+
+**Status:** Accepted (Phase 15 Stage 15.2b; implementation ready, real retest pending).
+**Context:** The FIRST v2 real validation accepted the accounting/Office/byOperationType
+fixes but exposed the remaining blocker: on REAL media Gaming PC and Dedicated Gaming were
+IDENTICAL (auto 19 / rec 6 / opt 72 / kept 565 / blk 62 / changes 25, identical
+semanticActionKeys). Fixture-level distinction was not sufficient.
+**Root cause (two wiring defects):**
+  1. **Curated-only subjects bypassed the gaming policy.** `ProfileExecutionService` only
+     dispatched the gaming policy when `subject.DeepKnowledge != null`. On the real image the
+     CuratedOutsideDeep objects (OneDrive-class consumer/cloud AppX) have NO deep entry, so the
+     DedicatedGaming `WiderMinimalSteer` never ran on them — both gaming profiles fell to the
+     default and produced identical plans.
+  2. **Extra-scenario profiles were never in SelectedProfiles.** The planner hard-coded
+     `SelectedProfiles = [primary]`, so the ExtraScenario profiles' data-driven Keep overrides
+     (XboxGipSvc/XblAuthManager/XboxNetApiSvc/… — already present in the catalog data) were dead.
+     Lightweight could auto-disable Xbox services even with the Xbox/Game Pass extra enabled.
+**Decision:**
+- **Policy dispatch fix**: the gaming policy now runs for curated-only subjects via a synthesized
+  knowledge view (curated Recommendation/Risk mapped to the policy's semantic fields; function/
+  tag Unknown → the policy returns NoOpinion unless a curated keep/recommendation semantics
+  applies, e.g. UsuallyKeep → RecommendedKeep keeps OneDrive in Gaming PC). Curated items no
+  longer bypass profile policy.
+- **DedicatedGaming curated intent** (profile data, ADR-088 exception layer): OneDrive + OneDriveSync
+  → Trim (Profile.Reason.Gaming.Dedicated.Optional.Cloud — Medium risk → Recommend, never auto),
+  Clipchamp → Trim (.Consumer — Low curated supported → AutoApply). Dev Home's difference lives in
+  the POLICY (WiderMinimalSteer: Moderate + DeveloperTool → AutoRemoveCandidate → Recommend), not an
+  override — a curated Low Dev Home must never be auto-removed. Gaming PC keeps all of these as
+  optional/kept (convenience preserved; no Gaming PC changes).
+- **Extras wiring fix**: `GenerateDelta`/`BuildPlan` accept the full profile list and join the
+  matching ExtraScenario profiles (XboxGamePass/WslDocker/PrintingScanning/TouchPen/RemoteDesktop)
+  into SelectedProfiles for the extras in effect. The extras' Keep overrides now reach the engine
+  for ANY primary — Lightweight + Xbox/Game Pass ON upgrades XblAuthManager/XboxGipSvc/XboxNetApiSvc
+  to Keep (removed from the executable plan); without the extra they stay AutoApply as
+  ConfigureOfflineService startup-type changes (restorable, NON-destructive — documented, no
+  behavior change).
+- Real-like stream (fixture families + curated-only consumer/cloud + optimization definitions):
+  Gaming changes=28 (auto 22/rec 6) vs DedicatedGaming changes=33 (auto 23/rec 10);
+  Dedicated-only semantic actions = {AppX|OneDrive|AutoApply, AppX|Teams|Recommend,
+  AppX|DevHome|Recommend, RegistryPolicy|OneDriveSync|Recommend} — real, safe, explainable.
+- Safety unchanged: Defender/Windows Update/servicing/Store/Gaming Services/DirectX/WebView2/VC/
+  network/audio/input/storage/GPU/boot/recovery untouched; no CBS/driver removal; no placebo tweaks.
+- Known follow-up (pre-existing, NOT introduced here): `BuildPlan` over the FULL real stream can
+  fail-safe (null) because a few optimization definitions lack a RegistryTarget (e.g.
+  ActivityHistory) and some Service definitions have empty ServiceName → validator flags
+  missing/duplicate targets. The validator correctly fails safe; catalog completion is a later
+  optimization-data task. Final real retest reviews profile-plans.json v2 only.

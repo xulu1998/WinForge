@@ -147,6 +147,15 @@ public sealed class ProfilePlanSubject
     public IReadOnlyList<ComponentDependency> Dependencies { get; init; } = new List<ComponentDependency>();
     public DeepComponentKnowledge? DeepKnowledge { get; init; }
 
+    /// <summary>
+    /// Stage 15.2b (ADR-095 addendum): the curated definition behind a
+    /// curated-only inventory object (null for deep/unclassified subjects).
+    /// The gaming policy is dispatched for curated subjects too, using a
+    /// synthesized knowledge view — curated items no longer bypass profile
+    /// policy (the real-media Gaming == Dedicated wiring defect).
+    /// </summary>
+    public ComponentDefinition? CuratedDefinition { get; init; }
+
     /// <summary>Protection floor from deep knowledge (None when unknown).</summary>
     public ComponentProtectionLevel Protection { get; init; } = ComponentProtectionLevel.None;
 
@@ -201,6 +210,8 @@ public sealed class ProfilePlanSubject
             IsPresent = true,
             IsApplySupported = true,
             Dependencies = d.Dependencies,
+            DeepKnowledge = null,
+            CuratedDefinition = d,
             Protection = ComponentProtectionLevel.None,
             Confidence = ClassificationConfidence.Curated,
             ExecutionSupported = ExecutionSupportMatrix.IsExecutable(opType),

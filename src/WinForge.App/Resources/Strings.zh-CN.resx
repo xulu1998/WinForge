@@ -1029,6 +1029,8 @@
   <data name="Profile.Reason.Gaming.Dedicated.Optional.Cloud" xml:space="preserve"><value>专精游戏配置移除云集成（OneDrive）— 专精游戏机不需要</value></data>
   <data name="Profile.Reason.Gaming.Dedicated.Optional.Productivity" xml:space="preserve"><value>专精游戏配置建议移除该生产力应用 — 若仍需要请保留</value></data>
   <data name="Profile.Reason.Gaming.Dedicated.Optional.Communication" xml:space="preserve"><value>专精游戏配置建议移除该通信应用 — 若仍需要请保留</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Developer" xml:space="preserve"><value>专精游戏配置建议移除该开发者工具 — 若在这台机器上开发请保留</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Consumer" xml:space="preserve"><value>专精游戏配置移除该消费应用 — 专精游戏机不需要</value></data>
   <data name="Profile.Reason.Gaming.Gate.UserOverride" xml:space="preserve"><value>已保留你的手动选择 — 配置不会更改</value></data>
   <data name="Profile.Reason.Gaming.Gate.Unsupported" xml:space="preserve"><value>无安全执行机制 — 分类不代表可移除</value></data>
   <data name="Profile.Reason.Gaming.Gate.Protected" xml:space="preserve"><value>受保护的系统基础组件 — 绝不自动移除</value></data>
