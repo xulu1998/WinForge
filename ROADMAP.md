@@ -493,7 +493,8 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 15 — Profile Execution & Meaningful Optimization
 
-- **Status:** IN PROGRESS — **STAGE 15.1 COMPLETE (2026-08-14)**; branch
+- **Status:** IN PROGRESS — **STAGES 15.1 + 15.2 + 15.2b + 15.3 COMPLETE (2026-08-15)** · **STAGE 15.4
+  IMPLEMENTATION READY (2026-08-15)** — BALANCED + DEDICATEDGAMING REAL APPLY REQUIRED; branch
   `phase/15-profile-execution`; NOT merged.
 - **Stage 15.1 — Profile Execution & Safe Execution Matrix (ADR-094):** profiles now produce
   clearly different, supported execution plans. Core `ProfileExecutionMatrix` (AutoApply /
@@ -549,12 +550,42 @@ Phased development plan for WinForge. Each phase records its **Status**,
   CustomizationPlan (IsAdoptEligible aligned to WasProfileDriven → preview auto count == Review
   selected count); manual overrides authoritative; extras affect the actual executable plan
   (Lightweight+Xbox keeps the Xbox services); Apply reuses the Phase 12 executor; PlanCapture
-  writes profile-buildplans.json (structural validation only). **1181 tests (Core 53, App 1128),
-  0 err/0 warn.** REAL BUILDPLAN VALIDATION REQUIRED (rerun the elevated CLI; review
-  profile-buildplans.json — all six validationPassed == true).
-- **Stage 15.4 (recommended next):** wire the delta reports into the Customize/Review plan flow
-  (profile-managed auto-apply end-to-end), per-profile operation-type execution details, and the
-  real-image `profile-plans.json` capture on the 25H2 ISO.
+  writes profile-buildplans.json (structural validation only). **REAL STRUCTURAL VALIDATION
+  PASSED (2026-08-15)**: all six primaries validationPassed == true on Win11 25H2 Pro zh-CN x64
+  Index 4 (Balanced 16, Gaming 25, DedicatedGaming 33, Developer 21, Office 17, Lightweight 38),
+  empty validationErrors, conflict-free canonical keys. **1181 tests (Core 53, App 1128),
+  0 err/0 warn.**
+- **Stage 15.3b — Optional Feature canonical aggregation (COMPLETE, ADR-096 addendum):** the real
+  structural validation FAILED DedicatedGaming 'Containers' (4), Lightweight 'HyperV' (9) and
+  DedicatedMinimal (MediaPlayer x2, HyperV x9) because the deep catalog maps MULTIPLE genuinely
+  distinct DISM features to ONE profile-facing family id (HyperV x9, Containers x4, MediaPlayer =
+  ZuneMusic AppX + WindowsMediaPlayer; zero raw-identity duplicates on real media). Fixed WITHOUT
+  weakening the validator: `ProfileExecutionItem.ExecutableIdentity` carries the actual DISM
+  FeatureName while `LogicalId` stays the semantic family; new `ProfilePlanAggregator` merges true
+  same-executable candidates BEFORE final plan validation (provenance union via SourceDefinitionIds,
+  keep-wins precedence, AutoApply>Recommend, conflicting executable states fail explicit); the
+  validator's duplicate-change check now keys on the executable identity so distinct real features
+  stay distinct executable operations. Count reconciliation: deltaCount (semantic) vs
+  buildPlanOperationCount + mergedDuplicateCount + mergeGroups in profile-buildplans.json. Offline
+  re-validation over the captured inventory passes ALL SEVEN primaries (16/25/33/21/17/38/44).
+  **1192 tests (Core 53, App 1139), 0 err/0 warn.**
+- **Stage 15.4 — Real Offline Apply Validation (implementation ready, ADR-097):** proves
+  profile-generated BuildPlans EXECUTE safely against a real mounted 25H2 image and that results are
+  INDEPENDENTLY READ BACK. `WinForge.RealCapture --apply-profile <Id>` (Balanced and DedicatedGaming
+  first — one profile per invocation): inspect ISO (read-only) → export selected index to an isolated
+  workspace → mount → final validated BuildPlan → execute ONLY SelectedOperations (AutoApply) →
+  read-back verification (AppX `/Get-ProvisionedAppxPackages` absence; OptionalFeature
+  `/Get-FeatureInfo` exact State; offline service reads the mounted SYSTEM hive Start; offline
+  registry reads hive/path/name/kind/data; OfflineDefaultUser → `Users\Default\NTUSER.DAT` — never
+  host HKCU) → `profile-apply-validation.json` (buildPlanOperationCount/selectedOperationCount/
+  attempted/succeeded/failed/skipped/validationPassed + per-op canonicalKey/operationType/
+  expectedAction/executionStatus/verificationStatus/verificationDetail + mountCleanup) → DISCARD the
+  mount (authoritative `/Get-MountedImageInfo`; unknown mounts never discarded) → clean the
+  workspace. Deterministic already-satisfied pre-check skips; per-op failures recorded exactly, no
+  silent success; failed mount cleanup is a BLOCKER. Recommend-only rows (Containers/WSL) are never
+  executed. **1214 tests (Core 53, App 1161), 0 err/0 warn.** BALANCED REAL APPLY REQUIRED (rerun the
+  elevated CLI with `--apply-profile Balanced`, inspect the report, then `--apply-profile
+  DedicatedGaming`).
 
 ## Phase 14 — Deep Component Coverage & Classification (COMPLETED — 89.56% real-media coverage)
 

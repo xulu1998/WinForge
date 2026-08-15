@@ -396,5 +396,76 @@ definition id for optimization definitions) — the same behavior as the existin
 `profile-buildplans.json` now also reports `semanticChangeCount`, `mergedDuplicateCount`,
 `mergeGroupCount`, `droppedKeepWins` and per-profile `mergeGroups` (diagnostic only).
 
-*Stage 15.3 remains NOT marked complete until the final Administrator RealCapture retest
-reproduces this structural result on the mounted ISO.*
+*Stage 15.3 ACCEPTED (2026-08-15): the final Administrator RealCapture retest reproduced this
+structural result on the mounted ISO — all six primaries validationPassed == true.*
+
+## Stage 15.4 — Real Offline Apply Validation (ADR-097)
+
+### Structural validation ≠ execution validation
+
+Stage 15.3 proved every primary profile's BuildPlan validates STRUCTURALLY on real media (non-null,
+conflict-free canonical keys). That is not proof the plan EXECUTES: nothing had run a
+profile-generated plan against a real mounted image, and the executor's AppX/feature branches treat
+a DISM exit code as success. Stage 15.4 validates EXECUTION with independent read-back.
+
+### Validation profiles
+
+Two representative primaries first (one per CLI invocation — inspect the report before the next):
+
+- **Balanced** — covers AppX removal, offline registry, offline service configuration (16 BuildPlan
+  ops, 10 selected structurally).
+- **DedicatedGaming** — adds OptionalFeature disable (33 BuildPlan ops, 20 selected structurally).
+
+Lightweight is deliberately NOT the first destructive validation (aggressive virtualization
+removals).
+
+### Workflow (discard-only, isolated)
+
+`WinForge.RealCapture --apply-profile <ProfileId>`:
+
+1. inspect ISO (read-only input) → 2. export the selected WIM index into a workspace-owned working
+   WIM → 3. mount → 4. generate the final validated BuildPlan (same unified candidate stream as
+   PlanCapture) → 5. execute ONLY `SelectedOperations` (AutoApply) → 6. independent read-back
+   verification → 7. `profile-apply-validation.json` → 8. DISCARD the mount (authoritative
+   `/Get-MountedImageInfo`; an unknown mount is never discarded) → 9. clean the workspace. The
+   source ISO/WIM is never modified.
+
+### Selected-only execution
+
+`ProfileApplyValidationService` pre-checks every selected operation (deterministic already-satisfied
+skip: target already in the requested state → deselected + `Skipped/AlreadySatisfied`, nothing
+applied), then executes ONLY the remaining selected operations through the existing Phase 12
+executor. Recommend-only rows (e.g. Containers/WSL in DedicatedGaming) are NEVER executed. The
+report carries `buildPlanOperationCount` (candidates) AND `selectedOperationCount`/`attempted`
+(executed) so the separation is provable.
+
+### Read-back verification (exit code alone is never success)
+
+- **AppX** (`RemoveProvisionedAppx`): re-query `/Get-ProvisionedAppxPackages` → package absent =
+  `Verified`; still present = `VerificationFailed`. Already absent before execution =
+  `AlreadySatisfied`.
+- **OptionalFeature** (`DisableOptionalFeature`): `/Get-FeatureInfo` → exact returned State
+  recorded (`Disabled`, `DisabledWithPayloadRemoved`, …); any non-disabled state = failure.
+- **Offline service** (`ConfigureOfflineService`): read the MOUNTED SYSTEM hive `Start` value —
+  never the host service state.
+- **Offline registry** (`SetOfflineRegistryValue`): read the mounted hive and confirm hive + path +
+  value name + type + data. `OfflineDefaultUser` maps to `Users\Default\NTUSER.DAT` inside the
+  mount — host HKCU is never touched.
+
+### Failure handling & cleanup
+
+Per-operation failures are recorded exactly (`executionStatus` + `verificationDetail`); the run
+continues only where safe; the profile is NOT reported successful when any operation failed or
+failed verification. Cleanup always runs after a validation attempt; a failed mount cleanup is a
+BLOCKER that stops further profile validation. `mountCleanup.{discardSucceeded,
+workspaceCleanupSucceeded}` is reported per run.
+
+### Report schema (`profile-apply-validation.json`)
+
+```
+profileId, buildPlanOperationCount, selectedOperationCount, attempted, succeeded, failed,
+skipped, validationPassed
+operations[]: canonicalKey, operationType, expectedAction, executionStatus,
+              verificationStatus, verificationDetail
+mountCleanup: discardSucceeded, workspaceCleanupSucceeded
+```

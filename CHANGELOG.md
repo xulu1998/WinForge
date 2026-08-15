@@ -3,6 +3,35 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 15 — Stage 15.4: Real Offline Profile Apply Validation (2026-08-15)
+
+- **Real offline apply validation harness**: `WinForge.RealCapture --apply-profile <ProfileId>`
+  now proves a profile-generated BuildPlan does not merely validate structurally — it EXECUTES
+  safely against a real mounted Windows image and the result is independently read back. The
+  workflow is discard-only: inspect the source ISO (read-only) → export the selected WIM index into
+  an isolated workspace → mount → generate the final validated BuildPlan → execute ONLY the selected
+  (AutoApply) operations → verify by read-back → report → discard the mount and clean the workspace.
+  The source ISO/WIM is never modified; a failed mount cleanup is a blocker.
+- **Selected-only execution is proven**: `buildPlanOperationCount` (candidates) is reported
+  separately from `selectedOperationCount`/`attempted` (executed). Recommend-only rows (e.g.
+  Containers/WSL in Dedicated Gaming) are never executed.
+- **Independent read-back verification** (a command exit code alone is never success): AppX removal
+  is re-verified with `/Get-ProvisionedAppxPackages`; OptionalFeature disable re-queries
+  `/Get-FeatureInfo` and records the exact returned State (`Disabled` /
+  `DisabledWithPayloadRemoved` …); offline service configuration reads the mounted SYSTEM hive
+  `Start` value; offline registry changes read back hive + path + value + type + data;
+  `OfflineDefaultUser` reads the mounted `Users\Default\NTUSER.DAT` — the host HKCU is never touched.
+- **Deterministic already-satisfied semantics**: a target already in the requested state is
+  pre-checked, skipped and recorded `Skipped/AlreadySatisfied` — nothing is applied.
+- **`profile-apply-validation.json` report**: per profile `profileId`, `buildPlanOperationCount`,
+  `selectedOperationCount`, `attempted`, `succeeded`, `failed`, `skipped`, `validationPassed`,
+  per-operation `canonicalKey`/`operationType`/`expectedAction`/`executionStatus`/
+  `verificationStatus`/`verificationDetail`, and `mountCleanup.{discardSucceeded,
+  workspaceCleanupSucceeded}`.
+- **Balanced and DedicatedGaming first**: they cover every executable operation family (AppX,
+  registry, service, optional feature) with the smallest destructive surface. Run one profile per
+  invocation.
+
 ## Phase 15 — Stage 15.3: Validated Profile BuildPlan as single Apply source (2026-08-15)
 
 - **Real-stream blocker fixed**: `BuildPlan` failed safe because plan operations were built WITHOUT

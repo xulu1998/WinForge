@@ -718,5 +718,39 @@ like SpotlightFeatures/DisableSpotlight merge in the plan — Phase 12). All six
 non-null validated BuildPlans on the real-derived stream. Profile → Customize → Review → Apply uses
 ONE shared CustomizationPlan; `IsAdoptEligible` requires `WasProfileDriven` (preview auto == Review
 selected); manual overrides authoritative; extras affect the actual executable plan; Apply reuses the
-Phase 12 executor; PlanCapture writes profile-buildplans.json (structural only). **1181 tests
-(Core 53, App 1128), 0 err/0 warn (Release, ordinary in-place).**
+Phase 12 executor; PlanCapture writes profile-buildplans.json (structural only). **REAL STRUCTURAL
+VALIDATION PASSED (2026-08-15)** — all six primaries validationPassed == true (Balanced 16, Gaming
+25, DedicatedGaming 33, Developer 21, Office 17, Lightweight 38), empty validationErrors. **1181
+tests (Core 53, App 1128), 0 err/0 warn (Release, ordinary in-place).**
+
+## Phase 15 — Stage 15.3b: Optional Feature canonical aggregation (2026-08-15)
+
+Real structural validation exposed OptionalFeature "duplicate change plans" that were NOT true
+duplicates (DedicatedGaming Containers x4, Lightweight HyperV x9, DedicatedMinimal MediaPlayer x2 +
+HyperV x9): the deep catalog maps MULTIPLE genuinely distinct DISM features to ONE profile-facing
+family id. `ProfileExecutionItem.ExecutableIdentity` now carries the ACTUAL DISM FeatureName while
+`LogicalId` stays the semantic family; the new `ProfilePlanAggregator` (Core) merges true
+same-executable candidates BEFORE final plan validation — provenance union (SourceDefinitionIds),
+keep-wins precedence, AutoApply>Recommend, conflicting executable states fail explicit. The
+validator's duplicate-change check keys on the EXECUTABLE identity (distinct real features stay
+distinct executable operations); the remove/keep conflict check stays semantic. Count
+reconciliation: deltaCount (semantic) vs buildPlanOperationCount + mergedDuplicateCount +
+mergeGroups. **1192 tests (Core 53, App 1139), 0 err/0 warn.**
+
+## Phase 15 — Stage 15.4: Real Offline Apply Validation (2026-08-15, ADR-097)
+
+`WinForge.RealCapture --apply-profile <ProfileId>` proves profile BuildPlans EXECUTE safely against
+a real mounted image (structural validation ≠ execution validation). The harness reuses the
+production pipeline (inspect → export → mount → discovery → unified candidate stream → BuildPlan)
+then: (1) validates the plan; (2) `ProfileApplyValidationService` (Infrastructure) pre-checks every
+selected operation for deterministic already-satisfied skips, executes ONLY `SelectedOperations`
+via the existing Phase 12 executor, and independently verifies every succeeded operation by
+read-back; (3) `OfflineApplyVerifier` reads back AppX absence (`/Get-ProvisionedAppxPackages`),
+OptionalFeature exact State (`/Get-FeatureInfo` + `DismFeatureStateParser`), the mounted SYSTEM hive
+`Start` value, and the mounted registry hive (hive/path/name/kind/data; `OfflineDefaultUser` →
+`Users\Default\NTUSER.DAT` — never host HKCU); (4) writes `profile-apply-validation.json` (§3
+schema); (5) ALWAYS discards the workspace-owned mount (authoritative `/Get-MountedImageInfo` —
+unknown mounts are never discarded) and cleans the workspace — a failed discard is a BLOCKER.
+Report models live in Core (`ApplyValidationModels.cs`); ownership checks reuse
+`MountIdentityValidator`; workspace ownership + read-back + report logic are covered by 22 Stage15f
+tests. **1214 tests (Core 53, App 1161), 0 err/0 warn.**

@@ -1,7 +1,7 @@
 {
   "media": "Win11_25H2_zh-CN_x64",
   "note": "Unified candidate stream (inventory deep\u002Bcurated \u002B optimization definitions, canonical dedup) \u2014 exact per-profile v2 plan summaries over the real captured inventory (plan validation only; nothing applied/built).",
-  "generatedUtc": "2026-08-15T13:23:36.6434438Z",
+  "generatedUtc": "2026-08-15T14:10:39.5641734Z",
   "inventory": {
     "totalInventory": 757,
     "evaluatedForProfile": 674,

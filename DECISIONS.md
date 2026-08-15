@@ -2339,7 +2339,10 @@ semanticActionKeys). Fixture-level distinction was not sufficient.
 
 ## ADR-096: Validated Profile BuildPlan as Single Apply Source (Stage 15.3)
 
-**Status:** Accepted (Phase 15 Stage 15.3; implementation ready, real PlanCapture pending).
+**Status:** Accepted (Phase 15 Stage 15.3 COMPLETE — real structural validation PASSED all six
+primaries on Win11 25H2 Pro zh-CN x64 Index 4: Balanced 16, Gaming 25, DedicatedGaming 33,
+Developer 21, Office 17, Lightweight 38; validationPassed == true, empty validationErrors,
+conflict-free canonical keys; 15.3b addendum accepted — see PROFILE-EXECUTION.md "Stage 15.3b").
 **Context:** Stage 15.2 produced meaningful profile differences but they were NOT reliably
 executable: `ProfileExecutionService.BuildPlan` could fail safe (null) on the real stream because
 the validator correctly rejected operations built WITHOUT their execution payload — service ops had
@@ -2386,3 +2389,46 @@ required target (MissingTarget).
   validationErrors / operationsByType / canonicalOperationKeys. Nothing is applied or built.
 - 1181 tests (Core 53, App 1128), 0 err/0 warn (Release, ordinary in-place). NO validator weakening;
   plan validation remains final authority.
+
+## ADR-097: Real Offline Profile Apply Validation (Stage 15.4)
+
+**Status:** Accepted (Phase 15 Stage 15.4; implementation ready, real Balanced/DedicatedGaming apply pending).
+**Context:** Stage 15.3 proved profile BuildPlans validate STRUCTURALLY on real media (all six
+primaries `validationPassed == true`, conflict-free canonical keys), but structural validity is not
+execution validity: nothing had ever executed a profile-generated plan against a real mounted 25H2
+image, and the existing executor's AppX/feature branches treated a DISM exit code as success. The
+stage must prove the plan not only validates but EXECUTES safely (selected operations only) and that
+the result is INDEPENDENTLY READ BACK.
+**Decision:**
+- **Two representative profiles first:** Balanced (AppX removal + offline registry + offline service)
+  and DedicatedGaming (adds OptionalFeature disable). NOT Lightweight for the first destructive
+  validation. One profile per CLI invocation (`--apply-profile <Id>`) — inspect report before the
+  next profile (reduces blast radius).
+- **Isolated discard-only workflow:** inspect ISO (read-only input) → export the selected WIM index
+  into a workspace-owned working WIM → mount it → generate the final validated BuildPlan → execute
+  ONLY `SelectedOperations` (AutoApply) → independent read-back verification → JSON report →
+  DISCARD the mount (authoritative `/Get-MountedImageInfo`; an unknown mount is never discarded) →
+  clean the workspace. The source WIM/ISO is never modified.
+- **Read-back verification (exit code alone is never success):** AppX `/Get-ProvisionedAppxPackages`
+  re-query (absent = verified; still present = verification failed); OptionalFeature
+  `/Get-FeatureInfo` exact returned State (`Disabled` / `DisabledWithPayloadRemoved` recorded as-is);
+  offline service reads the MOUNTED SYSTEM hive `Start` value (never the host); offline registry
+  reads the mounted hive (hive + path + name + kind + data); `OfflineDefaultUser` maps to
+  `Users\Default\NTUSER.DAT` inside the mount — host HKCU is never touched.
+- **Deterministic already-satisfied semantics:** each selected op is pre-checked; a target already
+  in the requested state is deselected and recorded `Skipped/AlreadySatisfied` — nothing applied.
+- **Selected-only separation is proven:** the report carries `buildPlanOperationCount` (candidates)
+  AND `selectedOperationCount`/`attempted` (executed), and Recommend-only rows (e.g. Containers/WSL
+  in DedicatedGaming) are never executed.
+- **Failure handling:** per-op failures are recorded exactly; the run continues only where safe; the
+  profile is NOT reported successful when any op failed or failed verification; cleanup always runs;
+  a failed mount cleanup is a BLOCKER that stops further profile validation.
+- **Report schema** `profile-apply-validation.json`: per profile `profileId`,
+  `buildPlanOperationCount`, `selectedOperationCount`, `attempted`, `succeeded`, `failed`, `skipped`,
+  `validationPassed`, per-op `operations[].{canonicalKey,operationType,expectedAction,
+  executionStatus,verificationStatus,verificationDetail}`, and `mountCleanup.{discardSucceeded,
+  workspaceCleanupSucceeded}`.
+**Why only Balanced + DedicatedGaming initially:** they cover every executable operation family
+(AppX/registry/service/feature) with the smallest destructive surface. Lightweight's aggressive
+virtualization removals and the remaining primaries are validated only after Balanced and
+DedicatedGaming pass execution + read-back + cleanup end-to-end.
