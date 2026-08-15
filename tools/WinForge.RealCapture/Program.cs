@@ -1050,6 +1050,8 @@ public static class Program
             {
                 ProfileId = profileId,
                 ValidationPassed = false,
+                FailureStage = "Unexpected",
+                Error = ex.Message,
                 MountCleanup = report.MountCleanup,
             };
         }
@@ -1100,6 +1102,13 @@ public static class Program
         Console.WriteLine($"Failed           : {report.Failed}");
         Console.WriteLine($"Skipped          : {report.Skipped}");
         Console.WriteLine($"ValidationPassed : {report.ValidationPassed}");
+        if (report.FailureStage is not null)
+        {
+            Console.WriteLine($"FAILURE STAGE    : {report.FailureStage}");
+            Console.WriteLine($"FAILED OP KEY    : {report.FailedCanonicalKey ?? "(run-level)"}");
+            Console.WriteLine($"ERROR            : {report.Error}");
+        }
+
         foreach (var op in report.Operations)
         {
             Console.WriteLine($"  [{op.ExecutionStatus,-16}|{op.VerificationStatus,-16}] {op.CanonicalKey} — {op.VerificationDetail}");

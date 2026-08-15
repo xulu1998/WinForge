@@ -493,8 +493,8 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 15 — Profile Execution & Meaningful Optimization
 
-- **Status:** IN PROGRESS — **STAGES 15.1 + 15.2 + 15.2b + 15.3 COMPLETE (2026-08-15)** · **STAGE 15.4
-  IMPLEMENTATION READY (2026-08-15)** — BALANCED + DEDICATEDGAMING REAL APPLY REQUIRED; branch
+- **Status:** IN PROGRESS — **STAGES 15.1 + 15.2 + 15.2b + 15.3 COMPLETE (2026-08-15)** · **STAGES 15.4
+  + 15.4a IMPLEMENTATION READY (2026-08-15)** — BALANCED REAL APPLY RETEST REQUIRED; branch
   `phase/15-profile-execution`; NOT merged.
 - **Stage 15.1 — Profile Execution & Safe Execution Matrix (ADR-094):** profiles now produce
   clearly different, supported execution plans. Core `ProfileExecutionMatrix` (AutoApply /
@@ -583,9 +583,21 @@ Phased development plan for WinForge. Each phase records its **Status**,
   mount (authoritative `/Get-MountedImageInfo`; unknown mounts never discarded) → clean the
   workspace. Deterministic already-satisfied pre-check skips; per-op failures recorded exactly, no
   silent success; failed mount cleanup is a BLOCKER. Recommend-only rows (Containers/WSL) are never
-  executed. **1214 tests (Core 53, App 1161), 0 err/0 warn.** BALANCED REAL APPLY REQUIRED (rerun the
-  elevated CLI with `--apply-profile Balanced`, inspect the report, then `--apply-profile
-  DedicatedGaming`).
+  executed. **FIRST REAL BALANCED APPLY (recorded):** mount/discovery/hive-access/cleanup PASSED;
+  aborted at offline-registry PRECHECK with "The specified registry key does not exist." — see
+  Stage 15.4a. **1225 tests (Core 53, App 1172), 0 err/0 warn.**
+- **Stage 15.4a — Offline registry precheck: missing key semantics (implementation ready,
+  ADR-097 addendum):** the first real Balanced apply proved mount/workspace safety but exposed
+  precheck absence semantics: .NET 8 `RegistryKey.GetValueKind` throws `IOException` (not
+  `ArgumentException`) when a VALUE is absent from an existing key, and `ReadValue` let it escape →
+  the whole profile aborted. Fixed: `ReadValue` returns `Exists=false` for that expected-absence
+  case; precheck then reports "operation required" for missing key/value/different value and
+  `AlreadySatisfied` only for a matching value; POST-EXECUTION missing stays `VerificationFailed`
+  (separate semantics). The executor already creates missing subkey paths (unchanged);
+  `OfflineDefaultUser` → `<mount>\Users\Default\NTUSER.DAT`, never host HKCU. Structured
+  diagnostics: report gains `failureStage`/`failedCanonicalKey`/`error` and survives preflight
+  failure (cleanup always runs). **1225 tests (Core 53, App 1172), 0 err/0 warn.** BALANCED REAL
+  APPLY RETEST REQUIRED (`--apply-profile Balanced` only; DedicatedGaming NOT yet).
 
 ## Phase 14 — Deep Component Coverage & Classification (COMPLETED — 89.56% real-media coverage)
 

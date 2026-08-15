@@ -3,6 +3,27 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 15 — Stage 15.4a: Offline registry precheck — missing key semantics (2026-08-15)
+
+- **First real Balanced apply reached mount/discovery/hive-access and then aborted at the offline
+  registry PRECHECK** with "The specified registry key does not exist." (exit 1). Cleanup PASSED
+  (working image discarded, ISO dismounted, workspace cleaned) — mount/workspace safety accepted.
+- **Root cause (verified against a real hive)**: on .NET 8 Windows, `RegistryKey.GetValueKind`
+  throws `IOException` (message "The specified registry key does not exist.") — not
+  `ArgumentException` — when a named VALUE is absent from an existing key. `ReadValue` only caught
+  `ArgumentException`, so the exception escaped the apply precheck and aborted the whole profile.
+  A pristine image routinely lacks policy values under existing keys.
+- **Fix**: `OfflineRegistryService.ReadValue` now also catches `IOException` around `GetValueKind` →
+  `Exists = false`. Precheck semantics: missing key/value/different value → "operation required"
+  (continue to execution); matching value → `AlreadySatisfied` (skipped). POST-EXECUTION missing
+  stays `VerificationFailed` — the two semantics are never conflated. Genuine infrastructure
+  failures (hive load / corrupt hive / access denied) still fail (no weakening).
+- **Executor unchanged**: missing subkey paths are created by the existing offline-hive APIs
+  (`EnsureKeyPath`); `OfflineDefaultUser` targets `<mount>\Users\Default\NTUSER.DAT`, never host HKCU.
+- **Structured diagnostics**: `profile-apply-validation.json` now carries `failureStage`
+  (Precheck/Execute/Verify), `failedCanonicalKey` and `error`, and the report survives a preflight
+  failure (cleanup always runs) — you never again get only the raw exception message.
+
 ## Phase 15 — Stage 15.4: Real Offline Profile Apply Validation (2026-08-15)
 
 - **Real offline apply validation harness**: `WinForge.RealCapture --apply-profile <ProfileId>`

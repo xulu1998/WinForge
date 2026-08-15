@@ -2432,3 +2432,41 @@ the result is INDEPENDENTLY READ BACK.
 (AppX/registry/service/feature) with the smallest destructive surface. Lightweight's aggressive
 virtualization removals and the remaining primaries are validated only after Balanced and
 DedicatedGaming pass execution + read-back + cleanup end-to-end.
+
+## ADR-097 addendum: Offline registry precheck — missing key semantics (Stage 15.4a)
+
+**Status:** Accepted (Phase 15 Stage 15.4a; implementation ready, Balanced real apply retest pending).
+**Context:** The FIRST real Balanced offline apply reached mount/discovery/hive-access and then aborted
+BEFORE normal execution with `APPLY VALIDATION FAILED: The specified registry key does not exist.`
+(exit 1). Cleanup PASSED (working image discarded, ISO dismounted, workspace cleaned, report written)
+— mount/workspace safety is accepted. The blocker was offline-registry PRECHECK semantics.
+**Exact root cause (verified against a real hive):** on .NET 8 Windows,
+`RegistryKey.GetValueKind(valueName)` throws `IOException` with the message "The specified registry
+key does not exist." when the named VALUE is absent from an EXISTING key (not `ArgumentException`).
+`OfflineRegistryService.ReadValue` caught only `ArgumentException` around `GetValueKind`, so the
+`IOException` escaped the apply PRECHECK and aborted the entire profile. A pristine 25H2 image
+routinely lacks policy values under existing keys (e.g.
+`SOFTWARE\Policies\Microsoft\Windows\System\EnableActivityHistory`,
+`...\CloudContent\DisableWindowsConsumerFeatures`, Default User `Explorer\Advanced\HideFileExt`).
+**Decision — registry absence during PRECHECK is a desired-state mismatch, not an infrastructure
+failure:**
+- `OfflineRegistryService.ReadValue` now also catches `IOException` around `GetValueKind` → returns
+  `Exists = false` (expected absence). Genuine infrastructure failures (hive load, corrupt hive,
+  access denied) still surface as `Win32Exception`/`UnauthorizedAccessException` at `LoadHive`/
+  `OpenSubKey` and are NOT swallowed.
+- Required precheck semantics for `SetOfflineRegistryValue`: missing key → operation required;
+  key present but value missing → operation required; value present with different kind/data →
+  operation required; value present with same kind/data → AlreadySatisfied (skipped). The executor
+  already creates missing subkey paths (`EnsureKeyPath`/`CreateSubKey`) — unchanged; `OfflineDefaultUser`
+  maps to `<mount>\Users\Default\NTUSER.DAT`, never host HKCU.
+- POST-EXECUTION the semantics stay separate: a missing key/value after execution is
+  `VerificationFailed` (never conflated with the precheck's "operation required").
+- **Structured diagnostics (§5/§6):** `ProfileApplyValidationReport` now carries `failureStage`
+  (Precheck/Execute/Verify), `failedCanonicalKey` and `error`; `ProfileApplyValidationService`
+  wraps each phase and RETURNS a structured report instead of throwing, so
+  `profile-apply-validation.json` survives a preflight failure and the CLI cleanup always runs.
+  The user never again receives only "The specified registry key does not exist." without knowing
+  which operation caused it.
+- First real Balanced result recorded: mount/discovery/hive-access/cleanup PASSED; registry precheck
+  absence semantics FAILED; no Stage 15.4 completion yet — BALANCED REAL APPLY RETEST REQUIRED
+  (`--apply-profile Balanced` only; DedicatedGaming NOT yet).

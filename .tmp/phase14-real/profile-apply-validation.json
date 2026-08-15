@@ -1,0 +1,16 @@
+{
+  "profileId": "Balanced",
+  "buildPlanOperationCount": 0,
+  "selectedOperationCount": 0,
+  "attempted": 0,
+  "succeeded": 0,
+  "failed": 0,
+  "skipped": 0,
+  "validationPassed": false,
+  "operations": [],
+  "mountCleanup": {
+    "discardSucceeded": true,
+    "workspaceCleanupSucceeded": true,
+    "error": null
+  }
+}

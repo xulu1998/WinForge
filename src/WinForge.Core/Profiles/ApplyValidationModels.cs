@@ -90,6 +90,21 @@ public sealed class ProfileApplyValidationReport
     /// </summary>
     public bool ValidationPassed { get; init; }
 
+    /// <summary>
+    /// Stage 15.4a (ADR-097 addendum): when the run ABORTS before normal
+    /// completion (a precheck/execute/verify infrastructure failure), the stage
+    /// that failed — "Precheck" / "Execute" / "Verify" (null on normal runs).
+    /// The report must survive a preflight failure so the user never has to
+    /// reconstruct the failure from console logs.
+    /// </summary>
+    public string? FailureStage { get; init; }
+
+    /// <summary>The canonical key of the operation that failed (null when the failure was not operation-scoped).</summary>
+    public string? FailedCanonicalKey { get; init; }
+
+    /// <summary>Exact failure detail (exception message).</summary>
+    public string? Error { get; init; }
+
     public List<ProfileApplyOperationReport> Operations { get; init; } = new();
 
     /// <summary>Set by the CLI after cleanup (cleanup always runs; a failed discard is a blocker).</summary>

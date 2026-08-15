@@ -122,11 +122,27 @@ public sealed class ProfileApplyValidationService : IProfileApplyValidationServi
         var selectedCount = plan.SelectedOperations.Count;
 
         // ---- 3. Deterministic already-satisfied pre-check (deselect + skip) ----
+        // Stage 15.4a: a MISSING registry key/value during PRECHECK is a
+        // desired-state mismatch (operation required), NOT an infrastructure
+        // failure. Genuine failures (hive cannot load, corrupt hive, access
+        // denied) are caught here and surface as a STRUCTURED report with
+        // failureStage/failedCanonicalKey/error — never a bare abort.
         var skipped = 0;
         var skipDetails = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var op in plan.Operations.Where(o => o.IsSelected).ToList())
         {
-            var pre = await request.Verifier.PreCheckAsync(op, request.Workspace, cancellationToken);
+            ApplyPreCheckResult pre;
+            try
+            {
+                pre = await request.Verifier.PreCheckAsync(op, request.Workspace, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error($"ApplyValidation: precheck failed for '{op.ConflictKey}': {ex.Message}");
+                return FailedReport(request.Profile.Id, buildPlanCount, selectedCount,
+                    "Precheck", op.ConflictKey, ex, operations: null);
+            }
+
             if (pre.AlreadySatisfied)
             {
                 plan.SetSelected(op.OperationId, false);
@@ -142,7 +158,16 @@ public sealed class ProfileApplyValidationService : IProfileApplyValidationServi
         // ---- 4. Execute ONLY selected operations ----
         if (attempted > 0)
         {
-            await request.Executor.ExecuteAsync(plan, request.Workspace, cancellationToken: cancellationToken);
+            try
+            {
+                await request.Executor.ExecuteAsync(plan, request.Workspace, cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger?.Error($"ApplyValidation: execution aborted: {ex.Message}");
+                return FailedReport(request.Profile.Id, buildPlanCount, selectedCount,
+                    "Execute", failedCanonicalKey: null, ex, operations: null);
+            }
         }
 
         // ---- 5. Independent read-back verification + deterministic counts ----
@@ -179,7 +204,18 @@ public sealed class ProfileApplyValidationService : IProfileApplyValidationServi
             switch (executionStatus)
             {
                 case CustomizationOperationStatus.Succeeded:
-                    var verify = await request.Verifier.VerifyAsync(op, request.Workspace, cancellationToken);
+                    ApplyVerifyResult verify;
+                    try
+                    {
+                        verify = await request.Verifier.VerifyAsync(op, request.Workspace, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger?.Error($"ApplyValidation: read-back verification failed for '{op.ConflictKey}': {ex.Message}");
+                        return FailedReport(request.Profile.Id, buildPlanCount, selectedCount,
+                            "Verify", op.ConflictKey, ex, operations);
+                    }
+
                     verification = verify.Status;
                     detail = verify.Detail;
                     if (verification == ApplyVerificationStatus.Verified)
@@ -240,6 +276,34 @@ public sealed class ProfileApplyValidationService : IProfileApplyValidationServi
             Skipped = skipped,
             ValidationPassed = failed == 0,
             Operations = operations,
+        };
+    }
+
+    /// <summary>
+    /// Builds a STRUCTURED failure report when a phase aborts before normal
+    /// completion (Stage 15.4a §5/§6). The user must never again receive only
+    /// the raw exception message without knowing the failing operation and stage.
+    /// </summary>
+    private static ProfileApplyValidationReport FailedReport(
+        string profileId, int buildPlanCount, int selectedCount,
+        string failureStage, string? failedCanonicalKey, Exception ex,
+        IReadOnlyList<ProfileApplyOperationReport>? operations)
+    {
+        var attempted = operations is null ? 0 : operations.Count(o => o.ExecutionStatus is not ("Skipped"));
+        return new ProfileApplyValidationReport
+        {
+            ProfileId = profileId,
+            BuildPlanOperationCount = buildPlanCount,
+            SelectedOperationCount = selectedCount,
+            Attempted = attempted,
+            Succeeded = 0,
+            Failed = 1,
+            Skipped = 0,
+            ValidationPassed = false,
+            FailureStage = failureStage,
+            FailedCanonicalKey = failedCanonicalKey,
+            Error = ex.Message,
+            Operations = operations?.ToList() ?? new List<ProfileApplyOperationReport>(),
         };
     }
 

@@ -754,3 +754,21 @@ unknown mounts are never discarded) and cleans the workspace — a failed discar
 Report models live in Core (`ApplyValidationModels.cs`); ownership checks reuse
 `MountIdentityValidator`; workspace ownership + read-back + report logic are covered by 22 Stage15f
 tests. **1214 tests (Core 53, App 1161), 0 err/0 warn.**
+
+## Phase 15 — Stage 15.4a: Offline registry precheck — missing key semantics (2026-08-15, ADR-097 addendum)
+
+The first real Balanced apply proved mount/workspace/cleanup safety but exposed precheck absence
+semantics: .NET 8 `RegistryKey.GetValueKind` throws `IOException` ("The specified registry key does
+not exist.") — not `ArgumentException` — when a VALUE is absent from an existing key, and
+`OfflineRegistryService.ReadValue` let it escape, aborting the whole profile. `ReadValue` now also
+catches `IOException` around `GetValueKind` → `Exists=false` (expected absence): precheck returns
+"operation required" for missing key/value/different value and `AlreadySatisfied` only for a matching
+value; POST-EXECUTION missing stays `VerificationFailed` (separate semantics). Genuine infrastructure
+failures (hive load / corrupt hive / access denied) still throw at `LoadHive`/`OpenSubKey` — no
+weakening. The executor already creates missing subkey paths (`EnsureKeyPath`/`CreateSubKey`,
+offline-hive APIs only) — unchanged. `OfflineApplyVerifier` reads `OfflineDefaultUser` from
+`<mount>\Users\Default\NTUSER.DAT`, never host HKCU. `ProfileApplyValidationReport` gains
+`failureStage`/`failedCanonicalKey`/`error` and `ProfileApplyValidationService` returns a structured
+report on any phase failure, so `profile-apply-validation.json` survives a preflight failure and the
+CLI cleanup always runs. **1225 tests (Core 53, App 1172), 0 err/0 warn.** BALANCED REAL APPLY
+RETEST REQUIRED.
