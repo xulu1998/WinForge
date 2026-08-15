@@ -219,8 +219,12 @@ public sealed class ProfileExecutionService
 
     /// <summary>
     /// Builds a validated <see cref="CustomizationPlan"/> for the profile's
-    /// executable changes (AutoApply + Recommend). Unsupported/blocked items are
-    /// never placed in the plan. Returns the issues list (empty when valid).
+    /// executable changes (AutoApply selected + Recommend present-unselected).
+    /// Unsupported/blocked items are never placed in the plan. Stage 15.3
+    /// (ADR-096): every operation carries its COMPLETE execution payload (service
+    /// name + start type, registry hive/path/value/kind/data, feature/package
+    /// identity) — the real-stream blocker was ops built without payloads, which
+    /// the validator correctly rejected. Returns the issues list (empty when valid).
     /// </summary>
     public (CustomizationPlan? Plan, IReadOnlyList<string> Issues) BuildPlan(
         ProfileDefinition profile,
@@ -242,24 +246,177 @@ public sealed class ProfileExecutionService
                 continue;
             }
 
-            plan.AddOperation(new CustomizationOperation
+            var subject = subjects.FirstOrDefault(s =>
+                string.Equals(s.LogicalId, item.LogicalId, StringComparison.Ordinal));
+            if (subject is null)
             {
-                OperationId = $"{item.OperationType}:{item.LogicalId}",
-                Category = MapCategory(item.OperationType),
-                OperationType = MapOperationType(item.OperationType),
-                DisplayName = item.DisplayName,
-                Description = item.ReasonKey,
-                TargetIdentifier = item.LogicalId,
-                IsSelected = item.Disposition == ProfileDisposition.AutoApply,
-                Risk = item.Disposition == ProfileDisposition.AutoApply ? RiskClass.Safe : RiskClass.Removable,
-                ActionKind = OptimizationAction.Remove,
-            });
+                issues.Add($"Subject for plan operation '{item.LogicalId}' was not found.");
+                continue;
+            }
+
+            // Stage 15.3: definition-level validation fails safe BEFORE the op is
+            // constructed — malformed definitions are found at plan time too, not
+            // only in catalog tests (ADR-096 §5).
+            if (subject.OptimizationDefinition is { } def)
+            {
+                var defIssues = OptimizationDefinitionValidator.ValidateDefinition(def);
+                if (defIssues.Count > 0)
+                {
+                    issues.AddRange(defIssues.Select(d => $"'{def.Id}': {d}"));
+                    continue;
+                }
+            }
+
+            foreach (var op in BuildOperations(subject, item))
+            {
+                plan.AddOperation(op);
+            }
         }
 
         var validation = ProfilePlanValidator.Validate(report.Items, plan);
         issues.AddRange(validation.Issues);
         return (validation.IsValid ? plan : null, issues);
     }
+
+    /// <summary>
+    /// Maps one executable item to its complete plan operation(s). Optimization
+    /// definitions map their real payload (service name, registry targets,
+    /// feature name); component items map their discovered identity (raw package
+    /// identity, feature name). Canonical operation ids reuse the live app
+    /// conventions (svc:|opt:|feat:|appx:|cap:) so profile plans dedupe and
+    /// conflict-detect identically to the Customize flow.
+    /// </summary>
+    private static IReadOnlyList<CustomizationOperation> BuildOperations(ProfilePlanSubject subject, ProfileExecutionItem item)
+    {
+        var selected = item.Disposition == ProfileDisposition.AutoApply;
+        var risk = selected ? RiskClass.Safe : RiskClass.Removable;
+
+        if (subject.OptimizationDefinition is { } def)
+        {
+            if (def.Mechanism == OptimizationMechanism.ServiceStartup)
+            {
+                var svc = new CustomizationOperation
+                {
+                    OperationId = "svc|" + def.ServiceName,
+                    Category = CustomizationCategory.Service,
+                    OperationType = CustomizationOperationType.ConfigureOfflineService,
+                    DisplayName = subject.DisplayName,
+                    Description = item.ReasonKey,
+                    TargetIdentifier = def.ServiceName,
+                    ServiceName = def.ServiceName,
+                    ServiceStartType = def.ProposedStartType,
+                    IsSelected = selected,
+                    Risk = risk,
+                    ActionKind = def.Action,
+                    Mechanism = def.Mechanism,
+                    Scope = def.Scope,
+                    ReversalKey = def.ReversalKey,
+                    ExecutionOrder = 0,
+                };
+                svc.AddSourceDefinition(def.Id);
+                return new[] { svc };
+            }
+
+            if (def.Tab == OptimizationTab.WindowsComponents && !string.IsNullOrWhiteSpace(def.TargetIdentifier))
+            {
+                var feat = new CustomizationOperation
+                {
+                    OperationId = "feat|" + def.TargetIdentifier,
+                    Category = CustomizationCategory.Package,
+                    OperationType = CustomizationOperationType.DisableOptionalFeature,
+                    DisplayName = subject.DisplayName,
+                    Description = item.ReasonKey,
+                    TargetIdentifier = def.TargetIdentifier,
+                    IsSelected = selected,
+                    Risk = risk,
+                    ActionKind = def.Action,
+                    Mechanism = def.Mechanism,
+                    Scope = def.Scope,
+                    ReversalKey = def.ReversalKey,
+                    ExecutionOrder = 0,
+                };
+                feat.AddSourceDefinition(def.Id);
+                return new[] { feat };
+            }
+
+            var ops = new List<CustomizationOperation>();
+            var index = 0;
+            foreach (var t in def.RegistryTargets)
+            {
+                var reg = new CustomizationOperation
+                {
+                    OperationId = $"opt|{def.Id}|{index}",
+                    Category = MapCategoryForTab(def.Tab),
+                    OperationType = CustomizationOperationType.SetOfflineRegistryValue,
+                    DisplayName = subject.DisplayName,
+                    Description = item.ReasonKey,
+                    RegistryHive = t.Hive,
+                    RegistryKeyPath = t.KeyPath,
+                    RegistryValueName = t.ValueName,
+                    RegistryValueKind = t.ValueKind,
+                    RegistryValueData = t.RecommendedData,
+                    RestoreValueData = t.RestoreData,
+                    IsSelected = selected,
+                    Risk = risk,
+                    ActionKind = def.Action,
+                    Mechanism = def.Mechanism,
+                    Scope = def.Scope,
+                    ReversalKey = def.ReversalKey,
+                    ExecutionOrder = index,
+                };
+                reg.AddSourceDefinition(def.Id);
+                ops.Add(reg);
+                index++;
+            }
+
+            return ops;
+        }
+
+        // Component-layer item (deep / curated inventory object).
+        var identity = !string.IsNullOrWhiteSpace(subject.RawIdentity) ? subject.RawIdentity : subject.LogicalId;
+        var (opType, category) = item.OperationType switch
+        {
+            ExecutionOperationType.AppX => (CustomizationOperationType.RemoveProvisionedAppx, CustomizationCategory.App),
+            ExecutionOperationType.OptionalFeature => (CustomizationOperationType.DisableOptionalFeature, CustomizationCategory.Package),
+            ExecutionOperationType.Capability => (CustomizationOperationType.RemoveCapability, CustomizationCategory.Package),
+            ExecutionOperationType.CbsPackage => (CustomizationOperationType.RemovePackage, CustomizationCategory.Package),
+            _ => (CustomizationOperationType.SetOfflineRegistryValue, CustomizationCategory.System),
+        };
+        var opIdPrefix = item.OperationType switch
+        {
+            ExecutionOperationType.AppX => "appx",
+            ExecutionOperationType.OptionalFeature => "feat",
+            ExecutionOperationType.Capability => "cap",
+            ExecutionOperationType.CbsPackage => "pkg",
+            _ => "opt",
+        };
+        var component = new CustomizationOperation
+        {
+            OperationId = $"{opIdPrefix}|{identity}",
+            Category = category,
+            OperationType = opType,
+            DisplayName = subject.DisplayName,
+            Description = item.ReasonKey,
+            TargetIdentifier = identity,
+            IsSelected = selected,
+            Risk = risk,
+            ActionKind = OptimizationAction.Remove,
+            ExecutionOrder = 0,
+        };
+        component.AddSourceDefinition(subject.LogicalId);
+        return new[] { component };
+    }
+
+    private static CustomizationCategory MapCategoryForTab(OptimizationTab tab) => tab switch
+    {
+        OptimizationTab.Privacy => CustomizationCategory.Privacy,
+        OptimizationTab.Personalization => CustomizationCategory.Personalization,
+        OptimizationTab.System => CustomizationCategory.System,
+        OptimizationTab.Services => CustomizationCategory.Service,
+        OptimizationTab.WindowsComponents => CustomizationCategory.Package,
+        OptimizationTab.Apps => CustomizationCategory.App,
+        _ => CustomizationCategory.System,
+    };
 
     private static CustomizationCategory MapCategory(ExecutionOperationType type) => type switch
     {

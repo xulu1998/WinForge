@@ -220,6 +220,7 @@ public static class Program
                 });
                 await WriteJsonAsync(Path.Combine(options.OutDir, "real-derived-families.json"), BuildDerivedFixture(raw, metrics, deep));
                 await WriteJsonAsync(Path.Combine(options.OutDir, "profile-plans.json"), BuildProfilePlans(raw, deep, catalog));
+                await WriteJsonAsync(Path.Combine(options.OutDir, "profile-buildplans.json"), BuildProfileBuildPlans(raw, deep, catalog));
 
                 PrintResults(metrics, unknownItems, families, gamingCandidates);
             }
@@ -657,14 +658,14 @@ public static class Program
         };
     }
 
-    // ---- Phase 15 Stage 15.2 — UNIFIED candidate stream + real plan accounting
-    //      (ADR-095). PLAN VALIDATION ONLY: nothing is applied or built. ----
+    // ---- Phase 15 Stage 15.2/15.3 — UNIFIED candidate stream + real plan
+    //      accounting + structural BuildPlan validation (ADR-095/096).
+    //      PLAN VALIDATION ONLY: nothing is applied or built. ----
 
-    private static ProfilePlansJson BuildProfilePlans(
+    private static (ProfileCandidateBuildResult Built, IReadOnlyList<ProfileDefinition> Profiles,
+        IReadOnlySet<string> Present) BuildUnifiedStream(
         ComponentInventory raw, DeepComponentClassifier deep, IReadOnlyList<ComponentDefinition> curatedCatalog)
     {
-        // 1. Inventory objects → deep subject, else curated subject, else an
-        //    explicit exclusion bucket (Unknown / UnsupportedSource).
         var inventoryInputs = raw.Categories
             .SelectMany(c => c.Items)
             .Select(i => new ProfileInventoryInput
@@ -676,14 +677,18 @@ public static class Program
             })
             .ToList();
 
-        // 2. Non-inventory optimization definitions (registry/privacy/
-        //    personalization/service) — the profile overrides target these.
         var optimizations = new WinForge.Infrastructure.Customization.OptimizationCatalog().GetEntries();
         var built = ProfileCandidateService.BuildCandidates(inventoryInputs, optimizations);
-
         var profiles = new WinForge.Infrastructure.Profiles.ProfileCatalog().GetProfiles();
-        var service = new WinForge.Core.Profiles.ProfileExecutionService();
         var present = built.Subjects.Select(s => s.LogicalId).ToHashSet(StringComparer.Ordinal);
+        return (built, profiles, present);
+    }
+
+    private static ProfilePlansJson BuildProfilePlans(
+        ComponentInventory raw, DeepComponentClassifier deep, IReadOnlyList<ComponentDefinition> curatedCatalog)
+    {
+        var (built, profiles, present) = BuildUnifiedStream(raw, deep, curatedCatalog);
+        var service = new WinForge.Core.Profiles.ProfileExecutionService();
         var reports = service.GenerateAllPrimaries(
             built.Subjects,
             new HashSet<WinForge.Core.Profiles.GamingExtra>(),
@@ -747,6 +752,52 @@ public static class Program
             .OrderBy(kv => kv.Key.ToString(), StringComparer.Ordinal)
             .ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
     };
+
+    // ---- Phase 15 Stage 15.3 — structural BuildPlan validation (ADR-096).
+    //      PROOF that every primary profile produces a non-null, validated,
+    //      conflict-free, supported plan over the real inventory. Nothing is
+    //      applied or built. ----
+
+    private static ProfileBuildPlansJson BuildProfileBuildPlans(
+        ComponentInventory raw, DeepComponentClassifier deep, IReadOnlyList<ComponentDefinition> curatedCatalog)
+    {
+        var (built, profiles, present) = BuildUnifiedStream(raw, deep, curatedCatalog);
+        var service = new WinForge.Core.Profiles.ProfileExecutionService();
+        var profilesJson = new List<ProfileBuildPlanJson>();
+
+        foreach (var profile in profiles.Where(p => p.Kind == ProfileKind.Primary && p.Id != "Custom"))
+        {
+            var report = service.GenerateDelta(profile, built.Subjects,
+                new HashSet<WinForge.Core.Profiles.GamingExtra>(), new HashSet<string>(), present, profiles);
+            var (plan, issues) = service.BuildPlan(profile, built.Subjects,
+                new HashSet<WinForge.Core.Profiles.GamingExtra>(), new HashSet<string>(), present, profiles);
+
+            profilesJson.Add(new ProfileBuildPlanJson
+            {
+                ProfileId = profile.Id,
+                DeltaCount = report.ChangeCount,
+                BuildPlanOperationCount = plan?.Operations.Count ?? 0,
+                SelectedOperationCount = plan?.SelectedOperations.Count ?? 0,
+                ValidationPassed = plan is not null,
+                ValidationErrors = issues.ToList(),
+                OperationsByType = plan is null
+                    ? new Dictionary<string, int>()
+                    : plan.Operations
+                        .GroupBy(o => o.OperationType.ToString(), StringComparer.Ordinal)
+                        .ToDictionary(g => g.Key, g => g.Count()),
+                CanonicalOperationKeys = plan is null
+                    ? new List<string>()
+                    : plan.Operations.Select(o => o.ConflictKey).OrderBy(k => k, StringComparer.Ordinal).ToList(),
+            });
+        }
+
+        return new ProfileBuildPlansJson
+        {
+            Media = "Win11_25H2_zh-CN_x64",
+            Note = "Structural BuildPlan validation per primary profile over the real captured inventory (ADR-096; plan validation only — nothing applied/built). ValidationPassed == non-null validated plan.",
+            Profiles = profilesJson,
+        };
+    }
 
     private static string BucketOf(ClassificationCoverageMetrics metrics, string rawIdentity)
         => metrics.Buckets.TryGetValue(rawIdentity, out var bucket) ? bucket : "Unknown";

@@ -3,6 +3,41 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 15 — Stage 15.3: Validated Profile BuildPlan as single Apply source (2026-08-15)
+
+- **Real-stream blocker fixed**: `BuildPlan` failed safe because plan operations were built WITHOUT
+  execution payloads — service ops had no ServiceName/start type (all collapsed to `svc|` →
+  duplicates), registry ops had no hive/path/value (MissingTarget), component ops had no real
+  package identity. The validator was right; the plan construction was wrong. Verified the catalog
+  data was already clean (ActivityHistory targets the valid offline policy key
+  `SOFTWARE\Policies\Microsoft\Windows\System\EnableActivityHistory` DWORD 0; every service def
+  has a canonical allowlisted ServiceName). **No validator weakening.**
+- **Complete payload mapping**: `BuildPlan` now builds operations with their real payload reusing
+  the live-app conventions (`svc:|opt:|feat:|appx:|cap:|pkg:`); curated rows keep their discovered
+  identity; every op records SourceDefinitionIds provenance (identical registry mutations merge
+  with attribution — Phase 12).
+- **OptimizationDefinitionValidator** (Core, reusable): MissingTechnicalTarget /
+  MissingRegistryTarget / MissingServiceName / MissingFeatureName / UnsupportedExecution /
+  InvalidValue / DuplicateCanonicalIdentity — run in catalog tests, inside BuildPlan (fail safe),
+  and in PlanCapture. Duplicate detection scoped to non-mergeable identities (registry duplicates
+  such as SpotlightFeatures/DisableSpotlight are legal and merge in the plan).
+- **All six primaries produce non-null validated BuildPlans** over the real-derived stream
+  (planOps == deltaCount; selected == AutoApply): Balanced 16/9 · Gaming 24/17 · DedicatedGaming
+  27/18 · Developer 20/17 · Office 17/9 · Lightweight 27/23 — every delta difference is explainable.
+- **Profile → Customize → Review → Apply end-to-end**: one shared `CustomizationPlan` (PlanSync)
+  is the single authoritative state; `IsAdoptEligible` now requires `WasProfileDriven` so the
+  preview "Automatic changes" count == Review selected count (curated defaults stay Recommended);
+  manual overrides authoritative and excluded from the plan; extras affect the ACTUAL executable
+  plan (Lightweight + Xbox keeps XblAuthManager/XboxGipSvc/XboxNetApiSvc; WSL/Print/Remote keep
+  their ecosystems); Apply reuses the existing Phase 12 executor with result sync + failure UX.
+- **PlanCapture**: RealCapture writes `profile-buildplans.json` (structural validation only —
+  deltaCount / buildPlanOperationCount / selectedOperationCount / validationPassed /
+  validationErrors / operationsByType / canonicalOperationKeys; nothing applied/built).
+- **1181 automated tests pass (Core 53, App 1128), 0 errors, 0 warnings (Release)** — ordinary
+  in-place build/test. ADR-096 + docs/PROFILE-EXECUTION.md updated. **REAL BUILDPLAN VALIDATION
+  REQUIRED** (rerun the elevated RealCapture CLI; review profile-buildplans.json — all six
+  validationPassed == true).
+
 ## Phase 15 — Stage 15.2b: Real Dedicated-Gaming differentiation fix (2026-08-15)
 
 - **First v2 real validation accepted accounting/Office/byOperationType but exposed the remaining

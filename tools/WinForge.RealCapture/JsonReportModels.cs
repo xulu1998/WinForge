@@ -231,3 +231,33 @@ public sealed class ProfilePlanChangesJson
     public int Total { get; init; }
     public Dictionary<string, int> ByOperationType { get; init; } = new();
 }
+
+/// <summary>Phase 15 Stage 15.3 — structural BuildPlan validation over the real
+/// captured inventory (ADR-096). PLAN VALIDATION ONLY: nothing is applied.</summary>
+public sealed class ProfileBuildPlansJson
+{
+    public string Media { get; init; } = string.Empty;
+    public string Note { get; init; } = string.Empty;
+    public string GeneratedUtc { get; init; } = DateTime.UtcNow.ToString("O");
+    public List<ProfileBuildPlanJson> Profiles { get; init; } = new();
+}
+
+/// <summary>One primary profile's validated BuildPlan summary (structural only).</summary>
+public sealed class ProfileBuildPlanJson
+{
+    public string ProfileId { get; init; } = string.Empty;
+
+    /// <summary>ProfileDeltaReport changeCount (AutoApply + Recommend).</summary>
+    public int DeltaCount { get; init; }
+
+    /// <summary>Total plan operations (AutoApply selected + Recommend present-unselected).</summary>
+    public int BuildPlanOperationCount { get; init; }
+
+    /// <summary>Selected (AutoApply) operations — what Apply would execute.</summary>
+    public int SelectedOperationCount { get; init; }
+
+    public bool ValidationPassed { get; init; }
+    public List<string> ValidationErrors { get; init; } = new();
+    public Dictionary<string, int> OperationsByType { get; init; } = new();
+    public List<string> CanonicalOperationKeys { get; init; } = new();
+}

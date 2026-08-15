@@ -1,7 +1,7 @@
 {
   "media": "Win11_25H2_zh-CN_x64",
   "note": "Unified candidate stream (inventory deep\u002Bcurated \u002B optimization definitions, canonical dedup) \u2014 exact per-profile v2 plan summaries over the real captured inventory (plan validation only; nothing applied/built).",
-  "generatedUtc": "2026-08-15T12:23:22.0222495Z",
+  "generatedUtc": "2026-08-15T12:50:40.9685583Z",
   "inventory": {
     "totalInventory": 757,
     "evaluatedForProfile": 674,
@@ -191,26 +191,29 @@
         "evaluated": 678
       },
       "decisionCounts": {
-        "autoApply": 19,
-        "recommended": 6,
-        "optional": 72,
+        "autoApply": 20,
+        "recommended": 13,
+        "optional": 64,
         "kept": 565,
         "blocked": 62,
         "notApplicable": 0
       },
       "planChanges": {
-        "total": 25,
+        "total": 33,
         "byOperationType": {
-          "AppX": 10,
+          "AppX": 12,
+          "OptionalFeature": 5,
           "Personalization": 5,
           "Privacy": 7,
-          "RegistryPolicy": 1,
+          "RegistryPolicy": 2,
           "Service": 2
         }
       },
       "semanticActionKeys": [
         "AppX|BingSearch|AutoApply",
         "AppX|BingWeather|AutoApply",
+        "AppX|Clipchamp|AutoApply",
+        "AppX|DevHome|Recommend",
         "AppX|FeedbackHub|AutoApply",
         "AppX|GetHelp|AutoApply",
         "AppX|MicrosoftOfficeHub|AutoApply",
@@ -219,6 +222,8 @@
         "AppX|PhoneLink|AutoApply",
         "AppX|Solitaire|AutoApply",
         "AppX|WebExperience|AutoApply",
+        "OptionalFeature|Containers|Recommend",
+        "OptionalFeature|WindowsSubsystemLinux|Recommend",
         "Personalization|HideStartRecentlyAdded|AutoApply",
         "Personalization|HideStartRecommended|AutoApply",
         "Personalization|HideTaskbarWidgets|AutoApply",
@@ -231,6 +236,7 @@
         "Privacy|SpotlightFeatures|AutoApply",
         "Privacy|TailoredExperiences|AutoApply",
         "Privacy|WebSearchStart|Recommend",
+        "RegistryPolicy|OneDriveSync|Recommend",
         "RegistryPolicy|Tips|AutoApply",
         "Service|DiagTrack|Recommend",
         "Service|RetailDemo|Recommend"

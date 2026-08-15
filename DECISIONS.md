@@ -2336,3 +2336,53 @@ semanticActionKeys). Fixture-level distinction was not sufficient.
   ActivityHistory) and some Service definitions have empty ServiceName → validator flags
   missing/duplicate targets. The validator correctly fails safe; catalog completion is a later
   optimization-data task. Final real retest reviews profile-plans.json v2 only.
+
+## ADR-096: Validated Profile BuildPlan as Single Apply Source (Stage 15.3)
+
+**Status:** Accepted (Phase 15 Stage 15.3; implementation ready, real PlanCapture pending).
+**Context:** Stage 15.2 produced meaningful profile differences but they were NOT reliably
+executable: `ProfileExecutionService.BuildPlan` could fail safe (null) on the real stream because
+the validator correctly rejected operations built WITHOUT their execution payload — service ops had
+no `ServiceName`/start type, registry ops had no hive/path/value, component ops had no real package
+identity. The validator was right; the plan construction was wrong. Profile → Review → Apply could
+not flow end-to-end.
+**Root cause (verified, NOT catalog data):** the OptimizationCatalog was already clean — every
+ServiceStartup def has a canonical ServiceName on the ADR-030 allowlist; ActivityHistory has a valid
+offline policy target (`SOFTWARE\Policies\Microsoft\Windows\System\EnableActivityHistory` DWORD 0).
+The defect was `BuildPlan` mapping each executable item to a bare `CustomizationOperation` without
+payload; `ConflictKey` collapsed all service ops to `svc|` (duplicate) and registry ops lacked their
+required target (MissingTarget).
+**Decision:**
+- **Complete payload mapping (single apply source):** `BuildPlan` now constructs operations with
+  their real execution payload by reusing the live-app conventions: service ops `svc|<ServiceName>`
+  + `ServiceStartType`; registry ops `opt|<defId>|<i>` with hive/path/value/kind/data + restore;
+  feature ops `feat|<name>`; AppX/Capability/CBS ops `appx|/cap|/pkg|<raw identity>` (curated rows
+  keep their discovered identity — `FromCurated` now retains `RawIdentity`). Every op records
+  `SourceDefinitionIds` provenance so identical registry mutations merge with full attribution.
+- **OptimizationDefinitionValidator (Core, reusable):** detects MissingTechnicalTarget /
+  MissingRegistryTarget / MissingServiceName / MissingFeatureName / UnsupportedExecution /
+  InvalidValue / DuplicateCanonicalIdentity, run during catalog tests, inside `BuildPlan` (fail
+  safe), and in PlanCapture. Duplicate detection is scoped to NON-MERGEABLE identities (service/
+  feature/package) — two registry defs may legally write the same value (Privacy SpotlightFeatures
+  + Personalization DisableSpotlight both set CloudContent\DisableWindowsSpotlightFeatures); the
+  plan merges them (Phase 12) with provenance, that is dedup not a defect.
+- **All six primaries produce non-null validated BuildPlans** over the real-derived stream
+  (fixture + curated-only + optimization defs): Balanced 16 ops (9 selected), Gaming 24 (17),
+  DedicatedGaming 27 (18), Developer 20 (17), Office 17 (9), Lightweight 27 (23) — planOps ==
+  deltaCount; selected == AutoApply; every difference from the delta is explainable (Recommend ops
+  present-unselected; canonical dedup merges; manual overrides excluded).
+- **Profile → Customize → Review → Apply uses ONE shared CustomizationPlan** (PlanSync single
+  source). `IsAdoptEligible` now requires `WasProfileDriven` (aligned with the matrix AutoApply) —
+  the last divergence between the preview's "Automatic changes" count and the Review's selected
+  count; curated defaults stay Recommended (user-confirmed). Manual overrides remain authoritative
+  and are excluded from the plan. Extras join their ExtraScenario profiles into SelectedProfiles so
+  they affect the ACTUAL executable plan (Lightweight + Xbox keeps XblAuthManager/XboxGipSvc/
+  XboxNetApiSvc; WSL/Print/Remote keep their ecosystems).
+- **Apply reuses the existing Phase 12 executor** (PlanReviewViewModel → ICustomizationExecutionService
+  → shared plan); result synchronization and failure UX (Succeeded/FailedRecoverable per op,
+  failed panel with reasons, no all-succeeded lie) are inherited unchanged.
+- **PlanCapture (structural validation only):** RealCapture writes `profile-buildplans.json` —
+  per profile deltaCount / buildPlanOperationCount / selectedOperationCount / validationPassed /
+  validationErrors / operationsByType / canonicalOperationKeys. Nothing is applied or built.
+- 1181 tests (Core 53, App 1128), 0 err/0 warn (Release, ordinary in-place). NO validator weakening;
+  plan validation remains final authority.

@@ -704,3 +704,19 @@ Unsupported "optional" is Blocked. UI preview rebuilt on the SAME GenerateDelta 
 of truth). RealCapture exports profile-plans.json v2 (inventoryAccounting / decisionCounts /
 planChanges / semanticActionKeys / keptHighlights / blockedHighlights). **1162 tests (Core 53,
 App 1109), 0 err/0 warn (Release, ordinary in-place).**
+
+## Phase 15 — Stage 15.3: Validated Profile BuildPlan as single Apply source (2026-08-15)
+
+`BuildPlan` now constructs operations with COMPLETE execution payloads (service name + start type,
+registry hive/path/value/kind/data + restore, feature/package identity; `svc:|opt:|feat:|appx:|cap:|
+pkg:` conventions, SourceDefinitionIds provenance) — the real-stream fail-safe blocker was ops built
+without payloads, which the validator correctly rejected (catalog data was already clean:/nActivityHistory has a valid offline policy target; service identities canonical + allowlisted). New
+reusable `OptimizationDefinitionValidator` detects MissingTechnicalTarget / MissingRegistryTarget /
+MissingServiceName / MissingFeatureName / UnsupportedExecution / InvalidValue /
+DuplicateCanonicalIdentity (duplicate check scoped to non-mergeable identities; registry duplicates
+like SpotlightFeatures/DisableSpotlight merge in the plan — Phase 12). All six primaries produce
+non-null validated BuildPlans on the real-derived stream. Profile → Customize → Review → Apply uses
+ONE shared CustomizationPlan; `IsAdoptEligible` requires `WasProfileDriven` (preview auto == Review
+selected); manual overrides authoritative; extras affect the actual executable plan; Apply reuses the
+Phase 12 executor; PlanCapture writes profile-buildplans.json (structural only). **1181 tests
+(Core 53, App 1128), 0 err/0 warn (Release, ordinary in-place).**

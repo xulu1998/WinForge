@@ -534,7 +534,25 @@ Phased development plan for WinForge. Each phase records its **Status**,
   0 err/0 warn (Release, ordinary in-place).**
 - **Stage 15.2 REAL-DESKTOP VALIDATION REQUIRED**: rerun the elevated RealCapture CLI
   (same command as Phase 14) and review the new `profile-plans.json` only.
-- **Stage 15.3 (recommended next):** wire the delta reports into the Customize/Review plan flow
+- **Stage 15.3 — Validated Profile BuildPlan as single Apply source (implementation ready,
+  ADR-096):** the real-stream blocker (BuildPlan failing safe on malformed operations) is fixed at
+  the ROOT: `BuildPlan` now maps complete execution payloads (service name + start type, registry
+  hive/path/value, feature/package identity; `svc:|opt:|feat:|appx:|cap:|pkg:` conventions) with
+  SourceDefinitionIds provenance; the OptimizationCatalog data was verified already clean
+  (ActivityHistory has the valid offline policy target; all service identities canonical +
+  allowlisted). New reusable `OptimizationDefinitionValidator` (MissingTechnicalTarget /
+  MissingRegistryTarget / MissingServiceName / MissingFeatureName / UnsupportedExecution /
+  InvalidValue / DuplicateCanonicalIdentity) runs in catalog tests, inside BuildPlan, and in
+  PlanCapture. ALL SIX primaries now produce non-null validated BuildPlans on the real-derived
+  stream (Balanced 16/9 · Gaming 24/17 · DedicatedGaming 27/18 · Developer 20/17 · Office 17/9 ·
+  Lightweight 27/23 ops/selected). Profile → Customize → Review → Apply flows through ONE shared
+  CustomizationPlan (IsAdoptEligible aligned to WasProfileDriven → preview auto count == Review
+  selected count); manual overrides authoritative; extras affect the actual executable plan
+  (Lightweight+Xbox keeps the Xbox services); Apply reuses the Phase 12 executor; PlanCapture
+  writes profile-buildplans.json (structural validation only). **1181 tests (Core 53, App 1128),
+  0 err/0 warn.** REAL BUILDPLAN VALIDATION REQUIRED (rerun the elevated CLI; review
+  profile-buildplans.json — all six validationPassed == true).
+- **Stage 15.4 (recommended next):** wire the delta reports into the Customize/Review plan flow
   (profile-managed auto-apply end-to-end), per-profile operation-type execution details, and the
   real-image `profile-plans.json` capture on the 25H2 ISO.
 

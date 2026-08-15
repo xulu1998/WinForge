@@ -156,6 +156,16 @@ public sealed class ProfilePlanSubject
     /// </summary>
     public ComponentDefinition? CuratedDefinition { get; init; }
 
+    /// <summary>
+    /// Stage 15.3 (ADR-096): the optimization definition behind a non-inventory
+    /// subject (Service / RegistryPolicy / Privacy / Personalization /
+    /// OptionalFeature). BuildPlan maps its EXECUTION payload (service name,
+    /// registry targets, feature name) into complete plan operations — the
+    /// real-stream blocker where plan ops were built without payloads and the
+    /// validator correctly rejected them.
+    /// </summary>
+    public OptimizationDefinition? OptimizationDefinition { get; init; }
+
     /// <summary>Protection floor from deep knowledge (None when unknown).</summary>
     public ComponentProtectionLevel Protection { get; init; } = ComponentProtectionLevel.None;
 
@@ -193,14 +203,14 @@ public sealed class ProfilePlanSubject
     /// engine exactly like deep knowledge. Curated removal is Supported, so a
     /// curated AppX trim can execute when the profile steers it.
     /// </summary>
-    public static ProfilePlanSubject FromCurated(ComponentDefinition d, ComponentCategory category)
+    public static ProfilePlanSubject FromCurated(string rawIdentity, ComponentDefinition d, ComponentCategory category)
     {
         var opType = OperationTypeForCategory(category);
         return new ProfilePlanSubject
         {
             LogicalId = d.Id,
             DisplayName = d.Id,
-            RawIdentity = string.Empty,
+            RawIdentity = rawIdentity,
             Category = category,
             OperationType = opType,
             Action = OptimizationAction.Remove,
@@ -243,6 +253,7 @@ public sealed class ProfilePlanSubject
             IsPresent = true,
             IsApplySupported = true,
             Dependencies = d.Dependencies,
+            OptimizationDefinition = d,
             Protection = ComponentProtectionLevel.None,
             Confidence = ClassificationConfidence.Curated,
             ExecutionSupported = ExecutionSupportMatrix.IsExecutable(opType),

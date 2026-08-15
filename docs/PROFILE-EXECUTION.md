@@ -241,3 +241,53 @@ Dedicated-only semantic actions: `AppX|OneDrive|AutoApply`,
 `AppX|Teams|Recommend`, `AppX|DevHome|Recommend`, `RegistryPolicy|OneDriveSync|Recommend`
 — real, safe, explainable product differences (no fake counts; no Gaming PC
 changes). Final real-media numbers come from the elevated capture retest.
+
+## Stage 15.3 — Validated Profile BuildPlan as single Apply source (ADR-096)
+
+### The real-stream blocker and its root cause
+
+Stage 15.2 accepted the plan summaries, but `BuildPlan` could FAIL SAFE (return null) on the real
+stream. The validator correctly rejected operations built WITHOUT their execution payload:
+
+- **Service ops** had no `ServiceName`/`ServiceStartType` → all collapsed to `ConflictKey "svc|"` →
+  duplicate operations.
+- **Registry ops** had no hive/path/value → `MissingTarget`.
+- **Component ops** had the logical id instead of the real package identity.
+
+The OptimizationCatalog data was ALREADY clean (verified): every service def has a canonical
+ServiceName on the ADR-030 allowlist; ActivityHistory targets the valid offline policy key
+`SOFTWARE\Policies\Microsoft\Windows\System\EnableActivityHistory` DWORD 0. The defect was the plan
+construction mapping, not the data.
+
+### Fixes
+
+- **BuildPlan complete payload mapping** — reuses the live-app conventions
+  (`svc:|opt:|feat:|appx:|cap:|pkg:`); curated rows keep their discovered identity; every op
+  records SourceDefinitionIds provenance.
+- **OptimizationDefinitionValidator** (Core, reusable) — MissingTechnicalTarget /
+  MissingRegistryTarget / MissingServiceName / MissingFeatureName / UnsupportedExecution /
+  InvalidValue / DuplicateCanonicalIdentity; run in catalog tests, inside BuildPlan (fail safe),
+  and in PlanCapture. Duplicate detection scoped to non-mergeable identities (registry duplicates
+  like SpotlightFeatures/DisableSpotlight are legal and merge in the plan — Phase 12).
+- **All six primaries now produce non-null validated BuildPlans** (real-derived stream):
+
+| Profile | delta | planOps | selected(auto) | validated |
+| --- | --- | --- | --- | --- |
+| Balanced | 16 | 16 | 9 | ✓ |
+| Gaming PC | 24 | 24 | 17 | ✓ |
+| Dedicated Gaming | 27 | 27 | 18 | ✓ |
+| Developer | 20 | 20 | 17 | ✓ |
+| Office | 17 | 17 | 9 | ✓ |
+| Lightweight | 27 | 27 | 23 | ✓ |
+
+*planOps == deltaCount (every difference from the delta is explainable: Recommend ops
+present-unselected, canonical dedup merges, manual overrides excluded — never mysterious loss).
+
+- **Profile → Customize → Review → Apply**: one shared `CustomizationPlan` (PlanSync) is the single
+  authoritative state. `IsAdoptEligible` now requires `WasProfileDriven`, aligning the preview's
+  "Automatic changes" count with the Review's selected count; curated defaults stay Recommended.
+  Extras affect the ACTUAL executable plan (Lightweight + Xbox keeps the Xbox services; WSL/Print/
+  Remote keep their ecosystems). Apply reuses the existing Phase 12 executor and failure UX.
+- **PlanCapture** (`profile-buildplans.json`): structural validation per profile — deltaCount,
+  buildPlanOperationCount, selectedOperationCount, validationPassed, validationErrors,
+  operationsByType, canonicalOperationKeys. Nothing is applied or built.

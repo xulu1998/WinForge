@@ -153,7 +153,7 @@ public static class ProfileCandidateService
 
             if (item.Curated is not null)
             {
-                subjects.Add(ProfilePlanSubject.FromCurated(item.Curated, item.Category));
+                subjects.Add(ProfilePlanSubject.FromCurated(item.RawIdentity, item.Curated, item.Category));
                 curatedOutside++;
                 Increment(bySource, item.Category);
                 continue;

@@ -654,6 +654,13 @@ public sealed class ProfileViewModel : ViewModelBase
            && s.Effective.Risk == RiskLevel.Low
            && !s.Effective.HasConflict
            && !s.Effective.WasOverridden
+           // Stage 15.3 (ADR-096 §10): alignment with the execution matrix — only
+           // PROFILE-DRIVEN low-risk changes auto-apply. Curated defaults without
+           // profile intent stay Recommended (user-confirmed), so the preview's
+           // "Automatic changes" count and the Review's selected count share one
+           // semantics. This was the last divergence between GenerateDelta's
+           // AutoApply and the app's adoption set.
+           && s.Effective.WasProfileDriven
            && s.Effective.Level is EffectiveRecommendationLevel.RecommendRemove
                or EffectiveRecommendationLevel.RecommendDisable
                or EffectiveRecommendationLevel.RecommendSet;
