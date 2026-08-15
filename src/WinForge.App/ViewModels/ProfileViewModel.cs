@@ -109,6 +109,10 @@ public sealed class ProfileViewModel : ViewModelBase
     private readonly Func<IEnumerable<IRecommendationSubject>> _subjects;
     private readonly Action _recompute;
 
+    /// <summary>Stage 15.2 (ADR-095 §13): the preview uses the production planner —
+    /// one source of truth with RealCapture profile-plans.json.</summary>
+    private readonly ProfileExecutionService _executionService = new();
+
     private bool _isPreviewOpen;
 
     public ProfileViewModel(
@@ -317,6 +321,164 @@ public sealed class ProfileViewModel : ViewModelBase
         GamingSummaryText = string.Join(Environment.NewLine, lines);
     }
 
+    private string _profilePreviewText = string.Empty;
+
+    /// <summary>
+    /// Stage 15.1 (ADR-094): LOCALIZED per-profile preview for ANY primary profile
+    /// (Balanced / Gaming PC / Dedicated Gaming / Developer / Office / Lightweight).
+    /// Shows Automatic / Recommended / Optional / Kept(+Blocked) counts with bounded
+    /// highlights and kept examples — never hundreds of technical ids. Built from
+    /// the profile-aware EffectiveRecommendation + execution support matrix.
+    /// </summary>
+    public string ProfilePreviewText
+    {
+        get => _profilePreviewText;
+        private set
+        {
+            if (SetField(ref _profilePreviewText, value))
+            {
+                OnPropertyChanged(nameof(HasProfilePreview));
+            }
+        }
+    }
+
+    public bool HasProfilePreview => !string.IsNullOrEmpty(_profilePreviewText);
+
+    private void RefreshProfilePreview()
+    {
+        var profile = _ctx.SelectedProfiles.FirstOrDefault(p => p.Kind == ProfileKind.Primary && p.Id != "Custom");
+        if (profile is null)
+        {
+            ProfilePreviewText = string.Empty;
+            return;
+        }
+
+        // Stage 15.2 (ADR-095 §13): ONE source of truth — the preview counts come
+        // from the SAME ProfileExecutionService.GenerateDelta + ProfileDeltaReport
+        // semantics as RealCapture profile-plans.json. There is no separate UI
+        // counting logic. Subjects are the app's own knowledge rows (all six
+        // Customize tabs, component + optimization layer).
+        var subjects = Subjects()
+            .Where(s => s.IsPresent)
+            .Select(ToPlanSubject)
+            .ToList();
+        var present = _ctx.PresentIds.Count > 0
+            ? _ctx.PresentIds
+            : subjects.Select(s => s.LogicalId).ToHashSet(StringComparer.Ordinal);
+        var report = _executionService.GenerateDelta(
+            profile, subjects, ExtractGamingExtras(_ctx.SelectedProfiles), _ctx.UserOverrides, present);
+
+        var highlights = new List<string>();
+        foreach (var item in report.Items.Where(i => i.IsExecutableChange))
+        {
+            if (highlights.Count >= 4)
+            {
+                break;
+            }
+
+            var reason = ResolveReason(item.ReasonKey);
+            highlights.Add(string.IsNullOrWhiteSpace(reason)
+                ? "✓ " + item.DisplayName
+                : "✓ " + item.DisplayName + " — " + reason);
+        }
+
+        var lines = new List<string>
+        {
+            $"{_loc["Profile.Preview.Automatic"]}: {report.AutoApply}",
+            $"{_loc["Profile.Preview.Recommended"]}: {report.Recommended}",
+            $"{_loc["Profile.Preview.Optional"]}: {report.Optional}",
+            $"{_loc["Profile.Preview.Kept"]}: {report.Kept}",
+        };
+
+        if (report.Blocked > 0)
+        {
+            lines.Add($"{_loc["Profile.Preview.Blocked"]}: {report.Blocked}");
+        }
+
+        if (highlights.Count > 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add(_loc["Profile.Preview.Highlights"]);
+            lines.AddRange(highlights);
+            if (report.ChangeCount > highlights.Count)
+            {
+                lines.Add("…");
+            }
+        }
+
+        var keptExamples = report.Items
+            .Where(i => i.Disposition == ProfileDisposition.Keep)
+            .Take(6)
+            .Select(i => i.DisplayName)
+            .ToList();
+        if (keptExamples.Count > 0)
+        {
+            lines.Add(string.Empty);
+            lines.Add(_loc["Profile.Preview.KeptExamples"] + ": " + string.Join(" · ", keptExamples));
+        }
+
+        ProfilePreviewText = string.Join(Environment.NewLine, lines);
+    }
+
+    private string ResolveReason(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return string.Empty;
+        }
+
+        var text = _loc[key];
+        return !string.IsNullOrWhiteSpace(text) && text != key ? text : string.Empty;
+    }
+
+    /// <summary>
+    /// Maps an app knowledge row to the SAME <see cref="ProfilePlanSubject"/> shape
+    /// the planner + RealCapture consume, so preview counts cannot drift from the
+    /// production delta report (ADR-095 §13).
+    /// </summary>
+    private static ProfilePlanSubject ToPlanSubject(IRecommendationSubject s)
+    {
+        var opType = MapTabToExecutionType(s.Tab);
+        var component = s as ComponentKnowledgeItem;
+        var optimization = s as OptimizationKnowledgeItem;
+        return new ProfilePlanSubject
+        {
+            LogicalId = s.LogicalId,
+            DisplayName = s.DisplayName,
+            Category = component?.SourceCategory ?? ComponentCategory.Unknown,
+            OperationType = opType,
+            Action = optimization is not null && optimization.Definition.Action != OptimizationAction.Unknown
+                ? optimization.Definition.Action
+                : OptimizationAction.Remove,
+            DefaultRecommendation = component is not null
+                ? component.RecommendationLevel
+                : optimization is not null ? optimization.Definition.Recommendation : RecommendationLevel.Unknown,
+            Risk = component is not null
+                ? component.RiskLevel
+                : optimization is not null ? optimization.Definition.Risk : RiskLevel.Unknown,
+            Removal = component?.Entry.Definition?.Removal
+                ?? optimization?.Definition.Removal ?? RemovalSupport.Unknown,
+            IsPresent = s.IsPresent,
+            IsApplySupported = s.IsSelectable,
+            Dependencies = component?.Entry.Definition?.Dependencies
+                ?? optimization?.Definition.Dependencies ?? new List<ComponentDependency>(),
+            DeepKnowledge = component?.DeepKnowledge,
+            Protection = WinForge.Core.ComponentIntelligence.ComponentProtectionLevel.None,
+            Confidence = WinForge.Core.ComponentIntelligence.ClassificationConfidence.Curated,
+            ExecutionSupported = WinForge.Core.Profiles.ExecutionSupportMatrix.IsExecutable(opType),
+        };
+    }
+
+    private static WinForge.Core.Profiles.ExecutionOperationType MapTabToExecutionType(OptimizationTab tab) => tab switch
+    {
+        OptimizationTab.Apps => WinForge.Core.Profiles.ExecutionOperationType.AppX,
+        OptimizationTab.Services => WinForge.Core.Profiles.ExecutionOperationType.Service,
+        OptimizationTab.Privacy => WinForge.Core.Profiles.ExecutionOperationType.Privacy,
+        OptimizationTab.System => WinForge.Core.Profiles.ExecutionOperationType.RegistryPolicy,
+        OptimizationTab.Personalization => WinForge.Core.Profiles.ExecutionOperationType.Personalization,
+        _ => WinForge.Core.Profiles.ExecutionOperationType.Other,
+    };
+
     private string ReasonText(WinForge.Core.Profiles.GamingEvaluationItem item)
     {
         var key = string.IsNullOrEmpty(item.Result.ReasonKey) ? item.Result.GateReasonKey : item.Result.ReasonKey;
@@ -405,6 +567,7 @@ public sealed class ProfileViewModel : ViewModelBase
         OnPropertyChanged(nameof(SummaryUnsupportedLabel));
         OnPropertyChanged(nameof(RestoreVisible));
         RefreshGamingSummary();
+        RefreshProfilePreview();
         if (RestoreCommand is RelayCommand r) r.RaiseCanExecuteChanged();
     }
 
@@ -491,6 +654,13 @@ public sealed class ProfileViewModel : ViewModelBase
            && s.Effective.Risk == RiskLevel.Low
            && !s.Effective.HasConflict
            && !s.Effective.WasOverridden
+           // Stage 15.3 (ADR-096 §10): alignment with the execution matrix — only
+           // PROFILE-DRIVEN low-risk changes auto-apply. Curated defaults without
+           // profile intent stay Recommended (user-confirmed), so the preview's
+           // "Automatic changes" count and the Review's selected count share one
+           // semantics. This was the last divergence between GenerateDelta's
+           // AutoApply and the app's adoption set.
+           && s.Effective.WasProfileDriven
            && s.Effective.Level is EffectiveRecommendationLevel.RecommendRemove
                or EffectiveRecommendationLevel.RecommendDisable
                or EffectiveRecommendationLevel.RecommendSet;

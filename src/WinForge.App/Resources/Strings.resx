@@ -1028,6 +1028,11 @@
   <data name="Profile.Reason.Gaming.Optional.Developer" xml:space="preserve"><value>Optional: remove only if you do not use developer tools</value></data>
   <data name="Profile.Reason.Gaming.Optional.Virtualization" xml:space="preserve"><value>Optional: remove only if you do not use virtualization (WSL / Hyper-V)</value></data>
   <data name="Profile.Reason.Gaming.Optional.Media" xml:space="preserve"><value>Optional: remove only if you do not use this media app</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Cloud" xml:space="preserve"><value>Dedicated Gaming removes cloud integration (OneDrive) — not required for a dedicated gaming machine</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Productivity" xml:space="preserve"><value>Dedicated Gaming recommends removing this productivity app — keep it if you still use it</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Communication" xml:space="preserve"><value>Dedicated Gaming recommends removing this communication app — keep it if you still use it</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Developer" xml:space="preserve"><value>Dedicated Gaming recommends removing this developer tool — keep it if you develop on this machine</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Consumer" xml:space="preserve"><value>Dedicated Gaming removes this consumer app — not needed on a dedicated gaming machine</value></data>
   <data name="Profile.Reason.Gaming.Gate.UserOverride" xml:space="preserve"><value>Manual choice preserved — not changed by the profile</value></data>
   <data name="Profile.Reason.Gaming.Gate.Unsupported" xml:space="preserve"><value>No safe execution mechanism — classification is not removal support</value></data>
   <data name="Profile.Reason.Gaming.Gate.Protected" xml:space="preserve"><value>Protected system infrastructure — never auto-removed</value></data>
@@ -1053,6 +1058,7 @@
   <data name="Profile.Reason.Office.Meetings" xml:space="preserve"><value>Office keeps meeting / collaboration apps</value></data>
   <data name="Profile.Reason.Office.OneDrive" xml:space="preserve"><value>Office keeps OneDrive sync</value></data>
   <data name="Profile.Reason.Office.Printing" xml:space="preserve"><value>Office keeps printing and scanning support</value></data>
+  <data name="Profile.Reason.Office.Consumer" xml:space="preserve"><value>Office removes consumer content that business workstations do not need</value></data>
   <data name="Profile.Reason.Office.Privacy" xml:space="preserve"><value>Office applies low-risk privacy defaults</value></data>
   <data name="Profile.Reason.Office.RemoteAssist" xml:space="preserve"><value>Office keeps remote assistance</value></data>
   <data name="Profile.Reason.Office.UI" xml:space="preserve"><value>Office reduces start suggestions</value></data>
@@ -1063,6 +1069,18 @@
   <data name="Profile.Reason.TouchPen.Keep" xml:space="preserve"><value>Touch / pen needs the touch keyboard and pen services</value></data>
   <data name="Profile.Reason.Trim" xml:space="preserve"><value>Recommended to trim by the selected configuration</value></data>
   <data name="Profile.Reason.UserOverride" xml:space="preserve"><value>You changed this manually — recommendations will not overwrite your choice</value></data>
+  <data name="Profile.Preview.Automatic" xml:space="preserve"><value>Automatic changes</value></data>
+  <data name="Profile.Preview.Recommended" xml:space="preserve"><value>Recommended</value></data>
+  <data name="Profile.Preview.Optional" xml:space="preserve"><value>Optional</value></data>
+  <data name="Profile.Preview.Kept" xml:space="preserve"><value>Kept</value></data>
+  <data name="Profile.Preview.Blocked" xml:space="preserve"><value>Blocked by safety</value></data>
+  <data name="Profile.Preview.Highlights" xml:space="preserve"><value>Highlights</value></data>
+  <data name="Profile.Preview.KeptExamples" xml:space="preserve"><value>Kept</value></data>
+  <data name="Profile.Reason.Execution.KeepProtected" xml:space="preserve"><value>Kept because this component is protected (system / servicing / security)</value></data>
+  <data name="Profile.Reason.Execution.KeepRuntime" xml:space="preserve"><value>Kept because this component is required infrastructure</value></data>
+  <data name="Profile.Reason.Execution.Optional" xml:space="preserve"><value>Optional — not required by this profile, but some users may still need it</value></data>
+  <data name="Profile.Reason.Execution.Recommend" xml:space="preserve"><value>Recommended for this profile</value></data>
+  <data name="Profile.Reason.Execution.Unsupported" xml:space="preserve"><value>Not executable — no supported change mechanism exists</value></data>
   <data name="Profile.Reason.WslDocker.Keep" xml:space="preserve"><value>WSL / Docker need virtualization, Terminal and SSH tooling</value></data>
   <data name="Profile.Reason.XboxGamePass.Keep" xml:space="preserve"><value>Game Pass needs the Xbox app and services</value></data>
   <data name="Profile.RemoteDesktop.Description" xml:space="preserve"><value>SSH to remote machines and remote assistance</value></data>

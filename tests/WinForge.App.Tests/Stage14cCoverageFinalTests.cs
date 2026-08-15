@@ -272,15 +272,25 @@ public class Stage14cCoverageFinalTests
         Assert.Equal(ComponentFunctionCategory.Developer, k.Function);
         Assert.Equal(ComponentProfileTag.DeveloperTool, k.ProfileTag);
 
-        foreach (var kind in new[] { GamingProfileKind.GamingPc, GamingProfileKind.DedicatedGaming })
-        {
-            var result = _service.Evaluate(
-                new[] { Input("Microsoft.Windows.DevHome_8wekyb3d8bbwe", k) }, kind, new HashSet<GamingExtra>());
-            var item = Assert.Single(result.Items);
-            Assert.Equal(GamingVerdict.OptionalRemoveCandidate, item.Result.Verdict);
-            Assert.False(item.Result.IsAutoRecommended, "Dev Home is optional-only in Gaming, never auto");
-            Assert.Equal(GateVerdict.AllowOptional, item.Result.Gate);
-        }
+        // Gaming PC: Dev Home stays OPTIONAL-ONLY (convenient default, never auto).
+        var result = _service.Evaluate(
+            new[] { Input("Microsoft.Windows.DevHome_8wekyb3d8bbwe", k) }, GamingProfileKind.GamingPc,
+            new HashSet<GamingExtra>());
+        var item = Assert.Single(result.Items);
+        Assert.Equal(GamingVerdict.OptionalRemoveCandidate, item.Result.Verdict);
+        Assert.False(item.Result.IsAutoRecommended, "Dev Home is optional-only in Gaming PC, never auto");
+        Assert.Equal(GateVerdict.AllowOptional, item.Result.Gate);
+
+        // Stage 15.2b (ADR-095 addendum): Dedicated Gaming RECOMMENDS Dev Home
+        // removal (Moderate → user-confirmed, never automatic) — the wider-minimal
+        // steer that makes the two gaming profiles differ on real media.
+        var dedicated = _service.Evaluate(
+            new[] { Input("Microsoft.Windows.DevHome_8wekyb3d8bbwe", k) }, GamingProfileKind.DedicatedGaming,
+            new HashSet<GamingExtra>());
+        var dItem = Assert.Single(dedicated.Items);
+        Assert.Equal(GamingVerdict.AutoRemoveCandidate, dItem.Result.Verdict);
+        Assert.False(dItem.Result.IsAutoRecommended, "Moderate risk never auto-applies, even in Dedicated");
+        Assert.Equal(GateVerdict.AllowOptional, dItem.Result.Gate);
     }
 
     [Fact]

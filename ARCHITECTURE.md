@@ -668,3 +668,132 @@ execution; aggressive Lightweight/Dedicated execution; FullHealthValidated after
 customization. Phase 14 ends here and was merged to `main` via `--no-ff` (2026-08-14); the
 `phase/14-deep-component-classification` branch is retained. **1105 tests (Core 53, App 1052),
 0 err/0 warn (Release, ordinary in-place, pre- and post-merge).**
+
+## Phase 15 — Stage 15.1: Profile Execution & Safe Execution Matrix (2026-08-14)
+
+Profiles produce clearly different, supported execution plans (ADR-094).
+`ProfileExecutionMatrix` (Core, pure) maps EffectiveRecommendation + risk + protection +
+confidence + execution support to an explicit disposition (AutoApply / Recommend / Optional /
+Keep / Blocked / NotApplicable); AutoApply requires Low risk, non-heuristic, profile-driven,
+execution-supported. `ExecutionSupportMatrix` is the auditable boundary — AppX removal,
+registry policy, privacy, personalization, OptionalFeature disable supported; service config
+conditional; Capability/CBS/Driver removal NOT supported (KNOWN != REMOVABLE). 
+`ProfileExecutionService` runs inventory → engine (+ gaming policy verdicts, pre-gate so keeps
+surface; matrix re-applies the safety gate) → `ProfileDeltaReport` → validated
+`CustomizationPlan` (Phase 12 operation identity/dedup). `ProfilePlanValidator` fails safe on
+remove+keep / duplicates / dependency-required / unsupported / protected. Extras materially
+change plans; manual overrides authoritative; localized per-profile preview UI added
+(ProfileViewModel.ProfilePreviewText + ProfileView). Deterministic six-profile comparison over
+the real-derived fixture; `WinForge.RealCapture` exports `profile-plans.json`. **1150 tests
+(Core 53, App 1097), 0 err/0 warn (Release, ordinary in-place).**
+
+## Phase 15 — Stage 15.2: Unified profile candidate stream + real plan accounting (2026-08-14)
+
+Real 25H2 profile-plans capture exposed four fixture-blind problems, all fixed (ADR-095):
+`ProfileCandidateService` builds ONE unified candidate stream — inventory objects (deep →
+curated → explicit exclusion bucket) + non-inventory optimization definitions — deduplicated by
+canonical Phase 12-style operation identity, with exact `ProfileInventoryAccounting`
+(Total = evaluated + every exclusion; 757 = 678 + 79, asserted, no double counting).
+`ProfileDeltaReport.ByOperationType` now counts EXECUTABLE changes only (AutoApply+Recommend);
+inventory source counts are `ProfileInventoryAccounting.BySource`; changeCount is defined once.
+The registry/privacy/personalization/service layer participates in plans (Office 0→22, Balanced
+3→17, Developer 6→24). Gaming vs DedicatedGaming differ on real media via `WiderMinimalSteer`
+(Low cloud→auto, Moderate productivity/communication→recommend, Moderate media→optional) plus
+aligned Dedicated catalog trims — real-like stream Gaming 28 vs Dedicated 30 (two policy actions).
+Unsupported "optional" is Blocked. UI preview rebuilt on the SAME GenerateDelta report (one source
+of truth). RealCapture exports profile-plans.json v2 (inventoryAccounting / decisionCounts /
+planChanges / semanticActionKeys / keptHighlights / blockedHighlights). **1162 tests (Core 53,
+App 1109), 0 err/0 warn (Release, ordinary in-place).**
+
+## Phase 15 — Stage 15.3: Validated Profile BuildPlan as single Apply source (2026-08-15)
+
+`BuildPlan` now constructs operations with COMPLETE execution payloads (service name + start type,
+registry hive/path/value/kind/data + restore, feature/package identity; `svc:|opt:|feat:|appx:|cap:|
+pkg:` conventions, SourceDefinitionIds provenance) — the real-stream fail-safe blocker was ops built
+without payloads, which the validator correctly rejected (catalog data was already clean:/nActivityHistory has a valid offline policy target; service identities canonical + allowlisted). New
+reusable `OptimizationDefinitionValidator` detects MissingTechnicalTarget / MissingRegistryTarget /
+MissingServiceName / MissingFeatureName / UnsupportedExecution / InvalidValue /
+DuplicateCanonicalIdentity (duplicate check scoped to non-mergeable identities; registry duplicates
+like SpotlightFeatures/DisableSpotlight merge in the plan — Phase 12). All six primaries produce
+non-null validated BuildPlans on the real-derived stream. Profile → Customize → Review → Apply uses
+ONE shared CustomizationPlan; `IsAdoptEligible` requires `WasProfileDriven` (preview auto == Review
+selected); manual overrides authoritative; extras affect the actual executable plan; Apply reuses the
+Phase 12 executor; PlanCapture writes profile-buildplans.json (structural only). **REAL STRUCTURAL
+VALIDATION PASSED (2026-08-15)** — all six primaries validationPassed == true (Balanced 16, Gaming
+25, DedicatedGaming 33, Developer 21, Office 17, Lightweight 38), empty validationErrors. **1181
+tests (Core 53, App 1128), 0 err/0 warn (Release, ordinary in-place).**
+
+## Phase 15 — Stage 15.3b: Optional Feature canonical aggregation (2026-08-15)
+
+Real structural validation exposed OptionalFeature "duplicate change plans" that were NOT true
+duplicates (DedicatedGaming Containers x4, Lightweight HyperV x9, DedicatedMinimal MediaPlayer x2 +
+HyperV x9): the deep catalog maps MULTIPLE genuinely distinct DISM features to ONE profile-facing
+family id. `ProfileExecutionItem.ExecutableIdentity` now carries the ACTUAL DISM FeatureName while
+`LogicalId` stays the semantic family; the new `ProfilePlanAggregator` (Core) merges true
+same-executable candidates BEFORE final plan validation — provenance union (SourceDefinitionIds),
+keep-wins precedence, AutoApply>Recommend, conflicting executable states fail explicit. The
+validator's duplicate-change check keys on the EXECUTABLE identity (distinct real features stay
+distinct executable operations); the remove/keep conflict check stays semantic. Count
+reconciliation: deltaCount (semantic) vs buildPlanOperationCount + mergedDuplicateCount +
+mergeGroups. **1192 tests (Core 53, App 1139), 0 err/0 warn.**
+
+## Phase 15 — Stage 15.4: Real Offline Apply Validation (2026-08-15, ADR-097)
+
+`WinForge.RealCapture --apply-profile <ProfileId>` proves profile BuildPlans EXECUTE safely against
+a real mounted image (structural validation ≠ execution validation). The harness reuses the
+production pipeline (inspect → export → mount → discovery → unified candidate stream → BuildPlan)
+then: (1) validates the plan; (2) `ProfileApplyValidationService` (Infrastructure) pre-checks every
+selected operation for deterministic already-satisfied skips, executes ONLY `SelectedOperations`
+via the existing Phase 12 executor, and independently verifies every succeeded operation by
+read-back; (3) `OfflineApplyVerifier` reads back AppX absence (`/Get-ProvisionedAppxPackages`),
+OptionalFeature exact State (`/Get-FeatureInfo` + `DismFeatureStateParser`), the mounted SYSTEM hive
+`Start` value, and the mounted registry hive (hive/path/name/kind/data; `OfflineDefaultUser` →
+`Users\Default\NTUSER.DAT` — never host HKCU); (4) writes `profile-apply-validation.json` (§3
+schema); (5) ALWAYS discards the workspace-owned mount (authoritative `/Get-MountedImageInfo` —
+unknown mounts are never discarded) and cleans the workspace — a failed discard is a BLOCKER.
+Report models live in Core (`ApplyValidationModels.cs`); ownership checks reuse
+`MountIdentityValidator`; workspace ownership + read-back + report logic are covered by 22 Stage15f
+tests. **1214 tests (Core 53, App 1161), 0 err/0 warn.**
+
+## Phase 15 — Stage 15.4a: Offline registry precheck — missing key semantics (2026-08-15, ADR-097 addendum)
+
+The first real Balanced apply proved mount/workspace/cleanup safety but exposed precheck absence
+semantics: .NET 8 `RegistryKey.GetValueKind` throws `IOException` ("The specified registry key does
+not exist.") — not `ArgumentException` — when a VALUE is absent from an existing key, and
+`OfflineRegistryService.ReadValue` let it escape, aborting the whole profile. `ReadValue` now also
+catches `IOException` around `GetValueKind` → `Exists=false` (expected absence): precheck returns
+"operation required" for missing key/value/different value and `AlreadySatisfied` only for a matching
+value; POST-EXECUTION missing stays `VerificationFailed` (separate semantics). Genuine infrastructure
+failures (hive load / corrupt hive / access denied) still throw at `LoadHive`/`OpenSubKey` — no
+weakening. The executor already creates missing subkey paths (`EnsureKeyPath`/`CreateSubKey`,
+offline-hive APIs only) — unchanged. `OfflineApplyVerifier` reads `OfflineDefaultUser` from
+`<mount>\Users\Default\NTUSER.DAT`, never host HKCU. `ProfileApplyValidationReport` gains
+`failureStage`/`failedCanonicalKey`/`error` and `ProfileApplyValidationService` returns a structured
+report on any phase failure, so `profile-apply-validation.json` survives a preflight failure and the
+CLI cleanup always runs. **1225 tests (Core 53, App 1172), 0 err/0 warn.** BALANCED REAL APPLY
+RETEST REQUIRED.
+
+## Phase 15 — COMPLETE: Profile Execution & Meaningful Optimization (accepted 2026-08-15)
+
+Phase 15 delivered the profile execution pipeline end-to-end and validated it on REAL media:
+`ProfileExecutionMatrix` (AutoApply/Recommend/Optional/Keep/Blocked/NotApplicable from knowledge +
+risk + protection + confidence + execution support), `ExecutionSupportMatrix` (AppX/registry/
+privacy/personalization/OptionalFeature supported; Capability/CBS/Driver not), `ProfileCandidateService`
+(unified inventory deep→curated→exclusion + optimization-definition candidate stream with exact
+accounting), `ProfileDeltaReport`, `ProfilePlanValidator`, `ProfilePlanAggregator` (canonical
+EXECUTABLE operation identity = actual DISM FeatureName; same-target candidates merge with
+provenance; distinct real features stay distinct), `OptimizationDefinitionValidator`, extras
+semantic overrides, manual-override authority, and the single authoritative path
+Profile → Customize → Review → BuildPlan → Apply. `WinForge.RealCapture --apply-profile <Id>`
+executes ONLY SelectedOperations on an isolated exported+mounted WIM and independently READ BACK
+every applied change (AppX absence, exact OptionalFeature State, mounted SYSTEM hive Start, offline
+registry hive kind+data, OfflineDefaultUser → `Users\Default\NTUSER.DAT`), then discards the mount
+(authoritative `/Get-MountedImageInfo`; unknown mounts never discarded) and cleans the workspace.
+
+Real validation (Win11 25H2 Pro zh-CN x64, ISO index 4): all six primaries structurally validated
+(16/25/33/21/17/38, validationPassed == true, empty validationErrors); Balanced real offline Apply
+10/10 executed + Verified; DedicatedGaming 20/20 executed + Verified (Recommend-only Containers/WSL
+never executed — candidates ≠ selected proven); cleanup discard+workspace succeeded. Validation
+level per ADR-084: real-image pipeline validation — NOT six full ISO installs, NOT VM
+FullHealthValidated. MERGED TO `main` via `--no-ff`; branch `phase/15-profile-execution` retained.
+**1225 tests (Core 53, App 1172), 0 err/0 warn.**

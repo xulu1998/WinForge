@@ -1026,6 +1026,11 @@
   <data name="Profile.Reason.Gaming.Optional.Developer" xml:space="preserve"><value>可选：仅在你不用开发工具时移除</value></data>
   <data name="Profile.Reason.Gaming.Optional.Virtualization" xml:space="preserve"><value>可选：仅在你不用虚拟化（WSL / Hyper-V）时移除</value></data>
   <data name="Profile.Reason.Gaming.Optional.Media" xml:space="preserve"><value>可选：仅在你不用此媒体应用时移除</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Cloud" xml:space="preserve"><value>专精游戏配置移除云集成（OneDrive）— 专精游戏机不需要</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Productivity" xml:space="preserve"><value>专精游戏配置建议移除该生产力应用 — 若仍需要请保留</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Communication" xml:space="preserve"><value>专精游戏配置建议移除该通信应用 — 若仍需要请保留</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Developer" xml:space="preserve"><value>专精游戏配置建议移除该开发者工具 — 若在这台机器上开发请保留</value></data>
+  <data name="Profile.Reason.Gaming.Dedicated.Optional.Consumer" xml:space="preserve"><value>专精游戏配置移除该消费应用 — 专精游戏机不需要</value></data>
   <data name="Profile.Reason.Gaming.Gate.UserOverride" xml:space="preserve"><value>已保留你的手动选择 — 配置不会更改</value></data>
   <data name="Profile.Reason.Gaming.Gate.Unsupported" xml:space="preserve"><value>无安全执行机制 — 分类不代表可移除</value></data>
   <data name="Profile.Reason.Gaming.Gate.Protected" xml:space="preserve"><value>受保护的系统基础组件 — 绝不自动移除</value></data>
@@ -1051,6 +1056,7 @@
   <data name="Profile.Reason.Office.Meetings" xml:space="preserve"><value>办公稳定配置保留会议与协作应用</value></data>
   <data name="Profile.Reason.Office.OneDrive" xml:space="preserve"><value>办公稳定配置保留 OneDrive 同步</value></data>
   <data name="Profile.Reason.Office.Printing" xml:space="preserve"><value>办公稳定配置保留打印与扫描支持</value></data>
+  <data name="Profile.Reason.Office.Consumer" xml:space="preserve"><value>办公稳定配置移除商务工作站不需要的消费内容</value></data>
   <data name="Profile.Reason.Office.Privacy" xml:space="preserve"><value>办公稳定应用低风险隐私默认</value></data>
   <data name="Profile.Reason.Office.RemoteAssist" xml:space="preserve"><value>办公稳定配置保留远程协助</value></data>
   <data name="Profile.Reason.Office.UI" xml:space="preserve"><value>办公稳定减少开始菜单建议</value></data>
@@ -1061,6 +1067,18 @@
   <data name="Profile.Reason.TouchPen.Keep" xml:space="preserve"><value>触屏/手写需要触摸键盘与手写服务</value></data>
   <data name="Profile.Reason.Trim" xml:space="preserve"><value>所选配置建议精简</value></data>
   <data name="Profile.Reason.UserOverride" xml:space="preserve"><value>你已手动更改——推荐不会覆盖你的选择</value></data>
+  <data name="Profile.Preview.Automatic" xml:space="preserve"><value>自动更改</value></data>
+  <data name="Profile.Preview.Recommended" xml:space="preserve"><value>推荐更改</value></data>
+  <data name="Profile.Preview.Optional" xml:space="preserve"><value>可选建议</value></data>
+  <data name="Profile.Preview.Kept" xml:space="preserve"><value>保留</value></data>
+  <data name="Profile.Preview.Blocked" xml:space="preserve"><value>安全门阻止</value></data>
+  <data name="Profile.Preview.Highlights" xml:space="preserve"><value>亮点</value></data>
+  <data name="Profile.Preview.KeptExamples" xml:space="preserve"><value>保留</value></data>
+  <data name="Profile.Reason.Execution.KeepProtected" xml:space="preserve"><value>因该组件受保护（系统/服务/安全）而保留</value></data>
+  <data name="Profile.Reason.Execution.KeepRuntime" xml:space="preserve"><value>因该组件为必要基础组件而保留</value></data>
+  <data name="Profile.Reason.Execution.Optional" xml:space="preserve"><value>可选——本配置不要求，但部分用户可能仍需要</value></data>
+  <data name="Profile.Reason.Execution.Recommend" xml:space="preserve"><value>本配置推荐更改</value></data>
+  <data name="Profile.Reason.Execution.Unsupported" xml:space="preserve"><value>不可执行——尚无可支持的更改机制</value></data>
   <data name="Profile.Reason.WslDocker.Keep" xml:space="preserve"><value>WSL / Docker 需要虚拟化、终端与 SSH 工具</value></data>
   <data name="Profile.Reason.XboxGamePass.Keep" xml:space="preserve"><value>Game Pass 需要 Xbox 应用与服务</value></data>
   <data name="Profile.RemoteDesktop.Description" xml:space="preserve"><value>需要 SSH 远程连接与远程协助</value></data>

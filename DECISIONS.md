@@ -2171,3 +2171,302 @@ described as "89.56% of all Windows components". Real validation history: 30.78%
   resolution; destructive CBS/driver removal execution; aggressive Lightweight/Dedicated execution;
   FullHealthValidated after deeper destructive customization) is moved OUT of Phase 14 into
   subsequent phases. Phase 14 ends here; it is merged to `main` via `--no-ff`.
+
+## ADR-094: Profile execution matrix + safe execution matrix (Stage 15.1)
+
+**Status:** Accepted (Phase 15 Stage 15.1 — COMPLETE).
+**Context:** Phase 14 completed knowledge/classification (89.56% coverage over the supported
+providers; Gaming Profile 2.0 + Safety Gate). Phase 15 must convert profile KNOWLEDGE into
+meaningful, supported EXECUTION plans so the six primaries (Balanced / Gaming PC / Dedicated
+Gaming / Developer / Office / Lightweight) produce clearly different images — without placebo
+optimization and without unsafe "debloat everything".
+**Decision:**
+- **ProfileExecutionMatrix** (Core, pure): every item gets an explicit disposition —
+  AutoApply / Recommend / Optional / Keep / Blocked / NotApplicable — from
+  EffectiveRecommendation + risk + protection + confidence + execution support, NEVER from raw
+  Windows identity strings. AutoApply is restricted to LOW-risk, non-heuristic, profile-driven,
+  execution-supported changes; curated defaults stay Recommend (user-confirmed).
+- **ExecutionSupportMatrix** (Core, auditable): recommendation is separated from execution
+  support. Supported today: AppX removal, offline registry policy, privacy, personalization,
+  OptionalFeature disable; Conditional: service configuration (allowlist); NOT supported (never
+  silently promoted): Capability removal, CBS package removal, driver removal (KNOWN != REMOVABLE,
+  ADR-086/093).
+- **ProfileExecutionService** (Core): Inventory → Engine (+ gaming policy verdicts, pre-gate so
+  KEEPS surface; the matrix re-applies the full safety gate as final authority) → Matrix →
+  ProfileDeltaReport → optionally a validated CustomizationPlan (only executable, non-overridden
+  changes; Phase 12 operation identity/dedup reused).
+- **ProfileDeltaReport**: per-profile Auto/Recommend/Optional/Kept/Blocked/NotApplicable counts +
+  operation-type breakdown + semantic change-key set — deterministic proof profiles differ.
+- **ProfilePlanValidator**: remove+keep conflicts, duplicate change plans, dependency-required
+  removals, unsupported/protected attempts, and Phase 12 operation-level duplicate/conflict
+  detection. Generation fails safe.
+- **Extras materially change plans** (Xbox/Game Pass, WSL/Docker, Print/Scan, Touch/Pen, Remote
+  Desktop) — regression-tested; a toggle that does not change the plan is a bug.
+- **Manual overrides remain authoritative**: never auto-applied, survive profile/extras changes,
+  excluded from the executable plan.
+- **User-facing preview** (ProfileViewModel.ProfilePreviewText + ProfileView): localized
+  Automatic / Recommended / Optional / Kept (+Blocked) counts with bounded highlights and kept
+  examples — never hundreds of technical ids.
+- Deterministic per-profile plan comparison over the real-derived fixture (plan validation only,
+  nothing applied/built); the elevated `WinForge.RealCapture` CLI additionally exports
+  `profile-plans.json` from the real captured inventory. Exact fixture counts (Stage 15.1):
+  Balanced auto=8/rec=16/opt=46/kept=17/blk=17 · Gaming auto=18/rec=8/opt=27/kept=34/blk=17 ·
+  DedicatedGaming auto=8/rec=17/opt=28/kept=34/blk=17 · Developer auto=15/rec=11/opt=41/kept=20 ·
+  Office auto=5/rec=16/opt=46/kept=20 · Lightweight auto=24/rec=2/opt=43/kept=17 — profiles
+  clearly differ; Lightweight is the most active but stays safe (no CBS/driver/servicing removal).
+- NO vanity counts: differences are explainable; no Stage 15.1 destructive CBS removal or driver
+  stripping was introduced.
+
+## ADR-095: Unified Profile Candidate Stream and Real-Media Plan Accounting
+
+**Status:** Accepted (Phase 15 Stage 15.2 — COMPLETE).
+**Context:** The real 25H2 `profile-plans.json` capture exposed four product
+problems that fixture-level Stage 15.1 validation could not see:
+  1. **757 → 674 accounting gap**: only deep-classified inventory objects entered
+     profile-plan evaluation. 79 Unknown (no deep entry) + 4 curated-but-not-deep
+     AppX = 83 objects were silently dropped — no bucket, no explanation.
+  2. **byOperationType was inventory, not plan**: the per-type breakdown counted
+     every present subject (AppX 40 / Capability 387 / CbsPackage 149 /
+     OptionalFeature 98 = 674 in every profile) instead of actual planned
+     operations — identical across all profiles and indistinguishable from
+     InventoryBySource.
+  3. **The non-inventory layer was missing**: profile overrides target
+     registry/privacy/personalization/service definitions (Office's trims,
+     Balanced's privacy/UI trims, …). RealCapture fed ONLY deep inventory items,
+     so Office produced changeCount = 0, Balanced 3, Developer 6 — far below
+     their documented intent.
+  4. **Gaming == DedicatedGaming**: the only policy divergence (Moderate media
+     optional) was invisible in counts because default-optional items already
+     show as Optional in both; on the deep-only stream neither profile's
+     overrides fired.
+**Decision:**
+- **ProfileCandidateService (Core, pure)**: builds ONE unified candidate stream —
+  inventory objects (deep → curated → explicit exclusion bucket) + non-inventory
+  optimization definitions — deduplicated by canonical Phase 12-style operation
+  identity (`Service:name` / `OptionalFeature:name` / `Registry:hive:path:value` /
+  `AppX:id`). A curated-only inventory object is EVALUATED with curated knowledge
+  (never dropped); an object with neither deep nor curated knowledge lands in
+  ExcludedUnknownKnowledge.
+- **Exact accounting invariant** (ProfileInventoryAccounting): for ALL inventory
+  objects, TotalInventory = EvaluatedForProfile + CuratedOutsideDeepInventory +
+  ExcludedUnknownKnowledge + ExcludedUnsupportedSource + ExcludedFilteredDuplicate
+  + ExcludedNotApplicable + ExcludedOther — no double counting, no unexplained
+  loss. For the authoritative 757: evaluated 678 (645 deep + 33 curated), unknown
+  79, unsupported 0 → balanced. Optimization definitions are counted separately
+  (OptimizationCandidates / OptimizationDuplicates), never inside the 757.
+- **Metric split (§2)**: InventoryBySource = ProfileInventoryAccounting.BySource
+  (static evaluated counts per component category). PlanChangesByOperationType =
+  ProfileDeltaReport.ByOperationType, now EXECUTABLE CHANGES ONLY (AutoApply +
+  Recommend); known-but-unsupported Capability/CBS items are Blocked and never
+  look like planned operations. changeCount = AutoApply + Recommend (executable
+  by matrix construction).
+- **Gaming vs Dedicated on real media (§3)**: DedicatedGaming policy gains a
+  WiderMinimalSteer (before the generic optional set): Low cloud integration
+  (OneDrive) → AutoRemoveCandidate (auto — Low, curated, supported); Moderate
+  productivity/communication → AutoRemoveCandidate (Recommend — Moderate never
+  auto-applies); Moderate media → OptionalRemoveCandidate. The DedicatedGaming
+  profile catalog now carries the SAME trim/keep overrides as Gaming PC (its
+  previous 7-keep-only list silently made Dedicated LESS aggressive once the
+  non-inventory layer arrived). Real semantic difference: Dedicated ⊋ Gaming by
+  the two policy-driven changes — no fake differences, no count padding.
+- **Office / Balanced / Developer (§4–6)**: with the unified stream, the existing
+  overrides land on real media. Office additionally trims Solitaire/GetHelp/
+  FeedbackHub/BingNews/BingSearch/DevHome + SpotlightFeatures (Profile.Reason.
+  Office.Consumer/Privacy) → meaningful conservative delta; Balanced adds
+  SpotlightFeatures; keep lists unchanged (printing/OneDrive/Teams/etc.).
+- **Unsupported optional is Blocked (§4/§11)**: the matrix now returns Blocked
+  for an unsupported ManualReview item instead of a misleading "optional"
+  suggestion.
+- **UI same source of truth (§13)**: ProfileViewModel preview is rebuilt on
+  ProfileExecutionService.GenerateDelta over the app's own knowledge rows —
+  identical counts to RealCapture profile-plans.json v2; no separate UI counting.
+- **RealCapture v2 schema (§12)**: per profile: inventoryAccounting (total,
+  evaluated, curatedOutsideDeep, excludedUnknown/Unsupported/Duplicate/
+  NotApplicable/Other, bySource), decisionCounts (auto/recommended/optional/kept/
+  blocked/notApplicable), planChanges (total + byOperationType), semanticActionKeys,
+  keptHighlights (≤6), blockedHighlights (≤4).
+- NO new destructive execution: Capability/CBS/Driver removal remain NOT
+  supported; safety gate unchanged (Protected/Critical/High/heuristic rules
+  identical).
+
+## ADR-095 addendum — Stage 15.2b: real Dedicated-Gaming differentiation fix
+
+**Status:** Accepted (Phase 15 Stage 15.2b — COMPLETE; real v2 capture validated).
+**Context:** The FIRST v2 real validation accepted the accounting/Office/byOperationType
+fixes but exposed the remaining blocker: on REAL media Gaming PC and Dedicated Gaming were
+IDENTICAL (auto 19 / rec 6 / opt 72 / kept 565 / blk 62 / changes 25, identical
+semanticActionKeys). Fixture-level distinction was not sufficient.
+**Root cause (two wiring defects):**
+  1. **Curated-only subjects bypassed the gaming policy.** `ProfileExecutionService` only
+     dispatched the gaming policy when `subject.DeepKnowledge != null`. On the real image the
+     CuratedOutsideDeep objects (OneDrive-class consumer/cloud AppX) have NO deep entry, so the
+     DedicatedGaming `WiderMinimalSteer` never ran on them — both gaming profiles fell to the
+     default and produced identical plans.
+  2. **Extra-scenario profiles were never in SelectedProfiles.** The planner hard-coded
+     `SelectedProfiles = [primary]`, so the ExtraScenario profiles' data-driven Keep overrides
+     (XboxGipSvc/XblAuthManager/XboxNetApiSvc/… — already present in the catalog data) were dead.
+     Lightweight could auto-disable Xbox services even with the Xbox/Game Pass extra enabled.
+**Decision:**
+- **Policy dispatch fix**: the gaming policy now runs for curated-only subjects via a synthesized
+  knowledge view (curated Recommendation/Risk mapped to the policy's semantic fields; function/
+  tag Unknown → the policy returns NoOpinion unless a curated keep/recommendation semantics
+  applies, e.g. UsuallyKeep → RecommendedKeep keeps OneDrive in Gaming PC). Curated items no
+  longer bypass profile policy.
+- **DedicatedGaming curated intent** (profile data, ADR-088 exception layer): OneDrive + OneDriveSync
+  → Trim (Profile.Reason.Gaming.Dedicated.Optional.Cloud — Medium risk → Recommend, never auto),
+  Clipchamp → Trim (.Consumer — Low curated supported → AutoApply). Dev Home's difference lives in
+  the POLICY (WiderMinimalSteer: Moderate + DeveloperTool → AutoRemoveCandidate → Recommend), not an
+  override — a curated Low Dev Home must never be auto-removed. Gaming PC keeps all of these as
+  optional/kept (convenience preserved; no Gaming PC changes).
+- **Extras wiring fix**: `GenerateDelta`/`BuildPlan` accept the full profile list and join the
+  matching ExtraScenario profiles (XboxGamePass/WslDocker/PrintingScanning/TouchPen/RemoteDesktop)
+  into SelectedProfiles for the extras in effect. The extras' Keep overrides now reach the engine
+  for ANY primary — Lightweight + Xbox/Game Pass ON upgrades XblAuthManager/XboxGipSvc/XboxNetApiSvc
+  to Keep (removed from the executable plan); without the extra they stay AutoApply as
+  ConfigureOfflineService startup-type changes (restorable, NON-destructive — documented, no
+  behavior change).
+- Real-like stream (fixture families + curated-only consumer/cloud + optimization definitions):
+  Gaming changes=28 (auto 22/rec 6) vs DedicatedGaming changes=33 (auto 23/rec 10);
+  Dedicated-only semantic actions = {AppX|OneDrive|AutoApply, AppX|Teams|Recommend,
+  AppX|DevHome|Recommend, RegistryPolicy|OneDriveSync|Recommend} — real, safe, explainable.
+- Safety unchanged: Defender/Windows Update/servicing/Store/Gaming Services/DirectX/WebView2/VC/
+  network/audio/input/storage/GPU/boot/recovery untouched; no CBS/driver removal; no placebo tweaks.
+- Known follow-up (pre-existing, NOT introduced here): `BuildPlan` over the FULL real stream can
+  fail-safe (null) because a few optimization definitions lack a RegistryTarget (e.g.
+  ActivityHistory) and some Service definitions have empty ServiceName → validator flags
+  missing/duplicate targets. The validator correctly fails safe; catalog completion is a later
+  optimization-data task. Final real retest reviews profile-plans.json v2 only.
+
+## ADR-096: Validated Profile BuildPlan as Single Apply Source (Stage 15.3)
+
+**Status:** Accepted (Phase 15 Stage 15.3 COMPLETE — real structural validation PASSED all six
+primaries on Win11 25H2 Pro zh-CN x64 Index 4: Balanced 16, Gaming 25, DedicatedGaming 33,
+Developer 21, Office 17, Lightweight 38; validationPassed == true, empty validationErrors,
+conflict-free canonical keys; 15.3b addendum accepted — see PROFILE-EXECUTION.md "Stage 15.3b").
+**Context:** Stage 15.2 produced meaningful profile differences but they were NOT reliably
+executable: `ProfileExecutionService.BuildPlan` could fail safe (null) on the real stream because
+the validator correctly rejected operations built WITHOUT their execution payload — service ops had
+no `ServiceName`/start type, registry ops had no hive/path/value, component ops had no real package
+identity. The validator was right; the plan construction was wrong. Profile → Review → Apply could
+not flow end-to-end.
+**Root cause (verified, NOT catalog data):** the OptimizationCatalog was already clean — every
+ServiceStartup def has a canonical ServiceName on the ADR-030 allowlist; ActivityHistory has a valid
+offline policy target (`SOFTWARE\Policies\Microsoft\Windows\System\EnableActivityHistory` DWORD 0).
+The defect was `BuildPlan` mapping each executable item to a bare `CustomizationOperation` without
+payload; `ConflictKey` collapsed all service ops to `svc|` (duplicate) and registry ops lacked their
+required target (MissingTarget).
+**Decision:**
+- **Complete payload mapping (single apply source):** `BuildPlan` now constructs operations with
+  their real execution payload by reusing the live-app conventions: service ops `svc|<ServiceName>`
+  + `ServiceStartType`; registry ops `opt|<defId>|<i>` with hive/path/value/kind/data + restore;
+  feature ops `feat|<name>`; AppX/Capability/CBS ops `appx|/cap|/pkg|<raw identity>` (curated rows
+  keep their discovered identity — `FromCurated` now retains `RawIdentity`). Every op records
+  `SourceDefinitionIds` provenance so identical registry mutations merge with full attribution.
+- **OptimizationDefinitionValidator (Core, reusable):** detects MissingTechnicalTarget /
+  MissingRegistryTarget / MissingServiceName / MissingFeatureName / UnsupportedExecution /
+  InvalidValue / DuplicateCanonicalIdentity, run during catalog tests, inside `BuildPlan` (fail
+  safe), and in PlanCapture. Duplicate detection is scoped to NON-MERGEABLE identities (service/
+  feature/package) — two registry defs may legally write the same value (Privacy SpotlightFeatures
+  + Personalization DisableSpotlight both set CloudContent\DisableWindowsSpotlightFeatures); the
+  plan merges them (Phase 12) with provenance, that is dedup not a defect.
+- **All six primaries produce non-null validated BuildPlans** over the real-derived stream
+  (fixture + curated-only + optimization defs): Balanced 16 ops (9 selected), Gaming 24 (17),
+  DedicatedGaming 27 (18), Developer 20 (17), Office 17 (9), Lightweight 27 (23) — planOps ==
+  deltaCount; selected == AutoApply; every difference from the delta is explainable (Recommend ops
+  present-unselected; canonical dedup merges; manual overrides excluded).
+- **Profile → Customize → Review → Apply uses ONE shared CustomizationPlan** (PlanSync single
+  source). `IsAdoptEligible` now requires `WasProfileDriven` (aligned with the matrix AutoApply) —
+  the last divergence between the preview's "Automatic changes" count and the Review's selected
+  count; curated defaults stay Recommended (user-confirmed). Manual overrides remain authoritative
+  and are excluded from the plan. Extras join their ExtraScenario profiles into SelectedProfiles so
+  they affect the ACTUAL executable plan (Lightweight + Xbox keeps XblAuthManager/XboxGipSvc/
+  XboxNetApiSvc; WSL/Print/Remote keep their ecosystems).
+- **Apply reuses the existing Phase 12 executor** (PlanReviewViewModel → ICustomizationExecutionService
+  → shared plan); result synchronization and failure UX (Succeeded/FailedRecoverable per op,
+  failed panel with reasons, no all-succeeded lie) are inherited unchanged.
+- **PlanCapture (structural validation only):** RealCapture writes `profile-buildplans.json` —
+  per profile deltaCount / buildPlanOperationCount / selectedOperationCount / validationPassed /
+  validationErrors / operationsByType / canonicalOperationKeys. Nothing is applied or built.
+- 1181 tests (Core 53, App 1128), 0 err/0 warn (Release, ordinary in-place). NO validator weakening;
+  plan validation remains final authority.
+
+## ADR-097: Real Offline Profile Apply Validation (Stage 15.4)
+
+**Status:** Accepted (Phase 15 Stage 15.4 — COMPLETE; real Balanced and DedicatedGaming offline Apply both validated: 10/10 and 20/20 executed + read-back Verified, mounts discarded, workspaces cleaned).
+**Context:** Stage 15.3 proved profile BuildPlans validate STRUCTURALLY on real media (all six
+primaries `validationPassed == true`, conflict-free canonical keys), but structural validity is not
+execution validity: nothing had ever executed a profile-generated plan against a real mounted 25H2
+image, and the existing executor's AppX/feature branches treated a DISM exit code as success. The
+stage must prove the plan not only validates but EXECUTES safely (selected operations only) and that
+the result is INDEPENDENTLY READ BACK.
+**Decision:**
+- **Two representative profiles first:** Balanced (AppX removal + offline registry + offline service)
+  and DedicatedGaming (adds OptionalFeature disable). NOT Lightweight for the first destructive
+  validation. One profile per CLI invocation (`--apply-profile <Id>`) — inspect report before the
+  next profile (reduces blast radius).
+- **Isolated discard-only workflow:** inspect ISO (read-only input) → export the selected WIM index
+  into a workspace-owned working WIM → mount it → generate the final validated BuildPlan → execute
+  ONLY `SelectedOperations` (AutoApply) → independent read-back verification → JSON report →
+  DISCARD the mount (authoritative `/Get-MountedImageInfo`; an unknown mount is never discarded) →
+  clean the workspace. The source WIM/ISO is never modified.
+- **Read-back verification (exit code alone is never success):** AppX `/Get-ProvisionedAppxPackages`
+  re-query (absent = verified; still present = verification failed); OptionalFeature
+  `/Get-FeatureInfo` exact returned State (`Disabled` / `DisabledWithPayloadRemoved` recorded as-is);
+  offline service reads the MOUNTED SYSTEM hive `Start` value (never the host); offline registry
+  reads the mounted hive (hive + path + name + kind + data); `OfflineDefaultUser` maps to
+  `Users\Default\NTUSER.DAT` inside the mount — host HKCU is never touched.
+- **Deterministic already-satisfied semantics:** each selected op is pre-checked; a target already
+  in the requested state is deselected and recorded `Skipped/AlreadySatisfied` — nothing applied.
+- **Selected-only separation is proven:** the report carries `buildPlanOperationCount` (candidates)
+  AND `selectedOperationCount`/`attempted` (executed), and Recommend-only rows (e.g. Containers/WSL
+  in DedicatedGaming) are never executed.
+- **Failure handling:** per-op failures are recorded exactly; the run continues only where safe; the
+  profile is NOT reported successful when any op failed or failed verification; cleanup always runs;
+  a failed mount cleanup is a BLOCKER that stops further profile validation.
+- **Report schema** `profile-apply-validation.json`: per profile `profileId`,
+  `buildPlanOperationCount`, `selectedOperationCount`, `attempted`, `succeeded`, `failed`, `skipped`,
+  `validationPassed`, per-op `operations[].{canonicalKey,operationType,expectedAction,
+  executionStatus,verificationStatus,verificationDetail}`, and `mountCleanup.{discardSucceeded,
+  workspaceCleanupSucceeded}`.
+**Why only Balanced + DedicatedGaming initially:** they cover every executable operation family
+(AppX/registry/service/feature) with the smallest destructive surface. Lightweight's aggressive
+virtualization removals and the remaining primaries are validated only after Balanced and
+DedicatedGaming pass execution + read-back + cleanup end-to-end.
+
+## ADR-097 addendum: Offline registry precheck — missing key semantics (Stage 15.4a)
+
+**Status:** Accepted (Phase 15 Stage 15.4a — COMPLETE; first real Balanced apply aborted at registry precheck (root cause fixed: .NET 8 GetValueKind throws IOException for a missing value), retest PASSED — Balanced 10/10 + DedicatedGaming 20/20).
+**Context:** The FIRST real Balanced offline apply reached mount/discovery/hive-access and then aborted
+BEFORE normal execution with `APPLY VALIDATION FAILED: The specified registry key does not exist.`
+(exit 1). Cleanup PASSED (working image discarded, ISO dismounted, workspace cleaned, report written)
+— mount/workspace safety is accepted. The blocker was offline-registry PRECHECK semantics.
+**Exact root cause (verified against a real hive):** on .NET 8 Windows,
+`RegistryKey.GetValueKind(valueName)` throws `IOException` with the message "The specified registry
+key does not exist." when the named VALUE is absent from an EXISTING key (not `ArgumentException`).
+`OfflineRegistryService.ReadValue` caught only `ArgumentException` around `GetValueKind`, so the
+`IOException` escaped the apply PRECHECK and aborted the entire profile. A pristine 25H2 image
+routinely lacks policy values under existing keys (e.g.
+`SOFTWARE\Policies\Microsoft\Windows\System\EnableActivityHistory`,
+`...\CloudContent\DisableWindowsConsumerFeatures`, Default User `Explorer\Advanced\HideFileExt`).
+**Decision — registry absence during PRECHECK is a desired-state mismatch, not an infrastructure
+failure:**
+- `OfflineRegistryService.ReadValue` now also catches `IOException` around `GetValueKind` → returns
+  `Exists = false` (expected absence). Genuine infrastructure failures (hive load, corrupt hive,
+  access denied) still surface as `Win32Exception`/`UnauthorizedAccessException` at `LoadHive`/
+  `OpenSubKey` and are NOT swallowed.
+- Required precheck semantics for `SetOfflineRegistryValue`: missing key → operation required;
+  key present but value missing → operation required; value present with different kind/data →
+  operation required; value present with same kind/data → AlreadySatisfied (skipped). The executor
+  already creates missing subkey paths (`EnsureKeyPath`/`CreateSubKey`) — unchanged; `OfflineDefaultUser`
+  maps to `<mount>\Users\Default\NTUSER.DAT`, never host HKCU.
+- POST-EXECUTION the semantics stay separate: a missing key/value after execution is
+  `VerificationFailed` (never conflated with the precheck's "operation required").
+- **Structured diagnostics (§5/§6):** `ProfileApplyValidationReport` now carries `failureStage`
+  (Precheck/Execute/Verify), `failedCanonicalKey` and `error`; `ProfileApplyValidationService`
+  wraps each phase and RETURNS a structured report instead of throwing, so
+  `profile-apply-validation.json` survives a preflight failure and the CLI cleanup always runs.
+  The user never again receives only "The specified registry key does not exist." without knowing
+  which operation caused it.
+- First real Balanced result recorded: mount/discovery/hive-access/cleanup PASSED; registry precheck
+  absence semantics FAILED; no Stage 15.4 completion yet — BALANCED REAL APPLY RETEST REQUIRED
+  (`--apply-profile Balanced` only; DedicatedGaming NOT yet).

@@ -213,6 +213,21 @@ public sealed class OfflineRegistryService : IOfflineRegistryService
             // GetValueKind throws when the named value does not exist.
             return new OfflineRegistryReadResult { Exists = false };
         }
+        catch (IOException)
+        {
+            // Stage 15.4a (ADR-097 addendum): on .NET 8 Windows,
+            // RegistryKey.GetValueKind ALSO throws IOException with the message
+            // "The specified registry key does not exist." when the named VALUE is
+            // absent from an existing key (verified against a real hive). This is
+            // the expected-absence case — a pristine image routinely lacks policy
+            // values under existing keys. It is NOT an infrastructure failure: the
+            // read-back must report the value as absent so the apply precheck can
+            // decide "operation required" instead of aborting the whole profile.
+            // Genuine hive corruption / access-denied failures surface earlier (at
+            // LoadHive / OpenSubKey) as Win32Exception / UnauthorizedAccessException
+            // and are NOT swallowed here.
+            return new OfflineRegistryReadResult { Exists = false };
+        }
 
         if (nativeKind is RegistryValueKind.Unknown or RegistryValueKind.None)
         {

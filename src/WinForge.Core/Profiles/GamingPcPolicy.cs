@@ -162,6 +162,16 @@ public class GamingPcPolicy : IGamingProfilePolicy
             };
         }
 
+        // Stage 15.2 (ADR-095 §3): more-minimal profiles (Dedicated Gaming) may
+        // steer a WIDER set — Low cloud integration to automatic, Moderate
+        // productivity/communication/media to recommendations. Gaming PC returns
+        // null here and keeps convenience (the generic optional set below).
+        var widerSteer = WiderMinimalSteer(k);
+        if (widerSteer is not null)
+        {
+            return widerSteer;
+        }
+
         // §7 optional "never assume" set.
         if (OptionalTags.Contains(k.ProfileTag)
             && k.Risk is ComponentRiskLevel.Low or ComponentRiskLevel.Moderate)
@@ -183,11 +193,16 @@ public class GamingPcPolicy : IGamingProfilePolicy
         }
 
         // Dedicated Gaming only — additional optional suggestions.
-        return AdditionalOptional(k) ?? new GamingPolicyDecision { Kind = Kind, Verdict = GamingVerdict.NoOpinion };
+        return new GamingPolicyDecision { Kind = Kind, Verdict = GamingVerdict.NoOpinion };
     }
 
-    /// <summary>Extra optional suggestions for more minimal profiles (default: none).</summary>
-    protected virtual GamingPolicyDecision? AdditionalOptional(DeepComponentKnowledge k) => null;
+    /// <summary>
+    /// Wider steer for more minimal profiles (default: none). Runs BEFORE the
+    /// generic optional set so a more-minimal profile may upgrade specific safe
+    /// families (Low cloud → automatic; Moderate productivity/communication →
+    /// recommended). Gaming PC keeps convenience by leaving this empty.
+    /// </summary>
+    protected virtual GamingPolicyDecision? WiderMinimalSteer(DeepComponentKnowledge k) => null;
 
     protected virtual GamingPolicyDecision Optional(ComponentProfileTag tag) => new()
     {

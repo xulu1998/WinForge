@@ -188,7 +188,13 @@ public static class ComponentMatcher
         return ComponentClassification.DiscoveredUnclassified;
     }
 
-    private static ComponentDefinition? FindMatchingDefinition(
+    /// <summary>
+    /// Public curated lookup for ONE raw discovery item (Stage 15.2 unified
+    /// candidate stream — ADR-095): returns the curated definition whose
+    /// technical target matches, or null. Used by RealCapture and the profile
+    /// planner to evaluate curated-only inventory objects.
+    /// </summary>
+    public static ComponentDefinition? FindMatchingDefinition(
         IRawInventoryItem item, IReadOnlyList<ComponentDefinition> catalog)
     {
         foreach (var def in catalog)

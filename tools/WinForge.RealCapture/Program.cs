@@ -7,12 +7,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using WinForge.Core.ComponentIntelligence;
 using WinForge.Core.Models;
+using WinForge.Core.Profiles;
 using WinForge.Core.Services;
 using WinForge.Infrastructure.ComponentIntelligence;
 using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.ImageMetadata;
 using WinForge.Infrastructure.Execution;
 using WinForge.Infrastructure.IsoInspection;
+using WinForge.Infrastructure.Profiles;
 using WinForge.Infrastructure.Servicing;
 using WinForge.Infrastructure.WimEngine;
 using WinForge.Infrastructure.WorkspaceLifecycle;
@@ -57,7 +59,8 @@ public static class Program
         int Index,
         string OutDir,
         string WorkDir,
-        bool NoCleanup);
+        bool NoCleanup,
+        string? ApplyProfile);
 
     public static async Task<int> Main(string[] args)
     {
@@ -75,6 +78,18 @@ public static class Program
 
         var logger = new ConsoleLoggerService();
         var ct = CancellationToken.None;
+
+        if (options.ApplyProfile is not null)
+        {
+            Console.WriteLine("=== WinForge Phase 15 Stage 15.4 — Real Offline Profile Apply Validation ===");
+            Console.WriteLine($"ISO    : {options.IsoPath}");
+            Console.WriteLine($"Index  : {options.Index}");
+            Console.WriteLine($"Profile: {options.ApplyProfile}");
+            Console.WriteLine($"Out    : {options.OutDir}");
+            Console.WriteLine();
+
+            return await RunApplyValidationAsync(options, logger);
+        }
 
         Console.WriteLine("=== WinForge Phase 14.3 — Elevated Real Inventory Capture ===");
         Console.WriteLine($"ISO   : {options.IsoPath}");
@@ -218,6 +233,8 @@ public static class Program
                     Items = gamingCandidates,
                 });
                 await WriteJsonAsync(Path.Combine(options.OutDir, "real-derived-families.json"), BuildDerivedFixture(raw, metrics, deep));
+                await WriteJsonAsync(Path.Combine(options.OutDir, "profile-plans.json"), BuildProfilePlans(raw, deep, catalog));
+                await WriteJsonAsync(Path.Combine(options.OutDir, "profile-buildplans.json"), BuildProfileBuildPlans(raw, deep, catalog));
 
                 PrintResults(metrics, unknownItems, families, gamingCandidates);
             }
@@ -281,6 +298,7 @@ public static class Program
         string? outDir = null;
         string? workDir = null;
         var noCleanup = false;
+        string? applyProfile = null;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -305,6 +323,9 @@ public static class Program
                 case "--no-cleanup":
                     noCleanup = true;
                     break;
+                case "--apply-profile":
+                    applyProfile = RequireValue(args, ref i, "--apply-profile");
+                    break;
                 case "--help":
                 case "-h":
                     PrintUsage();
@@ -325,13 +346,26 @@ public static class Program
             throw new ArgumentException($"ISO not found: {iso}");
         }
 
+        if (applyProfile is not null)
+        {
+            var known = new WinForge.Infrastructure.Profiles.ProfileCatalog().GetProfiles()
+                .Where(p => p.Kind == ProfileKind.Primary && p.Id != "Custom")
+                .Select(p => p.Id)
+                .ToHashSet(StringComparer.Ordinal);
+            if (!known.Contains(applyProfile))
+            {
+                throw new ArgumentException(
+                    $"--apply-profile '{applyProfile}' is not a known primary profile. Available: {string.Join(", ", known.OrderBy(x => x, StringComparer.Ordinal))}");
+            }
+        }
+
         var defaultOut = Path.Combine(FindRepoRoot(), ".tmp", "phase14-real");
         var resolvedOut = string.IsNullOrWhiteSpace(outDir) ? defaultOut : Path.GetFullPath(outDir);
         var resolvedWork = string.IsNullOrWhiteSpace(workDir)
             ? Path.Combine(resolvedOut, "work")
             : Path.GetFullPath(workDir);
 
-        return new Options(Path.GetFullPath(iso), index, resolvedOut, resolvedWork, noCleanup);
+        return new Options(Path.GetFullPath(iso), index, resolvedOut, resolvedWork, noCleanup, applyProfile);
     }
 
     private static string FindRepoRoot()
@@ -363,16 +397,24 @@ public static class Program
     private static void PrintUsage()
     {
         Console.WriteLine();
-        Console.WriteLine("WinForge.RealCapture — Phase 14.3 elevated real inventory capture.");
+        Console.WriteLine("WinForge.RealCapture — Phase 14.3 elevated real inventory capture / Phase 15.4 apply validation.");
         Console.WriteLine();
-        Console.WriteLine("Usage:");
+        Console.WriteLine("Usage (capture):");
         Console.WriteLine("  WinForge.RealCapture --iso <path> [--index 4] [--out <dir>] [--work <dir>] [--no-cleanup]");
         Console.WriteLine();
-        Console.WriteLine("  --iso        Windows 11 ISO to inspect (read-only). REQUIRED.");
-        Console.WriteLine("  --index      WIM index to scan (default 4 = Pro for the 25H2 zh-CN x64 ISO).");
-        Console.WriteLine("  --out        Report output dir (default <repo>/.tmp/phase14-real).");
-        Console.WriteLine("  --work       Temporary working dir for export/mount (default <out>/work).");
-        Console.WriteLine("  --no-cleanup Keep the exported/mounted working image for inspection.");
+        Console.WriteLine("Usage (real offline apply validation — Stage 15.4):");
+        Console.WriteLine("  WinForge.RealCapture --iso <path> --apply-profile <ProfileId> [--index 4] [--out <dir>]");
+        Console.WriteLine();
+        Console.WriteLine("  --iso            Windows 11 ISO to inspect (READ-ONLY input). REQUIRED.");
+        Console.WriteLine("  --index          WIM index to use (default 4 = Pro for the 25H2 zh-CN x64 ISO).");
+        Console.WriteLine("  --out            Report output dir (default <repo>/.tmp/phase14-real).");
+        Console.WriteLine("  --work           Temporary working dir for export/mount (default <out>/work).");
+        Console.WriteLine("  --no-cleanup     Keep the exported/mounted working image for inspection.");
+        Console.WriteLine("  --apply-profile  Execute + read-back-verify ONE primary profile against an");
+        Console.WriteLine("                   isolated exported+mounted working image, then DISCARD the");
+        Console.WriteLine("                   mount and clean the workspace. Only SelectedOperations run.");
+        Console.WriteLine("                   (Balanced and DedicatedGaming are the Stage 15.4 profiles;");
+        Console.WriteLine("                   run one profile per invocation.)");
         Console.WriteLine();
         Console.WriteLine("MUST run from an elevated (Administrator) prompt — DISM requires elevation.");
     }
@@ -655,8 +697,515 @@ public static class Program
         };
     }
 
+    // ---- Phase 15 Stage 15.2/15.3 — UNIFIED candidate stream + real plan
+    //      accounting + structural BuildPlan validation (ADR-095/096).
+    //      PLAN VALIDATION ONLY: nothing is applied or built. ----
+
+    private static (ProfileCandidateBuildResult Built, IReadOnlyList<ProfileDefinition> Profiles,
+        IReadOnlySet<string> Present) BuildUnifiedStream(
+        ComponentInventory raw, DeepComponentClassifier deep, IReadOnlyList<ComponentDefinition> curatedCatalog)
+    {
+        var inventoryInputs = raw.Categories
+            .SelectMany(c => c.Items)
+            .Select(i => new ProfileInventoryInput
+            {
+                RawIdentity = i.RawIdentity,
+                Category = i.Category,
+                Deep = deep.Classify(i.RawIdentity),
+                Curated = ComponentMatcher.FindMatchingDefinition(i, curatedCatalog),
+            })
+            .ToList();
+
+        var optimizations = new WinForge.Infrastructure.Customization.OptimizationCatalog().GetEntries();
+        var built = ProfileCandidateService.BuildCandidates(inventoryInputs, optimizations);
+        var profiles = new WinForge.Infrastructure.Profiles.ProfileCatalog().GetProfiles();
+        var present = built.Subjects.Select(s => s.LogicalId).ToHashSet(StringComparer.Ordinal);
+        return (built, profiles, present);
+    }
+
+    private static ProfilePlansJson BuildProfilePlans(
+        ComponentInventory raw, DeepComponentClassifier deep, IReadOnlyList<ComponentDefinition> curatedCatalog)
+    {
+        var (built, profiles, present) = BuildUnifiedStream(raw, deep, curatedCatalog);
+        var service = new WinForge.Core.Profiles.ProfileExecutionService();
+        var reports = service.GenerateAllPrimaries(
+            built.Subjects,
+            new HashSet<WinForge.Core.Profiles.GamingExtra>(),
+            new HashSet<string>(),
+            present,
+            profiles);
+
+        return new ProfilePlansJson
+        {
+            Media = "Win11_25H2_zh-CN_x64",
+            Note = "Unified candidate stream (inventory deep+curated + optimization definitions, canonical dedup) — exact per-profile v2 plan summaries over the real captured inventory (plan validation only; nothing applied/built).",
+            Inventory = ToAccountingJson(built.Accounting),
+            OptimizationCandidates = built.OptimizationCandidates,
+            OptimizationDuplicates = built.OptimizationDuplicates,
+            Profiles = reports.Select(r => new ProfilePlanJson
+            {
+                ProfileId = r.ProfileId,
+                InventoryAccounting = ToAccountingJson(built.Accounting),
+                DecisionCounts = new ProfileDecisionCountsJson
+                {
+                    AutoApply = r.AutoApply,
+                    Recommended = r.Recommended,
+                    Optional = r.Optional,
+                    Kept = r.Kept,
+                    Blocked = r.Blocked,
+                    NotApplicable = r.NotApplicable,
+                },
+                PlanChanges = new ProfilePlanChangesJson
+                {
+                    Total = r.ChangeCount,
+                    ByOperationType = r.ByOperationType
+                        .OrderBy(kv => kv.Key.ToString(), StringComparer.Ordinal)
+                        .ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
+                },
+                SemanticActionKeys = r.ChangeKeys.OrderBy(k => k, StringComparer.Ordinal).ToList(),
+                KeptHighlights = r.Items
+                    .Where(i => i.Disposition == ProfileDisposition.Keep)
+                    .Take(6)
+                    .Select(i => i.DisplayName)
+                    .ToList(),
+                BlockedHighlights = r.Items
+                    .Where(i => i.Disposition == ProfileDisposition.Blocked)
+                    .Take(4)
+                    .Select(i => i.DisplayName)
+                    .ToList(),
+            }).ToList(),
+        };
+    }
+
+    private static ProfileInventoryAccountingJson ToAccountingJson(ProfileInventoryAccounting a) => new()
+    {
+        TotalInventory = a.TotalInventory,
+        EvaluatedForProfile = a.EvaluatedForProfile,
+        CuratedOutsideDeepInventory = a.CuratedOutsideDeepInventory,
+        ExcludedUnknownKnowledge = a.ExcludedUnknownKnowledge,
+        ExcludedUnsupportedSource = a.ExcludedUnsupportedSource,
+        ExcludedFilteredDuplicate = a.ExcludedFilteredDuplicate,
+        ExcludedNotApplicable = a.ExcludedNotApplicable,
+        ExcludedOther = a.ExcludedOther,
+        BySource = a.BySource
+            .OrderBy(kv => kv.Key.ToString(), StringComparer.Ordinal)
+            .ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
+    };
+
+    // ---- Phase 15 Stage 15.3 — structural BuildPlan validation (ADR-096).
+    //      PROOF that every primary profile produces a non-null, validated,
+    //      conflict-free, supported plan over the real inventory. Nothing is
+    //      applied or built. ----
+
+    private static ProfileBuildPlansJson BuildProfileBuildPlans(
+        ComponentInventory raw, DeepComponentClassifier deep, IReadOnlyList<ComponentDefinition> curatedCatalog)
+    {
+        var (built, profiles, present) = BuildUnifiedStream(raw, deep, curatedCatalog);
+        var service = new WinForge.Core.Profiles.ProfileExecutionService();
+        var profilesJson = new List<ProfileBuildPlanJson>();
+
+        foreach (var profile in profiles.Where(p => p.Kind == ProfileKind.Primary && p.Id != "Custom"))
+        {
+            var report = service.GenerateDelta(profile, built.Subjects,
+                new HashSet<WinForge.Core.Profiles.GamingExtra>(), new HashSet<string>(), present, profiles);
+            var (plan, issues) = service.BuildPlan(profile, built.Subjects,
+                new HashSet<WinForge.Core.Profiles.GamingExtra>(), new HashSet<string>(), present, profiles);
+
+            // Stage 15.3b (ADR-096 addendum): expose canonical merges so structural
+            // validation can prove same-target candidates collapsed with no
+            // information loss. Aggregator input mirrors BuildPlan exactly.
+            var aggregate = WinForge.Core.Profiles.ProfilePlanAggregator.Aggregate(report.Items);
+
+            profilesJson.Add(new ProfileBuildPlanJson
+            {
+                ProfileId = profile.Id,
+                DeltaCount = report.ChangeCount,
+                BuildPlanOperationCount = plan?.Operations.Count ?? 0,
+                SelectedOperationCount = plan?.SelectedOperations.Count ?? 0,
+                MergedDuplicateCount = aggregate.MergedDuplicateCount,
+                MergeGroupCount = aggregate.MergeGroups.Count,
+                DroppedKeepWins = aggregate.DroppedKeepWins,
+                ValidationPassed = plan is not null,
+                ValidationErrors = issues.ToList(),
+                OperationsByType = plan is null
+                    ? new Dictionary<string, int>()
+                    : plan.Operations
+                        .GroupBy(o => o.OperationType.ToString(), StringComparer.Ordinal)
+                        .ToDictionary(g => g.Key, g => g.Count()),
+                CanonicalOperationKeys = plan is null
+                    ? new List<string>()
+                    : plan.Operations.Select(o => o.ConflictKey).OrderBy(k => k, StringComparer.Ordinal).ToList(),
+                MergeGroups = aggregate.MergeGroups
+                    .Select(g => new ProfileBuildPlanMergeGroupJson
+                    {
+                        CanonicalKey = g.CanonicalKey,
+                        SourceCount = g.SourceCount,
+                        SourceIds = g.SourceIds.ToList(),
+                        SourceIdentities = g.SourceIdentities.ToList(),
+                    })
+                    .ToList(),
+            });
+        }
+
+        return new ProfileBuildPlansJson
+        {
+            Media = "Win11_25H2_zh-CN_x64",
+            Note = "Structural BuildPlan validation per primary profile over the real captured inventory (ADR-096; plan validation only — nothing applied/built). ValidationPassed == non-null validated plan.",
+            Profiles = profilesJson,
+        };
+    }
+
     private static string BucketOf(ClassificationCoverageMetrics metrics, string rawIdentity)
         => metrics.Buckets.TryGetValue(rawIdentity, out var bucket) ? bucket : "Unknown";
+
+    // =====================================================================
+    // Phase 15 Stage 15.4 — REAL OFFLINE APPLY VALIDATION (ADR-097).
+    //
+    //   --apply-profile <PrimaryId>
+    //
+    // Proves a profile-generated BuildPlan EXECUTES against a real mounted
+    // Windows image — selected (AutoApply) operations only — and that the result
+    // is INDEPENDENTLY READ BACK (AppX / optional feature / offline service /
+    // offline registry, incl. OfflineDefaultUser). The working image is an
+    // isolated export of the selected WIM index; the source ISO is NEVER
+    // modified; after validation the mount is DISCARDED and the workspace is
+    // cleaned. A failed mount cleanup is a BLOCKER that stops further validation.
+    // =====================================================================
+
+    private static async Task<int> RunApplyValidationAsync(Options options, ILoggerService logger)
+    {
+        var services = Compose(options, logger);
+        var ct = CancellationToken.None;
+        var profileId = options.ApplyProfile!;
+        ProfileApplyValidationReport report = new() { ProfileId = profileId };
+        ImageServicingWorkspace? workspace = null;
+        var exitCode = 0;
+
+        try
+        {
+            // ---- 1. Inspect the source ISO (read-only input) ----
+            var inspection = await services.Inspection.InspectAsync(options.IsoPath, ct);
+            if (inspection.Status != IsoInspectionStatus.Completed ||
+                inspection.ImageMetadata is null ||
+                inspection.ImageMetadata.Status != WindowsImageMetadataStatus.Completed)
+            {
+                Console.Error.WriteLine(
+                    "ISO inspection did not complete. If you see DISM error 740, this tool must run");
+                Console.Error.WriteLine("from an ELEVATED (Administrator) prompt.");
+                Console.Error.WriteLine(inspection.ErrorMessage is null ? string.Empty : $"Detail: {inspection.ErrorMessage}");
+                return 3;
+            }
+
+            var edition = inspection.ImageMetadata.Editions.FirstOrDefault(e => e.Index == options.Index);
+            if (edition is null)
+            {
+                Console.Error.WriteLine($"Index {options.Index} not present in the ISO. Available:");
+                foreach (var e in inspection.ImageMetadata.Editions.OrderBy(e => e.Index))
+                {
+                    Console.Error.WriteLine($"  {e.Index}: {e.Name}");
+                }
+
+                return 3;
+            }
+
+            Console.WriteLine($"Target: {edition.Name} (index {edition.Index}) {edition.Architecture} {edition.Version}");
+
+            // ---- 2. Isolated workspace for THIS validation run ----
+            var workspaceBuild = services.WorkspaceFactory.BuildWorkspace(inspection, edition);
+            if (workspaceBuild.Status != ImageWorkspaceStatus.Ready || workspaceBuild.Workspace is null)
+            {
+                Console.Error.WriteLine($"Workspace build failed: {string.Join("; ", workspaceBuild.Issues)}");
+                return 3;
+            }
+
+            // ---- 3. Export selected index → workspace-owned working WIM ----
+            var prepared = await services.Servicing.PrepareWorkingImageAsync(workspaceBuild.Workspace, WorkspaceId, ct);
+            if (!prepared.Success || prepared.Workspace is null)
+            {
+                PrintServicingFailure("export", prepared.ErrorMessage, prepared.Issues);
+                return 4;
+            }
+
+            workspace = prepared.Workspace;
+
+            // ---- 4. Mount the workspace-owned working WIM ----
+            var mounted = await services.Servicing.MountAsync(workspace, ct);
+            if (!mounted.Success)
+            {
+                PrintServicingFailure("mount", mounted.ErrorMessage, mounted.Issues);
+                exitCode = 4;
+                return exitCode;
+            }
+
+            Console.WriteLine($"Mounted working image at {workspace.MountDirectory}");
+
+            // ---- 5. Production discovery + classification (same pipeline as capture) ----
+            var raw = await services.Intelligence.DiscoverAsync(workspace, ct);
+            if (!raw.Discovered)
+            {
+                Console.Error.WriteLine("Discovery did not run (workspace not usable).");
+                exitCode = 5;
+                return exitCode;
+            }
+
+            if (raw.Cancelled)
+            {
+                Console.Error.WriteLine("Discovery was cancelled.");
+                exitCode = 5;
+                return exitCode;
+            }
+
+            var catalog = services.Catalog.GetDefinitions();
+            var deep = new DeepComponentClassifier(DeepComponentCatalogData.Entries);
+
+            // ---- 6. Unified candidate stream → final validated BuildPlan ----
+            var (built, profiles, present) = BuildUnifiedStream(raw, deep, catalog);
+            var profile = profiles.Single(p => p.Id == profileId);
+            var execution = new WinForge.Core.Profiles.ProfileExecutionService();
+            var (plan, issues) = execution.BuildPlan(profile, built.Subjects,
+                new HashSet<WinForge.Core.Profiles.GamingExtra>(), new HashSet<string>(), present, profiles);
+
+            if (plan is null || issues.Count > 0)
+            {
+                Console.Error.WriteLine("ApplyValidation: BuildPlan is not valid — nothing was executed.");
+                foreach (var issue in issues)
+                {
+                    Console.Error.WriteLine("  - " + issue);
+                }
+
+                report = new ProfileApplyValidationReport
+                {
+                    ProfileId = profileId,
+                    BuildPlanOperationCount = plan?.Operations.Count ?? 0,
+                    SelectedOperationCount = plan?.SelectedOperations.Count ?? 0,
+                    Failed = plan?.SelectedOperations.Count ?? 0,
+                    ValidationPassed = false,
+                    Operations = (plan?.SelectedOperations ?? System.Array.Empty<CustomizationOperation>())
+                        .Select(op => new ProfileApplyOperationReport
+                        {
+                            CanonicalKey = op.ConflictKey,
+                            OperationType = op.OperationType.ToString(),
+                            ExpectedAction = op.ActionKind?.ToString() ?? op.OperationType.ToString(),
+                            ExecutionStatus = CustomizationOperationStatus.Pending.ToString(),
+                            VerificationStatus = ApplyVerificationStatus.NotApplicable.ToString(),
+                            VerificationDetail = "BuildPlan validation failed; no operation was executed.",
+                        })
+                        .ToList(),
+                };
+                exitCode = 9;
+                return exitCode;
+            }
+
+            var validateIssues = plan.Validate();
+            if (validateIssues.Count > 0)
+            {
+                Console.Error.WriteLine("ApplyValidation: plan did not validate — nothing was executed.");
+                foreach (var issue in validateIssues)
+                {
+                    Console.Error.WriteLine("  - " + issue);
+                }
+
+                report = new ProfileApplyValidationReport
+                {
+                    ProfileId = profileId,
+                    BuildPlanOperationCount = plan.Operations.Count,
+                    SelectedOperationCount = plan.SelectedOperations.Count,
+                    Failed = plan.SelectedOperations.Count,
+                    ValidationPassed = false,
+                };
+                exitCode = 9;
+                return exitCode;
+            }
+
+            // ---- 7. Execute selected-only + independent read-back verification ----
+            var processRunner = new WindowsProcessRunner();
+            var registry = new OfflineRegistryService(logger);
+            var validator = new MountIdentityValidator();
+            var applyService = new ProfileApplyValidationService();
+            report = await applyService.ValidateAsync(new ProfileApplyValidationRequest
+            {
+                Profile = profile,
+                Plan = plan,
+                Workspace = workspace,
+                Executor = new WindowsCustomizationExecutionService(processRunner, registry, logger, validator),
+                Verifier = new OfflineApplyVerifier(processRunner, registry, logger),
+                Validator = validator,
+                Logger = logger,
+            }, ct);
+
+            PrintApplySummary(report);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine();
+            Console.Error.WriteLine("APPLY VALIDATION FAILED: " + ex.Message);
+            if (ex.Message.Contains("740", StringComparison.Ordinal) ||
+                ex.Message.Contains("elevat", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Error.WriteLine("DISM requires elevation (Error 740) — run from an ELEVATED prompt.");
+            }
+
+            exitCode = 1;
+            report = new ProfileApplyValidationReport
+            {
+                ProfileId = profileId,
+                ValidationPassed = false,
+                FailureStage = "Unexpected",
+                Error = ex.Message,
+                MountCleanup = report.MountCleanup,
+            };
+        }
+        finally
+        {
+            // ---- 8. Cleanup ALWAYS runs: discard mount, dismount ISO, remove workspace ----
+            if (workspace is not null)
+            {
+                report.MountCleanup = await CleanupWithReportAsync(services, workspace, options, logger);
+                if (!report.MountCleanup.DiscardSucceeded)
+                {
+                    Console.Error.WriteLine();
+                    Console.Error.WriteLine("BLOCKER: mount cleanup failed — stopping further profile validation.");
+                    Console.Error.WriteLine(report.MountCleanup.Error ?? "Unmount/discard reported failure.");
+                    exitCode = 10;
+                }
+            }
+            else
+            {
+                report.MountCleanup = new ProfileApplyMountCleanupReport
+                {
+                    DiscardSucceeded = true,
+                    WorkspaceCleanupSucceeded = false,
+                    Error = "No workspace was created for this validation run.",
+                };
+            }
+        }
+
+        // ---- 9. Report (always written when a workspace existed) ----
+        if (workspace is not null)
+        {
+            Directory.CreateDirectory(options.OutDir);
+            await WriteJsonAsync(Path.Combine(options.OutDir, "profile-apply-validation.json"), report);
+        }
+
+        return exitCode;
+    }
+
+    private static void PrintApplySummary(ProfileApplyValidationReport report)
+    {
+        Console.WriteLine();
+        Console.WriteLine("=== PROFILE APPLY VALIDATION SUMMARY ===");
+        Console.WriteLine($"Profile          : {report.ProfileId}");
+        Console.WriteLine($"BuildPlan ops    : {report.BuildPlanOperationCount}");
+        Console.WriteLine($"Selected ops     : {report.SelectedOperationCount}");
+        Console.WriteLine($"Attempted        : {report.Attempted}");
+        Console.WriteLine($"Succeeded        : {report.Succeeded}");
+        Console.WriteLine($"Failed           : {report.Failed}");
+        Console.WriteLine($"Skipped          : {report.Skipped}");
+        Console.WriteLine($"ValidationPassed : {report.ValidationPassed}");
+        if (report.FailureStage is not null)
+        {
+            Console.WriteLine($"FAILURE STAGE    : {report.FailureStage}");
+            Console.WriteLine($"FAILED OP KEY    : {report.FailedCanonicalKey ?? "(run-level)"}");
+            Console.WriteLine($"ERROR            : {report.Error}");
+        }
+
+        foreach (var op in report.Operations)
+        {
+            Console.WriteLine($"  [{op.ExecutionStatus,-16}|{op.VerificationStatus,-16}] {op.CanonicalKey} — {op.VerificationDetail}");
+        }
+    }
+
+    /// <summary>
+    /// Cleanup with an explicit report: discard the workspace-owned mount (via
+    /// authoritative DISM mount inventory — an unknown mount is NEVER discarded),
+    /// dismount the source ISO, then remove the workspace. Returns
+    /// <see cref="ProfileApplyMountCleanupReport"/> for §3 mountCleanup.
+    /// </summary>
+    private static async Task<ProfileApplyMountCleanupReport> CleanupWithReportAsync(
+        ComposedServices services, ImageServicingWorkspace workspace, Options options, ILoggerService logger)
+    {
+        if (options.NoCleanup)
+        {
+            logger.Warning("--no-cleanup: leaving the working image mounted at " + workspace.MountDirectory);
+            return new ProfileApplyMountCleanupReport
+            {
+                DiscardSucceeded = false,
+                WorkspaceCleanupSucceeded = false,
+                Error = "--no-cleanup requested; working image retained.",
+            };
+        }
+
+        var discardOk = true;
+        var workspaceOk = true;
+        string? error = null;
+
+        try
+        {
+            var unmount = await services.Servicing.UnmountDiscardAsync(workspace, CancellationToken.None);
+            discardOk = unmount.Success;
+            if (!unmount.Success)
+            {
+                error = unmount.ErrorMessage;
+                logger.Warning("Unmount/discard reported a problem: " + unmount.ErrorMessage);
+            }
+            else
+            {
+                logger.Info("Working image unmounted (changes discarded).");
+            }
+        }
+        catch (Exception ex)
+        {
+            discardOk = false;
+            error = ex.Message;
+            logger.Warning("Unmount/discard failed: " + ex.Message);
+        }
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(workspace.SourceIsoPath))
+            {
+                await services.IsoMount.DismountAsync(workspace.SourceIsoPath, CancellationToken.None);
+                logger.Info("Source ISO dismounted.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.Warning("ISO dismount failed: " + ex.Message);
+        }
+
+        try
+        {
+            var lifecycle = new WorkspaceLifecycleManager(
+                new WorkspacePathProvider(rootOverride: options.WorkDir),
+                new WindowsProcessRunner(),
+                new WorkspaceSafeDelete(),
+                logger);
+            var cleanup = await lifecycle.CleanupWorkspaceAsync(WorkspaceId, CancellationToken.None);
+            workspaceOk = cleanup.Succeeded;
+            if (!cleanup.Succeeded)
+            {
+                error = cleanup.Error;
+                logger.Warning("Workspace cleanup reported: " + cleanup.Error);
+            }
+            else
+            {
+                logger.Info("Workspace cleaned up.");
+            }
+        }
+        catch (Exception ex)
+        {
+            workspaceOk = false;
+            error = ex.Message;
+            logger.Warning("Workspace cleanup failed: " + ex.Message);
+        }
+
+        return new ProfileApplyMountCleanupReport
+        {
+            DiscardSucceeded = discardOk,
+            WorkspaceCleanupSucceeded = workspaceOk,
+            Error = error,
+        };
+    }
 
     private static void PrintResults(
         ClassificationCoverageMetrics metrics,
