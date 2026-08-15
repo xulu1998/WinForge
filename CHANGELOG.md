@@ -3,6 +3,36 @@
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## Phase 15 — COMPLETE: Profile Execution & Meaningful Optimization (2026-08-15)
+
+**Phase 15 ACCEPTED — real Windows 11 25H2 Pro zh-CN x64 (ISO index 4) validation PASSED.**
+All seven stages (15.1/15.2/15.2b/15.3/15.3b/15.4/15.4a) complete and merged to `main` via
+`--no-ff`.
+
+- **Structural validation (all six primaries):** non-null, conflict-free validated BuildPlans —
+  Balanced 16, Gaming PC 25, Dedicated Gaming 33, Developer 21, Office 17, Lightweight 38;
+  `validationPassed == true`, `validationErrors == []`.
+- **Real offline Apply validation (discard-only, isolated):** Balanced — 16 BuildPlan ops /
+  10 selected, attempted 10, succeeded 10, failed 0, skipped 0, validationPassed true; read-back
+  Verified for AppX removal + OfflineMachine registry + OfflineDefaultUser registry. DedicatedGaming
+  — 33 BuildPlan ops / 20 selected, attempted 20, succeeded 20, failed 0, skipped 0,
+  validationPassed true, all 20 operations `executionStatus=Succeeded` +
+  `verificationStatus=Verified`. Both runs: `mountCleanup.discardSucceeded == true` and
+  `workspaceCleanupSucceeded == true` (working image discarded, ISO dismounted, workspace cleaned).
+- **Selected-only execution proven:** DedicatedGaming Recommend-only OptionalFeatures (Containers,
+  WSL, …) remained BuildPlan candidates but were NEVER executed — BuildPlan candidates ≠
+  SelectedOperations.
+- **Validation level (ADR-084):** the Profile-Execution/Apply pipeline is validated on real 25H2
+  media with independent read-back — NOT six full ISO installs, NOT VM FullHealthValidated.
+- **Delivered architecture:** ProfileExecutionMatrix, ExecutionSupportMatrix, ProfileCandidateService
+  (unified inventory + optimization candidate stream), ProfileDeltaReport, ProfilePlanValidator,
+  ProfilePlanAggregator (canonical executable operation identity, provenance-preserving merges),
+  OptimizationDefinitionValidator, extras semantic overrides, manual override authority,
+  Profile → Customize → Review → BuildPlan → Apply, selected-only execution, real read-back
+  verification, isolated discard-only validation workflow (`WinForge.RealCapture --apply-profile`).
+  ADR-094/095/095-addendum/096/096-addendum/097/097-addendum accepted.
+- **1225 automated tests pass (Core 53, App 1172), 0 errors, 0 warnings (Release).**
+
 ## Phase 15 — Stage 15.4a: Offline registry precheck — missing key semantics (2026-08-15)
 
 - **First real Balanced apply reached mount/discovery/hive-access and then aborted at the offline

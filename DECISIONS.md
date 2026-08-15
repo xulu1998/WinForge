@@ -2174,7 +2174,7 @@ described as "89.56% of all Windows components". Real validation history: 30.78%
 
 ## ADR-094: Profile execution matrix + safe execution matrix (Stage 15.1)
 
-**Status:** Accepted (Phase 15 Stage 15.1).
+**Status:** Accepted (Phase 15 Stage 15.1 — COMPLETE).
 **Context:** Phase 14 completed knowledge/classification (89.56% coverage over the supported
 providers; Gaming Profile 2.0 + Safety Gate). Phase 15 must convert profile KNOWLEDGE into
 meaningful, supported EXECUTION plans so the six primaries (Balanced / Gaming PC / Dedicated
@@ -2219,7 +2219,7 @@ optimization and without unsafe "debloat everything".
 
 ## ADR-095: Unified Profile Candidate Stream and Real-Media Plan Accounting
 
-**Status:** Accepted (Phase 15 Stage 15.2).
+**Status:** Accepted (Phase 15 Stage 15.2 — COMPLETE).
 **Context:** The real 25H2 `profile-plans.json` capture exposed four product
 problems that fixture-level Stage 15.1 validation could not see:
   1. **757 → 674 accounting gap**: only deep-classified inventory objects entered
@@ -2291,7 +2291,7 @@ problems that fixture-level Stage 15.1 validation could not see:
 
 ## ADR-095 addendum — Stage 15.2b: real Dedicated-Gaming differentiation fix
 
-**Status:** Accepted (Phase 15 Stage 15.2b; implementation ready, real retest pending).
+**Status:** Accepted (Phase 15 Stage 15.2b — COMPLETE; real v2 capture validated).
 **Context:** The FIRST v2 real validation accepted the accounting/Office/byOperationType
 fixes but exposed the remaining blocker: on REAL media Gaming PC and Dedicated Gaming were
 IDENTICAL (auto 19 / rec 6 / opt 72 / kept 565 / blk 62 / changes 25, identical
@@ -2392,7 +2392,7 @@ required target (MissingTarget).
 
 ## ADR-097: Real Offline Profile Apply Validation (Stage 15.4)
 
-**Status:** Accepted (Phase 15 Stage 15.4; implementation ready, real Balanced/DedicatedGaming apply pending).
+**Status:** Accepted (Phase 15 Stage 15.4 — COMPLETE; real Balanced and DedicatedGaming offline Apply both validated: 10/10 and 20/20 executed + read-back Verified, mounts discarded, workspaces cleaned).
 **Context:** Stage 15.3 proved profile BuildPlans validate STRUCTURALLY on real media (all six
 primaries `validationPassed == true`, conflict-free canonical keys), but structural validity is not
 execution validity: nothing had ever executed a profile-generated plan against a real mounted 25H2
@@ -2435,7 +2435,7 @@ DedicatedGaming pass execution + read-back + cleanup end-to-end.
 
 ## ADR-097 addendum: Offline registry precheck — missing key semantics (Stage 15.4a)
 
-**Status:** Accepted (Phase 15 Stage 15.4a; implementation ready, Balanced real apply retest pending).
+**Status:** Accepted (Phase 15 Stage 15.4a — COMPLETE; first real Balanced apply aborted at registry precheck (root cause fixed: .NET 8 GetValueKind throws IOException for a missing value), retest PASSED — Balanced 10/10 + DedicatedGaming 20/20).
 **Context:** The FIRST real Balanced offline apply reached mount/discovery/hive-access and then aborted
 BEFORE normal execution with `APPLY VALIDATION FAILED: The specified registry key does not exist.`
 (exit 1). Cleanup PASSED (working image discarded, ISO dismounted, workspace cleaned, report written)

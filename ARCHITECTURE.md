@@ -772,3 +772,28 @@ offline-hive APIs only) — unchanged. `OfflineApplyVerifier` reads `OfflineDefa
 report on any phase failure, so `profile-apply-validation.json` survives a preflight failure and the
 CLI cleanup always runs. **1225 tests (Core 53, App 1172), 0 err/0 warn.** BALANCED REAL APPLY
 RETEST REQUIRED.
+
+## Phase 15 — COMPLETE: Profile Execution & Meaningful Optimization (accepted 2026-08-15)
+
+Phase 15 delivered the profile execution pipeline end-to-end and validated it on REAL media:
+`ProfileExecutionMatrix` (AutoApply/Recommend/Optional/Keep/Blocked/NotApplicable from knowledge +
+risk + protection + confidence + execution support), `ExecutionSupportMatrix` (AppX/registry/
+privacy/personalization/OptionalFeature supported; Capability/CBS/Driver not), `ProfileCandidateService`
+(unified inventory deep→curated→exclusion + optimization-definition candidate stream with exact
+accounting), `ProfileDeltaReport`, `ProfilePlanValidator`, `ProfilePlanAggregator` (canonical
+EXECUTABLE operation identity = actual DISM FeatureName; same-target candidates merge with
+provenance; distinct real features stay distinct), `OptimizationDefinitionValidator`, extras
+semantic overrides, manual-override authority, and the single authoritative path
+Profile → Customize → Review → BuildPlan → Apply. `WinForge.RealCapture --apply-profile <Id>`
+executes ONLY SelectedOperations on an isolated exported+mounted WIM and independently READ BACK
+every applied change (AppX absence, exact OptionalFeature State, mounted SYSTEM hive Start, offline
+registry hive kind+data, OfflineDefaultUser → `Users\Default\NTUSER.DAT`), then discards the mount
+(authoritative `/Get-MountedImageInfo`; unknown mounts never discarded) and cleans the workspace.
+
+Real validation (Win11 25H2 Pro zh-CN x64, ISO index 4): all six primaries structurally validated
+(16/25/33/21/17/38, validationPassed == true, empty validationErrors); Balanced real offline Apply
+10/10 executed + Verified; DedicatedGaming 20/20 executed + Verified (Recommend-only Containers/WSL
+never executed — candidates ≠ selected proven); cleanup discard+workspace succeeded. Validation
+level per ADR-084: real-image pipeline validation — NOT six full ISO installs, NOT VM
+FullHealthValidated. MERGED TO `main` via `--no-ff`; branch `phase/15-profile-execution` retained.
+**1225 tests (Core 53, App 1172), 0 err/0 warn.**

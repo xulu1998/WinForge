@@ -522,5 +522,46 @@ POST-EXECUTION the semantics stay separate: a missing key/value after execution 
   The user never again receives only "The specified registry key does not exist." without knowing
   which operation caused it.
 
-*Stage 15.4 is NOT complete — BALANCED REAL APPLY RETEST REQUIRED (`--apply-profile Balanced`
-only; DedicatedGaming NOT yet).*
+*Stage 15.4 + 15.4a COMPLETE (2026-08-15): real Balanced and DedicatedGaming offline Apply both
+validated — see the Phase 15 final evidence summary below.*
+
+
+## Phase 15 — FINAL EVIDENCE SUMMARY (accepted 2026-08-15)
+
+Real Windows 11 25H2 Pro zh-CN x64, ISO index 4, elevated RealCapture.
+
+### Structural validation (all six primaries)
+
+| Profile | delta | BuildPlan ops | validationPassed |
+| --- | --- | --- | --- |
+| Balanced | 16 | 16 | ✓ |
+| Gaming PC | 25 | 25 | ✓ |
+| Dedicated Gaming | 33 | 33 | ✓ |
+| Developer | 21 | 21 | ✓ |
+| Office | 17 | 17 | ✓ |
+| Lightweight | 38 | 38 | ✓ |
+
+All: `validationErrors == []`, canonical operation identities conflict-free.
+
+### Real offline Apply validation (discard-only, isolated; mounts discarded after validation)
+
+| Profile | BuildPlan ops | Selected | Attempted | Succeeded | Failed | Skipped | validationPassed | Read-back |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Balanced | 16 | 10 | 10 | 10 | 0 | 0 | ✓ | AppX ✓ · OfflineMachine registry ✓ · OfflineDefaultUser registry ✓ |
+| DedicatedGaming | 33 | 20 | 20 | 20 | 0 | 0 | ✓ | all 20 operations Verified |
+
+Both runs: `mountCleanup.discardSucceeded == true`, `workspaceCleanupSucceeded == true` (working
+image discarded, source ISO dismounted, workspace cleaned).
+
+### Selected-only execution proof
+
+DedicatedGaming's Recommend-only OptionalFeatures (Containers, WSL, …) remained BuildPlan
+candidates but were NOT selected and were NEVER executed — BuildPlan candidates !=
+SelectedOperations, and only AutoApply operations ran.
+
+### Validation level (ADR-084 terminology preserved)
+
+Phase 15 validated the Profile Execution / Apply PIPELINE on real 25H2 media with independent
+read-back (AppX / optional feature / offline service / offline registry incl. OfflineDefaultUser).
+It does NOT claim six full ISO installs and does NOT claim VM FullHealthValidated — Phase 15
+produced no VM install.

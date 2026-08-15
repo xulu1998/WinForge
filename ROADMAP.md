@@ -493,9 +493,14 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 15 — Profile Execution & Meaningful Optimization
 
-- **Status:** IN PROGRESS — **STAGES 15.1 + 15.2 + 15.2b + 15.3 COMPLETE (2026-08-15)** · **STAGES 15.4
-  + 15.4a IMPLEMENTATION READY (2026-08-15)** — BALANCED REAL APPLY RETEST REQUIRED; branch
-  `phase/15-profile-execution`; NOT merged.
+- **Status: COMPLETE (2026-08-15) — ALL STAGES 15.1/15.2/15.2b/15.3/15.3b/15.4/15.4a COMPLETE;
+  MERGED TO `main` via `--no-ff`; branch `phase/15-profile-execution` retained.**
+  Real validation on Win11 25H2 Pro zh-CN x64 (ISO index 4): all six primaries structurally
+  validated (16/25/33/21/17/38, validationPassed == true, empty validationErrors); Balanced real
+  offline Apply validated (10/10 executed+read-back Verified); DedicatedGaming real offline Apply
+  validated (20/20 executed+Verified, Recommend-only Containers/WSL never executed); mounts
+  discarded, workspaces cleaned. Validation level (ADR-084): real-image Profile-Execution/Apply
+  pipeline validated — NOT six full ISO installs, NOT VM FullHealthValidated.
 - **Stage 15.1 — Profile Execution & Safe Execution Matrix (ADR-094):** profiles now produce
   clearly different, supported execution plans. Core `ProfileExecutionMatrix` (AutoApply /
   Recommend / Optional / Keep / Blocked / NotApplicable from knowledge + risk + protection +
@@ -533,8 +538,9 @@ Phased development plan for WinForge. Each phase records its **Status**,
   `profile-plans.json` upgraded to v2 (inventoryAccounting / decisionCounts / planChanges /
   semanticActionKeys / keptHighlights / blockedHighlights). **1162 tests (Core 53, App 1109),
   0 err/0 warn (Release, ordinary in-place).**
-- **Stage 15.2 REAL-DESKTOP VALIDATION REQUIRED**: rerun the elevated RealCapture CLI
-  (same command as Phase 14) and review the new `profile-plans.json` only.
+- **Stage 15.2 real-media validation PASSED (2026-08-15):** the elevated RealCapture run on the
+  real 25H2 ISO validated the unified stream + v2 profile-plans.json (757 = 678 evaluated + 79
+  Unknown accounting; real profile differences Gaming ≠ DedicatedGaming).
 - **Stage 15.3 — Validated Profile BuildPlan as single Apply source (implementation ready,
   ADR-096):** the real-stream blocker (BuildPlan failing safe on malformed operations) is fixed at
   the ROOT: `BuildPlan` now maps complete execution payloads (service name + start type, registry
@@ -596,8 +602,9 @@ Phased development plan for WinForge. Each phase records its **Status**,
   (separate semantics). The executor already creates missing subkey paths (unchanged);
   `OfflineDefaultUser` → `<mount>\Users\Default\NTUSER.DAT`, never host HKCU. Structured
   diagnostics: report gains `failureStage`/`failedCanonicalKey`/`error` and survives preflight
-  failure (cleanup always runs). **1225 tests (Core 53, App 1172), 0 err/0 warn.** BALANCED REAL
-  APPLY RETEST REQUIRED (`--apply-profile Balanced` only; DedicatedGaming NOT yet).
+  failure (cleanup always runs). **1225 tests (Core 53, App 1172), 0 err/0 warn.** COMPLETE — real
+  Balanced (10/10) and DedicatedGaming (20/20) offline Apply validated, read-back Verified,
+  cleanup discard+workspace succeeded.
 
 ## Phase 14 — Deep Component Coverage & Classification (COMPLETED — 89.56% real-media coverage)
 
