@@ -1,0 +1,53 @@
+{
+  "profileId": "Balanced",
+  "description": "Expected post-install state for the Balanced profile (Phase 16 Stage 16.1a). These are the AutoApply targets Balanced is designed to achieve on a real 25H2 install; each is verified from the installed OS where practical. Recommend-only rows are intentionally NOT listed here. Every registry check declares an EXPLICIT scope: OfflineMachine (HKLM), CurrentUserEffective (HKCU of the OOBE-created user) or DefaultUserTemplate (Users\\Default\\NTUSER.DAT). Image-time (pre-commit/post-commit) WIM Default-User validation is separate and unchanged.",
+  "appxAbsent": [
+    "Microsoft.WindowsFeedbackHub",
+    "Microsoft.YourPhone",
+    "Microsoft.MicrosoftSolitaireCollection"
+  ],
+  "registryChecks": [
+    {
+      "scope": "OfflineMachine",
+      "path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo",
+      "name": "Enabled",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+      "name": "DisableWindowsConsumerFeatures",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+      "name": "DoNotShowFeedbackNotifications",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+      "name": "DisableWindowsSpotlightFeatures",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "Start_ShowRecommended",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "Start_ShowRecent",
+      "expectedData": "0",
+      "kind": "DWord"
+    }
+  ]
+}

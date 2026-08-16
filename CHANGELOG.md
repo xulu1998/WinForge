@@ -1,7 +1,156 @@
+## Phase 16 - COMPLETE: Full Health Validation & Release Confidence (2026-08-16)
+
+- **Balanced — FullHealthValidated** and **DedicatedGaming — FullHealthValidated** (ADR-084 top
+  level): two materially different production profiles — Balanced (conservative safe optimization)
+  and DedicatedGaming (more aggressive selected-only optimization) — both passed the complete
+  chain on real Windows 11 Pro 25H2 zh-CN x64 (build 26200.8037, VMware Workstation Pro): source
+  ISO → profile planning → selected-only apply → independent read-back → commit WIM → post-commit
+  remount verification → production ISO build → ISO structure verification → VMware UEFI install →
+  OOBE → desktop → installed-state profile verification → DISM/SFC/security/update/store/network/
+  device checks → FullHealthValidated. Both final reports: failures=[], overallStatus=Warning,
+  fullHealthValidated=true (allowed non-blockers: activation Notification, HTTPS TLS-trust Warning
+  with IP/DNS Pass, optional DISM ScanHealth NotTested).
+- **Balanced evidence**: profile-commit-validation.json (16/10/10 verified, committed, post-commit
+  verified, ISO structure validated) + final full-health report.
+- **DedicatedGaming evidence**: profile-commit-validation.json (33/20/20 verified,
+  preCommitValidationPassed=true, committed=true, postCommitVerified=true, committedImageReadable=
+  true, iso.structureValidated=true, 20 post-commit checks, cleanup discard+workspace succeeded);
+  ISO Documents\WinForge\WinForge-DedicatedGaming-Win11-25H2-Pro-zh-CN-x64.iso (8,052,092,928 B)
+  SHA-256 2d521bd21a0efa17bf24acdc97a3a8d2c279cfea1c866e90bbdce2cb89be0210; final full-health
+  report: profileExpectedChanges 11 AppX removals + 5 OfflineMachine/HKLM + 4 CurrentUserEffective/
+  HKCU ALL Pass; required platform gates Pass (identity/boot-shell/devices/display/network/DHCP-IP/
+  DNS/CheckHealth/SFC/WindowsUpdate/Security/Defender/Firewall/Store/VC++ runtime).
+- **Known non-blocking observations preserved** (not WinForge product failures): one earlier
+  Balanced Setup failure not reproducible with no retained log; VMware guest occasional
+  idle/display black-screen; one Windows Terminal 0xD000003A; console console host remained
+  usable; activation Notification; HTTPS TLS trust Warning with IP/DNS Pass; DISM ScanHealth not
+  run (optional); DedicatedGaming fresh-image Defender signature age old while Defender/security
+  platform healthy.
+- Other profiles (Gaming/Developer/Office/Lightweight) retain their actual lower validation level.
+- **1282 tests (Core 53, App 1229), 0 err/0 warn.**
+
+## Phase 16 - Stage 16.2: DedicatedGaming full-health validation prep + Stage 16.1 closeout (2026-08-16)
+
+- **Stage 16.1 COMPLETE - Balanced FullHealthValidated** (ADR-084 top level): real Windows 11 Pro
+  25H2 zh-CN x64 build 26200.8037 on VMware Workstation Pro; final report failures=[], overallStatus
+  Warning, fullHealthValidated=true. Required gates all Pass (identity, boot/shell, devices,
+  DHCP/IP, DNS, DISM CheckHealth, SFC /verifyonly, Windows Update components, Security, Defender,
+  Firewall, Store/runtime platform, Balanced expected-state checks). Allowed non-blockers:
+  activation Notification, HTTPS TLS-trust Warning, optional ScanHealth NotTested.
+- **Non-blocking environment observations recorded** (not WinForge product defects): one
+  unreproducible early Windows Setup failure with no retained log (subsequent clean install
+  succeeded); occasional VMware guest black-screen after idle/sleep; one Windows Terminal
+  0xD000003A; PowerShell remained usable through the console host. None provide evidence of image
+  corruption.
+- **DedicatedGaming expected-state** (`scripts/dedicated-gaming-expected-state.json`) built ONLY
+  from the real selected-only plan (33 BuildPlan ops / 20 selected / 20 read-back Verified):
+  11 provisioned AppX removals (BingSearch, BingWeather, Clipchamp, FeedbackHub, GetHelp, OfficeHub,
+  BingNews, OutlookForWindows, PhoneLink, Solitaire, WebExperience) + 5 OfflineMachine registry
+  values + 4 CurrentUserEffective registry values (Start_ShowRecent=0, Start_ShowRecommended=0,
+  EnableWebContent=0, TaskbarSearch=1). Recommend-only families (Containers, WSL, DevHome,
+  OneDriveSync) are excluded - BuildPlan candidates != SelectedOperations.
+- Same production pipeline, no second ISO builder: `--commit-profile DedicatedGaming` →
+  `Documents\WinForge\WinForge-DedicatedGaming-Win11-25H2-Pro-zh-CN-x64.iso` → NEW VMware VM
+  (UEFI / Secure Boot / vTPM / 8 GB / 2 vCPU / 64 GB / NAT) → health script with
+  `-ProfileId DedicatedGaming -ExpectedJson dedicated-gaming-expected-state.json`.
+- **1282 tests (Core 53, App 1229), 0 err/0 warn.**
+
+## Phase 16 - Stage 16.1b: FullHealth REQUIRED-vs-OPTIONAL gate (2026-08-16)
+
+- **Second real Balanced report is ZERO-failure**: all sections Pass except
+  windowsIdentity (activation Warning, report-only) and network (HTTPS
+  TLS-trust Warning; IP/DNS Pass); servicing CheckHealth + SFC both Pass with
+  the optional ScanHealth NotTested.
+- **The remaining false-negative was the gate itself**: the OPTIONAL
+  DISM /ScanHealth (optional per ADR-098) was treated as a required gate, so
+  `servicing.status = NotTested` blocked FullHealthValidated despite zero
+  failures.
+- **Required-vs-optional check model**: every check now declares
+  `requiredForFullHealth` in the report JSON (omitted = required). REQUIRED
+  checks must be tested; OPTIONAL checks (ScanHealth, HTTPS connectivity,
+  activation, Defender signatures, audio device, ...) may be NotTested or
+  Warning without blocking. A Fail on any check still blocks (conservative).
+- **Servicing**: CheckHealth + SFC required; ScanHealth optional. CheckHealth
+  + SFC Pass with ScanHealth NotTested => servicing Pass and full-health
+  eligible; the ScanHealth NotTested stays visible (never fabricated as Pass).
+- **Network**: DHCP/IP + DNS required (genuine failures always block); HTTPS
+  connectivity optional (environmental TLS-trust Warning non-blocking).
+- **Activation**: informational/report-only - never blocks.
+- **Aggregation**: section status derives from required checks; overallStatus
+  stays the honest worst (optional NotTested excluded, optional Warnings
+  included); the gate is required-based only. `failures = []` alone is NOT
+  sufficient - untested required evidence never validates.
+- Expected corrected result: `overallStatus = Warning`, `failures = []`,
+  `fullHealthValidated = true`. Balanced stays formally pending until the
+  corrected report is rerun in the existing VM (no ISO rebuild, no reinstall).
+
+## Phase 16 - Stage 16.1a: Health-check correctness fixes (2026-08-16)
+
+- **First real Balanced VM validation succeeded** through the desktop: the
+  WinForge ISO booted in VMware, installed Windows 11 Pro 25H2 (build 26200),
+  completed OOBE and reached the desktop; commit evidence (16/10/10/10,
+  postCommitVerified, ISO structure validated) is in profile-commit-validation.json.
+- **SFC /verifyonly verdicts fixed**: the first report falsely failed a
+  successful sfc run because the script matched English-only success text and
+  the native UTF-16LE output (low NUL ratio on Chinese Windows) was
+  mis-decoded. The verdict is now EXIT-CODE authoritative (0 = no integrity
+  violations, locale-independent) with the localized success marker as
+  corroboration only; native output is captured by file redirection and
+  decoded by a candidate-scoring decoder (BOM -> UTF-8 -> UTF-16LE -> ANSI,
+  fewest U+FFFD wins) with NUL stripping. A successful run can never fail on
+  capture artifacts; genuine failures still Fail.
+- **Post-install Default-User checks corrected**: Start_ShowRecommended and
+  Start_ShowRecent are now verified as CurrentUserEffective (HKCU of the
+  OOBE-created user) instead of in the post-OOBE Default-User template, which
+  Windows legitimately consumes at profile creation. Image-time WIM
+  Default-User validation is unchanged. Expected registry checks now declare an
+  EXPLICIT scope (OfflineMachine / CurrentUserEffective / DefaultUserTemplate);
+  missing or unknown scope rejects the file.
+- **Report encoding fixed**: the script is pure-ASCII with a UTF-8 BOM (the
+  mojibake source was PowerShell 5.1 ANSI-parsing a BOM-less UTF-8 file);
+  report JSON round-trips Chinese text without mojibake.
+- **FullHealthValidated gate corrected**: Warnings (e.g. the VM HTTPS TLS-trust
+  Warning with IP/DNS Pass) no longer block full-health validation - only Fail
+  checks and untested critical sections block.
+- **Windows identity display**: a Windows 11 install is now presented as
+  "Windows 11 Pro" (normalized from the legacy "Windows 10 Pro" ProductName
+  when build >= 22000); edition/build detection unchanged.
+
 # Changelog
 
 All notable user-visible changes to WinForge are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
+
+## Phase 16 — Stage 16.1: Balanced end-to-end ISO + VM Full-Health Validation prep (2026-08-15)
+
+- **Explicit COMMIT + ISO build mode**: `WinForge.RealCapture --commit-profile <ProfileId>`
+  (mutually exclusive with the discard-only `--apply-profile`) executes a profile's selected
+  operations against an isolated mounted 25H2 image, gates the commit on pre-commit read-back
+  (every attempted op must be Verified) plus a commit-mode ownership guard (authoritative DISM
+  mount inventory — an unknown mount aborts), COMMITS the working WIM and builds a final bootable
+  ISO through the same production pipeline the app uses (commit → export → media preparation →
+  oscdimg → independent ISO verification → atomic rename). The source ISO is never modified; the
+  output ISO goes to `Documents\WinForge\WinForge-Balanced-Win11-25H2-Pro-zh-CN-x64.iso` by
+  default with no silent overwrite.
+- **Post-commit persistence verification**: after commit + unmount, the committed WIM is re-opened
+  and independently re-verified (removed AppX still absent, machine + Default-User registry values
+  persisted, DISM metadata query succeeds), distinct from the pre-commit mounted-image read-back.
+- **ISO structure + metadata evidence**: the produced ISO is verified for boot files
+  (etfsboot.com / efisys.bin), sourcesoot.wim, sources\install.wim and setup.exe, and the
+  commit report records output path, size and a streaming SHA-256.
+- **In-VM full-health validator**: `scripts/Validate-WinForgeInstallation.ps1` (run at
+  Administrator inside the installed VM) collects structured `full-health-report.json` evidence —
+  edition/build/architecture/language/activation (report only), boot+shell, devices, network
+  (offline-VM warnings distinct from failures), DISM CheckHealth + sfc /verifyonly (non-destructive),
+  Windows Update presence, security presence, Store/app-platform presence, and Balanced
+  expected-state checks (Feedback Hub / Phone Link / Solitaire absent; machine + Default-User
+  policy registry values) — with a Pass/Warning/Fail/NotTested vocabulary.
+- **FullHealthValidated is earned, not assumed** (ADR-098): a booting ISO alone never qualifies;
+  the gate requires the VM to install, reach the desktop and complete the health report with no
+  critical servicing/security/network/shell failures. Validation levels
+  (WorkflowValidated / VmInstallValidated / FullHealthValidated) documented in
+  `docs/FULL-HEALTH-VALIDATION.md`.
+
 
 ## Phase 15 — COMPLETE: Profile Execution & Meaningful Optimization (2026-08-15)
 

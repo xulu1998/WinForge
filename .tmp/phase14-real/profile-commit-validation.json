@@ -1,0 +1,343 @@
+{
+  "profileId": "DedicatedGaming",
+  "sourceIsoPath": "C:\\Users\\xulu1998\\Downloads\\Win11_25H2_Chinese_Simplified_x64_v2.iso",
+  "sourceMediaIdentity": "Win11_25H2_Chinese_Simplified_x64_v2.iso (8.0 GB)",
+  "selectedIndex": 4,
+  "editionName": "Windows 11 \u4E13\u4E1A\u7248",
+  "buildPlanOperationCount": 33,
+  "selectedOperationCount": 20,
+  "attempted": 20,
+  "succeeded": 20,
+  "failed": 0,
+  "skipped": 0,
+  "preCommitValidationPassed": true,
+  "preCommitGateFailure": null,
+  "operations": [
+    {
+      "canonicalKey": "pkg|Microsoft.BingSearch_2022.1.43.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.BingWeather_4.54.63017.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.WindowsFeedbackHub_2024.125.1522.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.GetHelp_10.2407.40222.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.MicrosoftOfficeHub_19.2506.56051.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.BingNews_4.1.24002.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.OutlookForWindows_1.0.0.0_neutral__8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.YourPhone_1.25112.39.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|MicrosoftWindows.Client.WebExperience_525.31002.150.9_neutral_~_cw5n1h2txyewy",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableSoftLanding",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027DisableSoftLanding\u0027 confirmed (DWord = \u00271\u0027) at \u0027Policies\\Microsoft\\Windows\\CloudContent\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo|Enabled",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027Enabled\u0027 confirmed (DWord = \u00270\u0027) at \u0027Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\DataCollection|DoNotShowFeedbackNotifications",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027DoNotShowFeedbackNotifications\u0027 confirmed (DWord = \u00271\u0027) at \u0027Policies\\Microsoft\\Windows\\DataCollection\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsSpotlightFeatures",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027DisableWindowsSpotlightFeatures\u0027 confirmed (DWord = \u00271\u0027) at \u0027Policies\\Microsoft\\Windows\\CloudContent\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsConsumerFeatures",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027DisableWindowsConsumerFeatures\u0027 confirmed (DWord = \u00271\u0027) at \u0027Policies\\Microsoft\\Windows\\CloudContent\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecent",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Configure",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive DEFAULT_USER value \u0027Start_ShowRecent\u0027 confirmed (DWord = \u00270\u0027) at \u0027Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecommended",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Configure",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive DEFAULT_USER value \u0027Start_ShowRecommended\u0027 confirmed (DWord = \u00270\u0027) at \u0027Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Policies\\Microsoft\\Dsh|EnableWebContent",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Configure",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive DEFAULT_USER value \u0027EnableWebContent\u0027 confirmed (DWord = \u00270\u0027) at \u0027Software\\Policies\\Microsoft\\Dsh\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|TaskbarSearch",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Configure",
+      "executionStatus": "Succeeded",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive DEFAULT_USER value \u0027TaskbarSearch\u0027 confirmed (DWord = \u00271\u0027) at \u0027Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\u0027."
+    }
+  ],
+  "committed": true,
+  "commitError": null,
+  "postCommitVerified": true,
+  "postCommitError": null,
+  "postCommitChecks": [
+    {
+      "canonicalKey": "pkg|Microsoft.BingSearch_2022.1.43.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.BingWeather_4.54.63017.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Clipchamp.Clipchamp_4.4.10720.0_neutral_~_yxz26nhyzhsrt",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.WindowsFeedbackHub_2024.125.1522.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.GetHelp_10.2407.40222.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.MicrosoftOfficeHub_19.2506.56051.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.BingNews_4.1.24002.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.OutlookForWindows_1.0.0.0_neutral__8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.YourPhone_1.25112.39.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|Microsoft.MicrosoftSolitaireCollection_4.24.12040.0_neutral_~_8wekyb3d8bbwe",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "pkg|MicrosoftWindows.Client.WebExperience_525.31002.150.9_neutral_~_cw5n1h2txyewy",
+      "operationType": "RemoveProvisionedAppx",
+      "expectedAction": "Remove",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Independent /Get-ProvisionedAppxPackages confirms the package is absent."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableSoftLanding",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027DisableSoftLanding\u0027 confirmed (DWord = \u00271\u0027) at \u0027Policies\\Microsoft\\Windows\\CloudContent\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo|Enabled",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027Enabled\u0027 confirmed (DWord = \u00270\u0027) at \u0027Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\DataCollection|DoNotShowFeedbackNotifications",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027DoNotShowFeedbackNotifications\u0027 confirmed (DWord = \u00271\u0027) at \u0027Policies\\Microsoft\\Windows\\DataCollection\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsSpotlightFeatures",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027DisableWindowsSpotlightFeatures\u0027 confirmed (DWord = \u00271\u0027) at \u0027Policies\\Microsoft\\Windows\\CloudContent\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineMachine|SOFTWARE|Policies\\Microsoft\\Windows\\CloudContent|DisableWindowsConsumerFeatures",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Disable",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive SOFTWARE value \u0027DisableWindowsConsumerFeatures\u0027 confirmed (DWord = \u00271\u0027) at \u0027Policies\\Microsoft\\Windows\\CloudContent\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecent",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Configure",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive DEFAULT_USER value \u0027Start_ShowRecent\u0027 confirmed (DWord = \u00270\u0027) at \u0027Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|Start_ShowRecommended",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Configure",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive DEFAULT_USER value \u0027Start_ShowRecommended\u0027 confirmed (DWord = \u00270\u0027) at \u0027Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Policies\\Microsoft\\Dsh|EnableWebContent",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Configure",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive DEFAULT_USER value \u0027EnableWebContent\u0027 confirmed (DWord = \u00270\u0027) at \u0027Software\\Policies\\Microsoft\\Dsh\u0027."
+    },
+    {
+      "canonicalKey": "reg|OfflineDefaultUser|DEFAULT_USER|Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced|TaskbarSearch",
+      "operationType": "SetOfflineRegistryValue",
+      "expectedAction": "Configure",
+      "verificationStatus": "Verified",
+      "verificationDetail": "Offline hive DEFAULT_USER value \u0027TaskbarSearch\u0027 confirmed (DWord = \u00271\u0027) at \u0027Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\u0027."
+    }
+  ],
+  "committedImageReadable": true,
+  "iso": {
+    "outputPath": "C:\\Users\\xulu1998\\Documents\\WinForge\\WinForge-DedicatedGaming-Win11-25H2-Pro-zh-CN-x64.iso",
+    "sizeBytes": 8052092928,
+    "sha256": "2d521bd21a0efa17bf24acdc97a3a8d2c279cfea1c866e90bbdce2cb89be0210",
+    "structureValidated": true,
+    "structureChecks": [
+      "boot\\etfsboot.com present",
+      "efi\\microsoft\\boot\\efisys.bin present (UEFI boot)",
+      "sources\\boot.wim present",
+      "sources\\install.wim present",
+      "setup.exe present"
+    ],
+    "buildError": null
+  },
+  "mountCleanup": {
+    "discardSucceeded": true,
+    "workspaceCleanupSucceeded": true,
+    "error": null
+  }
+}

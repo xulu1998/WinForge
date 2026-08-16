@@ -491,6 +491,51 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ---
 
+## Phase 16 — Full Health Validation & Release Confidence
+
+- **Status: COMPLETE (2026-08-16) — ALL STAGES 16.1/16.1a/16.1b/16.2 COMPLETE; MERGED TO
+  `main` via `--no-ff`; branch `phase/16-full-health-validation` retained.** BALANCED —
+  FullHealthValidated · DEDICATEDGAMING — FullHealthValidated (real Win11 Pro 25H2 zh-CN x64,
+  build 26200.8037, VMware Workstation Pro; both: failures=[], overallStatus Warning,
+  fullHealthValidated=true). Balanced: 16 BuildPlan/10 selected/10 verified, conservative
+  AppX+registry+service scope. DedicatedGaming: 33 BuildPlan/20 selected/20 verified, aggressive
+  selected-only (11 AppX removals + 5 OfflineMachine + 4 CurrentUserEffective registry;
+  Recommend-only Containers/WSL/DevHome/OneDriveSync never executed), ISO SHA-256
+  2d521bd21a0efa17bf24acdc97a3a8d2c279cfea1c866e90bbdce2cb89be0210. Other profiles keep their
+  actual lower validation level (ADR-084 WorkflowValidated/VmInstallValidated/FullHealthValidated).
+  Phase 16 demonstrated the complete chain twice: source ISO → profile planning → selected-only
+  apply → independent read-back → commit WIM → post-commit remount verification → production ISO
+  build → ISO structure verification → VMware UEFI install → OOBE → desktop → installed-state
+  profile verification → DISM/SFC/security/update/store/network/device checks → FullHealthValidated.
+  **1282 tests (Core 53, App 1229), 0 err/0 warn.**
+- **Stage 16.1 — Balanced end-to-end ISO + VM health validation prep (ADR-098):** proves a real
+  WinForge-generated customized ISO works end-to-end (Profile → Customize → validated BuildPlan →
+  Apply → COMMIT WIM → build ISO → VMware install → OOBE → desktop → post-install health
+  validation). Deliverables:
+  - **Explicit commit mode** (`WinForge.RealCapture --commit-profile <Id>`, mutually exclusive
+    with the discard-only `--apply-profile`): pre-commit read-back gate (every attempted op
+    Verified or nothing is committed) + commit-mode ownership guard (session-owned paths +
+    authoritative DISM mount inventory; an UNKNOWN mount aborts) → COMMIT via the PRODUCTION
+    ImageBuildService (commit → export → media prep → oscdimg → independent ISO verification →
+    atomic rename) → post-commit re-verification against the re-opened COMMITTED WIM (AppX
+    absence, machine + Default-User registry persistence, DISM metadata) → ISO structure
+    validation (boot files, sourcesoot.wim, install.wim, setup.exe, UEFI) → output metadata
+    (path, size, streaming SHA-256). Source ISO never modified; deterministic output
+    `Documents\WinForge\WinForge-Balanced-Win11-25H2-Pro-zh-CN-x64.iso`, no silent overwrite.
+  - **In-VM health validator** (`scripts/Validate-WinForgeInstallation.ps1` + balanced-expected
+    -state.json): structured full-health-report.json (Pass/Warning/Fail/NotTested; sections
+    media/profile/windowsIdentity/bootAndShell/devices/network/servicing/windowsUpdate/security/
+    storeAndAppPlatform/profileExpectedChanges; DISM CheckHealth + sfc /verifyonly non-destructive;
+    activation REPORT ONLY; offline-VM warnings distinct from failures). Host-side
+    HealthReportParser re-aggregates authoritatively and recomputes fullHealthValidated.
+  - **ADR-084 levels documented** (docs/FULL-HEALTH-VALIDATION.md): WorkflowValidated (Phase 15)
+    / VmInstallValidated / FullHealthValidated — FullHealthValidated requires installed-OS
+    evidence: ISO generated + VM Setup booted + Windows installed + OOBE + desktop + health
+    report completed with no critical servicing/security/network/shell failures.
+  - Balanced expected-state checks: Feedback Hub / Phone Link / Solitaire absent, 4 machine
+    registry policy values, 2 Default-User Start values.
+  - **1243 tests (Core 53, App 1190), 0 err/0 warn.**
+
 ## Phase 15 — Profile Execution & Meaningful Optimization
 
 - **Status: COMPLETE (2026-08-15) — ALL STAGES 15.1/15.2/15.2b/15.3/15.3b/15.4/15.4a COMPLETE;

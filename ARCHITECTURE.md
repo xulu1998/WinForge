@@ -797,3 +797,96 @@ never executed — candidates ≠ selected proven); cleanup discard+workspace su
 level per ADR-084: real-image pipeline validation — NOT six full ISO installs, NOT VM
 FullHealthValidated. MERGED TO `main` via `--no-ff`; branch `phase/15-profile-execution` retained.
 **1225 tests (Core 53, App 1172), 0 err/0 warn.**
+
+## Phase 16 — Stage 16.1: Balanced end-to-end ISO + VM Full-Health Validation prep (2026-08-15, ADR-098)
+
+`WinForge.RealCapture --commit-profile <Id>` is the EXPLICIT commit/build mode (mutually exclusive
+with the discard-only `--apply-profile`): after the same selected-only apply + read-back, the
+pre-commit gate (every attempted op Verified) and a commit-mode ownership guard (session-owned
+paths + the authoritative `dism /Get-MountedImageInfo` inventory — an UNKNOWN registered mount
+aborts the run) gate the COMMIT. The commit + ISO build reuse the PRODUCTION `ImageBuildService`
+(commit → export → media preparation → oscdimg → independent `BuildVerifier` verification →
+atomic rename; `BuildOverwritePolicy.Fail`, deterministic output). The COMMITTED WIM is then
+re-opened (re-mounted into a second workspace-owned mount dir) and every attempted op is
+independently re-verified — the strongest persistence proof — and the ISO is structurally checked
+(boot/etfsboot.com, efi/microsoft/boot/efisys.bin, sources/boot.wim, sources/install.wim,
+setup.exe) with path/size/streaming-SHA-256 metadata into `profile-commit-validation.json`. The
+source ISO is never modified. The in-VM `scripts/Validate-WinForgeInstallation.ps1` collects
+structured `full-health-report.json` (Pass/Warning/Fail/NotTested; media/profile/windowsIdentity/
+bootAndShell/devices/network/servicing/windowsUpdate/security/storeAndAppPlatform/
+profileExpectedChanges; DISM CheckHealth + sfc /verifyonly non-destructive; activation REPORT
+ONLY; offline-VM warnings distinct from failures); the host-side `HealthReportParser` re-aggregates
+authoritatively (Fail > Warning > NotTested > Pass) and recomputes `fullHealthValidated`, so a
+hand-edited or buggy script can never report a false Pass. ADR-084 levels (WorkflowValidated /
+VmInstallValidated / FullHealthValidated) are documented in docs/FULL-HEALTH-VALIDATION.md —
+FullHealthValidated requires installed-OS evidence: ISO generated + VM Setup booted + Windows
+installed + OOBE completed + desktop reached + health report completed with no critical
+servicing/security/network/shell failures. **1243 tests (Core 53, App 1190), 0 err/0 warn.**
+
+
+## Phase 16 — Stage 16.1a: Health-check correctness (2026-08-16, ADR-098 addendum)
+
+The first real Balanced VM validation succeeded through the desktop (ISO booted
+in VMware, Windows 11 Pro 25H2 build 26200 installed, OOBE completed;
+`profile-commit-validation.json`: 16/10/10/10, committed + postCommitVerified,
+ISO structure validated). The first `full-health-report.json` failed only on
+three health-check LOGIC defects: (1) sfcVerifyOnly falsely failed a successful
+zh-CN run — the script matched English-only success text and mis-decoded sfc's
+native UTF-16LE output (NUL ratio ~0.16 on Chinese Windows defeated the dense-
+NUL heuristic); FIX: `SfcVerifyOnlyEvaluator` (Infrastructure/Health) makes the
+verdict EXIT-CODE authoritative (0 = no integrity violations, locale-
+independent) with the localized success marker as corroboration only, and
+`NativeOutputDecoder` uses a candidate-scoring decode (UTF-16 BOM → strict
+UTF-8 → UTF-16LE with a low NUL-density heuristic → system ANSI; fewest U+FFFD
+wins) with NUL stripping; the script mirrors the rule and captures native
+output by cmd /c file redirection. (2)+(3) defaultUser_Start_* falsely failed:
+Windows/OOBE legitimately consumes the seeded Default-User template into the
+created user's profile (manual: HKCU Start_ShowRecommended/Start_ShowRecent =
+0x0); FIX: expected registry checks declare an EXPLICIT scope
+(`OfflineMachine` / `CurrentUserEffective` / `DefaultUserTemplate`) and a
+missing or unknown scope rejects the file — Balanced machine policies stay
+OfflineMachine, the Start values are CurrentUserEffective; image-time WIM
+Default-User validation is unchanged (two distinct questions: image hive
+persistence vs installed effective state). Mojibake ("鈥?") root cause: BOM-less
+UTF-8 .ps1 parsed as ANSI by PowerShell 5.1 — the script is now pure-ASCII
+with a UTF-8 BOM and a test pins the encoding. The FullHealthValidated gate no
+longer requires overallStatus == Pass: Warnings (incl. the real-VM HTTPS
+TLS-trust Warning with IP/DNS Pass) do NOT block — only Fail checks and
+untested critical sections do. Windows identity display normalizes the legacy
+"Windows 10 Pro" ProductName to "Windows 11" when build >= 22000 (presentation
+only). **1263 tests (Core 53, App 1208), 0 err/0 warn.** Balanced is NOT yet
+formally FullHealthValidated — corrected-report retest in the existing VM.
+
+## Phase 16 - Stage 16.1b: FullHealth REQUIRED-vs-OPTIONAL gate (2026-08-16, ADR-098 addendum)
+
+The second real Balanced health report is ZERO-failure (all sections Pass except windowsIdentity activation Warning and network HTTPS-trust Warning with IP/DNS Pass; servicing CheckHealth + SFC Pass). The last false-negative was the gate: the OPTIONAL DISM /ScanHealth (optional per ADR-098) was treated as required. HealthCheckItem now carries `RequiredForFullHealth` (JSON `requiredForFullHealth`, omitted = true); REQUIRED checks must be tested (NotTested blocks; `failures=[]` alone is insufficient), OPTIONAL checks (ScanHealth, HTTPS, activation, Defender signatures, audio) may be NotTested/Warning without blocking, and a Fail on ANY check blocks conservatively. Section status derives from required checks; overallStatus is the honest worst of required checks + Warning/Fail optional checks + check-less sections (optional NotTested excluded); the FullHealthValidated gate is required-only. Expected corrected result: overallStatus Warning / failures [] / fullHealthValidated true. **1272 tests (Core 53, App 1219), 0 err/0 warn.**
+
+## Phase 16 — COMPLETE: Full Health Validation & Release Confidence (accepted 2026-08-16)
+
+Phase 16 closed with TWO materially different production profiles earning the top ADR-084
+validation level on real VMware installs (Win11 Pro 25H2 zh-CN x64, build 26200.8037):
+- **Balanced — FullHealthValidated** (conservative safe optimization; 16 BuildPlan ops / 10
+  selected / 10 read-back Verified; final report failures=[], overallStatus Warning,
+  fullHealthValidated=true; non-blockers activation Notification + HTTPS TLS-trust Warning +
+  optional ScanHealth NotTested).
+- **DedicatedGaming — FullHealthValidated** (aggressive selected-only optimization; commit
+  evidence profile-commit-validation.json: 33 BuildPlan / 20 selected / 20 executed + read-back
+  Verified, preCommitValidationPassed=true, committed=true, postCommitVerified=true,
+  committedImageReadable=true, iso.structureValidated=true, 20 post-commit checks, cleanup
+  discard+workspace succeeded; ISO 8,052,092,928 B, SHA-256
+  2d521bd21a0efa17bf24acdc97a3a8d2c279cfea1c866e90bbdce2cb89be0210; final report failures=[],
+  overallStatus Warning, fullHealthValidated=true — profileExpectedChanges 11 AppX removals + 5
+  OfflineMachine/HKLM + 4 CurrentUserEffective/HKCU ALL Pass; Recommend-only
+  Containers/WSL/DevHome/OneDriveSync never executed; platform preservation Pass: identity /
+  boot-shell / devices / display / network / DHCP-IP / DNS / DISM CheckHealth / SFC / Windows
+  Update / Security / Defender / Firewall / Store / VC++ runtime).
+Both profiles demonstrated the complete production chain: source ISO → profile planning →
+selected-only apply → independent read-back → commit WIM → post-commit remount verification →
+production ISO build → ISO structure verification → VMware UEFI installation → OOBE → desktop →
+installed-state profile verification → DISM/SFC/security/update/store/network/device checks →
+FullHealthValidated. The explicit commit mode (`--commit-profile`, ADR-098) is the only path
+that builds an ISO, and the in-VM `Validate-WinForgeInstallation.ps1` + `-ExpectedJson` profile
+expected-state files are the only health evidence accepted. Other profiles (Gaming / Developer /
+Office / Lightweight) retain their actual lower validation level — FullHealthValidated is NOT
+propagated. MERGED TO `main` via `--no-ff`; branch `phase/16-full-health-validation` retained.
+**1282 tests (Core 53, App 1229), 0 err/0 warn.**
