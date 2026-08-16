@@ -2635,3 +2635,38 @@ evidence:**
 **Status:** Balanced remains formally pending until the corrected report is
 rerun in the existing VM (only Validate-WinForgeInstallation.ps1 + balanced-
 expected-state.json if schema changed; no ISO rebuild, no reinstall).
+
+## ADR-098 addendum: DedicatedGaming full-health validation prep (Stage 16.2)
+
+**Status:** Accepted (Phase 16 Stage 16.2; implementation ready, DedicatedGaming real VM validation pending).
+**Context:** Balanced passed ADR-084 FullHealthValidated on a real VMware install (Win11 Pro 25H2
+zh-CN x64, build 26200.8037; failures=[], overallStatus Warning, fullHealthValidated=true; the only
+non-blockers are the activation Notification, the HTTPS TLS-trust Warning with IP/DNS Pass, and the
+optional DISM ScanHealth NotTested). Stage 16.1 is COMPLETE. The next profile is DedicatedGaming on
+a NEW VMware VM (never over the validated Balanced VM).
+**Decision:**
+- **Expected-state from the SELECTED-ONLY plan.** `scripts/dedicated-gaming-expected-state.json` is
+  built ONLY from the real Phase 15 apply evidence (33 BuildPlan ops / 20 selected / 20 executed +
+  read-back Verified): 11 provisioned AppX removals (BingSearch, BingWeather, Clipchamp, FeedbackHub,
+  GetHelp, OfficeHub, BingNews, OutlookForWindows, PhoneLink, Solitaire, WebExperience) + 5
+  OfflineMachine registry values (DisableSoftLanding, AdvertisingInfo Enabled, DoNotShowFeedback
+  Notifications, DisableWindowsSpotlightFeatures, DisableWindowsConsumerFeatures) + 4
+  CurrentUserEffective registry values (Start_ShowRecent=0, Start_ShowRecommended=0,
+  EnableWebContent=0, TaskbarSearch=1). Recommend-only families (Containers, WSL, DevHome,
+  OneDriveSync, ...) were NOT executed and are NOT expected states - candidates != selected is
+  preserved in the expected-state contract.
+- **No second ISO builder, no health-engine fork.** Reuse the production `--commit-profile
+  DedicatedGaming` path (pre-commit gate -> commit -> post-commit verify -> ISO structure + SHA-256
+  -> `Documents\WinForge\WinForge-DedicatedGaming-Win11-25H2-Pro-zh-CN-x64.iso`) and the same
+  `scripts/Validate-WinForgeInstallation.ps1` (the `-ExpectedJson` parameter selects the profile
+  expected-state; the engine already supports OfflineMachine / CurrentUserEffective /
+  DefaultUserTemplate scopes). DedicatedGaming is NOT a kiosk profile - Defender, firewall, Windows
+  Update, Store/App Installer, DirectX/runtime, network, display, input, servicing and boot/recovery
+  must all remain healthy (covered by the existing preserved-platform sections).
+- **Acceptance mirrors Balanced:** ISO build/commit verified + Setup + OOBE + desktop + health report
+  with all required checks and profile expected-state checks Pass + fullHealthValidated=true;
+  warnings only per ADR-098 rules.
+- **Environment observations are recorded as NON-BLOCKING** (one unreproducible early Setup failure
+  with no retained log followed by a clean install; VMware guest occasional black-screen after
+  idle/sleep; one Windows Terminal 0xD000003A; PowerShell usable through the console host) - none is
+  evidence of WinForge image corruption and none is a product defect.

@@ -240,3 +240,59 @@ alone is NOT sufficient - an untested REQUIRED check still blocks.
 
 Expected final real result after retest: `overallStatus = Warning`,
 `failures = []`, `fullHealthValidated = true`.
+
+## Stage 16.1 COMPLETE — Balanced FullHealthValidated (2026-08-16, real evidence)
+
+| Evidence | Result |
+| --- | --- |
+| Media | Win11 Pro 25H2 zh-CN x64 (ISO index 4), VMware Workstation Pro |
+| Build | 26200.8037 |
+| Commit evidence | profile-commit-validation.json — 16 BuildPlan ops / 10 selected / 10 executed / 10 read-back Verified; committed, post-commit verified, ISO structure validated |
+| Final health report | failures = [] · overallStatus = Warning · fullHealthValidated = true |
+| Required gates | identity ✓ · boot/shell ✓ · devices ✓ · DHCP/IP ✓ · DNS ✓ · DISM CheckHealth ✓ · SFC /verifyonly ✓ · Windows Update components ✓ · Security ✓ · Defender ✓ · Firewall ✓ · Store/runtime platform ✓ · Balanced expected-state ✓ |
+| Allowed non-blockers | activation Notification (report-only) · HTTPS TLS-trust Warning (IP/DNS Pass) · optional DISM ScanHealth = NotTested |
+
+Balanced is formally **FullHealthValidated** (ADR-084 top level). This does NOT extend to any other
+profile — each profile must earn it with its own installed-OS evidence.
+
+### Non-blocking environment observations (recorded, not product defects)
+
+- One early Windows Setup failure was NOT reproducible and had no retained log; the subsequent clean
+  install succeeded.
+- The VMware guest occasionally black-screened after idle / sleep behavior.
+- Windows Terminal once produced 0xD000003A; PowerShell remained usable through the console host.
+- None of these currently provide evidence of WinForge image corruption; none is classified as a
+  Passed product defect, and none is hidden.
+
+## Stage 16.2 — DedicatedGaming full-health validation prep (ADR-098 addendum)
+
+Validation profile: **DedicatedGaming** (same source ISO, index 4 — Win11 Pro x64 zh-CN), on a NEW
+VMware VM (UEFI / Secure Boot / vTPM / 8 GB RAM / 2 vCPU / 64 GB disk / NAT). Never installed over
+the validated Balanced VM.
+
+**Expected-state design** (`scripts/dedicated-gaming-expected-state.json`) — built ONLY from the real
+selected-only apply plan (33 BuildPlan ops / 20 selected / 20 executed + read-back Verified):
+
+- 11 provisioned AppX removals: BingSearch, BingWeather, Clipchamp, FeedbackHub, GetHelp, OfficeHub,
+  BingNews, OutlookForWindows, PhoneLink (YourPhone), Solitaire, WebExperience.
+- 5 OfflineMachine registry values (HKLM after install): DisableSoftLanding=1,
+  AdvertisingInfo\Enabled=0, DoNotShowFeedbackNotifications=1, DisableWindowsSpotlightFeatures=1,
+  DisableWindowsConsumerFeatures=1.
+- 4 CurrentUserEffective registry values (HKCU of the OOBE-created user, seeded via Default-User):
+  Start_ShowRecent=0, Start_ShowRecommended=0, EnableWebContent=0 (Dsh), TaskbarSearch=1 (search
+  icon only).
+
+**Recommend-only candidates (Containers, WSL, DevHome, OneDriveSync, ...) were NOT executed in the
+real plan and are intentionally NOT expected states** — BuildPlan candidates != SelectedOperations
+is preserved in the expected-state contract. The health engine is not forked: the same
+`Validate-WinForgeInstallation.ps1` runs with `-ProfileId DedicatedGaming -ExpectedJson
+dedicated-gaming-expected-state.json`.
+
+**Preserved-platform requirements (DedicatedGaming is NOT a kiosk profile):** Defender, firewall,
+Windows Update, Microsoft Store + App Installer/winget, DirectX/runtime platform, network, display,
+input, servicing, boot/recovery health must all remain healthy — enforced by the existing
+security/windowsUpdate/storeAndAppPlatform/devices/servicing/boot sections.
+
+**Acceptance (mirrors Balanced):** ISO build/commit verified → VM Setup completes → OOBE → desktop →
+health report generated → all required checks + profile expected-state checks Pass →
+fullHealthValidated = true; warnings only per ADR-098 rules.

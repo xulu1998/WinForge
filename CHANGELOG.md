@@ -1,3 +1,29 @@
+## Phase 16 - Stage 16.2: DedicatedGaming full-health validation prep + Stage 16.1 closeout (2026-08-16)
+
+- **Stage 16.1 COMPLETE - Balanced FullHealthValidated** (ADR-084 top level): real Windows 11 Pro
+  25H2 zh-CN x64 build 26200.8037 on VMware Workstation Pro; final report failures=[], overallStatus
+  Warning, fullHealthValidated=true. Required gates all Pass (identity, boot/shell, devices,
+  DHCP/IP, DNS, DISM CheckHealth, SFC /verifyonly, Windows Update components, Security, Defender,
+  Firewall, Store/runtime platform, Balanced expected-state checks). Allowed non-blockers:
+  activation Notification, HTTPS TLS-trust Warning, optional ScanHealth NotTested.
+- **Non-blocking environment observations recorded** (not WinForge product defects): one
+  unreproducible early Windows Setup failure with no retained log (subsequent clean install
+  succeeded); occasional VMware guest black-screen after idle/sleep; one Windows Terminal
+  0xD000003A; PowerShell remained usable through the console host. None provide evidence of image
+  corruption.
+- **DedicatedGaming expected-state** (`scripts/dedicated-gaming-expected-state.json`) built ONLY
+  from the real selected-only plan (33 BuildPlan ops / 20 selected / 20 read-back Verified):
+  11 provisioned AppX removals (BingSearch, BingWeather, Clipchamp, FeedbackHub, GetHelp, OfficeHub,
+  BingNews, OutlookForWindows, PhoneLink, Solitaire, WebExperience) + 5 OfflineMachine registry
+  values + 4 CurrentUserEffective registry values (Start_ShowRecent=0, Start_ShowRecommended=0,
+  EnableWebContent=0, TaskbarSearch=1). Recommend-only families (Containers, WSL, DevHome,
+  OneDriveSync) are excluded - BuildPlan candidates != SelectedOperations.
+- Same production pipeline, no second ISO builder: `--commit-profile DedicatedGaming` →
+  `Documents\WinForge\WinForge-DedicatedGaming-Win11-25H2-Pro-zh-CN-x64.iso` → NEW VMware VM
+  (UEFI / Secure Boot / vTPM / 8 GB / 2 vCPU / 64 GB / NAT) → health script with
+  `-ProfileId DedicatedGaming -ExpectedJson dedicated-gaming-expected-state.json`.
+- **1282 tests (Core 53, App 1229), 0 err/0 warn.**
+
 ## Phase 16 - Stage 16.1b: FullHealth REQUIRED-vs-OPTIONAL gate (2026-08-16)
 
 - **Second real Balanced report is ZERO-failure**: all sections Pass except

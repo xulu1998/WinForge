@@ -1,0 +1,82 @@
+{
+  "profileId": "DedicatedGaming",
+  "description": "Expected post-install state for the DedicatedGaming profile (Phase 16 Stage 16.2). Built ONLY from the actual AutoApply/selected operations of the real Phase 15 apply validation (profile-apply-validation.json: BuildPlan 33, Selected 20, Attempted 20, Succeeded 20, all read-back Verified): 11 provisioned AppX removals + 5 OfflineMachine registry values + 4 Default-User-seeded registry values. Recommend-only candidates (Containers, WSL, DevHome, OneDriveSync, ...) were NOT executed and are intentionally NOT listed here. Every registry check declares an EXPLICIT scope: OfflineMachine (HKLM of the installed OS), CurrentUserEffective (HKCU of the OOBE-created user - the Default-User seed is legitimately consumed into the created profile) or DefaultUserTemplate (Users\\Default\\NTUSER.DAT; image-time validation is separate and unchanged).",
+  "appxAbsent": [
+    "Microsoft.BingSearch",
+    "Microsoft.BingWeather",
+    "Clipchamp.Clipchamp",
+    "Microsoft.WindowsFeedbackHub",
+    "Microsoft.GetHelp",
+    "Microsoft.MicrosoftOfficeHub",
+    "Microsoft.BingNews",
+    "Microsoft.OutlookForWindows",
+    "Microsoft.YourPhone",
+    "Microsoft.MicrosoftSolitaireCollection",
+    "MicrosoftWindows.Client.WebExperience"
+  ],
+  "registryChecks": [
+    {
+      "scope": "OfflineMachine",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+      "name": "DisableSoftLanding",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo",
+      "name": "Enabled",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+      "name": "DoNotShowFeedbackNotifications",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+      "name": "DisableWindowsSpotlightFeatures",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+      "name": "DisableWindowsConsumerFeatures",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "Start_ShowRecent",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "Start_ShowRecommended",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Policies\\Microsoft\\Dsh",
+      "name": "EnableWebContent",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "TaskbarSearch",
+      "expectedData": "1",
+      "kind": "DWord"
+    }
+  ]
+}

@@ -493,8 +493,12 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 16 — Full Health Validation & Release Confidence
 
-- **Status: IN PROGRESS — STAGE 16.1 IMPLEMENTATION READY (2026-08-15)** — BALANCED REAL ISO
-  BUILD + VM FULL-HEALTH VALIDATION REQUIRED; branch `phase/16-full-health-validation`; NOT merged.
+- **Status: IN PROGRESS — STAGES 16.1 + 16.1a + 16.1b COMPLETE (2026-08-16; Balanced
+  FullHealthValidated — real Win11 Pro 25H2 build 26200.8037 on VMware: failures=[],
+  overallStatus Warning, fullHealthValidated=true)** · **STAGE 16.2 IMPLEMENTATION READY
+  (2026-08-16)** — DEDICATEDGAMING FULL-HEALTH VALIDATION REQUIRED (NEW VMware VM,
+  `--commit-profile DedicatedGaming`, `-ExpectedJson dedicated-gaming-expected-state.json`);
+  branch `phase/16-full-health-validation`; NOT merged.
 - **Stage 16.1 — Balanced end-to-end ISO + VM health validation prep (ADR-098):** proves a real
   WinForge-generated customized ISO works end-to-end (Profile → Customize → validated BuildPlan →
   Apply → COMMIT WIM → build ISO → VMware install → OOBE → desktop → post-install health
