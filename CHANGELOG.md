@@ -1,3 +1,32 @@
+## Phase 16 - Stage 16.1b: FullHealth REQUIRED-vs-OPTIONAL gate (2026-08-16)
+
+- **Second real Balanced report is ZERO-failure**: all sections Pass except
+  windowsIdentity (activation Warning, report-only) and network (HTTPS
+  TLS-trust Warning; IP/DNS Pass); servicing CheckHealth + SFC both Pass with
+  the optional ScanHealth NotTested.
+- **The remaining false-negative was the gate itself**: the OPTIONAL
+  DISM /ScanHealth (optional per ADR-098) was treated as a required gate, so
+  `servicing.status = NotTested` blocked FullHealthValidated despite zero
+  failures.
+- **Required-vs-optional check model**: every check now declares
+  `requiredForFullHealth` in the report JSON (omitted = required). REQUIRED
+  checks must be tested; OPTIONAL checks (ScanHealth, HTTPS connectivity,
+  activation, Defender signatures, audio device, ...) may be NotTested or
+  Warning without blocking. A Fail on any check still blocks (conservative).
+- **Servicing**: CheckHealth + SFC required; ScanHealth optional. CheckHealth
+  + SFC Pass with ScanHealth NotTested => servicing Pass and full-health
+  eligible; the ScanHealth NotTested stays visible (never fabricated as Pass).
+- **Network**: DHCP/IP + DNS required (genuine failures always block); HTTPS
+  connectivity optional (environmental TLS-trust Warning non-blocking).
+- **Activation**: informational/report-only - never blocks.
+- **Aggregation**: section status derives from required checks; overallStatus
+  stays the honest worst (optional NotTested excluded, optional Warnings
+  included); the gate is required-based only. `failures = []` alone is NOT
+  sufficient - untested required evidence never validates.
+- Expected corrected result: `overallStatus = Warning`, `failures = []`,
+  `fullHealthValidated = true`. Balanced stays formally pending until the
+  corrected report is rerun in the existing VM (no ISO rebuild, no reinstall).
+
 ## Phase 16 - Stage 16.1a: Health-check correctness fixes (2026-08-16)
 
 - **First real Balanced VM validation succeeded** through the desktop: the

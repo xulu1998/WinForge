@@ -856,3 +856,7 @@ untested critical sections do. Windows identity display normalizes the legacy
 "Windows 10 Pro" ProductName to "Windows 11" when build >= 22000 (presentation
 only). **1263 tests (Core 53, App 1208), 0 err/0 warn.** Balanced is NOT yet
 formally FullHealthValidated — corrected-report retest in the existing VM.
+
+## Phase 16 - Stage 16.1b: FullHealth REQUIRED-vs-OPTIONAL gate (2026-08-16, ADR-098 addendum)
+
+The second real Balanced health report is ZERO-failure (all sections Pass except windowsIdentity activation Warning and network HTTPS-trust Warning with IP/DNS Pass; servicing CheckHealth + SFC Pass). The last false-negative was the gate: the OPTIONAL DISM /ScanHealth (optional per ADR-098) was treated as required. HealthCheckItem now carries `RequiredForFullHealth` (JSON `requiredForFullHealth`, omitted = true); REQUIRED checks must be tested (NotTested blocks; `failures=[]` alone is insufficient), OPTIONAL checks (ScanHealth, HTTPS, activation, Defender signatures, audio) may be NotTested/Warning without blocking, and a Fail on ANY check blocks conservatively. Section status derives from required checks; overallStatus is the honest worst of required checks + Warning/Fail optional checks + check-less sections (optional NotTested excluded); the FullHealthValidated gate is required-only. Expected corrected result: overallStatus Warning / failures [] / fullHealthValidated true. **1272 tests (Core 53, App 1219), 0 err/0 warn.**

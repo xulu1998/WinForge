@@ -261,9 +261,207 @@ public sealed class Stage16aHealthCorrectnessTests
         Assert.Empty(result.Report.Failures);
     }
 
+    // =====================================================================
+    // 6. Stage 16.1b — REQUIRED vs OPTIONAL gate semantics
+    // =====================================================================
+
+    private static string ServicingJson(
+        string checkHealth, string sfc, string scanHealth, bool scanHealthOptional = true)
+        => "{" +
+           $"\"sections\":{{" +
+           $"\"media\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"iso\",\"status\":\"Pass\"}}]}}," +
+           $"\"profile\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"profile\",\"status\":\"Pass\"}}]}}," +
+           $"\"windowsIdentity\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"edition\",\"status\":\"Pass\"}}]}}," +
+           $"\"bootAndShell\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"explorer\",\"status\":\"Pass\"}}]}}," +
+           $"\"devices\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"deviceProblems\",\"status\":\"Pass\"}}]}}," +
+           $"\"network\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"dns\",\"status\":\"Pass\"}}]}}," +
+           $"\"servicing\":{{\"status\":\"Pass\",\"checks\":[" +
+           $"{{\"name\":\"dismCheckHealth\",\"status\":\"{checkHealth}\"}}," +
+           $"{{\"name\":\"sfcVerifyOnly\",\"status\":\"{sfc}\"}}," +
+           $"{{\"name\":\"dismScanHealth\",\"status\":\"{scanHealth}\",\"requiredForFullHealth\":{(scanHealthOptional ? "false" : "true")}}}" +
+           $"]}}," +
+           $"\"windowsUpdate\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"wuauserv\",\"status\":\"Pass\"}}]}}," +
+           $"\"security\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"defender\",\"status\":\"Pass\"}}]}}," +
+           $"\"storeAndAppPlatform\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"store\",\"status\":\"Pass\"}}]}}," +
+           $"\"profileExpectedChanges\":{{\"status\":\"Pass\",\"checks\":[{{\"name\":\"appx\",\"status\":\"Pass\"}}]}}" +
+           "}}";
+
+    [Fact]
+    public void Required_Pass_Optional_NotTested_Is_FullHealth_Eligible()
+    {
+        // Stage 16.1b root fix: DISM /ScanHealth is OPTIONAL. CheckHealth + SFC
+        // (required) Pass, ScanHealth NotTested -> servicing section Pass and
+        // FullHealthValidated true.
+        var result = HealthReportParser.Parse(ServicingJson("Pass", "Pass", "NotTested"));
+        Assert.True(result.SchemaValid);
+        Assert.Equal(HealthStatus.Pass, result.Report!.Servicing.Status); // required-only section status
+        Assert.Equal(HealthStatus.Pass, result.Report.OverallStatus);
+        Assert.True(result.Report.FullHealthValidated);
+        // The optional NotTested check stays visible in the report.
+        var scan = result.Report.Servicing.Checks.Single(c => c.Name == "dismScanHealth");
+        Assert.Equal(HealthStatus.NotTested, scan.Status);
+        Assert.False(scan.RequiredForFullHealth);
+    }
+
+    [Fact]
+    public void Required_Servicing_Fail_Blocks_FullHealth()
+    {
+        var result = HealthReportParser.Parse(ServicingJson("Fail", "Pass", "NotTested"));
+        Assert.True(result.SchemaValid);
+        Assert.Equal(HealthStatus.Fail, result.Report!.Servicing.Status);
+        Assert.Equal(HealthStatus.Fail, result.Report.OverallStatus);
+        Assert.False(result.Report.FullHealthValidated);
+        Assert.Contains(result.Report.Failures, f => f.Contains("dismCheckHealth", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Optional_ScanHealth_Fail_Is_Deterministic_And_Blocks()
+    {
+        // Documented deterministic behavior: a Fail on ANY check - including the
+        // OPTIONAL ScanHealth - is conservatively treated as a blocker (a
+        // corruption finding is never silently certified). It is also surfaced
+        // in failures + overall.
+        var result = HealthReportParser.Parse(ServicingJson("Pass", "Pass", "Fail"));
+        Assert.True(result.SchemaValid);
+        Assert.Equal(HealthStatus.Fail, result.Report!.OverallStatus);
+        Assert.False(result.Report.FullHealthValidated);
+        Assert.Contains(result.Report.Failures, f => f.Contains("dismScanHealth", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Activation_Warning_Does_Not_Block_FullHealth()
+    {
+        // Real evidence: windowsIdentity = Warning only because activation is
+        // Notification. Activation is informational/report-only.
+        var json = AllSectionsPassJson()
+            .Replace("\"windowsIdentity\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"edition\",\"status\":\"Pass\"}]}",
+                "\"windowsIdentity\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"edition\",\"status\":\"Pass\"},{\"name\":\"activation\",\"status\":\"Warning\",\"detail\":\"Notification\",\"requiredForFullHealth\":false}]}",
+                StringComparison.Ordinal);
+        var result = HealthReportParser.Parse(json);
+        Assert.True(result.SchemaValid);
+        Assert.Equal(HealthStatus.Warning, result.Report!.OverallStatus);
+        Assert.True(result.Report.FullHealthValidated); // activation never blocks
+    }
+
+    [Fact]
+    public void Https_Environmental_Warning_Does_Not_Block_FullHealth()
+    {
+        // Real evidence: network fundamentals Pass, HTTPS TLS-trust Warning.
+        var json = AllSectionsPassJson()
+            .Replace("\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Pass\"}]}",
+                "\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dhcpIp\",\"status\":\"Pass\"},{\"name\":\"dns\",\"status\":\"Pass\"},{\"name\":\"httpsConnectivity\",\"status\":\"Warning\",\"detail\":\"TLS trust\",\"requiredForFullHealth\":false}]}",
+                StringComparison.Ordinal);
+        var result = HealthReportParser.Parse(json);
+        Assert.True(result.SchemaValid);
+        Assert.Equal(HealthStatus.Warning, result.Report!.OverallStatus);
+        Assert.True(result.Report.FullHealthValidated);
+    }
+
+    [Fact]
+    public void IpDns_Failure_Blocks_FullHealth()
+    {
+        // A genuine adapter/IP/DNS failure must NEVER pass (Stage 16.1b §4).
+        var json = AllSectionsPassJson()
+            .Replace("\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Pass\"}]}",
+                "\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dhcpIp\",\"status\":\"Fail\",\"detail\":\"No non-APIPA IPv4\"},{\"name\":\"dns\",\"status\":\"Pass\"}]}",
+                StringComparison.Ordinal);
+        var result = HealthReportParser.Parse(json);
+        Assert.True(result.SchemaValid);
+        Assert.Equal(HealthStatus.Fail, result.Report!.OverallStatus);
+        Assert.False(result.Report.FullHealthValidated);
+    }
+
+    [Fact]
+    public void Required_NotTested_Blocks_Even_With_No_Failures()
+    {
+        // failures=[] alone is NOT sufficient: an untested REQUIRED check blocks.
+        var result = HealthReportParser.Parse(ServicingJson("Pass", "NotTested", "NotTested"));
+        Assert.True(result.SchemaValid);
+        Assert.Empty(result.Report!.Failures);
+        Assert.False(result.Report.FullHealthValidated);
+    }
+
+    [Fact]
+    public void Required_Optional_Flag_Serialization_Roundtrip()
+    {
+        // requiredForFullHealth is exposed in the report JSON; an omitted flag
+        // defaults to REQUIRED (true) so old reports stay strict.
+        const string json = "{" +
+                            "\"sections\":{" +
+                            "\"media\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"iso\",\"status\":\"Pass\"}]}," +
+                            "\"profile\":{\"status\":\"Pass\",\"checks\":[]}," +
+                            "\"windowsIdentity\":{\"status\":\"Pass\",\"checks\":[]}," +
+                            "\"bootAndShell\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"explorer\",\"status\":\"Pass\"}]}," +
+                            "\"devices\":{\"status\":\"Pass\",\"checks\":[]}," +
+                            "\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Pass\"}]}," +
+                            "\"servicing\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dismCheckHealth\",\"status\":\"Pass\"},{\"name\":\"dismScanHealth\",\"status\":\"NotTested\",\"requiredForFullHealth\":false}]}," +
+                            "\"windowsUpdate\":{\"status\":\"Pass\",\"checks\":[]}," +
+                            "\"security\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"defender\",\"status\":\"Pass\"}]}," +
+                            "\"storeAndAppPlatform\":{\"status\":\"Pass\",\"checks\":[]}," +
+                            "\"profileExpectedChanges\":{\"status\":\"Pass\",\"checks\":[]}" +
+                            "}}";
+        var result = HealthReportParser.Parse(json);
+        Assert.True(result.SchemaValid);
+        Assert.True(result.Report!.Servicing.Checks.Single(c => c.Name == "dismCheckHealth").RequiredForFullHealth); // omitted -> required
+        Assert.False(result.Report.Servicing.Checks.Single(c => c.Name == "dismScanHealth").RequiredForFullHealth); // explicit false
+    }
+
+    [Fact]
+    public void Real_Balanced_Second_Report_Fixture_Evaluates_FullHealth_True()
+    {
+        // The AUTHORITATIVE second real Balanced report (Stage 16.1b): zero
+        // failures, windowsIdentity=Warning (activation only), network=Warning
+        // (HTTPS trust only), servicing required checks Pass + optional
+        // ScanHealth NotTested. Expected: overallStatus=Warning,
+        // fullHealthValidated=true.
+        const string json = "{" +
+                            "\"sections\":{" +
+                            "\"media\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"isoMedia\",\"status\":\"Pass\",\"detail\":\"WinForge-Balanced...iso\"}]}," +
+                            "\"profile\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"profileId\",\"status\":\"Pass\",\"detail\":\"Balanced\"}]}," +
+                            "\"windowsIdentity\":{\"status\":\"Warning\",\"checks\":[{\"name\":\"edition\",\"status\":\"Pass\",\"detail\":\"Windows 11 Pro\"},{\"name\":\"build\",\"status\":\"Pass\",\"detail\":\"26200.8037 (25H2)\"},{\"name\":\"architecture\",\"status\":\"Pass\",\"detail\":\"64 位\"},{\"name\":\"language\",\"status\":\"Pass\",\"detail\":\"zh-CN\"},{\"name\":\"activation\",\"status\":\"Warning\",\"detail\":\"Notification (report only)\",\"requiredForFullHealth\":false},{\"name\":\"systemBoot\",\"status\":\"Pass\",\"detail\":\"ok\"}]}," +
+                            "\"bootAndShell\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"explorer\",\"status\":\"Pass\",\"detail\":\"running\"}]}," +
+                            "\"devices\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"deviceProblems\",\"status\":\"Pass\",\"detail\":\"none\"}]}," +
+                            "\"network\":{\"status\":\"Warning\",\"checks\":[{\"name\":\"dhcpIp\",\"status\":\"Pass\",\"detail\":\"192.168.x.x\"},{\"name\":\"dns\",\"status\":\"Pass\",\"detail\":\"ok\"},{\"name\":\"httpsConnectivity\",\"status\":\"Warning\",\"detail\":\"TLS trust channel unavailable\",\"requiredForFullHealth\":false}]}," +
+                            "\"servicing\":{\"status\":\"NotTested\",\"checks\":[{\"name\":\"dismCheckHealth\",\"status\":\"Pass\",\"detail\":\"no corruption\"},{\"name\":\"dismScanHealth\",\"status\":\"NotTested\",\"detail\":\"Skipped (opt-in)\",\"requiredForFullHealth\":false},{\"name\":\"sfcVerifyOnly\",\"status\":\"Pass\",\"detail\":\"passed (exit 0)\"}]}," +
+                            "\"windowsUpdate\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"wuauserv\",\"status\":\"Pass\",\"detail\":\"present\"}]}," +
+                            "\"security\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"defender\",\"status\":\"Pass\",\"detail\":\"present\"}]}," +
+                            "\"storeAndAppPlatform\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"microsoftStore\",\"status\":\"Pass\",\"detail\":\"present\"}]}," +
+                            "\"profileExpectedChanges\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"appxAbsent_Microsoft.WindowsFeedbackHub\",\"status\":\"Pass\",\"detail\":\"absent\"},{\"name\":\"reg_Start_ShowRecent\",\"status\":\"Pass\",\"detail\":\"HKCU = 0\"}]}" +
+                            "}}";
+        var result = HealthReportParser.Parse(json);
+        Assert.True(result.SchemaValid);
+        Assert.Empty(result.Report!.Failures);
+        Assert.Equal(HealthStatus.Warning, result.Report.OverallStatus);
+        Assert.True(result.Report.FullHealthValidated); // the whole point of 16.1b
+        Assert.Equal(HealthStatus.Pass, result.Report.Servicing.Status); // required-only display
+        Assert.Equal(HealthStatus.Pass, result.Report.WindowsIdentity.Status); // activation warning is optional -> required-only display is Pass
+        Assert.Equal(HealthStatus.Pass, result.Report.Network.Status); // HTTPS trust optional -> required-only display is Pass
+    }
+
+    private static string AllSectionsPassJson()
+    {
+        static string Sec(string status, string checks = "") => $"{{\"status\":\"{status}\",\"checks\":[{checks}]}}";
+        return "{" +
+               $"\"sections\":{{" +
+               $"\"media\":{Sec("Pass", "{\"name\":\"iso\",\"status\":\"Pass\"}")}," +
+               $"\"profile\":{Sec("Pass", "{\"name\":\"profile\",\"status\":\"Pass\"}")}," +
+               $"\"windowsIdentity\":{Sec("Pass", "{\"name\":\"edition\",\"status\":\"Pass\"}")}," +
+               $"\"bootAndShell\":{Sec("Pass", "{\"name\":\"explorer\",\"status\":\"Pass\"}")}," +
+               $"\"devices\":{Sec("Pass", "{\"name\":\"deviceProblems\",\"status\":\"Pass\"}")}," +
+               $"\"network\":{Sec("Pass", "{\"name\":\"dns\",\"status\":\"Pass\"}")}," +
+               $"\"servicing\":{Sec("Pass", "{\"name\":\"sfcVerifyOnly\",\"status\":\"Pass\"}")}," +
+               $"\"windowsUpdate\":{Sec("Pass")}," +
+               $"\"security\":{Sec("Pass", "{\"name\":\"defender\",\"status\":\"Pass\"}")}," +
+               $"\"storeAndAppPlatform\":{Sec("Pass")}," +
+               $"\"profileExpectedChanges\":{Sec("Pass", "{\"name\":\"appx\",\"status\":\"Pass\"}")}" +
+               "}}";
+    }
+
     private static string SampleCorrectedReport()
     {
         static string Sec(string status, string checks = "") => $"{{\"status\":\"{status}\",\"checks\":[{checks}]}}";
+        // Every critical section carries at least one REQUIRED check; the
+        // optional ScanHealth row is NotTested and must NOT block.
         return "{" +
                $"\"sections\":{{" +
                $"\"media\":{Sec("Pass", "{\"name\":\"iso\",\"status\":\"Pass\",\"detail\":\"WinForge-Balanced...iso\"}")}," +
@@ -272,9 +470,9 @@ public sealed class Stage16aHealthCorrectnessTests
                $"\"bootAndShell\":{Sec("Pass", "{\"name\":\"explorer\",\"status\":\"Pass\",\"detail\":\"running\"}")}," +
                $"\"devices\":{Sec("Pass", "{\"name\":\"deviceProblems\",\"status\":\"Pass\",\"detail\":\"none\"}")}," +
                $"\"network\":{Sec("Pass", "{\"name\":\"dns\",\"status\":\"Pass\",\"detail\":\"ok\"}")}," +
-               $"\"servicing\":{Sec("Pass", "{\"name\":\"sfcVerifyOnly\",\"status\":\"Pass\",\"detail\":\"Windows 资源保护未找到任何完整性冲突。\"}")}," +
+               $"\"servicing\":{Sec("Pass", "{\"name\":\"sfcVerifyOnly\",\"status\":\"Pass\",\"detail\":\"Windows 资源保护未找到任何完整性冲突。\"},{\"name\":\"dismScanHealth\",\"status\":\"NotTested\",\"detail\":\"Skipped\",\"requiredForFullHealth\":false}")}," +
                $"\"windowsUpdate\":{Sec("Pass")}," +
-               $"\"security\":{Sec("Pass")}," +
+               $"\"security\":{Sec("Pass", "{\"name\":\"defender\",\"status\":\"Pass\",\"detail\":\"present\"}")}," +
                $"\"storeAndAppPlatform\":{Sec("Pass")}," +
                $"\"profileExpectedChanges\":{Sec("Pass", "{\"name\":\"reg_Start_ShowRecommended\",\"status\":\"Pass\",\"detail\":\"HKCU ...= 0\"}")}" +
                "}}";

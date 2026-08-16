@@ -569,10 +569,10 @@ public sealed class Stage16aFullHealthValidationTests
     [Fact]
     public void Health_Aggregation_Fail_Dominates()
     {
-        var json = AllPassReport()
-            .Replace("\"servicing\":{", "\"servicing\":{\"x\":1,\"unused\":true,\"z\":{}}," , StringComparison.Ordinal);
-        // Force a Fail by flipping the servicing section status wholesale.
-        var withFail = AllPassReport().Replace("\"servicing\":{\"status\":\"Pass\"", "\"servicing\":{\"status\":\"Fail\"", StringComparison.Ordinal);
+        // A Fail on a REQUIRED check drives section + overall to Fail and blocks
+        // FullHealthValidated (Stage 16.1b: Failures in required checks always win).
+        var withFail = AllPassReport().Replace("\"servicing\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dismCheckHealth\",\"status\":\"Pass\"",
+            "\"servicing\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dismCheckHealth\",\"status\":\"Fail\"", StringComparison.Ordinal);
         var result = HealthReportParser.Parse(withFail);
         Assert.True(result.SchemaValid);
         Assert.Equal(HealthStatus.Fail, result.Report!.OverallStatus);
@@ -604,7 +604,7 @@ public sealed class Stage16aFullHealthValidationTests
         // product failure and must NOT block FullHealthValidated (ADR-098 §6).
         var json = AllPassReport().Replace(
             "\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Pass\",\"detail\":\"ok\"}]}",
-            "\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Pass\",\"detail\":\"ok\"},{\"name\":\"httpsConnectivity\",\"status\":\"Warning\",\"detail\":\"TLS trust channel unavailable\"}]}",
+            "\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Pass\",\"detail\":\"ok\"},{\"name\":\"httpsConnectivity\",\"status\":\"Warning\",\"detail\":\"TLS trust channel unavailable\",\"requiredForFullHealth\":false}]}",
             StringComparison.Ordinal);
         Assert.DoesNotContain("dns\",\"status\":\"Pass\",\"detail\":\"ok\"}]},\"checks\"", json); // no duplicated checks key
         var result = HealthReportParser.Parse(json);
@@ -617,17 +617,22 @@ public sealed class Stage16aFullHealthValidationTests
     [Fact]
     public void No_FullHealth_When_Critical_Section_NotTested()
     {
-        var json = AllPassReport().Replace("\"servicing\":{\"status\":\"Pass\"", "\"servicing\":{\"status\":\"NotTested\"", StringComparison.Ordinal);
+        // A REQUIRED check that is NotTested blocks - failures=[] alone is NOT
+        // sufficient (Stage 16.1b).
+        var json = AllPassReport().Replace("\"servicing\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dismCheckHealth\",\"status\":\"Pass\"",
+            "\"servicing\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dismCheckHealth\",\"status\":\"NotTested\"", StringComparison.Ordinal);
         var result = HealthReportParser.Parse(json);
         Assert.True(result.SchemaValid);
-        Assert.False(result.Report!.FullHealthValidated); // critical section untested → no FullHealthValidated
-        Assert.NotEqual(HealthStatus.Pass, result.Report.OverallStatus);
+        Assert.False(result.Report!.FullHealthValidated); // untested REQUIRED evidence → no FullHealthValidated
+        Assert.Equal(HealthStatus.NotTested, result.Report.OverallStatus);
     }
 
     [Fact]
     public void No_FullHealth_When_Any_Section_Fails()
     {
-        var json = AllPassReport().Replace("\"network\":{\"status\":\"Pass\"", "\"network\":{\"status\":\"Fail\"", StringComparison.Ordinal);
+        // A genuine REQUIRED network failure (IP/DNS) always blocks (Stage 16.1b §4).
+        var json = AllPassReport().Replace("\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Pass\"",
+            "\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Fail\"", StringComparison.Ordinal);
         var result = HealthReportParser.Parse(json);
         Assert.True(result.SchemaValid);
         Assert.Equal(HealthStatus.Fail, result.Report!.OverallStatus);

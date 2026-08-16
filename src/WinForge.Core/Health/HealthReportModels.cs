@@ -23,6 +23,16 @@ public sealed class HealthCheckItem
     public string Name { get; set; } = string.Empty;
     public HealthStatus Status { get; set; } = HealthStatus.Pass;
     public string Detail { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether this check gates FullHealthValidated (Stage 16.1b). REQUIRED
+    /// checks must be actually tested and may not be NotTested; OPTIONAL checks
+    /// (e.g. DISM /ScanHealth, HTTPS connectivity, activation, Defender
+    /// signatures) may be NotTested or Warning without blocking. A Fail on ANY
+    /// check (required or optional) is conservatively treated as a blocker.
+    /// Defaults to true when the report JSON omits the flag.
+    /// </summary>
+    public bool RequiredForFullHealth { get; set; } = true;
 }
 
 /// <summary>One named section of the report (media, servicing, security, …).</summary>

@@ -202,3 +202,41 @@ test pins the file encoding. Report JSON is valid UTF-8 Unicode.
 sections (bootAndShell, servicing, security, network) are actually tested
 (not NotTested) with no failing check. Warnings - including the real-VM HTTPS
 TLS-trust Warning on a VM whose IP/DNS fundamentals Pass - do NOT block.
+
+
+## Stage 16.1b - FullHealth REQUIRED-vs-OPTIONAL gate (ADR-098 addendum)
+
+### Second real Balanced report (recorded)
+
+The corrected 16.1a script produced a ZERO-failure report: bootAndShell,
+devices, security, windowsUpdate, storeAndAppPlatform, profileExpectedChanges
+all Pass; windowsIdentity Warning only because activation is Notification
+(report-only); network Warning only on HTTPS TLS-trust (IP/DNS Pass);
+servicing: dismCheckHealth Pass + sfcVerifyOnly Pass + dismScanHealth
+NotTested. The remaining false-negative was the GATE: the optional
+DISM /ScanHealth NotTested dragged `servicing.status` to NotTested and blocked
+FullHealthValidated despite zero failures.
+
+### Required vs optional model
+
+Every check now carries `requiredForFullHealth` (JSON-exposed; omitted =
+required). The gate is required-based, never "worst status of every check":
+
+| Check | Requirement | Real VM |
+| --- | --- | --- |
+| DISM /CheckHealth | REQUIRED | Pass |
+| sfc /verifyonly | REQUIRED | Pass |
+| DISM /ScanHealth | OPTIONAL | NotTested (non-blocking) |
+| DHCP/IP + DNS | REQUIRED (network) | Pass |
+| HTTPS connectivity | OPTIONAL (TLS-trust Warning non-blocking) | Warning |
+| activation | OPTIONAL (report-only) | Warning |
+| edition/build/arch/language/boot | REQUIRED | Pass |
+| Any Fail | BLOCKS (conservative) | none |
+
+Section display status = worst of REQUIRED checks; overallStatus = honest
+worst of all required checks + any Warning/Fail optional check; an optional
+NotTested never drags overall down and never blocks the gate. `failures = []`
+alone is NOT sufficient - an untested REQUIRED check still blocks.
+
+Expected final real result after retest: `overallStatus = Warning`,
+`failures = []`, `fullHealthValidated = true`.

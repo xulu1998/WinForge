@@ -2587,3 +2587,51 @@ detail) - presentation only, edition/build detection unchanged.
 **Status:** Balanced is NOT yet formally FullHealthValidated - the corrected
 report must pass first (retest in the EXISTING VM with only the two updated
 files; no ISO rebuild, no reinstall).
+
+
+## ADR-098 addendum: FullHealth REQUIRED-vs-OPTIONAL gate (Stage 16.1b)
+
+**Status:** Accepted (Phase 16 Stage 16.1b; implementation ready, Balanced
+final health retest required).
+**Context:** The second real Balanced health report (after the 16.1a fixes)
+returned `failures = []` with bootAndShell/devices/security/windowsUpdate/
+storeAndAppPlatform/profileExpectedChanges all Pass, windowsIdentity Warning
+(activation Notification only, report-only) and network Warning (HTTPS
+TLS-trust only; IP/DNS Pass) - yet `servicing.status = NotTested` and
+`fullHealthValidated = false`. The ZERO-failure report was still rejected
+because the OPTIONAL DISM /ScanHealth (explicitly optional in ADR-098) was
+NotTested and the gate derived eligibility from the worst status of every
+check in the section.
+**Decision - explicit check criticality, required evidence vs optional
+evidence:**
+- Every check carries `requiredForFullHealth` (JSON-exposed; omitted defaults
+  to TRUE so old reports stay strict). REQUIRED checks must be actually
+  tested and may not be NotTested; OPTIONAL checks (DISM /ScanHealth, HTTPS
+  connectivity, activation, Defender signatures, audio device, ...) may be
+  NotTested or Warning without blocking. A Fail on ANY check (required or
+  optional) is conservatively treated as a blocker (a ScanHealth corruption
+  finding is never silently certified).
+- **Servicing rule:** REQUIRED = DISM /Online /Cleanup-Image /CheckHealth +
+  sfc /verifyonly (both Pass on the real VM). OPTIONAL = DISM /ScanHealth.
+  CheckHealth + SFC Pass + ScanHealth NotTested => servicing section displays
+  Pass (required-only section status) and does NOT block FullHealthValidated.
+  The ScanHealth NotTested check stays visible in the report (never hidden,
+  never fabricated as Pass).
+- **Network rule:** REQUIRED = DHCP/IP assignment + DNS resolution (a genuine
+  adapter/IP/DNS failure always blocks). OPTIONAL = HTTPS connectivity - an
+  environmental TLS-trust Warning with working fundamentals is non-blocking.
+- **Windows identity rule:** activation is informational/report-only (a
+  Notification/LicenseStatus state never blocks); edition/build/architecture/
+  language/systemBoot remain required.
+- **Aggregation separation:** SECTION display status = worst of the section's
+  REQUIRED checks (fallback: all checks when none are required). OVERALL
+  status = honest worst of all required checks + any Warning/Fail optional
+  check + any check-less section status (an optional NotTested never drags it
+  down, optional Warnings still surface). FullHealthValidated = REQUIRED-gate
+  only: no Fail anywhere + no required check NotTested (+ each critical
+  section actually exercised). `failures = []` alone is NOT sufficient.
+- Expected final real result: `overallStatus = Warning`, `failures = []`,
+  `fullHealthValidated = true`.
+**Status:** Balanced remains formally pending until the corrected report is
+rerun in the existing VM (only Validate-WinForgeInstallation.ps1 + balanced-
+expected-state.json if schema changed; no ISO rebuild, no reinstall).

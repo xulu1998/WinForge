@@ -85,17 +85,25 @@ function New-HealthSection {
 }
 
 function Add-Check {
-    param($Section, [string]$Name, [string]$Status, [string]$Detail)
-    $check = @{ name = $Name; status = $Status; detail = $Detail }
+    param($Section, [string]$Name, [string]$Status, [string]$Detail, [bool]$Required = $true)
+    # Stage 16.1b: every check carries requiredForFullHealth. REQUIRED checks
+    # (default) gate FullHealthValidated and may not be NotTested; OPTIONAL
+    # checks (ScanHealth, HTTPS trust, activation, ...) may be NotTested or
+    # Warning without blocking. A Fail on any check still blocks (conservative).
+    $check = @{ name = $Name; status = $Status; detail = $Detail; requiredForFullHealth = $Required }
     $Section.checks = @($Section.checks) + $check
 }
 
 function Resolve-SectionStatus {
     param([hashtable]$Section)
-    # Fail > Warning > NotTested > Pass
+    # Section display status = worst of the REQUIRED checks in the section
+    # (falling back to all checks when the section has no required ones), so an
+    # OPTIONAL NotTested/Warning never turns the section into a false blocker.
+    $required = @($Section.checks | Where-Object { $_ -and $_.requiredForFullHealth })
+    if ($required.Count -eq 0) { $required = @($Section.checks) }
     $rank = @{ "Fail" = 3; "Warning" = 2; "NotTested" = 1; "Pass" = 0 }
     $worst = "Pass"; $worstRank = 0
-    foreach ($c in $Section.checks) {
+    foreach ($c in $required) {
         $r = $rank[[string]$c.status]
         if ($null -eq $r) { $r = 1 }
         if ($r -gt $worstRank) { $worstRank = $r; $worst = $c.status }
@@ -224,7 +232,7 @@ $report = @{
 $m = $report.sections.media
 $mediaDetail = if ($MediaId) { $MediaId } else { "(not provided - pass -MediaId for full evidence)" }
 Add-Check $m "isoMedia" "Pass" $mediaDetail
-if ($IsoSha256) { Add-Check $m "isoSha256" "Pass" $IsoSha256 } else { Add-Check $m "isoSha256" "Warning" "ISO SHA-256 not provided (host-side computed)" }
+if ($IsoSha256) { Add-Check $m "isoSha256" "Pass" $IsoSha256 -Required:$false } else { Add-Check $m "isoSha256" "Warning" "ISO SHA-256 not provided (host-side computed)" -Required:$false }
 $m.status = Resolve-SectionStatus $m
 
 # ---- profile ----
@@ -261,10 +269,10 @@ $lic = Get-CimInstance SoftwareLicensingProduct -ErrorAction SilentlyContinue | 
 if ($lic) {
     $map = @{ 1 = "Licensed"; 2 = "OOBGrace"; 3 = "OOTGrace"; 4 = "NonGenuineGrace"; 5 = "Notification"; 6 = "ExtendedGrace" }
     $state = if ($map.ContainsKey([int]$lic.LicenseStatus)) { $map[[int]$lic.LicenseStatus] } else { "Status $($lic.LicenseStatus)" }
-    if ([int]$lic.LicenseStatus -eq 1) { Add-Check $wi "activation" "Pass" $state }
-    else { Add-Check $wi "activation" "Warning" "$state (report only - activation not required for validation)" }
+    if ([int]$lic.LicenseStatus -eq 1) { Add-Check $wi "activation" "Pass" $state -Required:$false }
+    else { Add-Check $wi "activation" "Warning" "$state (report only - activation not required for validation)" -Required:$false }
 } else {
-    Add-Check $wi "activation" "NotTested" "No licensing product with partial key found"
+    Add-Check $wi "activation" "NotTested" "No licensing product with partial key found" -Required:$false
 }
 $boot = (Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue).LastBootUpTime
 if ($boot) { Add-Check $wi "systemBoot" "Pass" "Last boot: $boot" } else { Add-Check $wi "systemBoot" "NotTested" "LastBootUpTime not readable" }
@@ -274,8 +282,8 @@ $wi.status = Resolve-SectionStatus $wi
 $bs = $report.sections.bootAndShell
 if (Get-Process explorer -ErrorAction SilentlyContinue) { Add-Check $bs "explorer" "Pass" "Explorer shell process running" }
 else { Add-Check $bs "explorer" "Fail" "Explorer shell process NOT running - desktop may not be reachable" }
-if (Get-Process StartMenuExperienceHost -ErrorAction SilentlyContinue) { Add-Check $bs "startMenu" "Pass" "Start menu host process running" }
-else { Add-Check $bs "startMenu" "Warning" "StartMenuExperienceHost not running (may start on demand)" }
+if (Get-Process StartMenuExperienceHost -ErrorAction SilentlyContinue) { Add-Check $bs "startMenu" "Pass" "Start menu host process running" -Required:$false }
+else { Add-Check $bs "startMenu" "Warning" "StartMenuExperienceHost not running (may start on demand)" -Required:$false }
 $bs.status = Resolve-SectionStatus $bs
 
 # ---- devices ----
@@ -292,8 +300,8 @@ $netAdapters = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $
 if ($netAdapters.Count -gt 0) { Add-Check $dv "networkAdapter" "Pass" (($netAdapters | ForEach-Object { $_.Name }) -join "; ") }
 else { Add-Check $dv "networkAdapter" "Fail" "No connected network adapter" }
 $audio = Get-CimInstance Win32_SoundDevice -ErrorAction SilentlyContinue | Select-Object -First 1
-if ($audio) { Add-Check $dv "audioDevice" "Pass" $audio.Name }
-else { Add-Check $dv "audioDevice" "Warning" "No audio device - expected for a VMware VM without an audio device; not a product failure" }
+if ($audio) { Add-Check $dv "audioDevice" "Pass" $audio.Name -Required:$false }
+else { Add-Check $dv "audioDevice" "Warning" "No audio device - expected for a VMware VM without an audio device; not a product failure" -Required:$false }
 $dv.status = Resolve-SectionStatus $dv
 
 # ---- network ----
@@ -310,13 +318,13 @@ try {
 }
 try {
     $resp = Invoke-WebRequest "https://www.msftconnecttest.com/connecttest.txt" -TimeoutSec 8 -UseBasicParsing -ErrorAction Stop
-    if ($resp.Content -match "Microsoft Connect Test") { Add-Check $nw "httpsConnectivity" "Pass" "HTTPS to msftconnecttest.com OK" }
-    else { Add-Check $nw "httpsConnectivity" "Warning" "HTTPS endpoint reachable but unexpected content" }
+    if ($resp.Content -match "Microsoft Connect Test") { Add-Check $nw "httpsConnectivity" "Pass" "HTTPS to msftconnecttest.com OK" -Required:$false }
+    else { Add-Check $nw "httpsConnectivity" "Warning" "HTTPS endpoint reachable but unexpected content" -Required:$false }
 } catch {
     # TLS trust chain issues (VM CA store, proxy) are honest Warnings: network
     # fundamentals (adapter/IP/DNS) already Pass and a trust-channel warning is
     # NOT a product failure. Never convert this to Pass artificially.
-    Add-Check $nw "httpsConnectivity" "Warning" "HTTPS unavailable: $(Compact-Text $_.Exception.Message). Deliberately-offline VM is NOT a product failure."
+    Add-Check $nw "httpsConnectivity" "Warning" "HTTPS unavailable: $(Compact-Text $_.Exception.Message). Deliberately-offline VM is NOT a product failure." -Required:$false
 }
 $nw.status = Resolve-SectionStatus $nw
 
@@ -331,10 +339,10 @@ if ($ScanHealth) {
     $scanResult = Invoke-Native -FilePath "dism.exe" -ArgumentList @("/English", "/Online", "/Cleanup-Image", "/ScanHealth")
     $scanExit = $scanResult[0]; $scanText = $scanResult[1]
     $scanOk = ($scanExit -eq 0) -or ($scanText -match "No component store corruption detected")
-    if ($scanOk) { Add-Check $sv "dismScanHealth" "Pass" (Compact-Text $scanText) }
-    else { Add-Check $sv "dismScanHealth" "Warning" "ScanHealth did not fully pass (exit $scanExit): $(Compact-Text $scanText)" }
+    if ($scanOk) { Add-Check $sv "dismScanHealth" "Pass" (Compact-Text $scanText) -Required:$false }
+    else { Add-Check $sv "dismScanHealth" "Warning" "ScanHealth did not fully pass (exit $scanExit): $(Compact-Text $scanText)" -Required:$false }
 } else {
-    Add-Check $sv "dismScanHealth" "NotTested" "Skipped (opt-in -ScanHealth)"
+    Add-Check $sv "dismScanHealth" "NotTested" "Skipped (opt-in -ScanHealth)" -Required:$false
 }
 # sfc /verifyonly: the EXIT CODE is authoritative and locale-independent
 # (0 = no integrity violations). Localized success text is only corroborating.
@@ -352,10 +360,10 @@ foreach ($svcName in @("wuauserv", "UsoSvc")) {
     if ($svc) { Add-Check $wu $svcName "Pass" "$svcName present (status $($svc.Status))" }
     else { Add-Check $wu $svcName "Fail" "$svcName missing" }
 }
-if (Get-Command winget -ErrorAction SilentlyContinue) { Add-Check $wu "winget" "Pass" "winget (App Installer) present" }
-else { Add-Check $wu "winget" "Warning" "winget not on PATH" }
-if (Get-AppxPackage *immersivecontrolpanel* -ErrorAction SilentlyContinue) { Add-Check $wu "settingsApp" "Pass" "Windows Settings app present" }
-else { Add-Check $wu "settingsApp" "Warning" "Settings app package not found" }
+if (Get-Command winget -ErrorAction SilentlyContinue) { Add-Check $wu "winget" "Pass" "winget (App Installer) present" -Required:$false }
+else { Add-Check $wu "winget" "Warning" "winget not on PATH" -Required:$false }
+if (Get-AppxPackage *immersivecontrolpanel* -ErrorAction SilentlyContinue) { Add-Check $wu "settingsApp" "Pass" "Windows Settings app present" -Required:$false }
+else { Add-Check $wu "settingsApp" "Warning" "Settings app package not found" -Required:$false }
 $wu.status = Resolve-SectionStatus $wu
 
 # ---- security ----
@@ -369,14 +377,14 @@ $fw = Get-Service mpssvc -ErrorAction SilentlyContinue
 if ($fw) { Add-Check $se "firewall" "Pass" "Windows Defender Firewall service present (status $($fw.Status))" }
 else { Add-Check $se "firewall" "Fail" "Windows Firewall service missing" }
 $profiles = @(Get-NetFirewallProfile -ErrorAction SilentlyContinue | Where-Object { $_.Enabled })
-if ($profiles.Count -gt 0) { Add-Check $se "firewallEnabled" "Pass" "Firewall enabled on $($profiles.Count) profile(s)" }
-else { Add-Check $se "firewallEnabled" "Warning" "No enabled firewall profile" }
+if ($profiles.Count -gt 0) { Add-Check $se "firewallEnabled" "Pass" "Firewall enabled on $($profiles.Count) profile(s)" -Required:$false }
+else { Add-Check $se "firewallEnabled" "Warning" "No enabled firewall profile" -Required:$false }
 # Defender signatures: report only - a VM without internet must not fail security.
 try {
     $sig = (Get-MpComputerStatus -ErrorAction Stop)
-    Add-Check $se "defenderSignatures" "Pass" "Antivirus signatures: $($sig.AntivirusSignatureVersion) (age $($sig.AntivirusSignatureAge) days)"
+    Add-Check $se "defenderSignatures" "Pass" "Antivirus signatures: $($sig.AntivirusSignatureVersion) (age $($sig.AntivirusSignatureAge) days)" -Required:$false
 } catch {
-    Add-Check $se "defenderSignatures" "NotTested" "Signature status unavailable (offline VM or module missing) - not a product failure"
+    Add-Check $se "defenderSignatures" "NotTested" "Signature status unavailable (offline VM or module missing) - not a product failure" -Required:$false
 }
 $se.status = Resolve-SectionStatus $se
 
@@ -386,14 +394,14 @@ $store = Get-AppxPackage *WindowsStore* -ErrorAction SilentlyContinue
 if ($store) { Add-Check $sa "microsoftStore" "Pass" "Microsoft Store present ($($store[0].Version))" }
 else { Add-Check $sa "microsoftStore" "Fail" "Microsoft Store missing" }
 $ai = Get-AppxPackage *DesktopAppInstaller* -ErrorAction SilentlyContinue
-if ($ai) { Add-Check $sa "appInstaller" "Pass" "App Installer present ($($ai[0].Version))" }
-else { Add-Check $sa "appInstaller" "Warning" "App Installer not found" }
+if ($ai) { Add-Check $sa "appInstaller" "Pass" "App Installer present ($($ai[0].Version))" -Required:$false }
+else { Add-Check $sa "appInstaller" "Warning" "App Installer not found" -Required:$false }
 $vc = Get-AppxPackage *VCLibs.140* -ErrorAction SilentlyContinue
 if ($vc) { Add-Check $sa "vclibs" "Pass" "VC++ runtime framework present" }
 else { Add-Check $sa "vclibs" "Fail" "VCLibs.140 framework missing" }
 $net = Get-AppxPackage *NET.Native.Framework* -ErrorAction SilentlyContinue
-if ($net) { Add-Check $sa "netNativeFramework" "Pass" ".NET Native framework present" }
-else { Add-Check $sa "netNativeFramework" "Warning" ".NET Native framework not found" }
+if ($net) { Add-Check $sa "netNativeFramework" "Pass" ".NET Native framework present" -Required:$false }
+else { Add-Check $sa "netNativeFramework" "Warning" ".NET Native framework not found" -Required:$false }
 $sa.status = Resolve-SectionStatus $sa
 
 # ---- profileExpectedChanges ----
@@ -461,14 +469,29 @@ if (-not $expected) {
 }
 $pe.status = Resolve-SectionStatus $pe
 
-# ---- overall aggregation ----
+# ---- overall aggregation (Stage 16.1b) ----
+# overallStatus = honest worst of ALL required checks, any Warning/Fail OPTIONAL
+# check, and any check-less section status. An OPTIONAL NotTested (e.g.
+# DISM /ScanHealth) never drags the overall down; optional Warnings (activation,
+# HTTPS TLS-trust) are still surfaced as Warning.
 $rank = @{ "Fail" = 3; "Warning" = 2; "NotTested" = 1; "Pass" = 0 }
 $worst = "Pass"; $worstRank = 0
 foreach ($name in @("media","profile","windowsIdentity","bootAndShell","devices","network","servicing","windowsUpdate","security","storeAndAppPlatform","profileExpectedChanges")) {
-    $s = $report.sections[$name].status
-    $r = $rank[$s]
-    if ($null -eq $r) { $r = 1 }
-    if ($r -gt $worstRank) { $worstRank = $r; $worst = $s }
+    $sec = $report.sections[$name]
+    if (@($sec.checks).Count -eq 0) {
+        $s = $sec.status
+        $r = $rank[$s]
+        if ($null -eq $r) { $r = 1 }
+        if ($r -gt $worstRank) { $worstRank = $r; $worst = $s }
+        continue
+    }
+    foreach ($c in $sec.checks) {
+        $participates = $c.requiredForFullHealth -or $c.status -eq "Warning" -or $c.status -eq "Fail"
+        if (-not $participates) { continue }
+        $r = $rank[[string]$c.status]
+        if ($null -eq $r) { $r = 1 }
+        if ($r -gt $worstRank) { $worstRank = $r; $worst = $c.status }
+    }
 }
 $report.overallStatus = $worst
 
@@ -483,19 +506,23 @@ foreach ($name in @("media","profile","windowsIdentity","bootAndShell","devices"
 $report.failures = $failures
 $report.warnings = $warnings
 
-# ADR-084 FullHealthValidated gate (Stage 16.1a): no section Fail, and the
-# critical sections (bootAndShell, servicing, security, network) actually tested
-# with no failing check. Warnings - including a network HTTPS-trust Warning on a
-# VM whose IP/DNS fundamentals Pass - do NOT block (ADR-098).
-$critical = @("bootAndShell", "servicing", "security", "network")
+# ADR-084 FullHealthValidated gate (Stage 16.1b): REQUIRED-check based, not
+# worst-status-of-every-check.
+#   - a Fail on ANY check (required or optional) blocks (conservative);
+#   - a REQUIRED check that is NotTested blocks (failures=[] alone is NOT
+#     sufficient - untested required evidence never validates);
+#   - OPTIONAL NotTested (DISM /ScanHealth) and Warnings (activation, HTTPS
+#     TLS-trust with IP/DNS Pass) do NOT block.
 $gate = $true
-foreach ($c in $critical) {
-    if ($report.sections[$c].status -eq "NotTested") { $gate = $false }
-}
 foreach ($name in @("media","profile","windowsIdentity","bootAndShell","devices","network","servicing","windowsUpdate","security","storeAndAppPlatform","profileExpectedChanges")) {
     foreach ($ck in $report.sections[$name].checks) {
         if ($ck.status -eq "Fail") { $gate = $false }
+        if ($ck.requiredForFullHealth -and $ck.status -eq "NotTested") { $gate = $false }
     }
+}
+# Defensive: the critical sections must actually be exercised (have checks).
+foreach ($c in @("bootAndShell", "servicing", "security", "network")) {
+    if (@($report.sections[$c].checks).Count -eq 0) { $gate = $false }
 }
 $report.fullHealthValidated = $gate
 

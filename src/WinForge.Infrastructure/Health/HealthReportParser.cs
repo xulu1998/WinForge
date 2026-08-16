@@ -97,6 +97,7 @@ public static class HealthReportParser
                     Name = check.Name ?? string.Empty,
                     Status = checkStatus,
                     Detail = check.Detail ?? string.Empty,
+                    RequiredForFullHealth = check.RequiredForFullHealth ?? true,
                 });
             }
         }
@@ -126,26 +127,53 @@ public static class HealthReportParser
     }
 
     /// <summary>
-    /// Aggregates per-section and overall status with precedence
-    /// Fail &gt; Warning &gt; NotTested &gt; Pass, and derives the warnings /
-    /// failures lists from the section checks.
+    /// Aggregates statuses (Stage 16.1b). SECTION status is derived from the
+    /// section's REQUIRED checks only (falling back to all checks when the
+    /// section has no required ones), so an OPTIONAL NotTested/Warning never
+    /// turns a section into a false validation blocker. The OVERALL status is
+    /// the honest worst of all required checks, any Warning/Fail optional check,
+    /// and any check-less section status — an optional NotTested does NOT drag
+    /// the overall status down, but optional Warnings (e.g. activation, HTTPS
+    /// trust) are still surfaced. Failures/warnings lists derive from every
+    /// non-Pass check.
     /// </summary>
     public static FullHealthReport Aggregate(FullHealthReport report)
     {
         var sections = AllSections(report);
         foreach (var section in sections)
         {
-            var checks = section.Checks.Where(c => c.Status != HealthStatus.Pass).ToList();
-            if (checks.Count == 0 && section.Status == HealthStatus.NotTested)
+            var required = section.Checks.Where(c => c.RequiredForFullHealth).ToList();
+            var pool = required.Count > 0 ? required : section.Checks;
+            if (pool.Count == 0)
             {
+                continue; // keep the JSON-provided status (check-less section)
+            }
+
+            section.Status = Worst(pool.Select(c => c.Status));
+        }
+
+        var overallCandidates = new List<HealthStatus>();
+        foreach (var section in sections)
+        {
+            if (section.Checks.Count == 0)
+            {
+                overallCandidates.Add(section.Status);
                 continue;
             }
 
-            var derived = checks.Count > 0 ? Worst(checks.Select(c => c.Status).Append(section.Status)) : section.Status;
-            section.Status = derived;
+            foreach (var check in section.Checks)
+            {
+                // Required checks always participate; optional checks participate
+                // only when they indicate a problem (Warning/Fail) — an optional
+                // NotTested is honest evidence but never drags the overall down.
+                if (check.RequiredForFullHealth || check.Status == HealthStatus.Warning || check.Status == HealthStatus.Fail)
+                {
+                    overallCandidates.Add(check.Status);
+                }
+            }
         }
 
-        report.OverallStatus = Worst(sections.Select(s => s.Status));
+        report.OverallStatus = Worst(overallCandidates);
 
         var failures = new List<string>();
         var warnings = new List<string>();
@@ -187,6 +215,16 @@ public static class HealthReportParser
     /// servicing, security, network) must be actually Pass (not NotTested), and
     /// the overall status must be Pass. Warnings do NOT block validation.
     /// </summary>
+    /// <summary>
+    /// ADR-084 FullHealthValidated gate (Stage 16.1b). The gate is REQUIRED-
+    /// CHECK based, not "worst status of every check":
+    ///   - a Fail on ANY check (required or optional) blocks (conservative —
+    ///     ScanHealth corruption findings are never silently certified);
+    ///   - a REQUIRED check that is NotTested blocks (failures=[] alone is NOT
+    ///     sufficient — untested required evidence never validates);
+    ///   - OPTIONAL NotTested (e.g. DISM /ScanHealth) and Warnings (activation,
+    ///     HTTPS TLS-trust) do NOT block.
+    /// </summary>
     public static bool EvaluateFullHealth(FullHealthReport report)
     {
         if (report is null)
@@ -194,38 +232,33 @@ public static class HealthReportParser
             return false;
         }
 
-        var sections = AllSections(report);
-        if (sections.Any(s => s.Status == HealthStatus.Fail))
+        foreach (var section in AllSections(report))
         {
-            return false;
+            foreach (var check in section.Checks)
+            {
+                if (check.Status == HealthStatus.Fail)
+                {
+                    return false;
+                }
+
+                if (check.RequiredForFullHealth && check.Status == HealthStatus.NotTested)
+                {
+                    return false;
+                }
+            }
         }
 
+        // Defensive: a critical section that was never exercised at all (no
+        // checks) can never validate — required evidence must exist for it.
         foreach (var critical in FullHealthReport.CriticalSections)
         {
             var section = SectionTarget(report, critical);
-            if (section is null)
-            {
-                return false;
-            }
-
-            // Critical sections (bootAndShell, servicing, security, network) must
-            // be ACTUALLY TESTED — an untested critical section never validates.
-            if (section.Status == HealthStatus.NotTested)
-            {
-                return false;
-            }
-
-            // A failing check inside a critical section always blocks.
-            if (section.Checks.Any(c => c.Status == HealthStatus.Fail))
+            if (section is null || section.Checks.Count == 0)
             {
                 return false;
             }
         }
 
-        // Warnings — including inside a critical section, e.g. the HTTPS trust
-        // Warning on a VM whose IP/DNS fundamentals Pass — do NOT block
-        // FullHealthValidated (ADR-098: only Fail checks and untested critical
-        // sections block; warnings are honest evidence, never a false Pass).
         return true;
     }
 
@@ -300,6 +333,9 @@ public static class HealthReportParser
         public string? Name { get; set; }
         public string? Status { get; set; }
         public string? Detail { get; set; }
+
+        /// <summary>null (omitted) means REQUIRED (default true) — explicit "false" marks optional checks.</summary>
+        public bool? RequiredForFullHealth { get; set; }
     }
 }
 
