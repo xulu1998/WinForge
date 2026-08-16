@@ -1,3 +1,33 @@
+## Phase 17 - Release Candidate Hardening & Profile Validation Matrix (2026-08-16)
+
+- **Deterministic validation artifact archive**: every profile validation run is archived under
+  `.tmp\validation\<runId>\` (manifest.json with runId/timestamp/source ISO identity/profile/
+  index/edition/language/architecture/WinForge commit SHA/generated ISO path+SHA-256/validation
+  level/result status/phase recovery metadata + expected-state + plan snapshot + optional commit
+  evidence), with a `latest.json` pointer - runs NEVER overwrite previous runs.
+- **Machine-readable release validation manifest**: summarizes all six built-in profiles with
+  boolean evidence-gated levels (only Balanced and DedicatedGaming are FullHealthValidated;
+  Gaming/Developer/Office/Lightweight are truthfully WorkflowValidated with explicit validation
+  debt). Never claims a higher level than demonstrated.
+- **Remaining profile expected-states**: `scripts/{gaming,developer,office,lightweight}-expected-state.json`
+  derived ONLY from the real Phase 15 selected-only plan evidence (Gaming 10 AppX + 9 registry,
+  Developer 6 AppX + 12 registry, Office 4 AppX + 6 registry, Lightweight 6 AppX + 13 registry +
+  5 services); Recommend-only candidates excluded; `servicesDisabled` section + health-script
+  support for Lightweight's service changes.
+- **Six-profile delta audit**: machine-readable common/exclusive keys + operation-type
+  distribution + convergence detection - no two primaries converge; Balanced != Gaming !=
+  DedicatedGaming; Developer has the only ShowHiddenFiles/ShowFileExtensions delta; Office is
+  not a no-op; Lightweight is materially the strongest (only primary with service changes).
+- **Release safety invariants**: Defender, Firewall, Windows Update, Store, App Installer, boot
+  shell, servicing stack, network stack, display/input, recovery, no host-HKCU writes, no
+  unknown-mount discard - enforced against the executable plan and covered by tests.
+- **Profile validation runner**: `WinForge.RealCapture --validation-run <ProfileId> [--commit]`
+  prepares a full run (plan -> expected-state -> archive -> portable bundle -> optional chained
+  commit + ISO build) through the PRODUCTION pipeline; no VMware UI/OOBE automation.
+- **Portable FullHealth bundle**: health script + expected-state + validation-manifest +
+  README whose command already contains -ProfileId/-MediaId/-ExpectedJson/-IsoSha256.
+- **1300 tests (Core 53, App 1247), 0 err/0 warn.**
+
 ## Phase 16 - COMPLETE: Full Health Validation & Release Confidence (2026-08-16)
 
 - **Balanced — FullHealthValidated** and **DedicatedGaming — FullHealthValidated** (ADR-084 top

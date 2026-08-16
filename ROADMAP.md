@@ -491,6 +491,25 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ---
 
+## Phase 17 — Release Candidate Hardening & Profile Validation Matrix
+
+- **Status: IN PROGRESS — RELEASE-CANDIDATE HARDENING IMPLEMENTED (2026-08-16)** —
+  Balanced FullHealthValidated · DedicatedGaming FullHealthValidated · Gaming/Developer/
+  Office/Lightweight truthful WorkflowValidated; branch `phase/17-release-candidate-hardening`;
+  NOT merged (review before merge).
+- **Stage 17 objectives:** deterministic validation artifact archive
+  (`.tmp\validation\<runId>\` + latest pointer — runs never overwrite), machine-readable
+  release validation manifest (boolean evidence-gated levels, no over-claiming), remaining
+  profile expected-states (Gaming 19 / Developer 18 / Office 10 / Lightweight 24 — derived only
+  from real selected-only plan evidence; `servicesDisabled` for Lightweight), six-profile delta
+  audit (uniqueness + convergence detection), release safety invariants (Defender/Firewall/
+  Update/Store/AppInstaller/boot-shell/servicing/network/display-input/recovery/no-host-HKCU/
+  no-unknown-mount-discard, enforced in tests), profile validation runner
+  (`--validation-run <Id> [--commit]` reusing the production pipeline), portable FullHealth
+  bundle (script + expected-state + manifest + README with exact command), RC UI audit notes,
+  failure-recovery formalization, destructive scope explicitly deferred (ADR-086 / 17.10).
+  **1300 tests (Core 53, App 1247), 0 err/0 warn.**
+
 ## Phase 16 — Full Health Validation & Release Confidence
 
 - **Status: COMPLETE (2026-08-16) — ALL STAGES 16.1/16.1a/16.1b/16.2 COMPLETE; MERGED TO

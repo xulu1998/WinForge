@@ -9,6 +9,7 @@ using WinForge.Core.ComponentIntelligence;
 using WinForge.Core.Models;
 using WinForge.Core.Profiles;
 using WinForge.Core.Services;
+using WinForge.Core.Validation;
 using WinForge.Infrastructure.ComponentIntelligence;
 using WinForge.Infrastructure.Customization;
 using WinForge.Infrastructure.ImageMetadata;
@@ -16,6 +17,7 @@ using WinForge.Infrastructure.Execution;
 using WinForge.Infrastructure.IsoInspection;
 using WinForge.Infrastructure.Profiles;
 using WinForge.Infrastructure.Servicing;
+using WinForge.Infrastructure.Validation;
 using WinForge.Infrastructure.WimEngine;
 using WinForge.Infrastructure.WorkspaceLifecycle;
 
@@ -63,7 +65,10 @@ public static class Program
         string? ApplyProfile,
         string? CommitProfile,
         string IsoOut,
-        string IsoName);
+        string IsoName,
+        string? ValidationRunProfile,
+        bool Commit,
+        string? BundleDir);
 
     public static async Task<int> Main(string[] args)
     {
@@ -92,6 +97,19 @@ public static class Program
             Console.WriteLine();
 
             return await RunApplyValidationAsync(options, logger);
+        }
+
+        if (options.ValidationRunProfile is not null)
+        {
+            Console.WriteLine("=== WinForge Phase 17 — Profile Validation Run (release-candidate prep) ===");
+            Console.WriteLine($"ISO    : {options.IsoPath}");
+            Console.WriteLine($"Index  : {options.Index}");
+            Console.WriteLine($"Profile: {options.ValidationRunProfile}");
+            Console.WriteLine($"Commit : {(options.Commit ? "yes (commit + ISO build chained)" : "no (prepare-only)")}");
+            Console.WriteLine($"Reports: {options.OutDir}");
+            Console.WriteLine();
+
+            return await RunValidationRunAsync(options, logger);
         }
 
         if (options.CommitProfile is not null)
@@ -334,6 +352,9 @@ public static class Program
         string? commitProfile = null;
         string? isoOut = null;
         string? isoName = null;
+        string? validationRunProfile = null;
+        var commit = false;
+        string? bundleDir = null;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -370,6 +391,15 @@ public static class Program
                 case "--iso-name":
                     isoName = RequireValue(args, ref i, "--iso-name");
                     break;
+                case "--validation-run":
+                    validationRunProfile = RequireValue(args, ref i, "--validation-run");
+                    break;
+                case "--commit":
+                    commit = true;
+                    break;
+                case "--bundle-dir":
+                    bundleDir = RequireValue(args, ref i, "--bundle-dir");
+                    break;
                 case "--help":
                 case "-h":
                     PrintUsage();
@@ -396,17 +426,31 @@ public static class Program
                                         "(commit + ISO build) are mutually exclusive — commit intent must be explicit.");
         }
 
+        if (validationRunProfile is not null)
+        {
+            if (applyProfile is not null || commitProfile is not null)
+            {
+                throw new ArgumentException("--validation-run is mutually exclusive with --apply-profile and --commit-profile " +
+                                            "(it ORCHESTRATES a full run; use --commit inside it for the commit+ISO-build step).");
+            }
+
+            if (commit && validationRunProfile is null)
+            {
+                throw new ArgumentException("--commit requires --validation-run.");
+            }
+        }
+
         var knownProfiles = new WinForge.Infrastructure.Profiles.ProfileCatalog().GetProfiles()
             .Where(p => p.Kind == ProfileKind.Primary && p.Id != "Custom")
             .Select(p => p.Id)
             .ToHashSet(StringComparer.Ordinal);
 
-        foreach (var id in new[] { applyProfile, commitProfile })
+        foreach (var id in new[] { applyProfile, commitProfile, validationRunProfile })
         {
             if (id is not null && !knownProfiles.Contains(id))
             {
                 throw new ArgumentException(
-                    $"--apply-profile/--commit-profile '{id}' is not a known primary profile. " +
+                    $"--apply-profile/--commit-profile/--validation-run '{id}' is not a known primary profile. " +
                     $"Available: {string.Join(", ", knownProfiles.OrderBy(x => x, StringComparer.Ordinal))}");
             }
         }
@@ -427,7 +471,8 @@ public static class Program
             : isoName;
 
         return new Options(Path.GetFullPath(iso), index, resolvedOut, resolvedWork, noCleanup,
-            applyProfile, commitProfile, resolvedIsoOut, resolvedIsoName);
+            applyProfile, commitProfile, resolvedIsoOut, resolvedIsoName, validationRunProfile, commit,
+            string.IsNullOrWhiteSpace(bundleDir) ? null : Path.GetFullPath(bundleDir));
     }
 
     private static string FindRepoRoot()
@@ -470,6 +515,16 @@ public static class Program
         Console.WriteLine("Usage (real offline COMMIT + ISO build — Stage 16.1):");
         Console.WriteLine("  WinForge.RealCapture --iso <path> --commit-profile <ProfileId> [--index 4] [--out <dir>] [--iso-out <dir>] [--iso-name <name>]");
         Console.WriteLine();
+        Console.WriteLine("Usage (profile validation run — Stage 17.6, release-candidate prep):");
+        Console.WriteLine("  WinForge.RealCapture --iso <path> --validation-run <ProfileId> [--commit] [--bundle-dir <dir>]");
+        Console.WriteLine("    Builds the plan, derives the profile expected-state from the SELECTED");
+        Console.WriteLine("    operations, archives the run under <repo>/.tmp/validation/<runId>/ with a");
+        Console.WriteLine("    latest pointer (never overwrites history), and generates the portable");
+        Console.WriteLine("    FullHealth bundle (health script + expected-state + manifest + README with");
+        Console.WriteLine("    the exact -ProfileId/-MediaId/-ExpectedJson/-IsoSha256 command). With");
+        Console.WriteLine("    --commit, the commit+ISO-build pipeline is chained and its evidence is");
+        Console.WriteLine("    archived into the same run.");
+        Console.WriteLine();
         Console.WriteLine("  --iso             Windows 11 ISO to inspect (READ-ONLY input). REQUIRED.");
         Console.WriteLine("  --index           WIM index to use (default 4 = Pro for the 25H2 zh-CN x64 ISO).");
         Console.WriteLine("  --out             Report output dir (default <repo>/.tmp/phase14-real).");
@@ -488,6 +543,9 @@ public static class Program
         Console.WriteLine("  --iso-out         Output directory for the final ISO (default Documents\\WinForge).");
         Console.WriteLine("  --iso-name        Output ISO file name without extension (deterministic default");
         Console.WriteLine("                    WinForge-<Profile>-Win11-25H2-Pro-zh-CN-x64).");
+        Console.WriteLine("  --validation-run  Phase 17 profile validation run (see above).");
+        Console.WriteLine("  --commit          Inside --validation-run: chain the commit + ISO build step.");
+        Console.WriteLine("  --bundle-dir      Output dir for the portable FullHealth bundle (default <run>/bundle).");
         Console.WriteLine();
         Console.WriteLine("MUST run from an elevated (Administrator) prompt — DISM requires elevation.");
     }
@@ -1162,6 +1220,298 @@ public static class Program
 
         return exitCode;
     }
+
+    // =====================================================================
+    // Phase 17 Stage 17.6 — PROFILE VALIDATION RUN (release-candidate prep).
+    //
+    //   --validation-run <PrimaryId> [--commit] [--bundle-dir <dir>]
+    //
+    // One explicit command prepares a profile validation run: production plan
+    // → expected-state derived from the SELECTED operations only → run archive
+    // under <repo>/.tmp/validation/<runId>/ (manifest + expected-state + plan
+    // snapshot; latest pointer never overwrites history) → portable FullHealth
+    // bundle (health script + expected-state + validation-manifest + README
+    // with the exact -ProfileId/-MediaId/-ExpectedJson/-IsoSha256 command).
+    // With --commit, the production commit + ISO build is chained and its
+    // evidence archived into the same run. No VMware UI, no OOBE automation.
+    // =====================================================================
+    private static async Task<int> RunValidationRunAsync(Options options, ILoggerService logger)
+    {
+        var services = Compose(options, logger);
+        var ct = CancellationToken.None;
+        var profileId = options.ValidationRunProfile!;
+        var repoRoot = FindRepoRoot();
+        var commitSha = ReadCommitSha(repoRoot);
+        var archive = new ValidationArtifactArchiveService(Path.Combine(repoRoot, ".tmp", "validation"));
+        var bundleService = new ValidationBundleService(Path.Combine(repoRoot, "scripts"));
+        ImageServicingWorkspace? workspace = null;
+        var exitCode = 0;
+
+        var run = new ValidationArtifactRun
+        {
+            RunId = ValidationArtifactArchiveService.NewRunId(profileId, commitSha),
+            TimestampUtc = DateTime.UtcNow,
+            SourceIsoPath = options.IsoPath,
+            Profile = profileId,
+            WindowsIndex = options.Index,
+            WinForgeCommitSha = commitSha,
+            ValidationLevel = "WorkflowValidated",
+            ResultStatus = "Prepared",
+            Phase = "Plan",
+        };
+
+        try
+        {
+            // ---- 1-4. Inspect / workspace / export / mount (production path) ----
+            var inspection = await services.Inspection.InspectAsync(options.IsoPath, ct);
+            if (inspection.Status != IsoInspectionStatus.Completed ||
+                inspection.ImageMetadata is null ||
+                inspection.ImageMetadata.Status != WindowsImageMetadataStatus.Completed)
+            {
+                Console.Error.WriteLine("ISO inspection did not complete. MUST run from an ELEVATED prompt (DISM).");
+                return 3;
+            }
+
+            var edition = inspection.ImageMetadata.Editions.FirstOrDefault(e => e.Index == options.Index);
+            if (edition is null)
+            {
+                Console.Error.WriteLine($"Index {options.Index} not present in the ISO.");
+                return 3;
+            }
+
+            run.Edition = edition.Name;
+            run.Language = inspection.ImageMetadata.Languages is { Count: > 0 }
+                ? string.Join(",", inspection.ImageMetadata.Languages)
+                : "zh-CN";
+            run.Architecture = edition.Architecture;
+            run.SourceIsoSha256 = null; // host-side computed; never blocks prep
+            Console.WriteLine($"Target: {edition.Name} (index {edition.Index}) {edition.Architecture} {edition.Version}");
+
+            var workspaceBuild = services.WorkspaceFactory.BuildWorkspace(inspection, edition);
+            if (workspaceBuild.Status != ImageWorkspaceStatus.Ready || workspaceBuild.Workspace is null)
+            {
+                Console.Error.WriteLine($"Workspace build failed: {string.Join("; ", workspaceBuild.Issues)}");
+                return 3;
+            }
+
+            var prepared = await services.Servicing.PrepareWorkingImageAsync(workspaceBuild.Workspace, WorkspaceId, ct);
+            if (!prepared.Success || prepared.Workspace is null)
+            {
+                PrintServicingFailure("export", prepared.ErrorMessage, prepared.Issues);
+                return 4;
+            }
+
+            workspace = prepared.Workspace;
+
+            var mounted = await services.Servicing.MountAsync(workspace, ct);
+            if (!mounted.Success)
+            {
+                PrintServicingFailure("mount", mounted.ErrorMessage, mounted.Issues);
+                return 4;
+            }
+
+            Console.WriteLine($"Mounted working image at {workspace.MountDirectory}");
+
+            // ---- 5. Production discovery + classification ----
+            var raw = await services.Intelligence.DiscoverAsync(workspace, ct);
+            if (!raw.Discovered || raw.Cancelled)
+            {
+                Console.Error.WriteLine("Discovery did not complete.");
+                return 5;
+            }
+
+            var catalog = services.Catalog.GetDefinitions();
+            var deep = new DeepComponentClassifier(DeepComponentCatalogData.Entries);
+
+            // ---- 6. Unified candidate stream → final validated BuildPlan ----
+            var (built, profiles, present) = BuildUnifiedStream(raw, deep, catalog);
+            var profile = profiles.Single(p => p.Id == profileId);
+            var execution = new WinForge.Core.Profiles.ProfileExecutionService();
+            var (plan, planIssues) = execution.BuildPlan(profile, built.Subjects,
+                new HashSet<WinForge.Core.Profiles.GamingExtra>(), new HashSet<string>(), present, profiles);
+
+            if (plan is null || planIssues.Count > 0 || plan.Validate().Count > 0)
+            {
+                Console.Error.WriteLine("ValidationRun: BuildPlan is not valid — run aborted (nothing committed).");
+                foreach (var issue in planIssues.Concat(plan?.Validate() ?? new List<string>()))
+                {
+                    Console.Error.WriteLine("  - " + issue);
+                }
+
+                run.ResultStatus = "Failed";
+                run.Phase = "Plan";
+                run.Notes.Add("BuildPlan validation failed; run aborted before any execution/commit.");
+                archive.WriteManifest(run);
+                archive.UpdateLatest(run);
+                await CleanupWithReportAsync(services, workspace, options, logger);
+                return 9;
+            }
+
+            // ---- 7. Expected-state from the SELECTED operations (never Recommend rows) ----
+            var expected = ExpectedStateBuilder.Build(profileId, plan.SelectedOperations);
+            var runDir = archive.CreateRunDirectory(run);
+            File.WriteAllText(Path.Combine(runDir, $"{profileId.ToLowerInvariant()}-expected-state.json"),
+                JsonSerializer.Serialize(expected, PlanCaptureJsonOptions));
+            File.WriteAllText(Path.Combine(runDir, "profile-plan.json"), JsonSerializer.Serialize(new
+            {
+                profileId,
+                buildPlanOperationCount = plan.Operations.Count,
+                selectedOperationCount = plan.SelectedOperations.Count,
+                canonicalOperationKeys = plan.Operations.Select(o => o.ConflictKey).OrderBy(k => k, StringComparer.Ordinal).ToList(),
+                selectedKeys = plan.SelectedOperations.Select(o => o.ConflictKey).OrderBy(k => k, StringComparer.Ordinal).ToList(),
+            }, PlanCaptureJsonOptions));
+            run.Files.Add($"{profileId.ToLowerInvariant()}-expected-state.json");
+            run.Files.Add("profile-plan.json");
+            run.Phase = "ExpectedState";
+            run.Notes.Add($"Expected-state derived from {plan.SelectedOperations.Count} selected operations (Recommend rows excluded).");
+            archive.WriteManifest(run);
+
+            // ---- 8. Optional chained commit + ISO build ----
+            if (options.Commit)
+            {
+                var commitOptions = options with
+                {
+                    CommitProfile = profileId,
+                    ApplyProfile = null,
+                    ValidationRunProfile = null,
+                };
+                var commitExit = await RunCommitProfileAsync(commitOptions, logger);
+                var commitReportPath = Path.Combine(options.OutDir, "profile-commit-validation.json");
+                if (commitExit == 0 && File.Exists(commitReportPath))
+                {
+                    File.Copy(commitReportPath, Path.Combine(runDir, "profile-commit-validation.json"), overwrite: true);
+                    run.Files.Add("profile-commit-validation.json");
+                    try
+                    {
+                        var commitReport = JsonDocument.Parse(File.ReadAllText(commitReportPath)).RootElement;
+                        if (commitReport.TryGetProperty("iso", out var iso) && iso.ValueKind == JsonValueKind.Object)
+                        {
+                            run.GeneratedIsoPath = iso.TryGetProperty("outputPath", out var p) ? p.GetString() : null;
+                            run.GeneratedIsoSha256 = iso.TryGetProperty("sha256", out var s) ? s.GetString() : null;
+                        }
+
+                        run.ResultStatus = "Succeeded";
+                        run.Phase = "IsoBuild";
+                        run.Notes.Add("Commit + ISO build chained successfully; evidence archived.");
+                    }
+                    catch (JsonException)
+                    {
+                        run.Notes.Add("Commit report written but could not be parsed for ISO metadata.");
+                    }
+                }
+                else
+                {
+                    run.ResultStatus = "Failed";
+                    run.Phase = "Commit";
+                    run.Notes.Add($"Chained commit exited {commitExit}; see profile-commit-validation.json.");
+                }
+
+                archive.WriteManifest(run);
+                archive.UpdateLatest(run);
+            }
+
+            // ---- 9. Portable FullHealth bundle ----
+            var bundleDir = options.BundleDir ?? Path.Combine(runDir, "bundle");
+            try
+            {
+                bundleService.GenerateBundle(bundleDir, profileId, run);
+                Console.WriteLine($"Bundle generated: {bundleDir}");
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.Error.WriteLine("Bundle generation skipped: " + ex.Message);
+                run.Notes.Add("Bundle generation skipped (missing script/expected-state template).");
+            }
+
+            archive.WriteManifest(run);
+            archive.UpdateLatest(run);
+
+            // ---- 10. Discard-only cleanup (never leaves the mount) ----
+            var cleanup = await CleanupWithReportAsync(services, workspace, options, logger);
+            run.Notes.Add(cleanup.Error ?? $"Cleanup: discard={cleanup.DiscardSucceeded}, workspace={cleanup.WorkspaceCleanupSucceeded}");
+            archive.WriteManifest(run);
+
+            PrintValidationRunSummary(run);
+            return exitCode;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ValidationRun failed: {ex.Message}");
+            run.ResultStatus = "Failed";
+            run.Phase = "Prepare";
+            run.Notes.Add(ex.Message);
+            archive.WriteManifest(run);
+            archive.UpdateLatest(run);
+            if (workspace is not null)
+            {
+                await CleanupWithReportAsync(services, workspace, options, logger);
+            }
+
+            return 10;
+        }
+    }
+
+    private static void PrintValidationRunSummary(ValidationArtifactRun run)
+    {
+        Console.WriteLine();
+        Console.WriteLine("=== PROFILE VALIDATION RUN — PREPARED ===");
+        Console.WriteLine($"Run id    : {run.RunId}");
+        Console.WriteLine($"Profile   : {run.Profile}");
+        Console.WriteLine($"Archive   : .tmp/validation/{run.RunId}");
+        Console.WriteLine($"Phase     : {run.Phase}  Status: {run.ResultStatus}");
+        Console.WriteLine($"ISO       : {run.GeneratedIsoPath ?? "(not built — run --commit-profile or re-run with --commit)"}");
+        Console.WriteLine();
+        Console.WriteLine("Next (VM validation): copy the bundle folder into the VM and run the health script");
+        Console.WriteLine("with the exact arguments in the bundle README.txt (-ProfileId/-MediaId/-ExpectedJson/-IsoSha256).");
+    }
+
+    private static string ReadCommitSha(string repoRoot)
+    {
+        try
+        {
+            var head = Path.Combine(repoRoot, ".git", "HEAD");
+            if (!File.Exists(head))
+            {
+                return "unknown";
+            }
+
+            var text = File.ReadAllText(head).Trim();
+            if (text.StartsWith("ref:", StringComparison.Ordinal))
+            {
+                var refName = text.Substring(5).Trim();
+                var refPath = Path.Combine(repoRoot, ".git", refName);
+                if (File.Exists(refPath))
+                {
+                    return File.ReadAllText(refPath).Trim();
+                }
+
+                var packed = Path.Combine(repoRoot, ".git", "packed-refs");
+                if (File.Exists(packed))
+                {
+                    var line = File.ReadLines(packed).FirstOrDefault(l =>
+                        l.Trim().EndsWith(refName, StringComparison.Ordinal) && l.Trim().StartsWith("#") == false);
+                    if (line is not null)
+                    {
+                        return line.Trim().Split(' ')[0];
+                    }
+                }
+
+                return "unknown";
+            }
+
+            return text;
+        }
+        catch
+        {
+            return "unknown";
+        }
+    }
+
+    private static readonly JsonSerializerOptions PlanCaptureJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true,
+    };
 
     // =====================================================================
     // Phase 16 Stage 16.1 — REAL OFFLINE COMMIT + ISO BUILD (ADR-098).

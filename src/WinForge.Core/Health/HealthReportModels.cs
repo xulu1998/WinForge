@@ -135,6 +135,13 @@ public sealed class ProfileExpectedState
     /// seeded template value into the created user's profile).
     /// </summary>
     public List<ExpectedRegistryValue> RegistryChecks { get; set; } = new();
+
+    /// <summary>
+    /// Windows service names that must be Disabled after install (selected-only
+    /// ConfigureOfflineService operations). Optional section — only present for
+    /// profiles that actually select service changes (e.g. Lightweight).
+    /// </summary>
+    public List<string> ServicesDisabled { get; set; } = new();
 }
 
 /// <summary>

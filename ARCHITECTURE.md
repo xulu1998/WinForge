@@ -890,3 +890,27 @@ expected-state files are the only health evidence accepted. Other profiles (Gami
 Office / Lightweight) retain their actual lower validation level — FullHealthValidated is NOT
 propagated. MERGED TO `main` via `--no-ff`; branch `phase/16-full-health-validation` retained.
 **1282 tests (Core 53, App 1229), 0 err/0 warn.**
+
+## Phase 17 — Release Candidate Hardening & Profile Validation Matrix (2026-08-16, ADR-099)
+
+`WinForge.RealCapture --validation-run <Id> [--commit] [--bundle-dir <dir>]` orchestrates a
+profile validation run through the PRODUCTION pipeline (inspect ISO read-only -> export index ->
+mount -> unified candidate stream -> final validated BuildPlan) and then archives EVERYTHING
+under `.tmp\validation\<runId>\` via `ValidationArtifactArchiveService` (unique UTC+commit+profile
+runId, manifest.json, `latest.json` pointer - history is never overwritten). The
+`ReleaseValidationManifestService` emits a machine-readable manifest whose per-profile levels are
+boolean and evidence-gated: only Balanced and DedicatedGaming carry FullHealthValidated=true;
+Gaming/Developer/Office/Lightweight are truthfully WorkflowValidated with explicit debt.
+`ExpectedStateBuilder` derives `<profile>-expected-state.json` from the FINAL selected plan
+operations (never Recommend rows), including the new `servicesDisabled` section (Lightweight's
+5 services); `ProfileExpectedStateParser` + the in-VM health script validate them. The
+`ProfileDeltaAuditService` produces the six-profile delta audit (common/exclusive keys, type-mix,
+convergence detection). `ReleaseSafetyInvariantSet` enforces release invariants
+(Defender/Firewall/WindowsUpdate/Store/AppInstaller/boot-shell/servicing/network/display-input/
+recovery/no-host-HKCU/no-unknown-mount-discard) against the executable plan. The portable
+`ValidationBundleService` bundle carries the health script, expected-state, run manifest and a
+README whose FullHealth command already contains -ProfileId/-MediaId/-ExpectedJson/-IsoSha256.
+Recovery is formalized via run metadata (phase/resultStatus + ListInterruptedRuns) and the
+established authoritative-mount cleanup - an unknown mount is never discarded. Destructive scope
+(CBS/Capability/Driver/Service/ScheduledTask/SystemApp/WinRecovery removal) is explicitly
+deferred (ADR-086). **1300 tests (Core 53, App 1247), 0 err/0 warn.**

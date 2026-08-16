@@ -23,6 +23,13 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 25H2-Pro-zh-CN-x64 | Windows 11 25H2 | Professional | zh-CN | x64 | install.wim | 2026-08-13 | **VM INSTALL VALIDATED** (Level = `VmInstallValidated`, ADR-084): real workflow + generated ISO + Hyper-V Gen-2 UEFI install — boot / Setup / image install / reboot / OOBE / desktop all PASS. See `validation/25H2-Pro-zh-CN-x64-20260813-0720.{json,md}`. |
 
+> **Phase 17 update (2026-08-16):** release-candidate hardening - deterministic validation
+> artifact archive (`.tmp\validation\<runId>\` + latest pointer, runs never overwrite),
+> machine-readable release validation manifest (boolean evidence-gated levels), remaining
+> expected-states (Gaming/Developer/Office/Lightweight from real selected-only plans),
+> six-profile delta audit, release safety invariants, `--validation-run` orchestrator and the
+> portable FullHealth bundle. See `docs/RELEASE-CANDIDATE-VALIDATION.md` (ADR-099).
+>
 > **Phase 16 update (2026-08-16):** the SAME 25H2-Pro-zh-CN-x64 media (ISO index 4) is now the
 > basis for the two profile-level **FullHealthValidated** results — Balanced and DedicatedGaming —
 > on VMware Workstation Pro (Win11 Pro 25H2, build 26200.8037; final reports failures=[], overallStatus
