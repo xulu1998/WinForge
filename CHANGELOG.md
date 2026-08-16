@@ -1,3 +1,35 @@
+## Phase 16 - Stage 16.1a: Health-check correctness fixes (2026-08-16)
+
+- **First real Balanced VM validation succeeded** through the desktop: the
+  WinForge ISO booted in VMware, installed Windows 11 Pro 25H2 (build 26200),
+  completed OOBE and reached the desktop; commit evidence (16/10/10/10,
+  postCommitVerified, ISO structure validated) is in profile-commit-validation.json.
+- **SFC /verifyonly verdicts fixed**: the first report falsely failed a
+  successful sfc run because the script matched English-only success text and
+  the native UTF-16LE output (low NUL ratio on Chinese Windows) was
+  mis-decoded. The verdict is now EXIT-CODE authoritative (0 = no integrity
+  violations, locale-independent) with the localized success marker as
+  corroboration only; native output is captured by file redirection and
+  decoded by a candidate-scoring decoder (BOM -> UTF-8 -> UTF-16LE -> ANSI,
+  fewest U+FFFD wins) with NUL stripping. A successful run can never fail on
+  capture artifacts; genuine failures still Fail.
+- **Post-install Default-User checks corrected**: Start_ShowRecommended and
+  Start_ShowRecent are now verified as CurrentUserEffective (HKCU of the
+  OOBE-created user) instead of in the post-OOBE Default-User template, which
+  Windows legitimately consumes at profile creation. Image-time WIM
+  Default-User validation is unchanged. Expected registry checks now declare an
+  EXPLICIT scope (OfflineMachine / CurrentUserEffective / DefaultUserTemplate);
+  missing or unknown scope rejects the file.
+- **Report encoding fixed**: the script is pure-ASCII with a UTF-8 BOM (the
+  mojibake source was PowerShell 5.1 ANSI-parsing a BOM-less UTF-8 file);
+  report JSON round-trips Chinese text without mojibake.
+- **FullHealthValidated gate corrected**: Warnings (e.g. the VM HTTPS TLS-trust
+  Warning with IP/DNS Pass) no longer block full-health validation - only Fail
+  checks and untested critical sections block.
+- **Windows identity display**: a Windows 11 install is now presented as
+  "Windows 11 Pro" (normalized from the legacy "Windows 10 Pro" ProductName
+  when build >= 22000); edition/build detection unchanged.
+
 # Changelog
 
 All notable user-visible changes to WinForge are documented here.

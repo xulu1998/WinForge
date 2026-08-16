@@ -133,3 +133,72 @@ All of the following must hold — `fullHealthValidated: true` in the report:
 Warnings (offline VM, unactivated Windows, missing VMware audio) do NOT block
 validation but must be reviewed. Other profiles keep their current validation
 level until they pass the same gate.
+
+
+## Stage 16.1a - Health-check correctness fixes (ADR-098 addendum)
+
+### First real Balanced VM result (recorded)
+
+The first real Balanced end-to-end validation SUCCEEDED through the desktop:
+the customized ISO booted in VMware, installed Windows 11 Pro 25H2 build 26200,
+completed OOBE and reached the desktop. Commit evidence
+`profile-commit-validation.json`: 16 BuildPlan ops / 10 selected / 10 executed /
+10 read-back Verified, committed = true, postCommitVerified = true, ISO
+structure validated, cleanup discard+workspace succeeded. The first
+`full-health-report.json` then failed overall ONLY on three checks that manual
+validation proved to be health-check LOGIC defects:
+
+| Check | First report | Manual truth | Verdict |
+| --- | --- | --- | --- |
+| sfcVerifyOnly | "did not pass (exit 0): \0; \0; \0" | sfc /verifyonly exit 0, "Windows 资源保护未找到任何完整性冲突。" | SFC healthy - script decode/logic defect |
+| defaultUser_Start_ShowRecent | missing in Users\Default\NTUSER.DAT | HKCU Start_ShowRecent = 0x0 | customization worked - wrong check target |
+| defaultUser_Start_ShowRecommended | missing in Users\Default\NTUSER.DAT | HKCU Start_ShowRecommended = 0x0 | customization worked - wrong check target |
+
+No Windows reinstall was required. Balanced is NOT yet formally
+FullHealthValidated - the corrected report must pass first.
+
+### SFC /verifyonly verdict semantics (corrected)
+
+- The verdict is EXIT-CODE authoritative and locale-independent: exit 0 = no
+  integrity violations (sfc /verifyonly never repairs, so 0 means clean). The
+  localized success marker ("did not find any integrity violations" /
+  "\u672a\u627e\u5230\u4efb\u4f55\u5b8c\u6574\u6027\u51b2\u7a81") is used ONLY as corroborating evidence.
+- Native output (sfc.exe emits UTF-16LE with a LOW NUL ratio on Chinese
+  Windows) is captured via cmd /c file redirection and decoded by a
+  candidate-scoring decoder: UTF-16 BOM -> strict UTF-8 -> UTF-16LE (low
+  NUL-density heuristic) -> system ANSI; the candidate with the fewest U+FFFD
+  wins; NULs are stripped. A successful run can never be failed by capture
+  artifacts; genuine failures still Fail. /scannow is never run automatically.
+- The C# `SfcVerifyOnlyEvaluator` (Infrastructure/Health) pins this rule; the
+  script mirrors it.
+
+### Post-install Default-User semantics (two validation phases)
+
+- IMAGE validation (pre-commit / post-commit WIM): OfflineDefaultUser is
+  verified in `Users\Default\NTUSER.DAT` - UNCHANGED and still required.
+- INSTALLED-OS validation (full health): settings whose purpose is to seed the
+  OOBE-created user's profile are verified in the EFFECTIVE current-user hive
+  (HKCU), because Windows/OOBE legitimately consumes the seeded template value
+  into the created user's profile. The post-OOBE template is NOT required to
+  retain the seed.
+- Scope is EXPLICIT per registry expectation (nothing silently reinterpreted):
+  `OfflineMachine` (HKLM) / `CurrentUserEffective` (HKCU) /
+  `DefaultUserTemplate` (Users\Default\NTUSER.DAT). Balanced: 4 machine
+  policies = OfflineMachine; Start_ShowRecommended / Start_ShowRecent =
+  CurrentUserEffective. A missing or unknown scope rejects the expected-state
+  file.
+
+### Unicode / mojibake
+
+The first report JSON contained mojibake (UTF-8 em dash mis-decoded as GBK).
+Root cause: the .ps1 had no UTF-8 BOM, so PowerShell 5.1 parsed it as the
+system ANSI code page and mangled non-ASCII string literals. The script is now
+pure-ASCII (except the required Chinese SFC marker) with a UTF-8 BOM, and a
+test pins the file encoding. Report JSON is valid UTF-8 Unicode.
+
+### FullHealthValidated gate (corrected, ADR-098)
+
+`fullHealthValidated = true` iff: no section Fail anywhere AND the critical
+sections (bootAndShell, servicing, security, network) are actually tested
+(not NotTested) with no failing check. Warnings - including the real-VM HTTPS
+TLS-trust Warning on a VM whose IP/DNS fundamentals Pass - do NOT block.

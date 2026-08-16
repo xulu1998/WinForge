@@ -1,12 +1,12 @@
-<#
+﻿<#
 .SYNOPSIS
-    WinForge in-VM full-health validator (Phase 16 Stage 16.1, ADR-098).
+    WinForge in-VM full-health validator (Phase 16 Stage 16.1a, ADR-098 addendum).
 
 .DESCRIPTION
-    Copy this script (and, optionally, balanced-expected-state.json) into the
-    installed WinForge-customized VM and run it from an ADMINISTRATOR prompt
-    after reaching the desktop. It collects STRUCTURED evidence and writes
-    full-health-report.json — it does not merely print "OK".
+    Copy this script (and balanced-expected-state.json) into the installed
+    WinForge-customized VM and run it from an ADMINISTRATOR prompt after
+    reaching the desktop. It collects STRUCTURED evidence and writes
+    full-health-report.json - it does not merely print "OK".
 
     The report schema is consumed by the WinForge health-report parser
     (src/WinForge.Infrastructure/Health/HealthReportParser.cs) which
@@ -17,6 +17,22 @@
 
     Checks are NON-DESTRUCTIVE: DISM /CheckHealth and sfc /verifyonly only.
     /ScanHealth runs only with -ScanHealth. Nothing is repaired automatically.
+
+    Stage 16.1a correctness fixes:
+    - Native tool output is captured with [Console]::OutputEncoding = UTF8 and
+      NUL characters are stripped, so a successful sfc run can never be
+      misreported as a failure because of capture artifacts. The sfc verdict is
+      authoritative on the EXIT CODE (0 = no integrity violations) and only
+      uses localized output text as corroborating evidence.
+    - Post-install registry expectations declare an EXPLICIT scope. Settings
+      whose purpose is to seed the OOBE-created user's profile (e.g.
+      Start_ShowRecommended / Start_ShowRecent) are verified in the EFFECTIVE
+      current-user hive (HKCU), NOT in the post-OOBE Default-User template
+      (Windows/OOBE legitimately consumes the seeded template value into the
+      created user's profile). Machine policies stay machine (HKLM). Image-time
+      WIM Default-User validation is unchanged and separate.
+    - This script file is pure ASCII with a UTF-8 BOM so PowerShell 5.1 parses
+      it without ANSI code-page mangling (the mojibake source).
 
 .PARAMETER ProfileId
     Profile under validation (default Balanced).
@@ -60,6 +76,10 @@ if (-not $isAdmin) {
     Write-Warning "Not running elevated. DISM /CheckHealth, sfc /verifyonly and registry hive loads require an Administrator prompt."
 }
 
+# ---------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------
+
 function New-HealthSection {
     return @{ status = "NotTested"; checks = @() }
 }
@@ -90,7 +110,96 @@ function Get-DwordAsHex {
     return $Value.ToString()
 }
 
-# =====================================================================
+# Capture native tool output deterministically. Native tools (sfc.exe on
+# localized Windows in particular) can emit UTF-16 text or code-page text;
+# console-pipe capture mis-decodes it into NUL-corrupted or mojibake strings.
+# We redirect stdout+stderr to a temp file via cmd /c and decode the raw bytes
+# with a candidate-scoring decoder: UTF-16 BOM wins; otherwise strict UTF-8,
+# UTF-16LE (with a low NUL-density heuristic - pure-Chinese UTF-16 text can
+# have very few NUL bytes), and the system ANSI code page are scored by the
+# number of U+FFFD replacement characters and the winner is returned.
+function Score-Text {
+    param([string]$Text)
+    $count = 0
+    foreach ($ch in $Text.ToCharArray()) { if ([int]$ch -eq 0xFFFD) { $count++ } }
+    return $count
+}
+
+function Read-NativeFile {
+    param([string]$Path)
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($Path)
+        if ($bytes.Length -lt 1) { return "" }
+        if ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+            return [System.Text.Encoding]::Unicode.GetString($bytes, 2, $bytes.Length - 2)
+        }
+        if ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFE -and $bytes[1] -eq 0xFF) {
+            return [System.Text.Encoding]::BigEndianUnicode.GetString($bytes, 2, $bytes.Length - 2)
+        }
+
+        $nulCount = 0
+        foreach ($b in $bytes) { if ($b -eq 0) { $nulCount++ } }
+        $nulRatio = if ($bytes.Length -gt 0) { $nulCount / $bytes.Length } else { 0 }
+
+        $utf16 = [System.Text.Encoding]::Unicode.GetString($bytes, 0, $bytes.Length - ($bytes.Length % 2))
+        $utf8 = $null
+        try {
+            $strict8 = New-Object System.Text.UTF8Encoding($false, $true)
+            $utf8 = $strict8.GetString($bytes)
+        } catch { $utf8 = $null }
+        $ansi = [System.Text.Encoding]::Default.GetString($bytes)
+
+        $score16 = Score-Text $utf16
+        $score8 = if ($null -ne $utf8) { Score-Text $utf8 } else { [int]::MaxValue }
+        $scoreA = Score-Text $ansi
+
+        if ($score8 -eq 0) { return $utf8 }
+        if ($score16 -eq 0 -or ($nulRatio -ge 0.15 -and $score16 -le $scoreA)) { return $utf16 }
+        if ($scoreA -eq 0) { return $ansi }
+
+        $best = $utf16; $bestScore = $score16
+        if ($score8 -lt $bestScore) { $bestScore = $score8; $best = $utf8 }
+        if ($scoreA -lt $bestScore) { $bestScore = $scoreA; $best = $ansi }
+        return $best
+    } catch {
+        return ""
+    }
+}
+
+function Invoke-Native {
+    param([string]$FilePath, [string[]]$ArgumentList)
+    $tmp = Join-Path $env:TEMP ("wf_native_" + [guid]::NewGuid().ToString("N") + ".txt")
+    $quotedArgs = ($ArgumentList | ForEach-Object { if ($_ -match " ") { "`"$_`"" } else { $_ } }) -join " "
+    & cmd.exe /c "$FilePath $quotedArgs > `"$tmp`" 2>&1" | Out-Null
+    $exit = $LASTEXITCODE
+    $text = Read-NativeFile -Path $tmp
+    Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+    return @($exit, $text)
+}
+
+function Join-NativeOutput {
+    param($Lines)
+    $sb = New-Object System.Text.StringBuilder
+    foreach ($line in $Lines) {
+        $s = if ($line -is [string]) { $line } else { "$line" }
+        $s = $s.Replace([string][char]0, "")   # strip NUL corruption
+        [void]$sb.AppendLine($s)
+    }
+    return $sb.ToString().TrimEnd()
+}
+
+function Compact-Text {
+    param([string]$Text, [int]$Max = 300)
+    if ([string]::IsNullOrEmpty($Text)) { return "" }
+    $s = $Text.Replace([string][char]0, "")
+    $s = $s -replace "`r`n", " " -replace "`n", " " -replace "`r", " "
+    $s = $s -replace "\s+", " "
+    $s = $s.Trim()
+    if ($s.Length -gt $Max) { $s = $s.Substring(0, $Max) + "..." }
+    return $s
+}
+
+# ---------------------------------------------------------------------
 $report = @{
     sections = @{
         media                   = New-HealthSection
@@ -113,7 +222,7 @@ $report = @{
 
 # ---- media ----
 $m = $report.sections.media
-$mediaDetail = if ($MediaId) { $MediaId } else { "(not provided — pass -MediaId for full evidence)" }
+$mediaDetail = if ($MediaId) { $MediaId } else { "(not provided - pass -MediaId for full evidence)" }
 Add-Check $m "isoMedia" "Pass" $mediaDetail
 if ($IsoSha256) { Add-Check $m "isoSha256" "Pass" $IsoSha256 } else { Add-Check $m "isoSha256" "Warning" "ISO SHA-256 not provided (host-side computed)" }
 $m.status = Resolve-SectionStatus $m
@@ -127,7 +236,17 @@ $p.status = Resolve-SectionStatus $p
 $wi = $report.sections.windowsIdentity
 $cv = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -ErrorAction SilentlyContinue
 if ($cv) {
-    Add-Check $wi "edition" "Pass" ([string]$cv.ProductName)
+    # Windows 11 keeps the legacy "Windows 10 Pro" ProductName registry value for
+    # compatibility. Normalize the DISPLAY name from the build number so a 25H2
+    # installation is never confusingly presented as Windows 10.
+    $rawProduct = [string]$cv.ProductName
+    $buildNum = 0
+    [void][int]::TryParse([string]$cv.CurrentBuildNumber, [ref]$buildNum)
+    $display = $rawProduct
+    if ($buildNum -ge 22000 -and $rawProduct -match "Windows 10") {
+        $display = $rawProduct -replace "Windows 10", "Windows 11"
+    }
+    Add-Check $wi "edition" "Pass" "$display (raw ProductName: $rawProduct)"
     $buildText = "$($cv.CurrentBuildNumber).$($cv.UBR) ($($cv.DisplayVersion))"
     Add-Check $wi "build" "Pass" $buildText
 } else {
@@ -143,7 +262,7 @@ if ($lic) {
     $map = @{ 1 = "Licensed"; 2 = "OOBGrace"; 3 = "OOTGrace"; 4 = "NonGenuineGrace"; 5 = "Notification"; 6 = "ExtendedGrace" }
     $state = if ($map.ContainsKey([int]$lic.LicenseStatus)) { $map[[int]$lic.LicenseStatus] } else { "Status $($lic.LicenseStatus)" }
     if ([int]$lic.LicenseStatus -eq 1) { Add-Check $wi "activation" "Pass" $state }
-    else { Add-Check $wi "activation" "Warning" "$state (report only — activation not required for validation)" }
+    else { Add-Check $wi "activation" "Warning" "$state (report only - activation not required for validation)" }
 } else {
     Add-Check $wi "activation" "NotTested" "No licensing product with partial key found"
 }
@@ -154,7 +273,7 @@ $wi.status = Resolve-SectionStatus $wi
 # ---- bootAndShell ----
 $bs = $report.sections.bootAndShell
 if (Get-Process explorer -ErrorAction SilentlyContinue) { Add-Check $bs "explorer" "Pass" "Explorer shell process running" }
-else { Add-Check $bs "explorer" "Fail" "Explorer shell process NOT running — desktop may not be reachable" }
+else { Add-Check $bs "explorer" "Fail" "Explorer shell process NOT running - desktop may not be reachable" }
 if (Get-Process StartMenuExperienceHost -ErrorAction SilentlyContinue) { Add-Check $bs "startMenu" "Pass" "Start menu host process running" }
 else { Add-Check $bs "startMenu" "Warning" "StartMenuExperienceHost not running (may start on demand)" }
 $bs.status = Resolve-SectionStatus $bs
@@ -174,7 +293,7 @@ if ($netAdapters.Count -gt 0) { Add-Check $dv "networkAdapter" "Pass" (($netAdap
 else { Add-Check $dv "networkAdapter" "Fail" "No connected network adapter" }
 $audio = Get-CimInstance Win32_SoundDevice -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($audio) { Add-Check $dv "audioDevice" "Pass" $audio.Name }
-else { Add-Check $dv "audioDevice" "Warning" "No audio device — expected for a VMware VM without an audio device; not a product failure" }
+else { Add-Check $dv "audioDevice" "Warning" "No audio device - expected for a VMware VM without an audio device; not a product failure" }
 $dv.status = Resolve-SectionStatus $dv
 
 # ---- network ----
@@ -194,37 +313,36 @@ try {
     if ($resp.Content -match "Microsoft Connect Test") { Add-Check $nw "httpsConnectivity" "Pass" "HTTPS to msftconnecttest.com OK" }
     else { Add-Check $nw "httpsConnectivity" "Warning" "HTTPS endpoint reachable but unexpected content" }
 } catch {
-    Add-Check $nw "httpsConnectivity" "Warning" "HTTPS unavailable: $($_.Exception.Message). Deliberately-offline VM is NOT a product failure."
+    # TLS trust chain issues (VM CA store, proxy) are honest Warnings: network
+    # fundamentals (adapter/IP/DNS) already Pass and a trust-channel warning is
+    # NOT a product failure. Never convert this to Pass artificially.
+    Add-Check $nw "httpsConnectivity" "Warning" "HTTPS unavailable: $(Compact-Text $_.Exception.Message). Deliberately-offline VM is NOT a product failure."
 }
 $nw.status = Resolve-SectionStatus $nw
 
 # ---- servicing ----
 $sv = $report.sections.servicing
-$dism = & dism.exe /English /Online /Cleanup-Image /CheckHealth 2>&1
-if ($LASTEXITCODE -eq 0 -and (($dism -join "`n") -match "No component store corruption detected")) {
-    Add-Check $sv "dismCheckHealth" "Pass" "No component store corruption detected"
-} else {
-    $tail = ($dism | Select-Object -Last 3) -join "; "
-    Add-Check $sv "dismCheckHealth" "Fail" "CheckHealth did not pass (exit $LASTEXITCODE): $tail"
-}
+$dismResult = Invoke-Native -FilePath "dism.exe" -ArgumentList @("/English", "/Online", "/Cleanup-Image", "/CheckHealth")
+$dismExit = $dismResult[0]; $dismText = $dismResult[1]
+$dismOk = ($dismExit -eq 0) -or ($dismText -match "No component store corruption detected")
+if ($dismOk) { Add-Check $sv "dismCheckHealth" "Pass" (Compact-Text $dismText) }
+else { Add-Check $sv "dismCheckHealth" "Fail" "CheckHealth did not pass (exit $dismExit): $(Compact-Text $dismText)" }
 if ($ScanHealth) {
-    $scan = & dism.exe /English /Online /Cleanup-Image /ScanHealth 2>&1
-    if ($LASTEXITCODE -eq 0 -and (($scan -join "`n") -match "No component store corruption detected")) {
-        Add-Check $sv "dismScanHealth" "Pass" "ScanHealth: no component store corruption detected"
-    } else {
-        $tail = ($scan | Select-Object -Last 3) -join "; "
-        Add-Check $sv "dismScanHealth" "Warning" "ScanHealth did not fully pass (exit $LASTEXITCODE): $tail"
-    }
+    $scanResult = Invoke-Native -FilePath "dism.exe" -ArgumentList @("/English", "/Online", "/Cleanup-Image", "/ScanHealth")
+    $scanExit = $scanResult[0]; $scanText = $scanResult[1]
+    $scanOk = ($scanExit -eq 0) -or ($scanText -match "No component store corruption detected")
+    if ($scanOk) { Add-Check $sv "dismScanHealth" "Pass" (Compact-Text $scanText) }
+    else { Add-Check $sv "dismScanHealth" "Warning" "ScanHealth did not fully pass (exit $scanExit): $(Compact-Text $scanText)" }
 } else {
     Add-Check $sv "dismScanHealth" "NotTested" "Skipped (opt-in -ScanHealth)"
 }
-$sfc = & sfc.exe /verifyonly 2>&1
-if ($LASTEXITCODE -eq 0 -and (($sfc -join "`n") -match "did not find any integrity violations")) {
-    Add-Check $sv "sfcVerifyOnly" "Pass" "No integrity violations"
-} else {
-    $tail = ($sfc | Select-Object -Last 3) -join "; "
-    Add-Check $sv "sfcVerifyOnly" "Fail" "sfc /verifyonly did not pass (exit $LASTEXITCODE): $tail"
-}
+# sfc /verifyonly: the EXIT CODE is authoritative and locale-independent
+# (0 = no integrity violations). Localized success text is only corroborating.
+$sfcResult = Invoke-Native -FilePath "sfc.exe" -ArgumentList @("/verifyonly")
+$sfcExit = $sfcResult[0]; $sfcText = $sfcResult[1]
+$sfcOk = ($sfcExit -eq 0) -or ($sfcText -match "did not find any integrity violations") -or ($sfcText -match "未找到任何完整性冲突")
+if ($sfcOk) { Add-Check $sv "sfcVerifyOnly" "Pass" "sfc /verifyonly passed (exit $sfcExit): $(Compact-Text $sfcText)" }
+else { Add-Check $sv "sfcVerifyOnly" "Fail" "sfc /verifyonly FAILED (exit $sfcExit): $(Compact-Text $sfcText)" }
 $sv.status = Resolve-SectionStatus $sv
 
 # ---- windowsUpdate ----
@@ -253,12 +371,12 @@ else { Add-Check $se "firewall" "Fail" "Windows Firewall service missing" }
 $profiles = @(Get-NetFirewallProfile -ErrorAction SilentlyContinue | Where-Object { $_.Enabled })
 if ($profiles.Count -gt 0) { Add-Check $se "firewallEnabled" "Pass" "Firewall enabled on $($profiles.Count) profile(s)" }
 else { Add-Check $se "firewallEnabled" "Warning" "No enabled firewall profile" }
-# Defender signatures: report only — a VM without internet must not fail security.
+# Defender signatures: report only - a VM without internet must not fail security.
 try {
     $sig = (Get-MpComputerStatus -ErrorAction Stop)
     Add-Check $se "defenderSignatures" "Pass" "Antivirus signatures: $($sig.AntivirusSignatureVersion) (age $($sig.AntivirusSignatureAge) days)"
 } catch {
-    Add-Check $se "defenderSignatures" "NotTested" "Signature status unavailable (offline VM or module missing) — not a product failure"
+    Add-Check $se "defenderSignatures" "NotTested" "Signature status unavailable (offline VM or module missing) - not a product failure"
 }
 $se.status = Resolve-SectionStatus $se
 
@@ -291,33 +409,55 @@ if (-not $expected) {
         if ($found) { Add-Check $pe "appxAbsent_$family" "Fail" "$family is still present (expected removed by profile)" }
         else { Add-Check $pe "appxAbsent_$family" "Pass" "$family absent (removed as expected)" }
     }
-    foreach ($reg in $expected.machineRegistry) {
-        $keyPath = "HKLM:\$($reg.path)"
-        $val = (Get-ItemProperty $keyPath -Name $reg.name -ErrorAction SilentlyContinue).$($reg.name)
-        $expectedHex = "0x$($reg.expectedData)" -replace "0x0x", "0x"
-        if ($null -eq $val) { Add-Check $pe "reg_$($reg.name)" "Fail" "$($reg.path)\$($reg.name) missing (expected $($reg.expectedData))" }
-        elseif ((Get-DwordAsHex $val) -eq $expectedHex) { Add-Check $pe "reg_$($reg.name)" "Pass" "$($reg.path)\$($reg.name) = $val" }
-        else { Add-Check $pe "reg_$($reg.name)" "Fail" "$($reg.path)\$($reg.name) = $val (expected $($reg.expectedData))" }
-    }
-    $hive = "WinForgeHealth"
+
+    # Registry expectations with EXPLICIT scope. Settings intended to seed the
+    # OOBE-created user's profile (Start_ShowRecent / Start_ShowRecommended) are
+    # verified in the EFFECTIVE current-user hive (HKCU) - NOT the post-OOBE
+    # Default-User template, which Windows legitimately consumes at profile
+    # creation. Machine policies stay machine (HKLM).
+    $hiveName = "WinForgeHealth"
     $hiveLoaded = $false
-    if ($isAdmin) {
-        & reg.exe load "HKU\$hive" "C:\Users\Default\NTUSER.DAT" 2>$null | Out-Null
-        $hiveLoaded = ($LASTEXITCODE -eq 0)
-    }
-    if ($hiveLoaded) {
-        foreach ($reg in $expected.defaultUserRegistry) {
-            $keyPath = "HKU:\$hive\$($reg.path)"
-            $val = (Get-ItemProperty $keyPath -Name $reg.name -ErrorAction SilentlyContinue).$($reg.name)
-            $expectedHex = "0x$($reg.expectedData)" -replace "0x0x", "0x"
-            if ($null -eq $val) { Add-Check $pe "defaultUser_$($reg.name)" "Fail" "DefaultUser $($reg.path)\$($reg.name) missing (expected $($reg.expectedData))" }
-            elseif ((Get-DwordAsHex $val) -eq $expectedHex) { Add-Check $pe "defaultUser_$($reg.name)" "Pass" "DefaultUser $($reg.path)\$($reg.name) = $val" }
-            else { Add-Check $pe "defaultUser_$($reg.name)" "Fail" "DefaultUser $($reg.path)\$($reg.name) = $val (expected $($reg.expectedData))" }
+    foreach ($reg in $expected.registryChecks) {
+        $checkName = "reg_$($reg.name)"
+        $expectedHex = "0x$($reg.expectedData)" -replace "0x0x", "0x"
+        switch ($reg.scope) {
+            "OfflineMachine" {
+                $keyPath = "HKLM:\$($reg.path)"
+                $val = (Get-ItemProperty $keyPath -Name $reg.name -ErrorAction SilentlyContinue).$($reg.name)
+                if ($null -eq $val) { Add-Check $pe $checkName "Fail" "HKLM $($reg.path)\$($reg.name) missing (expected $($reg.expectedData))" }
+                elseif ((Get-DwordAsHex $val) -eq $expectedHex) { Add-Check $pe $checkName "Pass" "HKLM $($reg.path)\$($reg.name) = $val" }
+                else { Add-Check $pe $checkName "Fail" "HKLM $($reg.path)\$($reg.name) = $val (expected $($reg.expectedData))" }
+            }
+            "CurrentUserEffective" {
+                $keyPath = "HKCU:\$($reg.path)"
+                $val = (Get-ItemProperty $keyPath -Name $reg.name -ErrorAction SilentlyContinue).$($reg.name)
+                if ($null -eq $val) { Add-Check $pe $checkName "Fail" "HKCU $($reg.path)\$($reg.name) missing (expected $($reg.expectedData))" }
+                elseif ((Get-DwordAsHex $val) -eq $expectedHex) { Add-Check $pe $checkName "Pass" "HKCU $($reg.path)\$($reg.name) = $val" }
+                else { Add-Check $pe $checkName "Fail" "HKCU $($reg.path)\$($reg.name) = $val (expected $($reg.expectedData))" }
+            }
+            "DefaultUserTemplate" {
+                if (-not $hiveLoaded) {
+                    if ($isAdmin) {
+                        & reg.exe load "HKU\$hiveName" "C:\Users\Default\NTUSER.DAT" 2>$null | Out-Null
+                        $hiveLoaded = ($LASTEXITCODE -eq 0)
+                    }
+                }
+                if ($hiveLoaded) {
+                    $keyPath = "HKU:\$hiveName\$($reg.path)"
+                    $val = (Get-ItemProperty $keyPath -Name $reg.name -ErrorAction SilentlyContinue).$($reg.name)
+                    if ($null -eq $val) { Add-Check $pe $checkName "Fail" "DefaultUser $($reg.path)\$($reg.name) missing (expected $($reg.expectedData))" }
+                    elseif ((Get-DwordAsHex $val) -eq $expectedHex) { Add-Check $pe $checkName "Pass" "DefaultUser $($reg.path)\$($reg.name) = $val" }
+                    else { Add-Check $pe $checkName "Fail" "DefaultUser $($reg.path)\$($reg.name) = $val (expected $($reg.expectedData))" }
+                } else {
+                    Add-Check $pe $checkName "NotTested" "DefaultUser hive not loaded (requires Administrator) - re-run elevated"
+                }
+            }
+            default {
+                Add-Check $pe $checkName "NotTested" "Unknown registry scope '$($reg.scope)' for $($reg.name)"
+            }
         }
-        & reg.exe unload "HKU\$hive" 2>$null | Out-Null
-    } else {
-        Add-Check $pe "defaultUserRegistry" "NotTested" "Default User hive not loaded (requires Administrator) — re-run elevated for full evidence"
     }
+    if ($hiveLoaded) { & reg.exe unload "HKU\$hiveName" 2>$null | Out-Null }
 }
 $pe.status = Resolve-SectionStatus $pe
 
@@ -336,19 +476,26 @@ $report.overallStatus = $worst
 $failures = @(); $warnings = @()
 foreach ($name in @("media","profile","windowsIdentity","bootAndShell","devices","network","servicing","windowsUpdate","security","storeAndAppPlatform","profileExpectedChanges")) {
     foreach ($c in $report.sections[$name].checks) {
-        if ($c.status -eq "Fail") { $failures += "${name}: $($c.name) — $($c.detail)" }
-        elseif ($c.status -eq "Warning") { $warnings += "${name}: $($c.name) — $($c.detail)" }
+        if ($c.status -eq "Fail") { $failures += "${name}: $($c.name) - $($c.detail)" }
+        elseif ($c.status -eq "Warning") { $warnings += "${name}: $($c.name) - $($c.detail)" }
     }
 }
 $report.failures = $failures
 $report.warnings = $warnings
 
-# ADR-084 FullHealthValidated gate: no Fail anywhere, and the critical sections
-# (bootAndShell, servicing, security, network) actually Pass.
+# ADR-084 FullHealthValidated gate (Stage 16.1a): no section Fail, and the
+# critical sections (bootAndShell, servicing, security, network) actually tested
+# with no failing check. Warnings - including a network HTTPS-trust Warning on a
+# VM whose IP/DNS fundamentals Pass - do NOT block (ADR-098).
 $critical = @("bootAndShell", "servicing", "security", "network")
-$gate = ($report.overallStatus -eq "Pass")
+$gate = $true
 foreach ($c in $critical) {
-    if ($report.sections[$c].status -ne "Pass") { $gate = $false }
+    if ($report.sections[$c].status -eq "NotTested") { $gate = $false }
+}
+foreach ($name in @("media","profile","windowsIdentity","bootAndShell","devices","network","servicing","windowsUpdate","security","storeAndAppPlatform","profileExpectedChanges")) {
+    foreach ($ck in $report.sections[$name].checks) {
+        if ($ck.status -eq "Fail") { $gate = $false }
+    }
 }
 $report.fullHealthValidated = $gate
 

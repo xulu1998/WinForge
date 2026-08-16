@@ -117,11 +117,31 @@ public sealed class ProfileExpectedState
     /// <summary>AppX package name prefixes that must be ABSENT after install.</summary>
     public List<string> AppxAbsent { get; set; } = new();
 
-    /// <summary>Machine (OfflineMachine) registry values the profile sets.</summary>
-    public List<ExpectedRegistryValue> MachineRegistry { get; set; } = new();
+    /// <summary>
+    /// Expected registry values with EXPLICIT scope. A scope is required on
+    /// every entry — nothing is silently reinterpreted (a profile-setting value
+    /// like Start_ShowRecent is verified as CurrentUserEffective after OOBE, NOT
+    /// as DefaultUserTemplate, because Windows/OOBE legitimately consumes the
+    /// seeded template value into the created user's profile).
+    /// </summary>
+    public List<ExpectedRegistryValue> RegistryChecks { get; set; } = new();
+}
 
-    /// <summary>Default-User (OfflineDefaultUser) registry values the profile sets.</summary>
-    public List<ExpectedRegistryValue> DefaultUserRegistry { get; set; } = new();
+/// <summary>
+/// Where an expected registry value must be verified. Image-time
+/// (pre-commit/post-commit) validation of the WIM Default-User hive stays
+/// untouched — this scope governs the INSTALLED-OS post-install check only.
+/// </summary>
+public enum RegistryCheckScope
+{
+    /// <summary>Machine hive (HKLM) — e.g. SOFTWARE\Policies …</summary>
+    OfflineMachine,
+
+    /// <summary>Effective current-user hive (HKCU) — for settings that seed the OOBE-created user's profile.</summary>
+    CurrentUserEffective,
+
+    /// <summary>Default-User template hive (<c>Users\Default\NTUSER.DAT</c>) — settings that must persist in the template post-install.</summary>
+    DefaultUserTemplate,
 }
 
 /// <summary>One expected registry value (kind is informational; DWord by default).</summary>
@@ -131,4 +151,7 @@ public sealed class ExpectedRegistryValue
     public string Name { get; set; } = string.Empty;
     public string ExpectedData { get; set; } = string.Empty;
     public string Kind { get; set; } = "DWord";
+
+    /// <summary>Explicit verification scope (required; see <see cref="RegistryCheckScope"/>).</summary>
+    public string Scope { get; set; } = string.Empty;
 }

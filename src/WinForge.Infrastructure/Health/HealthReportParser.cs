@@ -189,6 +189,11 @@ public static class HealthReportParser
     /// </summary>
     public static bool EvaluateFullHealth(FullHealthReport report)
     {
+        if (report is null)
+        {
+            return false;
+        }
+
         var sections = AllSections(report);
         if (sections.Any(s => s.Status == HealthStatus.Fail))
         {
@@ -198,13 +203,30 @@ public static class HealthReportParser
         foreach (var critical in FullHealthReport.CriticalSections)
         {
             var section = SectionTarget(report, critical);
-            if (section is null || section.Status != HealthStatus.Pass)
+            if (section is null)
+            {
+                return false;
+            }
+
+            // Critical sections (bootAndShell, servicing, security, network) must
+            // be ACTUALLY TESTED — an untested critical section never validates.
+            if (section.Status == HealthStatus.NotTested)
+            {
+                return false;
+            }
+
+            // A failing check inside a critical section always blocks.
+            if (section.Checks.Any(c => c.Status == HealthStatus.Fail))
             {
                 return false;
             }
         }
 
-        return report.OverallStatus == HealthStatus.Pass;
+        // Warnings — including inside a critical section, e.g. the HTTPS trust
+        // Warning on a VM whose IP/DNS fundamentals Pass — do NOT block
+        // FullHealthValidated (ADR-098: only Fail checks and untested critical
+        // sections block; warnings are honest evidence, never a false Pass).
+        return true;
     }
 
     private static HealthStatus Worst(IEnumerable<HealthStatus> statuses)
@@ -293,13 +315,37 @@ public static class ProfileExpectedStateParser
 
     public static ProfileExpectedState? Parse(string json)
     {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        json = json.TrimStart('\uFEFF');
+        ProfileExpectedState? state;
         try
         {
-            return JsonSerializer.Deserialize<ProfileExpectedState>(json, Options);
+            state = JsonSerializer.Deserialize<ProfileExpectedState>(json, Options);
         }
         catch (JsonException)
         {
             return null;
         }
+
+        if (state is null)
+        {
+            return null;
+        }
+
+        // Scope must be EXPLICIT on every registry check — nothing is silently
+        // reinterpreted (Stage 16.1a). A missing or unknown scope rejects the file.
+        foreach (var check in state.RegistryChecks)
+        {
+            if (!Enum.TryParse<RegistryCheckScope>(check.Scope, ignoreCase: true, out _))
+            {
+                return null;
+            }
+        }
+
+        return state;
     }
 }

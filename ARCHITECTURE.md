@@ -822,3 +822,37 @@ VmInstallValidated / FullHealthValidated) are documented in docs/FULL-HEALTH-VAL
 FullHealthValidated requires installed-OS evidence: ISO generated + VM Setup booted + Windows
 installed + OOBE completed + desktop reached + health report completed with no critical
 servicing/security/network/shell failures. **1243 tests (Core 53, App 1190), 0 err/0 warn.**
+
+
+## Phase 16 — Stage 16.1a: Health-check correctness (2026-08-16, ADR-098 addendum)
+
+The first real Balanced VM validation succeeded through the desktop (ISO booted
+in VMware, Windows 11 Pro 25H2 build 26200 installed, OOBE completed;
+`profile-commit-validation.json`: 16/10/10/10, committed + postCommitVerified,
+ISO structure validated). The first `full-health-report.json` failed only on
+three health-check LOGIC defects: (1) sfcVerifyOnly falsely failed a successful
+zh-CN run — the script matched English-only success text and mis-decoded sfc's
+native UTF-16LE output (NUL ratio ~0.16 on Chinese Windows defeated the dense-
+NUL heuristic); FIX: `SfcVerifyOnlyEvaluator` (Infrastructure/Health) makes the
+verdict EXIT-CODE authoritative (0 = no integrity violations, locale-
+independent) with the localized success marker as corroboration only, and
+`NativeOutputDecoder` uses a candidate-scoring decode (UTF-16 BOM → strict
+UTF-8 → UTF-16LE with a low NUL-density heuristic → system ANSI; fewest U+FFFD
+wins) with NUL stripping; the script mirrors the rule and captures native
+output by cmd /c file redirection. (2)+(3) defaultUser_Start_* falsely failed:
+Windows/OOBE legitimately consumes the seeded Default-User template into the
+created user's profile (manual: HKCU Start_ShowRecommended/Start_ShowRecent =
+0x0); FIX: expected registry checks declare an EXPLICIT scope
+(`OfflineMachine` / `CurrentUserEffective` / `DefaultUserTemplate`) and a
+missing or unknown scope rejects the file — Balanced machine policies stay
+OfflineMachine, the Start values are CurrentUserEffective; image-time WIM
+Default-User validation is unchanged (two distinct questions: image hive
+persistence vs installed effective state). Mojibake ("鈥?") root cause: BOM-less
+UTF-8 .ps1 parsed as ANSI by PowerShell 5.1 — the script is now pure-ASCII
+with a UTF-8 BOM and a test pins the encoding. The FullHealthValidated gate no
+longer requires overallStatus == Pass: Warnings (incl. the real-VM HTTPS
+TLS-trust Warning with IP/DNS Pass) do NOT block — only Fail checks and
+untested critical sections do. Windows identity display normalizes the legacy
+"Windows 10 Pro" ProductName to "Windows 11" when build >= 22000 (presentation
+only). **1263 tests (Core 53, App 1208), 0 err/0 warn.** Balanced is NOT yet
+formally FullHealthValidated — corrected-report retest in the existing VM.

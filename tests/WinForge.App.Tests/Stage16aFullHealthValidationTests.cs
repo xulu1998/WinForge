@@ -583,13 +583,35 @@ public sealed class Stage16aFullHealthValidationTests
     [Fact]
     public void Health_Warning_Does_Not_Fail_And_Does_Not_Block_FullHealth()
     {
+        // Stage 16.1a (ADR-098): Warnings — including inside a critical section,
+        // e.g. the HTTPS-trust Warning on a VM whose IP/DNS fundamentals Pass —
+        // do NOT block FullHealthValidated. Only Fail checks and untested
+        // critical sections block.
         var json = AllPassReport().Replace("\"servicing\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dismCheckHealth\",\"status\":\"Pass\"",
             "\"servicing\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dismCheckHealth\",\"status\":\"Warning\"", StringComparison.Ordinal);
         var result = HealthReportParser.Parse(json);
         Assert.True(result.SchemaValid);
-        Assert.Equal(HealthStatus.Warning, result.Report!.OverallStatus);
-        Assert.False(result.Report.FullHealthValidated); // warnings do not fail, but overall != Pass
+        Assert.Equal(HealthStatus.Warning, result.Report!.OverallStatus); // honest aggregation
+        Assert.True(result.Report.FullHealthValidated); // warning does NOT block full-health
         Assert.Contains(result.Report.Warnings, w => w.Contains("dismCheckHealth", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Health_Network_Https_Trust_Warning_Does_Not_Block_FullHealth()
+    {
+        // The real first VM report: IP assignment + DNS Pass, HTTPS trust = Warning.
+        // Network fundamentals are tested; the TLS trust-channel warning is NOT a
+        // product failure and must NOT block FullHealthValidated (ADR-098 §6).
+        var json = AllPassReport().Replace(
+            "\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Pass\",\"detail\":\"ok\"}]}",
+            "\"network\":{\"status\":\"Pass\",\"checks\":[{\"name\":\"dns\",\"status\":\"Pass\",\"detail\":\"ok\"},{\"name\":\"httpsConnectivity\",\"status\":\"Warning\",\"detail\":\"TLS trust channel unavailable\"}]}",
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("dns\",\"status\":\"Pass\",\"detail\":\"ok\"}]},\"checks\"", json); // no duplicated checks key
+        var result = HealthReportParser.Parse(json);
+        Assert.True(result.SchemaValid);
+        Assert.Equal(HealthStatus.Warning, result.Report!.OverallStatus);
+        Assert.True(result.Report.FullHealthValidated); // per ADR-098 §6 — does not block
+        Assert.Contains(result.Report.Warnings, w => w.Contains("httpsConnectivity", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -636,10 +658,14 @@ public sealed class Stage16aFullHealthValidationTests
         Assert.Contains(state.AppxAbsent, a => a.Contains("FeedbackHub", StringComparison.Ordinal));
         Assert.Contains(state.AppxAbsent, a => a.Contains("YourPhone", StringComparison.Ordinal));
         Assert.Contains(state.AppxAbsent, a => a.Contains("Solitaire", StringComparison.Ordinal));
-        Assert.Equal(4, state.MachineRegistry.Count); // AdvertisingId + 3 policies
-        Assert.Equal(2, state.DefaultUserRegistry.Count); // Start_ShowRecommended + Start_ShowRecent
-        Assert.All(state.MachineRegistry, r => Assert.False(string.IsNullOrWhiteSpace(r.Path)));
-        Assert.All(state.MachineRegistry, r => Assert.False(string.IsNullOrWhiteSpace(r.Name)));
-        Assert.All(state.MachineRegistry, r => Assert.False(string.IsNullOrWhiteSpace(r.ExpectedData)));
+
+        // Stage 16.1a: registry checks declare an EXPLICIT scope.
+        Assert.Equal(6, state.RegistryChecks.Count); // 4 machine policies + 2 current-user Start values
+        Assert.Equal(4, state.RegistryChecks.Count(r => r.Scope == "OfflineMachine"));
+        Assert.Equal(2, state.RegistryChecks.Count(r => r.Scope == "CurrentUserEffective"));
+        Assert.All(state.RegistryChecks, r => Assert.False(string.IsNullOrWhiteSpace(r.Path)));
+        Assert.All(state.RegistryChecks, r => Assert.False(string.IsNullOrWhiteSpace(r.Name)));
+        Assert.All(state.RegistryChecks, r => Assert.False(string.IsNullOrWhiteSpace(r.ExpectedData)));
+        Assert.All(state.RegistryChecks, r => Assert.False(string.IsNullOrWhiteSpace(r.Scope)));
     }
 }

@@ -2523,3 +2523,67 @@ never be conflated with "the installed Windows is healthy".
   Update disabling).
 - **Balanced first:** safest primary, already real-Apply validated, minimal
   confounding variables. Other profiles keep their current validation level.
+
+
+## ADR-098 addendum: Health-check correctness - SFC decoding, CurrentUserEffective scope, Unicode (Stage 16.1a)
+
+**Status:** Accepted (Phase 16 Stage 16.1a; implementation ready, Balanced
+health-check retest required).
+**Context:** The first real Balanced VM validation SUCCEEDED end-to-end: the
+customized ISO booted in VMware, installed Windows 11 Pro 25H2 build 26200,
+completed OOBE and reached the desktop; the commit evidence is
+`profile-commit-validation.json` (16 BuildPlan ops / 10 selected / 10 executed /
+10 read-back Verified, committed, post-commit verified, ISO structure
+validated). The first `full-health-report.json` failed overall ONLY on three
+checks that manual validation proved to be health-check LOGIC defects, not
+product failures: (1) `sfcVerifyOnly` reported a NUL-corrupted failure while the
+manual run exited 0 with "Windows 资源保护未找到任何完整性冲突。"; (2)+(3)
+`defaultUser_Start_ShowRecent` / `defaultUser_Start_ShowRecommended` failed
+because the values were no longer in `C:\Users\Default\NTUSER.DAT` after OOBE -
+yet the OOBE-created user's HKCU held exactly `Start_ShowRecent=0x0` and
+`Start_ShowRecommended=0x0`, proving the OfflineDefaultUser customization
+successfully seeded the created profile. No Windows reinstall was required.
+**Exact SFC root cause (verified):** sfc.exe emits UTF-16LE text; on localized
+Windows the NUL ratio is LOW (roughly 0.16 - Chinese text dominates and only a
+few ASCII characters produce NUL bytes), so a dense-NUL heuristic (>= 0.5)
+fails to detect UTF-16 and the capture is mis-decoded; the original script also
+matched English-only success text, so a successful zh-CN run was reported as a
+failure. **Fix:** the verdict is EXIT-CODE authoritative (0 = no integrity
+violations, locale-independent) with the localized success marker
+("did not find any integrity violations" / "\u672a\u627e\u5230\u4efb\u4f55\u5b8c\u6574\u6027\u51b2\u7a81") used ONLY as
+corroboration; native output is captured via cmd /c file redirection and
+decoded by a candidate-scoring decoder (UTF-16 BOM -> strict UTF-8 -> UTF-16LE
+with a low NUL-density heuristic -> system ANSI; the candidate with the fewest
+U+FFFD wins) and NUL-stripped. A successful run can never be failed by capture
+artifacts; genuine failures still Fail. /scannow is never run automatically.
+**Post-install Default-User semantics (two validation phases):**
+- IMAGE (pre-commit/post-commit WIM validation): OfflineDefaultUser must be
+  verified in `Users\Default\NTUSER.DAT` - UNCHANGED.
+- INSTALLED OS (full health): settings whose purpose is to seed the
+  OOBE-created user's profile (Start_ShowRecommended / Start_ShowRecent) are
+  verified in the EFFECTIVE current-user hive (HKCU), because Windows/OOBE
+  legitimately consumes the seeded template value into the created user's
+  profile. The post-OOBE template is NOT required to retain the seed.
+**Expected-state schema:** every registry expectation now declares an EXPLICIT
+scope - `OfflineMachine` (HKLM), `CurrentUserEffective` (HKCU), or
+`DefaultUserTemplate` (Users\Default\NTUSER.DAT) - and nothing is silently
+reinterpreted: a missing or unknown scope REJECTS the expected-state file.
+Balanced machine policies stay `OfflineMachine`; the two Start values are
+`CurrentUserEffective`.
+**Unicode/mojibake fix:** the report JSON contained mojibake such as the UTF-8
+em dash mis-decoded as GBK. Root cause: the .ps1 file had no UTF-8 BOM, so
+PowerShell 5.1 parsed it as the system ANSI code page and mangled non-ASCII
+string literals. The script is now pure-ASCII (except the required Chinese SFC
+marker) with a UTF-8 BOM; a test pins the file encoding.
+**Network warning:** the real-VM HTTPS TLS-trust Warning (IP/DNS Pass) stays a
+Warning - never converted to Pass artificially, and (per ADR-098) a Warning
+does NOT block FullHealthValidated: the gate is now "no section Fail AND the
+critical sections (bootAndShell, servicing, security, network) actually tested
+with no failing check". Warnings are honest evidence.
+**Windows identity display:** Windows 11 keeps the legacy "Windows 10 Pro"
+ProductName registry value; the report now normalizes the display name to
+"Windows 11" when the build number >= 22000 (raw ProductName preserved in the
+detail) - presentation only, edition/build detection unchanged.
+**Status:** Balanced is NOT yet formally FullHealthValidated - the corrected
+report must pass first (retest in the EXISTING VM with only the two updated
+files; no ISO rebuild, no reinstall).
