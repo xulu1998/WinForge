@@ -493,12 +493,21 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 16 — Full Health Validation & Release Confidence
 
-- **Status: IN PROGRESS — STAGES 16.1 + 16.1a + 16.1b COMPLETE (2026-08-16; Balanced
-  FullHealthValidated — real Win11 Pro 25H2 build 26200.8037 on VMware: failures=[],
-  overallStatus Warning, fullHealthValidated=true)** · **STAGE 16.2 IMPLEMENTATION READY
-  (2026-08-16)** — DEDICATEDGAMING FULL-HEALTH VALIDATION REQUIRED (NEW VMware VM,
-  `--commit-profile DedicatedGaming`, `-ExpectedJson dedicated-gaming-expected-state.json`);
-  branch `phase/16-full-health-validation`; NOT merged.
+- **Status: COMPLETE (2026-08-16) — ALL STAGES 16.1/16.1a/16.1b/16.2 COMPLETE; MERGED TO
+  `main` via `--no-ff`; branch `phase/16-full-health-validation` retained.** BALANCED —
+  FullHealthValidated · DEDICATEDGAMING — FullHealthValidated (real Win11 Pro 25H2 zh-CN x64,
+  build 26200.8037, VMware Workstation Pro; both: failures=[], overallStatus Warning,
+  fullHealthValidated=true). Balanced: 16 BuildPlan/10 selected/10 verified, conservative
+  AppX+registry+service scope. DedicatedGaming: 33 BuildPlan/20 selected/20 verified, aggressive
+  selected-only (11 AppX removals + 5 OfflineMachine + 4 CurrentUserEffective registry;
+  Recommend-only Containers/WSL/DevHome/OneDriveSync never executed), ISO SHA-256
+  2d521bd21a0efa17bf24acdc97a3a8d2c279cfea1c866e90bbdce2cb89be0210. Other profiles keep their
+  actual lower validation level (ADR-084 WorkflowValidated/VmInstallValidated/FullHealthValidated).
+  Phase 16 demonstrated the complete chain twice: source ISO → profile planning → selected-only
+  apply → independent read-back → commit WIM → post-commit remount verification → production ISO
+  build → ISO structure verification → VMware UEFI install → OOBE → desktop → installed-state
+  profile verification → DISM/SFC/security/update/store/network/device checks → FullHealthValidated.
+  **1282 tests (Core 53, App 1229), 0 err/0 warn.**
 - **Stage 16.1 — Balanced end-to-end ISO + VM health validation prep (ADR-098):** proves a real
   WinForge-generated customized ISO works end-to-end (Profile → Customize → validated BuildPlan →
   Apply → COMMIT WIM → build ISO → VMware install → OOBE → desktop → post-install health

@@ -1,3 +1,34 @@
+## Phase 16 - COMPLETE: Full Health Validation & Release Confidence (2026-08-16)
+
+- **Balanced — FullHealthValidated** and **DedicatedGaming — FullHealthValidated** (ADR-084 top
+  level): two materially different production profiles — Balanced (conservative safe optimization)
+  and DedicatedGaming (more aggressive selected-only optimization) — both passed the complete
+  chain on real Windows 11 Pro 25H2 zh-CN x64 (build 26200.8037, VMware Workstation Pro): source
+  ISO → profile planning → selected-only apply → independent read-back → commit WIM → post-commit
+  remount verification → production ISO build → ISO structure verification → VMware UEFI install →
+  OOBE → desktop → installed-state profile verification → DISM/SFC/security/update/store/network/
+  device checks → FullHealthValidated. Both final reports: failures=[], overallStatus=Warning,
+  fullHealthValidated=true (allowed non-blockers: activation Notification, HTTPS TLS-trust Warning
+  with IP/DNS Pass, optional DISM ScanHealth NotTested).
+- **Balanced evidence**: profile-commit-validation.json (16/10/10 verified, committed, post-commit
+  verified, ISO structure validated) + final full-health report.
+- **DedicatedGaming evidence**: profile-commit-validation.json (33/20/20 verified,
+  preCommitValidationPassed=true, committed=true, postCommitVerified=true, committedImageReadable=
+  true, iso.structureValidated=true, 20 post-commit checks, cleanup discard+workspace succeeded);
+  ISO Documents\WinForge\WinForge-DedicatedGaming-Win11-25H2-Pro-zh-CN-x64.iso (8,052,092,928 B)
+  SHA-256 2d521bd21a0efa17bf24acdc97a3a8d2c279cfea1c866e90bbdce2cb89be0210; final full-health
+  report: profileExpectedChanges 11 AppX removals + 5 OfflineMachine/HKLM + 4 CurrentUserEffective/
+  HKCU ALL Pass; required platform gates Pass (identity/boot-shell/devices/display/network/DHCP-IP/
+  DNS/CheckHealth/SFC/WindowsUpdate/Security/Defender/Firewall/Store/VC++ runtime).
+- **Known non-blocking observations preserved** (not WinForge product failures): one earlier
+  Balanced Setup failure not reproducible with no retained log; VMware guest occasional
+  idle/display black-screen; one Windows Terminal 0xD000003A; console console host remained
+  usable; activation Notification; HTTPS TLS trust Warning with IP/DNS Pass; DISM ScanHealth not
+  run (optional); DedicatedGaming fresh-image Defender signature age old while Defender/security
+  platform healthy.
+- Other profiles (Gaming/Developer/Office/Lightweight) retain their actual lower validation level.
+- **1282 tests (Core 53, App 1229), 0 err/0 warn.**
+
 ## Phase 16 - Stage 16.2: DedicatedGaming full-health validation prep + Stage 16.1 closeout (2026-08-16)
 
 - **Stage 16.1 COMPLETE - Balanced FullHealthValidated** (ADR-084 top level): real Windows 11 Pro

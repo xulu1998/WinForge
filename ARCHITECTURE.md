@@ -860,3 +860,33 @@ formally FullHealthValidated — corrected-report retest in the existing VM.
 ## Phase 16 - Stage 16.1b: FullHealth REQUIRED-vs-OPTIONAL gate (2026-08-16, ADR-098 addendum)
 
 The second real Balanced health report is ZERO-failure (all sections Pass except windowsIdentity activation Warning and network HTTPS-trust Warning with IP/DNS Pass; servicing CheckHealth + SFC Pass). The last false-negative was the gate: the OPTIONAL DISM /ScanHealth (optional per ADR-098) was treated as required. HealthCheckItem now carries `RequiredForFullHealth` (JSON `requiredForFullHealth`, omitted = true); REQUIRED checks must be tested (NotTested blocks; `failures=[]` alone is insufficient), OPTIONAL checks (ScanHealth, HTTPS, activation, Defender signatures, audio) may be NotTested/Warning without blocking, and a Fail on ANY check blocks conservatively. Section status derives from required checks; overallStatus is the honest worst of required checks + Warning/Fail optional checks + check-less sections (optional NotTested excluded); the FullHealthValidated gate is required-only. Expected corrected result: overallStatus Warning / failures [] / fullHealthValidated true. **1272 tests (Core 53, App 1219), 0 err/0 warn.**
+
+## Phase 16 — COMPLETE: Full Health Validation & Release Confidence (accepted 2026-08-16)
+
+Phase 16 closed with TWO materially different production profiles earning the top ADR-084
+validation level on real VMware installs (Win11 Pro 25H2 zh-CN x64, build 26200.8037):
+- **Balanced — FullHealthValidated** (conservative safe optimization; 16 BuildPlan ops / 10
+  selected / 10 read-back Verified; final report failures=[], overallStatus Warning,
+  fullHealthValidated=true; non-blockers activation Notification + HTTPS TLS-trust Warning +
+  optional ScanHealth NotTested).
+- **DedicatedGaming — FullHealthValidated** (aggressive selected-only optimization; commit
+  evidence profile-commit-validation.json: 33 BuildPlan / 20 selected / 20 executed + read-back
+  Verified, preCommitValidationPassed=true, committed=true, postCommitVerified=true,
+  committedImageReadable=true, iso.structureValidated=true, 20 post-commit checks, cleanup
+  discard+workspace succeeded; ISO 8,052,092,928 B, SHA-256
+  2d521bd21a0efa17bf24acdc97a3a8d2c279cfea1c866e90bbdce2cb89be0210; final report failures=[],
+  overallStatus Warning, fullHealthValidated=true — profileExpectedChanges 11 AppX removals + 5
+  OfflineMachine/HKLM + 4 CurrentUserEffective/HKCU ALL Pass; Recommend-only
+  Containers/WSL/DevHome/OneDriveSync never executed; platform preservation Pass: identity /
+  boot-shell / devices / display / network / DHCP-IP / DNS / DISM CheckHealth / SFC / Windows
+  Update / Security / Defender / Firewall / Store / VC++ runtime).
+Both profiles demonstrated the complete production chain: source ISO → profile planning →
+selected-only apply → independent read-back → commit WIM → post-commit remount verification →
+production ISO build → ISO structure verification → VMware UEFI installation → OOBE → desktop →
+installed-state profile verification → DISM/SFC/security/update/store/network/device checks →
+FullHealthValidated. The explicit commit mode (`--commit-profile`, ADR-098) is the only path
+that builds an ISO, and the in-VM `Validate-WinForgeInstallation.ps1` + `-ExpectedJson` profile
+expected-state files are the only health evidence accepted. Other profiles (Gaming / Developer /
+Office / Lightweight) retain their actual lower validation level — FullHealthValidated is NOT
+propagated. MERGED TO `main` via `--no-ff`; branch `phase/16-full-health-validation` retained.
+**1282 tests (Core 53, App 1229), 0 err/0 warn.**

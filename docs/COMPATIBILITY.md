@@ -23,6 +23,13 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 25H2-Pro-zh-CN-x64 | Windows 11 25H2 | Professional | zh-CN | x64 | install.wim | 2026-08-13 | **VM INSTALL VALIDATED** (Level = `VmInstallValidated`, ADR-084): real workflow + generated ISO + Hyper-V Gen-2 UEFI install — boot / Setup / image install / reboot / OOBE / desktop all PASS. See `validation/25H2-Pro-zh-CN-x64-20260813-0720.{json,md}`. |
 
+> **Phase 16 update (2026-08-16):** the SAME 25H2-Pro-zh-CN-x64 media (ISO index 4) is now the
+> basis for the two profile-level **FullHealthValidated** results — Balanced and DedicatedGaming —
+> on VMware Workstation Pro (Win11 Pro 25H2, build 26200.8037; final reports failures=[], overallStatus
+> Warning, fullHealthValidated=true). See `docs/FULL-HEALTH-VALIDATION.md` for the evidence index.
+> The 2026-08-13 row below remains the pre-profile-era media-level record; other profiles
+> (Gaming/Developer/Office/Lightweight) retain WorkflowValidated.
+>
 > This row is **VM INSTALL VALIDATED** — NOT `FullHealthValidated`. Deeper
 > post-install health checks (Windows Update / Defender / Store / DISM ScanHealth
 > / recovery) are intentionally out of Phase 13 scope: the current safe

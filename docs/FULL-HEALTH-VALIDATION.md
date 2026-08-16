@@ -296,3 +296,32 @@ security/windowsUpdate/storeAndAppPlatform/devices/servicing/boot sections.
 **Acceptance (mirrors Balanced):** ISO build/commit verified → VM Setup completes → OOBE → desktop →
 health report generated → all required checks + profile expected-state checks Pass →
 fullHealthValidated = true; warnings only per ADR-098 rules.
+
+## PHASE 16 COMPLETE — FINAL EVIDENCE INDEX (accepted 2026-08-16)
+
+### Validation levels (ADR-084)
+
+| Profile | Level | Evidence |
+| --- | --- | --- |
+| Balanced | **FullHealthValidated** | profile-commit-validation.json (16 BuildPlan / 10 selected / 10 read-back Verified; committed, post-commit verified, ISO structure validated) · ISO SHA-256 recorded in report · final full-health-report.json (failures=[], overallStatus=Warning, fullHealthValidated=true) |
+| DedicatedGaming | **FullHealthValidated** | profile-commit-validation.json (33 BuildPlan / 20 selected / 20 read-back Verified; preCommitValidationPassed=true, committed=true, postCommitVerified=true, committedImageReadable=true, iso.structureValidated=true, 20 post-commit checks, cleanup discard+workspace succeeded) · ISO SHA-256 **2d521bd21a0efa17bf24acdc97a3a8d2c279cfea1c866e90bbdce2cb89be0210** · final full-health-report.json (failures=[], overallStatus=Warning, fullHealthValidated=true) |
+| Gaming / Developer / Office / Lightweight | WorkflowValidated (unchanged) | Phase 15 structural + offline-Apply validation only — NOT VM-installed, FullHealthValidated NOT claimed |
+
+Authoritative artifacts (all small deterministic JSON; no VM files / ISOs / WIMs in the repo):
+`.tmp/phase14-real/profile-commit-validation.json` (current run — DedicatedGaming; Balanced was
+overwritten per-run and its result is summarized above), `.tmp/phase14-real/profile-apply-validation.json`
+(DedicatedGaming offline apply), `scripts/dedicated-gaming-expected-state.json`,
+`scripts/balanced-expected-state.json`. Full-health reports are user-owned VM artifacts
+(Documents\WinForge / VM desktop); their authoritative summaries are recorded here.
+
+### Known non-blocking observations (preserved transparently, not product failures)
+
+- One earlier Balanced Setup failure was not reproducible and had no retained log; the subsequent
+  clean install succeeded.
+- The VMware guest occasionally showed idle / display black-screen behavior.
+- Windows Terminal once showed 0xD000003A; console host remained usable.
+- Activation was Notification (report-only; never a blocker).
+- HTTPS TLS trust produced a Warning while IP/DNS passed.
+- DISM ScanHealth was not run because it is optional (NotTested, non-blocking).
+- DedicatedGaming Defender signature age was old in the fresh image, but Defender itself and the
+  security platform were healthy (signature status is optional/report-only).

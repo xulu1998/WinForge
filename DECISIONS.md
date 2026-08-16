@@ -2473,8 +2473,7 @@ failure:**
 
 ## ADR-098: FullHealth Validation Requires Installed-OS Evidence (Stage 16.1)
 
-**Status:** Accepted (Phase 16 Stage 16.1; implementation ready, Balanced real
-VM validation pending).
+**Status:** Accepted (Phase 16 Stage 16.1 — COMPLETE; Balanced FullHealthValidated on real 25H2 VM).
 **Context:** Phase 15 proved the Profile Execution / Apply pipeline
 `WorkflowValidated` on real 25H2 media (structural validation of all six
 primaries; Balanced 10/10 and DedicatedGaming 20/20 real offline Apply executed
@@ -2527,8 +2526,7 @@ never be conflated with "the installed Windows is healthy".
 
 ## ADR-098 addendum: Health-check correctness - SFC decoding, CurrentUserEffective scope, Unicode (Stage 16.1a)
 
-**Status:** Accepted (Phase 16 Stage 16.1a; implementation ready, Balanced
-health-check retest required).
+**Status:** Accepted (Phase 16 Stage 16.1a — COMPLETE; SFC/scope/Unicode defects fixed, retest PASSED — Balanced FullHealthValidated).
 **Context:** The first real Balanced VM validation SUCCEEDED end-to-end: the
 customized ISO booted in VMware, installed Windows 11 Pro 25H2 build 26200,
 completed OOBE and reached the desktop; the commit evidence is
@@ -2591,8 +2589,7 @@ files; no ISO rebuild, no reinstall).
 
 ## ADR-098 addendum: FullHealth REQUIRED-vs-OPTIONAL gate (Stage 16.1b)
 
-**Status:** Accepted (Phase 16 Stage 16.1b; implementation ready, Balanced
-final health retest required).
+**Status:** Accepted (Phase 16 Stage 16.1b — COMPLETE; required-vs-optional gate fixed, final report overallStatus Warning / failures [] / fullHealthValidated true — Balanced FullHealthValidated).
 **Context:** The second real Balanced health report (after the 16.1a fixes)
 returned `failures = []` with bootAndShell/devices/security/windowsUpdate/
 storeAndAppPlatform/profileExpectedChanges all Pass, windowsIdentity Warning
@@ -2638,7 +2635,7 @@ expected-state.json if schema changed; no ISO rebuild, no reinstall).
 
 ## ADR-098 addendum: DedicatedGaming full-health validation prep (Stage 16.2)
 
-**Status:** Accepted (Phase 16 Stage 16.2; implementation ready, DedicatedGaming real VM validation pending).
+**Status:** Accepted (Phase 16 Stage 16.2 — COMPLETE; DedicatedGaming FullHealthValidated on real 25H2 VM: commit evidence 33/20/20 verified + post-commit verified + ISO structure validated (SHA-256 2d521bd2...0210); final report failures [] / overallStatus Warning / fullHealthValidated true — 11 AppX + 5 OfflineMachine + 4 CurrentUserEffective expected-state ALL Pass).
 **Context:** Balanced passed ADR-084 FullHealthValidated on a real VMware install (Win11 Pro 25H2
 zh-CN x64, build 26200.8037; failures=[], overallStatus Warning, fullHealthValidated=true; the only
 non-blockers are the activation Notification, the HTTPS TLS-trust Warning with IP/DNS Pass, and the
