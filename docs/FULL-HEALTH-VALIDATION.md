@@ -325,3 +325,22 @@ overwritten per-run and its result is summarized above), `.tmp/phase14-real/prof
 - DISM ScanHealth was not run because it is optional (NotTested, non-blocking).
 - DedicatedGaming Defender signature age was old in the fresh image, but Defender itself and the
   security platform were healthy (signature status is optional/report-only).
+
+## Phase 17 — Release-candidate validation (ADR-099)
+
+- **Archive, never overwrite**: profile validation runs are archived under
+  `.tmp\validation\<runId>\` (manifest + expected-state + plan snapshot + optional commit
+  evidence) with a `latest.json` pointer. The Phase 15/16 single-file overwrite artifacts are
+  replaced by this deterministic archive.
+- **Release validation manifest**: machine-readable summary of all six built-in profiles with
+  boolean evidence-gated levels - Balanced + DedicatedGaming FullHealthValidated; Gaming /
+  Developer / Office / Lightweight truthfully WorkflowValidated with explicit validation debt.
+- **Remaining expected-states**: `scripts/{gaming,developer,office,lightweight}-expected-state.json`
+  derived only from real selected-only plan evidence (Gaming 19, Developer 18, Office 10,
+  Lightweight 24 selected ops); Lightweight adds the `servicesDisabled` section (5 services).
+- **Portable FullHealth bundle**: `--validation-run` generates a bundle whose README command
+  already contains -ProfileId / -MediaId / -ExpectedJson / -IsoSha256 - copy into the VM and run.
+- **Runner**: `WinForge.RealCapture --iso <path> --validation-run <ProfileId> [--commit]`
+  prepares the run (plan -> expected-state -> archive -> bundle -> optional chained commit +
+  ISO build) through the PRODUCTION pipeline; discard-only cleanup; an unknown mount is never
+  discarded. See `docs/RELEASE-CANDIDATE-VALIDATION.md`.

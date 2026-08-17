@@ -2667,3 +2667,40 @@ a NEW VMware VM (never over the validated Balanced VM).
   with no retained log followed by a clean install; VMware guest occasional black-screen after
   idle/sleep; one Windows Terminal 0xD000003A; PowerShell usable through the console host) - none is
   evidence of WinForge image corruption and none is a product defect.
+
+## ADR-099: Deterministic validation artifacts + truthful release manifest (Phase 17)
+
+**Status:** Accepted (Phase 17; release gate verified on the feature branch,
+merge pending post-merge regression).
+**Context:** The Phase 15/16 validation artifacts (`profile-commit-validation.json`,
+`full-health-report.json`) were single-file OVERWRITE artifacts - a Balanced run was silently
+replaced by a DedicatedGaming run, and the earlier result survived only in prose. A
+release-candidate workflow needs reproducible, non-destructive evidence and a machine-readable
+record of what has ACTUALLY been validated.
+**Decision:**
+- **Archive, never overwrite.** Every validation run is archived under
+  `.tmp\validation\<runId>\` (runId = UTC timestamp + WinForge commit SHA + profile) with a
+  `manifest.json` recording runId, timestamp, source ISO path (+SHA when available), profile,
+  Windows index, edition, language, architecture, WinForge commit SHA, generated ISO path +
+  SHA-256, validation level, result status, pipeline phase (recovery metadata) and archived
+  files. A `latest.json` pointer indexes the most recent run; it is the ONLY mutable entry.
+  Task artifacts never land in `F:\` root.
+- **Truthfulness is structural.** The release validation manifest encodes each profile's
+  WorkflowValidated / VmInstallValidated / FullHealthValidated as BOOLEAN flags sourced from a
+  single evidence table. Only Balanced and DedicatedGaming have demonstrated VM install +
+  passing full-health reports (Phase 16); the other four primaries are truthfully
+  WorkflowValidated with explicit validation debt. No code path can claim a higher level than
+  demonstrated, and no global propagation is possible.
+- **Expected-state from the executable plan.** Remaining expected-states (Gaming/Developer/
+  Office/Lightweight) are derived ONLY from real selected-only plan evidence
+  (profile-plans.json AutoApply rows cross-checked against profile-buildplans.json canonical
+  keys) - Recommend-only rows are excluded, registry scopes stay explicit, and the new
+  `servicesDisabled` section covers Lightweight's selected service changes. The in-VM health
+  script enforces StartMode=Disabled (absent = already-satisfied).
+- **Safety invariants participate in validation.** ReleaseSafetyInvariantSet (Defender,
+  Firewall, Windows Update, Store, App Installer, boot shell, servicing stack, network stack,
+  display/input, recovery, no host-HKCU writes, no unknown-mount discard) is enforced against
+  the executable plan in the test suite - future destructive expansion fails deterministically.
+- **Destructive scope deferred.** CBS packages, broad Capability execution, Driver removal,
+  aggressive Service removal, ScheduledTask removal, SystemApp removal and WinRecovery removal
+  remain future phases (ADR-086). Phase 17 is release hardening, not deeper debloat.

@@ -1,0 +1,98 @@
+{
+  "profileId": "Developer",
+  "description": "Expected post-install state for the Developer profile (Phase 17, derived from the real Phase 15 plan evidence - profile-plans.json AutoApply rows + profile-buildplans.json canonicalOperationKeys, cross-checked 1:1, 18 selected operations). Recommend-only candidates are intentionally NOT listed here. Every registry check declares an EXPLICIT scope: OfflineMachine (HKLM of the installed OS); CurrentUserEffective (HKCU of the OOBE-created user - the Default-User seed is legitimately consumed into the created profile).",
+  "appxAbsent": [
+    "Microsoft.BingSearch",
+    "Clipchamp.Clipchamp",
+    "Microsoft.WindowsFeedbackHub",
+    "Microsoft.GetHelp",
+    "Microsoft.YourPhone",
+    "Microsoft.MicrosoftSolitaireCollection"
+  ],
+  "registryChecks": [
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "Start_ShowRecent",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "Start_ShowRecommended",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Policies\\Microsoft\\Dsh",
+      "name": "EnableWebContent",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "HideFileExt",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "CurrentUserEffective",
+      "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+      "name": "Hidden",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "Policies\\Microsoft\\Windows\\System",
+      "name": "EnableActivityHistory",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo",
+      "name": "Enabled",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "Policies\\Microsoft\\Windows\\AppCompat",
+      "name": "AllowTelemetry",
+      "expectedData": "0",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "Policies\\Microsoft\\Windows\\DataCollection",
+      "name": "DoNotShowFeedbackNotifications",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "Policies\\Microsoft\\Windows\\CloudContent",
+      "name": "DisableWindowsConsumerFeatures",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "Policies\\Microsoft\\Windows\\Explorer",
+      "name": "DisableSearchBoxSuggestions",
+      "expectedData": "1",
+      "kind": "DWord"
+    },
+    {
+      "scope": "OfflineMachine",
+      "path": "Policies\\Microsoft\\Windows\\CloudContent",
+      "name": "DisableSoftLanding",
+      "expectedData": "1",
+      "kind": "DWord"
+    }
+  ]
+}

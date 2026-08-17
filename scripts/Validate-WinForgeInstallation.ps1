@@ -466,6 +466,24 @@ if (-not $expected) {
         }
     }
     if ($hiveLoaded) { & reg.exe unload "HKU\$hiveName" 2>$null | Out-Null }
+
+    # Phase 17: servicesDisabled - selected-only ConfigureOfflineService targets
+    # (e.g. Lightweight disables MapsBroker/RetailDemo/XblAuthManager/XboxGipSvc/
+    # XboxNetApiSvc). The service must be Disabled (or absent - absent is
+    # already-satisfied since the desired state is "not running as an active
+    # service"). A service still set to anything else (Automatic/Manual/Running)
+    # is a Fail.
+    foreach ($svc in $expected.servicesDisabled) {
+        $checkName = "svcDisabled_$svc"
+        $svcObj = Get-Service -Name $svc -ErrorAction SilentlyContinue
+        if ($null -eq $svcObj) {
+            Add-Check $pe $checkName "Pass" "$svc absent (already satisfied - desired state is disabled)"
+            continue
+        }
+        $startType = (Get-CimInstance Win32_Service -Filter "Name='$svc'" -ErrorAction SilentlyContinue).StartMode
+        if ($startType -eq "Disabled") { Add-Check $pe $checkName "Pass" "$svc StartMode=Disabled" }
+        else { Add-Check $pe $checkName "Fail" "$svc StartMode=$startType (expected Disabled)" }
+    }
 }
 $pe.status = Resolve-SectionStatus $pe
 
