@@ -1279,11 +1279,11 @@ public static class Program
                 return 3;
             }
 
-            run.Edition = edition.Name;
+            run.Edition = edition.Name ?? edition.EditionId ?? string.Empty;
             run.Language = inspection.ImageMetadata.Languages is { Count: > 0 }
                 ? string.Join(",", inspection.ImageMetadata.Languages)
                 : "zh-CN";
-            run.Architecture = edition.Architecture;
+            run.Architecture = edition.Architecture ?? string.Empty;
             run.SourceIsoSha256 = null; // host-side computed; never blocks prep
             Console.WriteLine($"Target: {edition.Name} (index {edition.Index}) {edition.Architecture} {edition.Version}");
 

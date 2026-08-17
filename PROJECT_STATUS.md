@@ -17,6 +17,16 @@
 
 ## Progress
 
+### Phase 17 release-gate audit — 2026-08-17
+
+The Phase 17 feature branch passed the Release gate: the in-place Release build
+completed with 0 errors and 0 warnings, and one complete elevated full-suite run
+reported 1300 passed, 0 failed, 0 skipped (Core 53, App 1247). The restricted
+runner's first pass was 1299/1300 only because its HKCU ACL denied one registry
+test; the clean rerun passed without test changes. Structural smoke checks and
+all 18 Phase 17 tests passed. Merge remains pending until the post-merge
+regression is complete.
+
 ### Completed
 - Phase 0 — Project Governance (governance docs, roadmap, agent memory system)
 - Phase 1 — Application Foundation (solution, WPF shell, MVVM infra, DI, logging, error handling, Core smoke tests)

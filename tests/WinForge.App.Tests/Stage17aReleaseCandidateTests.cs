@@ -276,7 +276,7 @@ public class Stage17aReleaseCandidateTests
         Assert.Single(audit.CommonSelectedKeys);
         Assert.Equal("pkg|A", audit.CommonSelectedKeys[0]);
         Assert.Contains(audit.ConvergenceWarnings, w => w.Contains("DedicatedGaming == Gaming", StringComparison.Ordinal));
-        Assert.Equal(1, audit.Profiles.Single(p => p.ProfileId == "Balanced").ExclusiveKeys.Count);
+        Assert.Single(audit.Profiles.Single(p => p.ProfileId == "Balanced").ExclusiveKeys);
         Assert.Contains(audit.Profiles.Single(p => p.ProfileId == "Gaming").OperationTypeDistribution, kv => kv.Key == "reg" && kv.Value == 1);
     }
 

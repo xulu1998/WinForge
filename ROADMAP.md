@@ -493,10 +493,10 @@ Phased development plan for WinForge. Each phase records its **Status**,
 
 ## Phase 17 — Release Candidate Hardening & Profile Validation Matrix
 
-- **Status: IN PROGRESS — RELEASE-CANDIDATE HARDENING IMPLEMENTED (2026-08-16)** —
+- **Status: RELEASE-CANDIDATE HARDENING VERIFIED (2026-08-17; MERGE PENDING)** —
   Balanced FullHealthValidated · DedicatedGaming FullHealthValidated · Gaming/Developer/
-  Office/Lightweight truthful WorkflowValidated; branch `phase/17-release-candidate-hardening`;
-  NOT merged (review before merge).
+  Office/Lightweight truthful WorkflowValidated; branch `phase/17-release-candidate-hardening`.
+  Release build: 0 errors / 0 warnings. Full suite: 1300 passed / 0 failed / 0 skipped.
 - **Stage 17 objectives:** deterministic validation artifact archive
   (`.tmp\validation\<runId>\` + latest pointer — runs never overwrite), machine-readable
   release validation manifest (boolean evidence-gated levels, no over-claiming), remaining

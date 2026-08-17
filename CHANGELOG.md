@@ -1,3 +1,14 @@
+## Phase 17 release-gate verification (2026-08-17)
+
+- Verified the Phase 17 release candidate with an in-place Release build: 0
+  errors and 0 warnings.
+- Verified one complete full-suite execution: 1300 passed, 0 failed, 0 skipped
+  (Core 53, App 1247), including all 18 Phase 17 release-candidate tests.
+- Cleared two nullable-assignment warnings in the validation runner and the
+  corresponding xUnit collection-size analyzer warning; no feature behavior
+  changed.
+- Merge to `main` remains pending until the post-merge regression completes.
+
 ## Phase 17 - Release Candidate Hardening & Profile Validation Matrix (2026-08-16)
 
 - **Deterministic validation artifact archive**: every profile validation run is archived under
