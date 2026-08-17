@@ -7,7 +7,8 @@
 - Cleared two nullable-assignment warnings in the validation runner and the
   corresponding xUnit collection-size analyzer warning; no feature behavior
   changed.
-- Merge to `main` remains pending until the post-merge regression completes.
+- Merged to `main` with no-ff commit `eef90a8`; the post-merge build and full
+  suite passed with the same 0-warning / 1300-pass result.
 
 ## Phase 17 - Release Candidate Hardening & Profile Validation Matrix (2026-08-16)
 

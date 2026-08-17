@@ -2670,8 +2670,8 @@ a NEW VMware VM (never over the validated Balanced VM).
 
 ## ADR-099: Deterministic validation artifacts + truthful release manifest (Phase 17)
 
-**Status:** Accepted (Phase 17; release gate verified on the feature branch,
-merge pending post-merge regression).
+**Status:** Accepted (Phase 17; release gate verified and merged to `main` with
+no-ff commit `eef90a8`; post-merge regression passed).
 **Context:** The Phase 15/16 validation artifacts (`profile-commit-validation.json`,
 `full-health-report.json`) were single-file OVERWRITE artifacts - a Balanced run was silently
 replaced by a DedicatedGaming run, and the earlier result survived only in prose. A

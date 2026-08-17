@@ -17,15 +17,17 @@
 
 ## Progress
 
-### Phase 17 release-gate audit — 2026-08-17
+### Phase 17 post-merge closeout — 2026-08-17
 
 The Phase 17 feature branch passed the Release gate: the in-place Release build
 completed with 0 errors and 0 warnings, and one complete elevated full-suite run
 reported 1300 passed, 0 failed, 0 skipped (Core 53, App 1247). The restricted
 runner's first pass was 1299/1300 only because its HKCU ACL denied one registry
 test; the clean rerun passed without test changes. Structural smoke checks and
-all 18 Phase 17 tests passed. Merge remains pending until the post-merge
-regression is complete.
+all 18 Phase 17 tests passed. The feature was merged to `main` with no-ff merge
+commit `eef90a8`; the post-merge build and full suite passed with the same
+0/0/1300 result. This entry supersedes the historical pre-merge note in the
+summary above.
 
 ### Completed
 - Phase 0 — Project Governance (governance docs, roadmap, agent memory system)
